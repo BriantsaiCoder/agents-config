@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jest Best Practices"
+  short_description: "Maintain existing Jest test suites"
+  default_prompt: "Use $jest-best-practices to configure, debug, or review an existing Jest test suite."

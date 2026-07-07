@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(~/go/pkg/mod/**)",
+      "Edit(~/go/pkg/mod/**)",
+      "Read(~/Library/Caches/go-build/**)",
+      "Edit(~/Library/Caches/go-build/**)"
+    ],
+    "deny": []
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowLocalBinding": true,
+      "allowedDomains": [
+        "proxy.golang.org",
+        "sum.golang.org",
+        "*.golang.org",
+        "github.com",
+        "*.github.com",
+        "*.githubusercontent.com",
+        "localhost:*"
+      ]
+    }
+  }
+}

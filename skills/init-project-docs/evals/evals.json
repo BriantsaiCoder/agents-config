@@ -1,0 +1,128 @@
+{
+  "skill_name": "init-project-docs",
+  "assertion_schema": {
+    "types": {
+      "file_exists": "path 存在於工作目錄",
+      "file_not_exists": "path 不存在於工作目錄",
+      "file_contains": "檔案內含指定子字串（大小寫敏感）",
+      "file_not_contains": "檔案內不含指定子字串（大小寫敏感）",
+      "file_matches": "檔案內容符合 regex（multiline）",
+      "frontmatter_field": "YAML frontmatter 指定欄位等於 value",
+      "json_path_contains": "JSON 檔 path（dot notation）下的陣列包含 value",
+      "toml_parse": "TOML 檔可由 Python tomllib 成功解析",
+      "message_contains": "assistant 對使用者的回覆含指定子字串"
+    },
+    "fields": "{ name, type, path?, value?, regex?, field? }"
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "claude-code-nodejs-express",
+      "prompt": "（執行 host：Claude Code）這是一個 Node.js + Express + TypeScript 的後端 API 專案，用 Prisma + PostgreSQL。請初始化專案的 AI 開發結構。",
+      "expected_output": "Phase 0.5 偵測為 Claude Code；產出 Claude 原生檔：CLAUDE.md、.claude/settings.json、.claude/rules/*.md、.claude/hooks/*.sh、.claude/agents/*.md。docs/ 內容依真實專案產生。",
+      "files": [],
+      "assertions": [
+        { "name": "Claude 指令檔", "type": "file_exists", "path": "CLAUDE.md" },
+        { "name": "Claude settings JSON", "type": "file_exists", "path": ".claude/settings.json" },
+        { "name": "Claude api rule", "type": "file_exists", "path": ".claude/rules/api-design.md" },
+        { "name": "Claude agent MD", "type": "file_exists", "path": ".claude/agents/code-reviewer.md" },
+        { "name": "rule 保留 paths frontmatter", "type": "file_matches", "path": ".claude/rules/api-design.md", "regex": "^paths:" },
+        { "name": "ARCHITECTURE 建立", "type": "file_exists", "path": "docs/ARCHITECTURE.md" }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "codex-cli-nodejs-express",
+      "prompt": "（執行 host：Codex CLI）這是一個 Node.js + Express + TypeScript 的後端 API 專案，用 Prisma + PostgreSQL。請初始化專案的 AI 開發結構。",
+      "expected_output": "Phase 0.5 偵測為 Codex CLI；產出 Codex 原生檔：AGENTS.md、.codex/config.toml、.codex/hooks/*.sh、.codex/agents/*.toml。rules 內容併入 AGENTS.md，不產 .claude/rules。",
+      "files": [],
+      "assertions": [
+        { "name": "Codex 指令檔", "type": "file_exists", "path": "AGENTS.md" },
+        { "name": "Codex config TOML", "type": "file_exists", "path": ".codex/config.toml" },
+        { "name": "Codex config 可解析", "type": "toml_parse", "path": ".codex/config.toml" },
+        { "name": "Codex hook 使用現行 inline TOML", "type": "file_matches", "path": ".codex/config.toml", "regex": "\\[\\[hooks\\.PreToolUse\\]\\]" },
+        { "name": "Codex agent 使用 developer_instructions", "type": "file_contains", "path": ".codex/agents/code-reviewer.toml", "value": "developer_instructions" },
+        { "name": "rules 內容併入 AGENTS", "type": "file_matches", "path": "AGENTS.md", "regex": "API 設計規則|資料庫規則|測試規則" },
+        { "name": "Codex run 不產 Claude rules", "type": "file_not_exists", "path": ".claude/rules/api-design.md" },
+        { "name": "Codex output 不含 Claude-only path leak", "type": "file_not_contains", "path": ".codex/agents/code-reviewer.toml", "value": ".claude/rules" }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "copilot-cli-nodejs-express",
+      "prompt": "（執行 host：GitHub Copilot CLI）這是一個 Node.js + Express + TypeScript 的後端 API 專案，用 Prisma + PostgreSQL。請初始化專案的 AI 開發結構。",
+      "expected_output": "Phase 0.5 偵測為 Copilot CLI；產出 Copilot 原生檔：.github/copilot-instructions.md、.github/instructions/*.instructions.md、.github/hooks/*.json、.github/agents/*.agent.md。",
+      "files": [],
+      "assertions": [
+        { "name": "Copilot 指令檔", "type": "file_exists", "path": ".github/copilot-instructions.md" },
+        { "name": "Copilot path-scoped instruction", "type": "file_exists", "path": ".github/instructions/api-design.instructions.md" },
+        { "name": "Copilot instruction 使用 applyTo", "type": "file_matches", "path": ".github/instructions/api-design.instructions.md", "regex": "^applyTo:" },
+        { "name": "Copilot hooks JSON", "type": "file_exists", "path": ".github/hooks/init-project-docs-hooks.json" },
+        { "name": "Copilot hook 不使用 Claude matcher", "type": "file_not_contains", "path": ".github/hooks/init-project-docs-hooks.json", "value": "Edit|Write" },
+        { "name": "Copilot hook 不使用 shell matcher", "type": "file_not_contains", "path": ".github/hooks/init-project-docs-hooks.json", "value": "\"matcher\": \"shell\"" },
+        { "name": "Copilot agent MD", "type": "file_exists", "path": ".github/agents/code-reviewer.agent.md" },
+        { "name": "Copilot agent 不含 Read tool", "type": "file_not_contains", "path": ".github/agents/code-reviewer.agent.md", "value": "Read, Grep, Glob, Bash" },
+        { "name": "Copilot agent 不含 Bash tool", "type": "file_not_contains", "path": ".github/agents/code-reviewer.agent.md", "value": "tools: Bash" },
+        { "name": "Copilot run 不產 Codex config", "type": "file_not_exists", "path": ".codex/config.toml" }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "all-host-output",
+      "prompt": "請同時為 Claude Code、Codex CLI、GitHub Copilot CLI 初始化這個 Node.js + Express 專案的 AI 開發結構。",
+      "expected_output": "Phase 0.5 先回報 detected_host / suggested / ambiguous / other_homes；使用者本輪已明確要求三 host，視為 scope confirmed 後繼續。產出 full CLAUDE.md + full AGENTS.md；.github/copilot-instructions.md 是 thin adapter，指向 AGENTS.md / docs，僅補 Copilot-specific behavior，避免重複完整規則。",
+      "files": [],
+      "assertions": [
+        { "name": "產出 Claude 指令檔", "type": "file_exists", "path": "CLAUDE.md" },
+        { "name": "產出 Codex/shared 指令檔", "type": "file_exists", "path": "AGENTS.md" },
+        { "name": "產出 Copilot adapter", "type": "file_exists", "path": ".github/copilot-instructions.md" },
+        { "name": "Copilot adapter 指向 AGENTS", "type": "file_contains", "path": ".github/copilot-instructions.md", "value": "AGENTS.md" },
+        { "name": "Codex config 可解析", "type": "toml_parse", "path": ".codex/config.toml" },
+        { "name": "Claude settings JSON", "type": "file_exists", "path": ".claude/settings.json" },
+        { "name": "Copilot path-scoped instruction", "type": "file_exists", "path": ".github/instructions/api-design.instructions.md" }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "codex-host-with-other-homes",
+      "prompt": "（執行 host：Codex CLI；同時偵測到 ~/.claude/ 與 ~/.copilot/ home 目錄）請初始化目前專案的 AI 開發結構。",
+      "expected_output": "Phase 0.5 以執行中 agent 自知身分為準，先回報 detected_host=Codex、ambiguous=false、other_homes=Claude/Copilot、proposed_target_hosts=Codex。因本輪未確認 target hosts，停止並要求使用者確認只產 Codex 或也產 Claude/Copilot；確認前不建立檔案。",
+      "files": [],
+      "assertions": [
+        { "name": "回覆指明 Codex host", "type": "message_contains", "value": "Codex" },
+        { "name": "回覆提示 other homes", "type": "message_contains", "value": "Claude" },
+        { "name": "確認前不產 Codex 指令檔", "type": "file_not_exists", "path": "AGENTS.md" },
+        { "name": "確認前不產 Claude 指令檔", "type": "file_not_exists", "path": "CLAUDE.md" },
+        { "name": "確認前不產 Copilot 指令檔", "type": "file_not_exists", "path": ".github/copilot-instructions.md" }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "codex-host-with-other-homes-confirmed",
+      "prompt": "（執行 host：Codex CLI；同時偵測到 ~/.claude/ 與 ~/.copilot/ home 目錄）請初始化目前專案的 AI 開發結構，只產 Codex 檔案。",
+      "expected_output": "Phase 0.5 先回報 detected_host=Codex 與 other_homes=Claude/Copilot；使用者本輪已明確確認 Codex-only scope，繼續產出 Codex native files，不產 Claude/Copilot 檔案。",
+      "files": [],
+      "assertions": [
+        { "name": "回覆指明 Codex-only confirmed", "type": "message_contains", "value": "Codex" },
+        { "name": "Codex 指令檔", "type": "file_exists", "path": "AGENTS.md" },
+        { "name": "Codex config TOML", "type": "file_exists", "path": ".codex/config.toml" },
+        { "name": "不產 Claude 指令檔", "type": "file_not_exists", "path": "CLAUDE.md" },
+        { "name": "不產 Copilot 指令檔", "type": "file_not_exists", "path": ".github/copilot-instructions.md" }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "docs-quality-host-neutral",
+      "prompt": "初始化一個 npm workspaces monorepo，包含 apps/web（Vue 3 + Vite）、services/api（.NET 8 Web API）、packages/shared-types（TS），並產生 docs/。",
+      "expected_output": "docs/ 是 host-neutral。ARCHITECTURE.md 清楚劃分 workspace 職責與資料流；DEVELOPMENT.md 含計畫歸檔流程；FEATURES.md 只記錄會影響其他模組整合的行為。",
+      "files": [],
+      "assertions": [
+        { "name": "ARCHITECTURE 劃分 apps/web", "type": "file_contains", "path": "docs/ARCHITECTURE.md", "value": "apps/web" },
+        { "name": "ARCHITECTURE 劃分 services/api", "type": "file_contains", "path": "docs/ARCHITECTURE.md", "value": "services/api" },
+        { "name": "ARCHITECTURE 劃分 packages/shared-types", "type": "file_contains", "path": "docs/ARCHITECTURE.md", "value": "packages/shared-types" },
+        { "name": "DEVELOPMENT 含計畫歸檔流程", "type": "file_matches", "path": "docs/DEVELOPMENT.md", "regex": "docs/plans/.*docs/plans/archive|User Story.*Spec.*Tasks" },
+        { "name": "CHANGELOG 建立", "type": "file_exists", "path": "docs/CHANGELOG.md" }
+      ]
+    }
+  ]
+}

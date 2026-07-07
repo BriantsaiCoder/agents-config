@@ -1,0 +1,6 @@
+---
+name: mp-zoom-out
+description: Use when unfamiliar with a section of code or need to understand how it fits into the bigger picture. Manual trigger only via `/mp-zoom-out` slash command.
+---
+
+I don't know this area of code well. Go up a layer of abstraction. Give me a map of all the relevant modules and callers, using the project's domain glossary vocabulary.

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(~/.cargo/registry/**)",
+      "Edit(~/.cargo/registry/**)",
+      "Read(~/.cargo/git/**)",
+      "Edit(~/.cargo/git/**)"
+    ],
+    "deny": [
+      "Bash(cargo publish *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowLocalBinding": true,
+      "allowedDomains": [
+        "crates.io",
+        "index.crates.io",
+        "static.crates.io",
+        "github.com",
+        "*.github.com",
+        "localhost:*"
+      ]
+    }
+  }
+}

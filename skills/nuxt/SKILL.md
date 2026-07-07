@@ -1,0 +1,61 @@
+---
+name: nuxt
+description: Use when working with Nuxt 3+ apps — file-based routing, server routes, Nitro, useFetch/useAsyncData/$fetch, middleware, runtime config, SSR/hydration, modules, layers, hybrid rendering. Apply even when user just says "hydration mismatch", "server route 500", "data fetched twice", or "env not loading on prod" without naming Nuxt.
+---
+
+# Nuxt
+
+> Nuxt 3.x. Verify project's Nuxt + Nitro version — SSR/hydration and `useFetch` defaults shifted across 3.7 / 3.10 / 3.12.
+
+Top-3 bug sources: (1) where code runs (SSR / client / Nitro / build-time), (2) double-hydrate / cross-request state leak, (3) runtime config leaked to client.
+
+## Workflow
+
+1. Read `nuxt.config.*`, `pages/` / `server/` / `composables/` / `layouts/` / `middleware/`, `.env*`.
+2. Rendering: SSR / SSG (`nitro.prerender`) / SPA (`ssr: false`) / Hybrid (`routeRules`).
+3. For any code — SSR / hydration / Nitro / build?
+4. Data fetching → decision tree below.
+5. State → `useState(key, init)` or Pinia. Module-scope `let x = ...` leaks across requests.
+6. Verify `npm run build && npm run preview` (catches Nitro-only bugs `dev` hides) + `nuxi typecheck`.
+
+## Data Fetching
+
+| Need | Use | Runs |
+|---|---|---|
+| SSR + hydrate | `useFetch` / `useAsyncData('key', () => $fetch(...))` | Server first, client deduped |
+| Event handler | `$fetch` | Client only |
+| Server-only | `$fetch` in `server/api/*.ts` | Nitro |
+| Lazy | `useFetch({ lazy: true })` / `useLazyAsyncData` | Server `null` first, client fills |
+| Re-fetch on route | `useFetch({ watch: [() => route.params.id] })` | Both |
+
+- `useFetch` / `useAsyncData` MUST be at `<script setup>` top level or composable top level. Inside `onMounted` defeats SSR — use `$fetch`.
+- Always pass `key` to `useAsyncData` — collisions = stale hydration.
+- Secrets go in `runtimeConfig.x` (server), never `runtimeConfig.public.x` (client bundle).
+- Don't mix `useFetch` + manual `$fetch` for same data — double fetch.
+
+## Server / Middleware / Route Rules
+
+| Goal | Use | File |
+|---|---|---|
+| HTTP endpoint | `defineEventHandler` | `server/api/*.ts` |
+| Per-request (Nitro) | `defineEventHandler` | `server/middleware/*.ts` |
+| Per-navigation (Router) | `defineNuxtRouteMiddleware` | `middleware/*.ts` / `*.global.ts` |
+| Cache / ISR / prerender / headers | `routeRules` | `nuxt.config.ts` |
+| 404 / error | `error.vue` | root |
+
+Order: `server/middleware` → `server/api`; route middleware after Nitro, before render.
+
+## Pitfalls and Review
+
+Anti-patterns, hydration bugs, full review checklist → `references/pitfalls-and-review.md`. Read before SSR-crossing changes.
+
+## Reference Map
+
+- `references/pitfalls-and-review.md` — review PR, hydration debug, server route final
+- `references/core-directory-structure.md` — auto-import scope
+- `references/core-config.md`, `references/core-cli.md` — `nuxt.config.ts`, `nuxi`
+- `references/core-routing.md` — file routes, dynamic params, layouts
+- `references/core-data-fetching.md`, `references/best-practices-data-fetching.md` — fetch deep dive
+- `references/features-server.md`, `references/core-deployment.md` — Nitro, deploy presets
+- `references/best-practices-ssr.md`, `references/rendering-modes.md` — SSR/SSG/SPA/hybrid
+- `references/core-modules.md`, `references/advanced-{layers,hooks,module-authoring}.md` — modules, layers, hooks

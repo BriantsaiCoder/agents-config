@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(~/Library/Caches/pip/**)",
+      "Edit(~/Library/Caches/pip/**)",
+      "Read(~/Library/Caches/pypoetry/**)",
+      "Edit(~/Library/Caches/pypoetry/**)",
+      "Read(~/.local/share/virtualenvs/**)",
+      "Edit(~/.local/share/virtualenvs/**)"
+    ],
+    "deny": []
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowLocalBinding": true,
+      "allowedDomains": [
+        "pypi.org",
+        "files.pythonhosted.org",
+        "localhost:*"
+      ]
+    }
+  }
+}

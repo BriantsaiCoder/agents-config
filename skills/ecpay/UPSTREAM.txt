@@ -1,0 +1,5 @@
+# ECPay-API-Skill 來源溯源（內嵌 .git 已於三主機共用層 git 化時拆除）
+# 拆除日期：2026-07-07
+upstream: https://github.com/ECPay/ECPay-API-Skill.git
+detached_at_sha: 5b1ac7610e5b442dfe6aace4455b4dbbc61c907a
+# 更新法：git clone $upstream 到暫存區比對後複製檔案，勿再嵌 .git

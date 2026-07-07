@@ -1,0 +1,542 @@
+---
+name: Config and Project Setup
+---
+
+# Config & Project Setup
+
+設定 tsconfig.json、ESLint、Declaration Files、Monorepo 時讀取此檔案。涵蓋 strict mode 各 flag 詳解、module/moduleResolution 策略、paths aliases、ESLint 整合、.d.ts 撰寫、monorepo project references。
+
+## Table of Contents
+- [tsconfig.json: Strict Mode Breakdown](#tsconfigjson-strict-mode-breakdown)
+- [tsconfig.json: Module and Resolution](#tsconfigjson-module-and-resolution)
+- [tsconfig.json: Target Recommendations](#tsconfigjson-target-recommendations)
+- [tsconfig.json: Paths Aliases](#tsconfigjson-paths-aliases)
+- [Recommended tsconfig Bases](#recommended-tsconfig-bases)
+- [Example tsconfig Configs](#example-tsconfig-configs)
+- [ESLint + typescript-eslint Setup](#eslint--typescript-eslint-setup)
+- [Declaration Files (.d.ts)](#declaration-files-dts)
+- [Module Augmentation](#module-augmentation)
+- [Monorepo TypeScript](#monorepo-typescript)
+
+## tsconfig.json: Strict Mode Breakdown
+
+`"strict": true` 開啟以下所有 flag。建議永遠開啟 strict，以下逐一說明每個 flag 的作用：
+
+| Flag | 說明 |
+|---|---|
+| `strictNullChecks` | `null`/`undefined` 不再自動 assignable 給其他型別。**最重要的 flag** |
+| `strictFunctionTypes` | 函數參數型別使用 contravariance 檢查（更安全） |
+| `strictBindCallApply` | `bind`, `call`, `apply` 的參數會被正確檢查 |
+| `strictPropertyInitialization` | Class properties 必須在 constructor 中初始化或標記 `!` |
+| `noImplicitAny` | 禁止隱含的 `any` 型別 — 必須明確標註或讓 TS 推斷 |
+| `noImplicitThis` | 禁止 `this` 的隱含 `any` 型別 |
+| `alwaysStrict` | 每個檔案加入 `"use strict"` |
+| `useUnknownInCatchVariables` | catch 的 error 變數型別為 `unknown` 而非 `any` |
+
+### 額外建議開啟的 flag
+
+```jsonc
+{
+  "compilerOptions": {
+    "strict": true,
+    // 額外型別安全 flags
+    "noUncheckedIndexedAccess": true,   // obj[key] 回傳 T | undefined
+    "noPropertyAccessFromIndexSignature": true, // 強制 bracket notation 存取 index signature
+    "exactOptionalPropertyTypes": true, // 區分 undefined 和 missing
+    "noFallthroughCasesInSwitch": true  // switch case 必須 break/return
+  }
+}
+```
+
+### 漸進式啟用（for legacy projects）
+
+如果不能一次全開，按優先順序逐步啟用：
+
+1. `strictNullChecks` — 影響最大，收益最高
+2. `noImplicitAny` — 防止型別逃逸
+3. `useUnknownInCatchVariables` — 低成本高收益
+4. 其餘一起開
+
+## tsconfig.json: Module and Resolution
+
+### 現代專案建議
+
+| 場景 | `module` | `moduleResolution` | 說明 |
+|---|---|---|---|
+| Node.js (ESM) | `NodeNext` | `NodeNext` | 支援 .mjs/.cjs，尊重 package.json `exports` |
+| Bundler (Vite/webpack) | `ESNext` | `Bundler` | Bundler 處理 resolution，TS 不需要嚴格檢查 |
+| Library (同時支援 CJS/ESM) | `NodeNext` | `NodeNext` | 確保輸出的 .d.ts 對消費者正確 |
+
+```jsonc
+// Node.js ESM 專案
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+    // 必須在 import 中寫副檔名: import { foo } from './foo.js'
+  }
+}
+
+// Vite / Next.js 前端專案
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true, // 搭配 noEmit 使用
+    "noEmit": true
+  }
+}
+```
+
+### moduleResolution 差異速查
+
+| Resolution | `import './foo'` | `package.json exports` | 建議 |
+|---|---|---|---|
+| `node10` (舊) | 嘗試 .ts, .js, /index.ts | 忽略 | 不建議使用 |
+| `NodeNext` | 必須寫 `./foo.js` | 尊重 | Node.js ESM 標準 |
+| `Bundler` | `./foo` 可省副檔名 | 尊重 | Bundler 環境 |
+
+### isolatedModules 與 verbatimModuleSyntax
+
+```typescript
+// isolatedModules: true — bundler 逐檔編譯時必須
+// ❌ re-export 可能是型別
+export { User } from './types';
+// ✅ 明確標示
+export type { User } from './types';
+
+// verbatimModuleSyntax (TS 5.0+) — 取代 isolatedModules + importsNotUsedAsValues
+import type { User } from './types';  // ✅ 型別 import
+import { createUser } from './types'; // ✅ 值 import
+```
+
+## tsconfig.json: Target Recommendations
+
+| 環境 | 建議 `target` | 說明 |
+|---|---|---|
+| Node.js 18+ | `ES2022` | 支援 top-level await, `at()`, cause in Error |
+| Node.js 20+ | `ES2023` | 加上 `findLast`, `findLastIndex` |
+| 現代瀏覽器 | `ES2022` | 大多數瀏覽器都支援 |
+| 需要舊瀏覽器支援 | `ES2017`-`ES2020` | 搭配 polyfill |
+| Library | `ES2020` 或更低 | 依最低支援版本決定 |
+
+`target` 影響 emit 的 JS 語法（是否 downlevel），也影響可用的 `lib`。
+
+## tsconfig.json: Paths Aliases
+
+```jsonc
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@types/*": ["./src/types/*"]
+    }
+  }
+}
+```
+
+tsconfig 的 `paths` 只告訴 TS 如何解析型別。Runtime resolution 需要在 bundler 也設定：
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import path from 'path';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@components': path.resolve(__dirname, './src/components'),
+    },
+  },
+});
+```
+
+Node.js 專案可用 `tsx` 或 `tsconfig-paths`：
+
+```bash
+node --import tsx src/index.ts
+# 或
+node -r tsconfig-paths/register src/index.ts
+```
+
+## Recommended tsconfig Bases
+
+社群維護的 tsconfig base packages，避免從零設定：
+
+```jsonc
+// Node.js 20 專案
+{ "extends": "@tsconfig/node20/tsconfig.json" }
+
+// 最嚴格設定（學習或新專案推薦）
+{ "extends": "@tsconfig/strictest/tsconfig.json" }
+
+// Vite + React 專案
+{ "extends": "@tsconfig/vite-react/tsconfig.json" }
+```
+
+安裝：`npm install -D @tsconfig/node20` 或 `@tsconfig/strictest`
+
+### @tsconfig/strictest 包含什麼
+
+除了 `strict: true`，還開啟：
+- `noUncheckedIndexedAccess`
+- `noFallthroughCasesInSwitch`
+- `exactOptionalPropertyTypes`
+- `noPropertyAccessFromIndexSignature`
+- `forceConsistentCasingInFileNames`
+
+推薦作為起點 — 如果某些規則太嚴格，逐一關閉並記錄原因。
+
+## Example tsconfig Configs
+
+### Node.js 20 Backend
+
+```jsonc
+{
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+### Vite + React Frontend
+
+```jsonc
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
+}
+```
+
+### Library (Dual CJS/ESM)
+
+```jsonc
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
+```
+
+## ESLint + typescript-eslint Setup
+
+### Flat Config (ESLint 9+, recommended)
+
+```typescript
+// eslint.config.ts
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  eslint.configs.recommended,
+  ...tseslint.configs.strictTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      }],
+      '@typescript-eslint/consistent-type-imports': ['error', {
+        prefer: 'type-imports',
+      }],
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    },
+  },
+);
+```
+
+### 重要規則說明
+
+| 規則 | 說明 |
+|---|---|
+| `no-floating-promises` | async 函數的回傳值必須被 await 或處理，防止靜默吞掉 error |
+| `no-misused-promises` | 防止在非 async context 使用 Promise（常見於 event handler） |
+| `consistent-type-imports` | 強制 `import type { Foo }` 語法，配合 `verbatimModuleSyntax` |
+| `switch-exhaustiveness-check` | switch 必須涵蓋所有 union members |
+| `prefer-nullish-coalescing` | 用 `??` 取代 `\|\|` 處理 null/undefined |
+| `no-unsafe-assignment` | 偵測 `any` 擴散，防止 `any` 病毒式傳播 |
+| `restrict-template-expressions` | 防止 template string 中出現 `[object Object]` |
+
+### 自訂規則範例
+
+```typescript
+// 禁止特定 import
+'no-restricted-imports': ['error', {
+  patterns: [
+    { group: ['lodash'], message: 'Use native methods or lodash-es' },
+    { group: ['*.css'], message: 'Use CSS modules (*.module.css)' },
+  ],
+}],
+```
+
+### 替代方案：@antfu/eslint-config（all-in-one，含 formatter）
+
+若不想自行拼接 typescript-eslint + stylistic + import rules，可用 Anthony Fu 的整合配置。特色：內建 formatter（不需 Prettier）、auto-detect TS/Vue、框架支援用 opt-in flag。
+
+```js
+// eslint.config.mjs
+import antfu from '@antfu/eslint-config'
+
+export default antfu({
+  type: 'app',                          // 'lib' for libraries
+  stylistic: { indent: 2, quotes: 'single' },
+  typescript: true,                     // auto-detected
+  react: true,                          // 需 @eslint-react/eslint-plugin eslint-plugin-react-hooks eslint-plugin-react-refresh
+  vue: { a11y: true },                  // 需 eslint-plugin-vuejs-accessibility
+  nextjs: true,                         // 需 @next/eslint-plugin-next
+  ignores: ['**/fixtures', '**/dist'],
+})
+```
+
+Trade-off vs 手動 flat config：
+- Pros：零配置、formatter 內建、升級由 antfu 維護、single import
+- Cons：風格是 antfu 的（單引號、無分號、sorted imports），團隊若有既有 style guide 需 override
+- 搭配 `simple-git-hooks` + `lint-staged` 做 pre-commit lint；建議搭配 `eslint --fix` 完成格式化
+
+## Declaration Files (.d.ts)
+
+### 何時需要寫 .d.ts
+
+1. **為無型別的 JS library 補型別** — 當 `@types/xxx` 不存在時
+2. **宣告全域變數** — 如 `window.__APP_CONFIG__`
+3. **擴充第三方型別** — module augmentation
+4. **Library 發佈** — 通常 `declaration: true` 自動產生，不需手寫
+
+### 為 JS module 補型別
+
+```typescript
+// types/untyped-lib.d.ts
+declare module 'untyped-lib' {
+  export function doSomething(input: string): Promise<Result>;
+  export interface Result {
+    status: 'ok' | 'error';
+    data: unknown;
+  }
+}
+```
+
+### 宣告全域變數
+
+```typescript
+// types/global.d.ts
+declare global {
+  interface Window {
+    __APP_CONFIG__: {
+      apiUrl: string;
+      featureFlags: Record<string, boolean>;
+    };
+  }
+  type Nullable<T> = T | null;
+}
+export {}; // 必須有 export 才能讓 declare global 生效
+```
+
+### 宣告 Vite 環境變數型別
+
+```typescript
+// src/vite-env.d.ts
+/// <reference types="vite/client" />
+interface ImportMetaEnv {
+  readonly VITE_API_URL: string;
+  readonly VITE_APP_TITLE: string;
+}
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+```
+
+### .d.ts vs .ts 的差異
+
+- `.d.ts` 只有型別宣告，沒有 implementation — 不會被編譯成 JS
+- 不要在 `.d.ts` 裡放 implementation（`const x = 5`）
+
+## Module Augmentation
+
+擴展已有 module 的型別，不需修改原始 .d.ts。
+
+```typescript
+// 擴展 express 的 Request
+import 'express';
+declare module 'express' {
+  interface Request {
+    userId?: string;
+    tenantId?: string;
+  }
+}
+
+// 擴展 MUI theme
+import '@mui/material/styles';
+declare module '@mui/material/styles' {
+  interface Palette {
+    neutral: Palette['primary'];
+  }
+  interface PaletteOptions {
+    neutral?: PaletteOptions['primary'];
+  }
+}
+
+// 擴展 Node.js process.env
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      DATABASE_URL: string;
+      PORT: string;
+      NODE_ENV: 'development' | 'production' | 'test';
+    }
+  }
+}
+export {};
+```
+
+## Monorepo TypeScript
+
+### Project References (composite builds)
+
+每個 package 有自己的 tsconfig.json，root 用 `references` 串接。
+
+```jsonc
+// packages/shared/tsconfig.json
+{
+  "compilerOptions": {
+    "composite": true,        // 啟用 project references
+    "declaration": true,      // composite 需要
+    "declarationMap": true,   // 讓 IDE 跳到源碼
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*.ts"]
+}
+
+// packages/api/tsconfig.json
+{
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "references": [
+    { "path": "../shared" }  // 依賴 shared package
+  ],
+  "include": ["src/**/*.ts"]
+}
+
+// tsconfig.json (root)
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/api" },
+    { "path": "./packages/web" }
+  ]
+}
+```
+
+### Build 指令
+
+```bash
+# 建置所有 packages（自動處理依賴順序）
+tsc --build
+
+# 只建置有變更的 packages（增量建置）
+tsc --build --incremental
+
+# 清除建置快取
+tsc --build --clean
+```
+
+### 搭配 package manager workspaces
+
+```jsonc
+// package.json (root)
+{
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --build --noEmit"
+  }
+}
+
+// packages/api/package.json
+{
+  "name": "@myorg/api",
+  "dependencies": {
+    "@myorg/shared": "workspace:*"
+  }
+}
+```
+
+### composite 的關鍵限制
+
+1. 必須開啟 `declaration: true`
+2. `rootDir` 必須明確設定（通常是 `./src`）
+3. 所有 source files 必須被 `include` 或 `files` 涵蓋
+4. 不能用 `noEmit`（但可以用 `emitDeclarationOnly`）
+
+### Monorepo 工具搭配
+
+| 工具 | 角色 | 注意事項 |
+|---|---|---|
+| Turborepo | Task orchestration | 用 `tsc --build` 作為 build task |
+| pnpm workspaces | Package management | `workspace:*` protocol 引用 internal packages |
+| Nx | Task orchestration + caching | 有內建 TS project graph support |

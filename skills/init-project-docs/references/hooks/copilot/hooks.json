@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/protect-files.sh"
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/auto-format.sh"
+      },
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/run-tests.sh"
+      },
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/auto-api-docs.sh"
+      }
+    ],
+    "sessionStart": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/compact-reminder.sh"
+      }
+    ],
+    "notification": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/notify.sh"
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/notify.sh"
+      }
+    ]
+  }
+}

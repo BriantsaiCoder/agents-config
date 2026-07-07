@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(~/.nuget/**)",
+      "Edit(~/.nuget/**)",
+      "Write(~/.nuget/**)"
+    ],
+    "deny": [
+      "Bash(dotnet nuget push *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowLocalBinding": false,
+      "allowedDomains": [
+        "api.nuget.org",
+        "*.nuget.org"
+      ]
+    }
+  }
+}

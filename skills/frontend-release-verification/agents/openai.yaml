@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Release Verification"
+  short_description: "Gate frontend changes before release"
+  default_prompt: "Use $frontend-release-verification to decide and run the minimum frontend release verification gates."

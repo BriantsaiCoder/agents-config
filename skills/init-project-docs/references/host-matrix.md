@@ -1,0 +1,102 @@
+# Host Matrix — 跨 host 產物對照
+
+本檔是 `SKILL.md` 各 Phase 做 host 分流時的**單一事實來源**。三個 host（Claude Code / Codex CLI / GitHub Copilot CLI）共用同一個 skill（皆掃描 `~/.agents/skills`），但產出的原生檔不同。SKILL.md 只描述流程，「該寫哪個檔、用什麼格式」一律查本表。
+
+> 版本敏感：Codex hooks / subagents / config 與 Copilot instruction surfaces 會變動。實際套用 Phase 2/5/6 前，先查官方 docs 或本機 CLI help；若與本表不一致，以官方 docs / local schema 為準並回報差異。
+
+> 重要事實（2026-05 查證）：Claude Code **不**原生讀 `AGENTS.md`（GitHub issue #6235 未實作），只讀 `CLAUDE.md`。因此每個 host 必須產自己的原生指令檔，不能靠單一 `AGENTS.md` 通吃。
+
+## 產物對照表
+
+| 產物 | Claude Code | Codex CLI | GitHub Copilot CLI |
+|------|-------------|-----------|--------------------|
+| 指令檔（專案） | `CLAUDE.md` | `AGENTS.md` | `.github/copilot-instructions.md`；Copilot CLI 也會讀 `AGENTS.md` |
+| 指令檔（全域） | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/copilot-instructions.md` |
+| 設定檔（專案） | `.claude/settings.json`（JSON） | `.codex/config.toml`（TOML） | **無 Claude-style permissions/sandbox 對等檔** — 專案層控制走 `.github/hooks/`、`.github/agents/`、`.github/instructions/`、`.github/copilot-instructions.md` |
+| 設定檔（全域） | `~/.claude/settings.json` | `~/.codex/config.toml` | `~/.copilot/settings.json`（home dir 使用者設定；專案可攜 hooks 走 `.github/hooks/*.json`） |
+| hooks 註冊位置 | `.claude/settings.json` 的 `hooks` 物件（JSON） | `.codex/config.toml` 的 `[[hooks.<Event>]]` inline TOML；也可由 Codex hooks JSON 載入 | `.github/hooks/*.json`（JSON，`version: 1` + `hooks` 物件） |
+| hook 事件名 | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`Notification`、`Stop` | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`UserPromptSubmit`、`Stop`、`PermissionRequest` | camelCase：`preToolUse`、`postToolUse`、`sessionStart`、`preCompact`、`notification`、`agentStop` 等（payload 內 `hook_event_name` 仍 PascalCase） |
+| hook matcher | `matcher` 欄位，正則比對工具名（如 `Edit\|Write`） | `matcher` 欄位，regex；`PreToolUse` / `PostToolUse` / `PermissionRequest` 比對工具名（`Bash`、`apply_patch`、MCP tool 等），`SessionStart` 比對 `startup\|resume\|clear`；省略則全事件觸發 | `matcher` 欄位，正則比對工具名；Copilot tool id 版本敏感，未實測時優先省略 matcher，讓腳本由 payload 判斷 |
+| agents | `.claude/agents/*.md`（MD + YAML frontmatter） | `.codex/agents/*.toml`（project）或 `~/.codex/agents/*.toml`（personal/global） | `.github/agents/*.agent.md`（MD + YAML frontmatter；tools 需轉為 Copilot tool ids） |
+| rules（path-scoped） | `.claude/rules/*.md` + frontmatter `paths:` glob | 無 path-scoping → 併入 `AGENTS.md` 分節 | `.github/instructions/**/*.instructions.md`（`applyTo:` glob）或併入 `copilot-instructions.md` |
+| skill 目錄 | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） |
+
+## Host 偵測訊號
+
+| Host | env 訊號 | home 目錄 |
+|------|----------|-----------|
+| Claude Code | `CLAUDECODE`、`CLAUDE_CODE_ENTRYPOINT` | `~/.claude/` |
+| Codex CLI | `CODEX_HOME`、`CODEX_SANDBOX` | `~/.codex/` |
+| Copilot CLI | `COPILOT_HOME`、`COPILOT_AGENT` | `~/.copilot/` |
+
+偵測優先序見 SKILL.md Phase 0.5：(1) 執行中 agent 自知身分最可靠；(2) `scripts/detect-host.sh` 的 env 訊號佐證；(3) home 目錄僅供推測與 `other_homes` scope confirmation，不可單獨當成目前 runtime 身分。
+
+Phase 0.5 進入 Phase 1 前必須先回報：
+
+```text
+detected_host=<runtime self-knowledge>
+script_suggested=<detect-host.sh suggested>
+ambiguous=<true|false>
+other_homes=<comma list or none>
+proposed_target_hosts=<host list>
+```
+
+若 `other_homes` 非空，且使用者本輪沒有明確指定 target hosts，先停止並請使用者確認要只產 detected host，或也產哪些 `other_homes`。這是 output-scope confirmation，不代表 runtime 混淆。
+
+## skill 呼叫語法（指令檔內提及時依 host 套用）
+
+| Host | 呼叫 skill 的語法 |
+|------|------------------|
+| Claude Code | `Skill` 工具（`Skill(skill: "name")`） |
+| Codex CLI | `$skill-name`（prompt 中以 `$` 前綴） |
+| Copilot CLI | `/skill-name`（slash command） |
+
+## 多 host 輸出規則
+
+- 使用者明確要求或在 Phase 0.5 確認三 host 時，同時產出 `CLAUDE.md`、`AGENTS.md`、`.github/copilot-instructions.md`。
+- `CLAUDE.md` 與 `AGENTS.md` 可各自是完整指令檔，因 Claude Code 不原生讀 `AGENTS.md`，Codex 也不讀 `CLAUDE.md`。
+- Copilot CLI 會讀 `AGENTS.md` 與 `.github/copilot-instructions.md`，因此 all-host 模式下 `.github/copilot-instructions.md` 應是 thin adapter：指向 `AGENTS.md` / `docs/`，只補 Copilot-specific routing、`.github/instructions`、hooks 或 agents 說明。
+- Copilot-only 模式下，若未產 `AGENTS.md`，`.github/copilot-instructions.md` 可作為完整 project instruction file。
+
+## 設定檔 schema 對照（Phase 2 用）
+
+Claude 走 JSON、Codex 走 TOML、Copilot 無 Claude-style repo permissions/sandbox settings，專案層強制點改走 hook JSON。權限模型概念相近，但鍵名與落地位置不同：
+
+> 已查證（2026-05，OpenAI Codex docs / GitHub Copilot docs）。Codex 的 `approval_policy` 值為 `"untrusted"` / `"on-request"` / `"never"` 或 granular 物件；`sandbox_mode` 值為 `"read-only"` / `"workspace-write"` / `"danger-full-access"`。
+>
+> **重要差異**：Copilot CLI **無 Claude-style 專案層 sandbox/permissions 設定檔**。`~/.copilot/settings.json` 是 home dir 設定；Copilot 的工具放行/封鎖走 `--allow-tool`/`--deny-tool` flag（per-session）、互動核准，或 `preToolUse` hook 回 `deny`。`copilot help config` 顯示 hooks 可作為設定項，但為了讓專案規則可 commit、可攜且不寫入使用者 home，Copilot 的「Phase 2 設定」仍改以 `.github/hooks/*.json` 的 `preToolUse` hook 落地（見 `references/settings-templates/copilot/README.md`）。
+
+| 概念 | Claude Code | Codex CLI | Copilot CLI |
+|------|-------------|-----------|-------------|
+| 免確認放行 | `permissions.allow[]` | `approval_policy`（如 `"on-request"`）+ permissions profile | `--allow-tool` flag（per-session，不持久化到 repo） |
+| 一律封鎖 | `permissions.deny[]` | `PreToolUse` / `PermissionRequest` hook 攔截 `Bash` 指令並回 deny / non-zero exit | `.github/hooks/*.json` 的 `preToolUse` hook 回 `deny` |
+| 沙箱開關 | `sandbox.enabled = true` | `sandbox_mode = "workspace-write"` | （CLI 內建沙箱，無 repo 設定鍵） |
+| 沙箱網路 | `sandbox.network.allowLocalBinding` | `[sandbox_workspace_write]` `network_access = true` | （無 repo 設定鍵） |
+| 網域白名單 | `sandbox.network.allowedDomains[]` | `[permissions.<name>.network.domains]` map（`{ "host" = "allow" }`）；是否套用 profile 需依當前 Codex docs / local config 確認 | `~/.copilot/settings.json` 的 `allowedUrls[]`（僅 URL 內容抓取，非沙箱網路）|
+| 可寫根目錄 | （沙箱預設 workspace） | `[sandbox_workspace_write]` `writable_roots[]` | `trustedFolders` 由 Copilot CLI 自管；skill 不手動寫 |
+
+範本與逐 stack worked example：
+- Claude：`references/settings-templates/claude/*.json`（12 個正本）
+- Codex：`references/settings-templates/codex/README.md`（TOML 轉換指南 + worked example）
+- Copilot：`references/settings-templates/copilot/README.md`（以 `preToolUse` hook 落地的指南）
+
+## 合併策略（Phase 2）
+
+- **Claude（JSON）**：用 `scripts/merge-settings.py`，對 `allow`/`deny`/`allowedDomains` 聯集去重、`hooks` 以 matcher 為鍵合併，不覆蓋使用者既有鍵。
+- **Codex（TOML）**：不進 Python 腳本（避免引入 `tomlkit` 依賴）。由執行中的 agent 用自身 Edit 工具，依本表指定的 TOML 區塊做增量合併，且**先顯示 diff 再寫入**。
+- **Copilot**：不產 Claude-style repo settings；Phase 2 改為產出 `.github/hooks/*.json`（見 hooks 階段），既有 hook 檔以新檔並存、不覆蓋。
+
+## agents frontmatter 對照（Phase 6）
+
+Claude 與 Copilot 共用同一批 `references/agents/*.md`，套用時調整 frontmatter：
+
+| 欄位 | Claude Code | Copilot CLI |
+|------|-------------|-------------|
+| `name` | 必填 | 必填 |
+| `description` | 必填 | 必填 |
+| `tools` | 逗號分隔工具名 | Copilot tool ids 陣列或清單（如 `search/codebase`、`edit/editFiles`、`runCommands`；依 `references/agents/copilot/README.md` 轉換） |
+| `model` | `opus` / `sonnet` / `haiku` | Copilot 模型名（如 `claude-opus-4.7` / `gpt-5.5`，依使用者帳號可用模型） |
+| `target` | —（不需要） | 選填，指定適用範圍 |
+| `user-invocable` | —（不需要） | 選填，是否可由使用者直接呼叫 |
+
+Codex agents 為 TOML（custom agent 的 `developer_instructions` + optional model/config），格式差異大 → 用 `references/agents/codex/README.md` 轉換。Repo-specific agent 寫入 `.codex/agents/`；只有使用者明確要求全域 reuse 時才寫入 `~/.codex/agents/`。

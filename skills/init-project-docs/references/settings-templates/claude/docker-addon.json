@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(docker rm *)",
+      "Bash(docker rmi *)",
+      "Bash(docker system prune *)",
+      "Bash(docker volume rm *)"
+    ]
+  }
+}
