@@ -7,20 +7,13 @@
 
 - 預設使用 zh-TW 回覆，technical terms 保留 English；除非使用者明確要求其他語言。
 
-## Mandatory Closeout Ledger
+## Closeout Ledger（正本引用）
 
-每次 implementation / PR 建立 / merge / squash merge 後，最終回應 MUST 含可見的 `Closeout Ledger`；不可只說「已完成」。缺此 ledger = closeout 報告不完整。必列欄位：
+實作 / PR / merge 後最終回應 MUST 含可見 `Closeout Ledger`（6 rows），欄位定義與範例見 `~/.agents/skills/dev-workflow/references/ledgers.md`（S6 EXIT 強制）；不可只說「已完成」。
 
-- Self-simplification：PASS / FAIL / SKIPPED + evidence。
-- Diff self-review：PASS / FAIL / SKIPPED + evidence。
-- Relevant verification：確切命令或工具檢查 + 結果摘要。
-- Review gate：reviewer 類型、agent id 或 unavailable 原因、最終 finding 摘要。
-- PR / CI / review status（適用時）。
-- Residual risks。
+## PR 監控（S6 之上的 codex 特有疊加：heartbeat）
 
-## Mandatory PR Copilot Review Monitoring
-
-每個 GitHub PR，repo 支援時 MUST 請求 Copilot review（優先 reviewer slug `copilot-pull-request-reviewer`；不可用則用 repo 支援的對等 slug 並記錄 fallback）。建立 / 更新 PR 後持續監看 CI 與 review 狀態，直到 checks 達 terminal state 且自動 review 出現 / 明確不可用 / 合理 timeout。PR 仍開著則建立 heartbeat 持續監看至關閉或 merge。CI 失敗或 Copilot / review 意見技術有效且可行動 → 自動修復、驗證、push、重新監看至 PR 關閉。
+Bot-review triage 與 merge gate 正本見 dev-workflow S6 step 3 + [T0-9]。Codex 特有疊加：PR 仍開著則建立 heartbeat 持續監看 CI 與 review 至 terminal state / 明確不可用 / 合理 timeout；CI 失敗或 review 意見技術有效且可行動 → 自動修復、驗證、push、重新監看至 PR 關閉或 merge。優先 reviewer slug `copilot-pull-request-reviewer`，不可用則用 repo 支援的對等 slug 並記錄 fallback。
 
 ## Codex 端事實（路由靠點名）
 

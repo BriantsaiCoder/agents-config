@@ -5,12 +5,12 @@
 
 ## 載入現況（附探針，禁未驗證肯定句）
 
-- 本檔與 tier0-2 + routing 由 agents-sync 組裝部署至 `~/.copilot/instructions/00-agents-shared.instructions.md` 與 `copilot-instructions.md`（Copilot CLI 整檔原樣注入，applyTo frontmatter 不解析）。
+- 本檔與 tier0-2 + routing 由 agents-sync 組裝部署至 `~/.copilot/copilot-instructions.md`（唯一部署目標，見 agents-sync TARGETS；Copilot CLI 整檔原樣注入）。
 - UNVERIFIED：`~/.claude/CLAUDE.md` **不會**被 Copilot CLI 自動載入（2026-07-07 CLI 1.0.69 bundle 逐字驗證：home 層 conventionPaths 不含 `.claude`）；勿假設其內容在 context。探針：`copilot -p '複誦 context 內 FP: 開頭 codeword' --available-tools=` 應含 FP:AGENTS-T0 / FP:ROUTING。
 
 ## Defaults — fallback 自動維護（覆寫）
 
-- 偵測 fallback 版本（.NET / Node LTS）可能過期時，查官方最新（.NET → microsoft-learn MCP；Node → 官方 release schedule）並**提醒 user 自行更新** `~/.claude/CLAUDE.md`，MUST NOT 跨工具自動改寫他工具設定檔。觸發：偵測 fallback 過期。例外：無。驗證：未寫入 `~/.claude/CLAUDE.md`。
+- 偵測 fallback 版本（.NET / Node LTS）可能過期時，查官方最新（.NET → microsoft-learn MCP；Node → 官方 release schedule）並**提醒 user 自行更新** `~/.agents/rules/<stack>.md`（版本 pin 正本），MUST NOT 自動改寫共用規則檔。觸發：偵測 fallback 過期。例外：無。驗證：未寫入 `~/.agents/rules/`。
 
 ## Skill 路由（Copilot 可用名稱以 available_skills 為準）
 

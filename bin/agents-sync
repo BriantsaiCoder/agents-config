@@ -112,8 +112,18 @@ lint() {
       fi
     done
   fi
-  # backtick 引用的 host:<name>-only 豁免以外的 skill 名（若日後 core/hosts 用反引號列 skill）
-  # 目前 core/hosts 未以反引號列 skill 名，故本子項無命中；保留鉤子。
+  # rule 1b: core/hosts 反引號引用的 kebab token 必須是實存 skill 或列名豁免
+  #          （9 死名教訓的另一半：host delta / 通用路由行手寫 skill 名一樣會腐爛）
+  #          豁免 = 特意提及的非 skill 名（reviewer slug、已移除 plugin 名等）
+  local NONSKILL='copilot-pull-request-reviewer spark copilot-sdk security-guidance chrome-devtools playwright microsoft-learn hookify claude-local-gitignore secret-scan'
+  local tok f2
+  for f2 in core/*.md hosts/*.md; do
+    for tok in $(grep -o '`[a-z][a-z0-9-]*`' "$f2" | tr -d '\`' | sort -u); do
+      printf '%s\n' "$known" | grep -qx "$tok" && continue
+      printf '%s\n' $NONSKILL | grep -qx "$tok" && continue
+      note "  [lint1b FAIL] $f2 反引號引用 '$tok' 非實存 skill 也不在豁免清單"; fail=1
+    done
+  done
 
   # rule 2: rules/*.md 必有 paths frontmatter
   if compgen -G 'rules/*.md' >/dev/null 2>&1; then
@@ -235,7 +245,29 @@ deploy() {
     printf '%s\n' "$new" > "$tmp" && chmod 0644 "$tmp" && mv -f "$tmp" "$target"
     printf '  + %s（已寫入）\n' "$out"
   done <<< "$TARGETS"
+  refresh_claude_stamp
   write_manifest
+}
+
+# ~/.claude/CLAUDE.md 末尾 routing stamp（agents-routing:begin/end 區塊）機械刷新。
+# 手動快照必 drift（實證 2026-07-08：routing.md 加行後 stamp 停在舊版）；CLAUDE.md 本體歸 dotclaude 手寫，僅此區塊由本工具管。
+refresh_claude_stamp() {
+  local cf="$DEPLOY_ROOT/.claude/CLAUDE.md" routing="$AGENTS/core/routing.md"
+  [ -f "$cf" ] && [ -f "$routing" ] || return 0
+  grep -q '<!-- agents-routing:begin' "$cf" || return 0
+  local tmp; tmp="$(mktemp "$(dirname "$cf")/.agents-stamp.XXXXXX")"
+  awk -v routing="$routing" -v today="$(date +%Y-%m-%d)" '
+    /<!-- agents-routing:begin/ {
+      print "<!-- agents-routing:begin | generated-from: ~/.agents/core/routing.md | last-verified: " today " -->"
+      while ((getline line < routing) > 0) print line
+      close(routing)
+      skip=1; next
+    }
+    /<!-- agents-routing:end/ { print "<!-- agents-routing:end -->"; skip=0; next }
+    !skip { print }
+  ' "$cf" > "$tmp"
+  if cmp -s "$tmp" "$cf"; then rm -f "$tmp"; printf '  = .claude/CLAUDE.md routing stamp（未變）\n'
+  else chmod 0644 "$tmp" && mv -f "$tmp" "$cf"; printf '  + .claude/CLAUDE.md routing stamp（已刷新）\n'; fi
 }
 
 check() {
@@ -253,8 +285,13 @@ check() {
 }
 
 bootstrap() {
-  # 重建 ~/.claude 下相對 symlink（skills；rules 於 Step 5 後生效）
+  # 重建 ~/.claude 下相對 symlink（core / skills / rules；三者缺一即 CLAUDE.md @import 或路由靜默斷鏈）
   local s name
+  mkdir -p "$HOME/.claude/core"
+  for s in core/tier0-safety.md core/tier1-workflow.md core/tier2-style.md; do
+    name="$(basename "$s")"
+    ln -sfn "../../.agents/core/$name" "$HOME/.claude/core/$name"
+  done
   mkdir -p "$HOME/.claude/skills"
   for s in skills/*/; do
     name="$(basename "$s")"
@@ -272,10 +309,16 @@ bootstrap() {
 
 doctor() {
   local rc=0
-  note '── 斷鏈掃描 ~/.claude/skills ──'
-  local broken
-  broken="$(find -L "$HOME/.claude/skills" -maxdepth 1 -type l 2>/dev/null | while read -r l; do [ -e "$l" ] || echo "$l"; done)"
-  if [ -z "$broken" ]; then note '  斷鏈: 0 ✅'; else note "  斷鏈: FAIL ❌ $broken"; rc=1; fi
+  note '── 斷鏈掃描 ~/.claude/{core,rules,skills} ──'
+  local broken d
+  for d in core rules skills; do
+    broken="$(find -L "$HOME/.claude/$d" -maxdepth 1 -type l 2>/dev/null | while read -r l; do [ -e "$l" ] || echo "$l"; done)"
+    if [ -z "$broken" ]; then note "  $d 斷鏈: 0 ✅"; else note "  $d 斷鏈: FAIL ❌ $broken"; rc=1; fi
+  done
+  # core 三檔必須存在（CLAUDE.md @import 目標；缺=tier0 整層靜默消失）
+  for s in tier0-safety.md tier1-workflow.md tier2-style.md; do
+    [ -e "$HOME/.claude/core/$s" ] || { note "  core/$s 缺失 ❌（CLAUDE.md @import 斷鏈）"; rc=1; }
+  done
 
   note '── override 不存在 ──'
   if [ -e "$HOME/.codex/AGENTS.override.md" ]; then note '  AGENTS.override.md 仍存在 ❌（3D 前為預期）'; rc=1; else note '  override 不存在 ✅'; fi
@@ -296,6 +339,10 @@ doctor() {
   note "  claude  -p '輸出 context 中所有 FP: 開頭 codeword'"
   note "  codex   debug prompt-input 'x' | grep -c 'FP:AGENTS-T0'"
   note "  copilot -p '複誦 context 內 FP: 開頭 codeword' --available-tools="
+  note '── skill 可見度探針（skill 本體 vs 各 host 發現機制）──'
+  note "  claude : ls -L ~/.claude/skills/dev-workflow/SKILL.md（symlink 解析）"
+  note "  copilot: copilot -p '列出 available_skills 中含 dev-workflow 者' --available-tools=（已驗證原生載入 ~/.agents/skills）"
+  note "  codex  : UNVERIFIED——無 skill 載入設定，取用靠 routing 點名後直讀檔；探針=問模型「dev-workflow SKILL.md 路徑」應答 ~/.agents/skills/..."
   return "$rc"
 }
 

@@ -5,6 +5,8 @@
 
 - 任何開發任務：先讀 ~/.agents/skills/dev-workflow/SKILL.md 並照其 S0 決策表路由。描述含錯誤行為 / 測試失敗 / regression 的走 SKILL.md 的 BUGFIX 鏈；單檔 / ≤1 天小需求走 skill sdd。
 - 逐名點名 skill（Codex 端 description 被截斷至 2–6 字元，路由靠點名不靠 description）：dev-workflow、sdd、deps-check、mp-grill-with-docs、mp-diagnose、bug-fix-settlement、frontend-release-verification、backend-release-verification、dependency-security-scan、design-doc-mermaid。
+- 通用路由（本體皆在 ~/.agents/skills/）：stack 實作 → 同名 `*-best-practices`；Auth → `auth-implementation-patterns`；Docker → `containerization`；Tailwind v4 → `tailwind-v4-shadcn`；新專案初始化 → `init-project-docs`；整庫上手 → `acquire-codebase-knowledge`。
+- Stack 版本 pin / 細則按需讀 `~/.agents/rules/<stack>.md`（dotnet、typescript、frontend-spa、winforms、cpp、testing、infra、cookbook）。
 
 ## 最高風險攔截（常駐，防新鮮 skill prose 搶贏路由，尤其 superpowers 終態鏈）
 

@@ -44,7 +44,16 @@ zh-TW；術語照附錄 A 用詞對照表（建立／物件／佇列；禁「創
 
 ## 11. 版控取代 .bak（`~/.agents` git 化後生效）
 
-三家設定目錄（`~/.claude`、`~/.codex`、`~/.copilot`）的手工 `.bak` 慣例廢止：設定變更一律走 git commit；MUST NOT 再產生 `*.bak*`。既有 .bak 掃 secret 後刪除或歸檔 `attic/`。（實證 2026-07-07：`~/.codex` 累積 .bak，其中 3 份 `config.toml.bak` 額外複製了同一明文 API key——備份檔是 secrets 殘留的最大死角。）驗證：`ls ~/.claude/*.bak* ~/.codex/*.bak* ~/.copilot/*.bak* 2>/dev/null | wc -l` = 0。
+三家設定目錄（`~/.claude`、`~/.codex`、`~/.copilot`）的手工 `.bak` 慣例廢止：設定變更一律走 git commit；MUST NOT 再產生 `*.bak*`。既有 .bak 掃 secret 後刪除或歸檔 `attic/`。（實證 2026-07-07：`~/.codex` 累積 .bak，其中 3 份 `config.toml.bak` 額外複製了同一明文 API key——備份檔是 secrets 殘留的最大死角。）驗證：`ls ~/.claude/*.bak* ~/.codex/*.bak* ~/.copilot/*.bak* 2>/dev/null | wc -l` = 0。例外：app 自動生成的 runtime state 備份（如 `.codex-global-state.json.bak`，dotfile 開頭、app 自管生命週期）不算違規，不得手動刪除。
+
+## 12. Claude 常駐面預算（CLAUDE.md + core 合計）
+
+`~/.claude/CLAUDE.md` 與三個 `@import` 的 core 檔合計 ≤20KB（量測：`cat ~/.claude/CLAUDE.md ~/.agents/core/tier{0,1,2}-*.md | wc -c`）。觸發：編輯 CLAUDE.md 或 core。理由：2026-07-08 審計（F7）發現 CLAUDE.md 與 tier0-2 逐句重複 ~6KB——重複不只費 token，更製造 drift 面（改正本忘改副本）。CLAUDE.md 只放 Claude 專屬語意；與 tier 規則重疊者一律刪除改 rule-ID 引用。例外：無。驗證：量測式 ≤20480；`grep -c "原生（語言 / 框架" ~/.claude/CLAUDE.md` = 0（抽樣重複片語）。
+
+## 13. 注入層加一刪一（≥90% 預算時生效）
+
+任一 host 組裝體 ≥ 預算 90%（copilot 即 9216B）時，新增常駐行 MUST 在同批刪除等量重複 / 過時行補償，不得單向膨脹。觸發：`agents-sync --check` 顯示某 host ≥90%。理由：預算是防 override 的結構性手段（規則 8），逼近上限時「先加後刪」會讓 build fail 擋住合法修正。例外：安全紅線（tier0）新增可先入，同批補刪其他層。驗證：`--check` 通過且該 host 體積未淨增。
+
 
 ---
 

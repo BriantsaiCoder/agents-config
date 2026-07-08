@@ -126,7 +126,7 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 ### Codex
 - 映射：plan = Plan Mode（`<proposed_plan>` 收斂）；todo = update_plan；子代理 = spawn_agent / wait_agent。
 - enhancement：S3 / S5 multi_agent spawn（file ownership 不重疊；UNAVAILABLE 須附 smoke spawn 失敗證據）；S4 codex-security 疊加；S6 heartbeat PR 監控。
-- 守護：hooks.json 三支 guard（前置 PreToolUse 實測）；architecture-html-doc 退役為 mermaid→HTML 衍生器（勿手改衍生圖，見 X1 表 S6）。
+- 守護：hooks.json 三支皆 SessionStart（提示性注入，非 PreToolUse 攔截——勿假設有機械防線）；architecture-html-doc 退役為 mermaid→HTML 衍生器（勿手改衍生圖，見 X1 表 S6）。
 
 ### Copilot
 - 映射：plan = --mode plan（requestExitPlanMode）；todo = update_todo；子代理 = task 工具 / --agent。

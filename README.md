@@ -28,7 +28,7 @@ Claude Code、Codex CLI、Copilot CLI 三家過去各有一份設定，各自漂
 
 - **Claude**：`~/.claude/CLAUDE.md` 頂部 `@import ~/.agents/core/*`（原生機制，零生成、不可能 drift）；`~/.claude/rules/*` 與 `skills/*` 為相對 symlink。
 - **Codex**：`~/.codex/AGENTS.md` = agents-sync 組裝部署（override 已退役，回歸 boring default 載入）。
-- **Copilot**：`~/.copilot/instructions/00-agents-shared.instructions.md` + `copilot-instructions.md` = 部署副本。
+- **Copilot**：`~/.copilot/copilot-instructions.md` = agents-sync 組裝部署（唯一目標，見 TARGETS；整檔原樣注入）。
 
 ## 再生 / 巡檢指令
 
