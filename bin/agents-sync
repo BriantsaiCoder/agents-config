@@ -5,7 +5,7 @@
 # 用法:
 #   agents-sync            生成 + 部署三家（no-clobber 守護；不覆寫無 banner 的手寫檔）
 #   agents-sync --only <s> 僅部署 host_key 含子字串 s 的 target（如 copilot / codex）；lint/manifest 仍全量
-#   agents-sync --check    dry-run：跑 lint + 印將寫入的位元組數 / diff，不寫任何檔
+#   agents-sync --check    dry-run：跑 lint + 印將寫入的位元組數，不寫任何檔
 #   agents-sync --bootstrap 重建 ~/.claude 下相對 symlink（skills/rules）+ 部署三家
 #   agents-sync --doctor   巡檢：斷鏈 0、manifest 相符、override 不存在、印三家 FP 探針指令
 #
@@ -327,12 +327,12 @@ doctor() {
   if [ -f "$AGENTS/dist/manifest.tsv" ]; then
     local host out want got
     while IFS=$'\t' read -r host out want; do
-      [ -f "$DEPLOY_ROOT/$out" ] || { note "  $out UNAVAILABLE（未部署）"; continue; }
+      [ -f "$DEPLOY_ROOT/$out" ] || { note "  $out UNAVAILABLE（未部署）❌"; rc=1; continue; }
       got="$(sha256_hex < "$DEPLOY_ROOT/$out")"
       [ "$got" = "$want" ] && note "  $out 相符 ✅" || { note "  $out DRIFT ❌"; rc=1; }
     done < "$AGENTS/dist/manifest.tsv"
   else
-    note '  manifest.tsv 不存在 UNAVAILABLE（尚未部署）'
+    note '  manifest.tsv 不存在 UNAVAILABLE（尚未部署）❌'; rc=1
   fi
 
   note '── 三家 FP 探針指令（依 CLI 0.142.5 介面；升版後可能變動）──'
