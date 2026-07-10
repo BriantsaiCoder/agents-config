@@ -37,6 +37,7 @@ Claude Code、Codex CLI、Copilot CLI 三家過去各有一份設定，各自漂
 ~/.agents/bin/agents-sync              # 生成 + 部署三家（no-clobber 守護）
 ~/.agents/bin/agents-sync --bootstrap  # 新機一鍵重建全部相對 symlink + 部署三家
 ~/.agents/bin/agents-sync --doctor     # 巡檢：斷鏈 0、manifest 相符、override 不存在、三家 FP 探針
+~/.agents/tests/conformance.sh         # 安全修復綠態探針集：手動跑；改 guard / hook / settings / core 後必跑（不掛 SessionStart）
 ```
 
 改規則只改 `core/` `hosts/` `rules/` 正本，重跑 agents-sync；**MUST NOT 手改 `dist/` 或各 host 部署檔**（有 no-clobber banner）。書寫規範見 [CONVENTIONS.md](CONVENTIONS.md)，設計理由見 `proposals/2026-07-07-three-host-unification/`。
