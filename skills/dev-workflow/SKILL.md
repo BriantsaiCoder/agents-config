@@ -51,13 +51,13 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 | 2 | 描述含錯誤行為 / 測試失敗 / regression 關鍵字 | BUGFIX 鏈 |
 | 3 | 接手且 `docs/codebase/` 不存在 | 先提議 `acquire-codebase-knowledge`，完成後回 S0 |
 | 4 | 用戶明說走小需求 / sdd / 輕量（引用原句），或你提議 LIGHT 且用戶回覆同意 | LIGHT tier（產物走 `sdd/<slug>/`） |
-| 5 | 以上皆非 | HEAVY tier（機械預設，產物走 `docs/superpowers/plans/`） |
-| 6 | 你研判像 LIGHT 但用戶未表態 | 停下提議 LIGHT 並等用戶關鍵字，不自選 |
+| 5 | 你研判像 LIGHT 但用戶未表態 | 停下提議 LIGHT 並等用戶關鍵字，不自選 |
+| 6 | 以上皆非 | HEAVY tier（機械預設，產物走 `docs/superpowers/plans/`） |
 
 - ENTER：session 收到開發任務訊息（用戶送出的請求文字存在）。
-- ACTION：由上而下逐列比對本表，第一命中即定 tier。tier 大小的「預估」只作為第 6 列「提議 LIGHT」的觸發，永不直接當定路條件——LIGHT 一律要用戶關鍵字，HEAVY 為預設。
-- EXIT：第 1–3 列命中 = 純機械（manifest 檔數 / 描述關鍵字 / `docs/codebase/` 存在性）；LIGHT（第 4 列）= 引用用戶同意走輕量的原句；HEAVY（第 5 列）= 無 LIGHT 關鍵字時的機械預設；第 6 列 = 引用用戶最終 tier 原句。三形態齊備，散文估計不入 gate。
-- FAILURE：第 6 列命中且用戶未回覆 → 停在 S0 發問，禁止自選 tier（[T0-5]）。
+- ACTION：由上而下逐列比對本表，第一命中即定 tier。tier 大小的「預估」只作為第 5 列「提議 LIGHT」的觸發，永不直接當定路條件——LIGHT 一律要用戶關鍵字，HEAVY 為預設。
+- EXIT：第 1–3 列命中 = 純機械（manifest 檔數 / 描述關鍵字 / `docs/codebase/` 存在性）；LIGHT（第 4 列）= 引用用戶同意走輕量的原句；第 5 列 = 引用用戶最終 tier 原句；HEAVY（第 6 列）= 無 LIGHT 關鍵字時的機械預設。三形態齊備，散文估計不入 gate。
+- FAILURE：第 5 列命中且用戶未回覆 → 停在 S0 發問，禁止自選 tier（[T0-5]）。
 
 ### S1 NEEDS
 
@@ -101,8 +101,8 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 - ENTER：S4 且 S5 兩者 EXIT 皆成立（[INT-1] 時機閘）。
 - ACTION：
   1. Preflight Ledger 8 rows 寫進 PR body（8 row 定義見 references/ledgers.md）。
-  2. zh-TW Conventional Commit、squash merge 預設、合併後刪分支（remote + 已併入 local）。
-  3. Bot-review triage（合併規格見 references/review-triage.md）：等 Copilot review 異步 2–3 分鐘，勿誤判「無」；thread-aware 逐條讀、正確 actionable 自動修、已修 thread resolve、錯誤 / YAGNI 附 technical reason 不盲修；bot findings = 子集，改共用函式反模式時另跑 `deps-check` / grep 枚舉全 caller（why：PR #34 漏 8 條、PR #36 漏 2 caller）。
+  2. Bot-review triage（合併規格見 references/review-triage.md）：等 Copilot review 異步 2–3 分鐘，勿誤判「無」；thread-aware 逐條讀、正確 actionable 自動修、已修 thread resolve、錯誤 / YAGNI 附 technical reason 不盲修；bot findings = 子集，改共用函式反模式時另跑 `deps-check` / grep 枚舉全 caller（why：PR #34 漏 8 條、PR #36 漏 2 caller）。
+  3. zh-TW Conventional Commit、squash merge 預設（[T0-9]；四態 PASS 前不得 merge，正本 references/review-triage.md）、合併後刪分支（remote + 已併入 local）。
   4. BUGFIX 鏈 MUST 跑 `bug-fix-settlement`（即使結論不沉澱也 MUST 輸出評估摘要）。
   5. 動到架構 → 同步 `docs/codebase/ARCHITECTURE.md` mermaid（HTML 一律 opt-in、勿手改衍生圖）。
   - 收尾 skill `finishing-a-development-branch` 只在此 invoke（[INT-1]）。
