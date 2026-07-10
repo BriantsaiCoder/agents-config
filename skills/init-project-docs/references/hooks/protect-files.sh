@@ -19,15 +19,16 @@ fi
 _hj() { [[ -n "$HOOK_INPUT" ]] && command -v jq >/dev/null 2>&1 \
   && printf '%s' "$HOOK_INPUT" | jq -r "${1} // empty" 2>/dev/null || true; }
 
-# 目標檔案路徑：各 host payload 鍵名不同，逐一嘗試後退回 env。
-HOOK_FILE="$(_hj '.tool_input.file_path // .tool_input.path // .tool_input.filePath // .tool_input.target_file // .file_path // .path')"
+# 目標檔案路徑：各 host payload 鍵名不同，逐一嘗試後退回 env（Copilot 用 toolArgs）。
+HOOK_FILE="$(_hj '.tool_input.file_path // .tool_input.path // .tool_input.filePath // .tool_input.target_file // .toolArgs.path // .toolArgs.file_path // .file_path // .path')"
 [[ -z "$HOOK_FILE" ]] && HOOK_FILE="${CLAUDE_FILE_PATH:-${TOOL_FILE_PATH:-}}"
 
-# 依 host 發出否決訊號。Copilot 走 stdout + exit 0；Claude/Codex 走 stderr + exit 2。
+# 依 host 發出否決訊號。Copilot 走 stdout permissionDecision（官方 schema）；Claude/Codex 走 stderr + exit 2。
+# Copilot 同時 exit 2 當雙保險：schema 不被當版本認得時，非零退出碼仍可被視為 hook 失敗而非默許。
 hook_block() {
   local reason="$1"
   case "$HOOK_HOST" in
-    copilot)      printf '{"decision":"deny","reason":"%s"}\n' "$reason"; exit 0 ;;
+    copilot)      printf '{"permissionDecision":"deny","permissionDecisionReason":"%s"}\n' "$reason"; exit 2 ;;
     claude|codex) printf '{"decision":"block","reason":"%s"}\n' "$reason" >&2; exit 2 ;;
     *)            printf '%s\n' "$reason" >&2; exit 2 ;;
   esac

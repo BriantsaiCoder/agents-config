@@ -132,7 +132,7 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 - 映射：plan = --mode plan（requestExitPlanMode）；todo = update_todo；子代理 = task 工具 / --agent。
 - S2 強制令：非 plan 模式啟動時，改檔前 MUST 先輸出計畫並取得用戶明確確認（補償 autopilot alias 風險）。
 - S5：內建 code-review agent 或 feature-dev:code-reviewer + references/reviewer-template.md；.NET 深審降級為已知取捨（實測不足再轉寫 `.agent.md`，延後決策避免預養第三格式）。
-- 守護：無全域 hooks；機械守護一律依賴 repo 層 `.github/hooks/` + pre-commit + CI。
+- 守護：Copilot 已支援 user-level hooks（`~/.copilot/hooks/` + config.json inline），現況未配置；機械守護目前依賴 repo 層 `.github/hooks/` + pre-commit + CI。
 - MCP：chrome-devtools（已更名，見 B0.5）；codegraph 視需要補。
 
 ## References（以路徑引用，不 inline 完整內容）
