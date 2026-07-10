@@ -34,11 +34,6 @@ hook_block() {
 }
 # ---- end shim ----
 
-# 偵測不到目標檔案 → 放行（不誤擋）。
-if [[ -z "$HOOK_FILE" ]]; then
-  exit 0
-fi
-
 # 敏感檔案 pattern
 PROTECTED_PATTERNS=(
   "\.env$"
@@ -54,10 +49,35 @@ PROTECTED_PATTERNS=(
   ".*\.db$"
 )
 
-for pattern in "${PROTECTED_PATTERNS[@]}"; do
-  if [[ "$HOOK_FILE" =~ $pattern ]]; then
-    hook_block "敏感檔案不可編輯：$HOOK_FILE（若確定要改，先移除 protect-files.sh 內對應 pattern）"
+check_protected() {
+  local f="$1" pattern
+  for pattern in "${PROTECTED_PATTERNS[@]}"; do
+    if [[ "$f" =~ $pattern ]]; then
+      hook_block "敏感檔案不可編輯：$f（若確定要改，先移除 protect-files.sh 內對應 pattern）"
+    fi
+  done
+}
+
+# patch 型工具（apply_patch）不帶 file_path 欄位，目標路徑藏在 patch 本體。
+# payload 是 JSON 內嵌字串，行界為 \n 字面雙字元序列，路徑止於 \ 或 "。
+if [[ -z "$HOOK_FILE" ]]; then
+  if [[ "$HOOK_INPUT" == *'*** Begin Patch'* || "$(_hj '.tool_name // .tool // .toolName')" == "apply_patch" ]]; then
+    PATCH_TARGETS="$(printf '%s' "$HOOK_INPUT" \
+      | grep -oE '\*\*\* (Update File|Add File|Delete File|Move to): [^"\\]+' \
+      | sed -E 's/^\*\*\* [^:]+: //; s/[[:space:]]+$//')"
+    if [[ -z "$PATCH_TARGETS" ]]; then
+      # fail-closed：patch 解析不到任何目標 → 保守拒絕，勿空值放行
+      hook_block "apply_patch 解析不到目標路徑，保守拒絕（改用 Edit/Write，或檢查 patch 格式）"
+    fi
+    while IFS= read -r t; do
+      [[ -n "$t" ]] && check_protected "$t"
+    done <<< "$PATCH_TARGETS"
+    exit 0
   fi
-done
+  # 非 patch 型工具且偵測不到路徑 → 放行（不誤擋）
+  exit 0
+fi
+
+check_protected "$HOOK_FILE"
 
 exit 0
