@@ -1,6 +1,6 @@
-# ~/.agents AI 讀者書寫規範（11 條）
+# ~/.agents AI 讀者書寫規範（13 條）
 
-> 讀者是 AI 模型，不是人。原則只有一個：**每一句話都要能被機械驗證或機械執行**——模型換代後散文語感會漂移，但「檔案存在」「grep 命中」「exit code」不會。`bin/agents-sync` 的 lint 據本檔執行；違反 = build fail，不是警告。
+> 讀者是 AI 模型，不是人。原則只有一個：**每一句話都要能被機械驗證或機械執行**——模型換代後散文語感會漂移，但「檔案存在」「grep 命中」「exit code」不會。`bin/agents-sync` 的 lint 機械強制其中子集（skill 點名實存、rules paths frontmatter、規則行五要素、行數/位元組硬預算），命中即 hard-fail；其餘條文靠 review 紀律，未進 lint。
 
 ## 1. 檔頭 metadata（HTML comment，不佔注入 token 預算）
 
@@ -65,6 +65,6 @@ zh-TW；術語照附錄 A 用詞對照表（建立／物件／佇列；禁「創
 
 create=建立、object=物件、queue=佇列、stack=堆疊、information=資訊、code=程式碼、running=執行、library=函式庫、building=建構、package=套件、class=類別、function=函式、memory=記憶體、built-in=內建、global=全域、example=範例、quality=品質、document=文件、file=檔案、data=資料、component=元件、integration=整合、search=搜尋、store=儲存
 
-## 附錄 B：Code Style 判斷原則（app code；判斷類不機械強制，非本檔 11 條 lint 規範）
+## 附錄 B：Code Style 判斷原則（app code；判斷類不機械強制，非本檔 13 條規範）
 
 Favor pure functions；query 與 command 分離（CQS）｜Fail fast，不靜默吞錯｜DRY 第 3 次重複才抽（Rule of Three）｜YAGNI，不先建不必要抽象｜Composition > inheritance｜命名表 intent，註解解釋 why｜低耦合高內聚，外部依賴用 DI｜巢狀深度 ≤ 2–3 層，超過就抽方法。

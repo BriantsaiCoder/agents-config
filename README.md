@@ -14,13 +14,13 @@ Claude Code、Codex CLI、Copilot CLI 三家過去各有一份設定，各自漂
 - `bin/agents-sync` — 生成器 + lint + drift 守護（`--check` / `--bootstrap` / `--doctor`）。
 - `dist/` — 生成產物（**進版控**供 drift diff）。
 - `attic/` — 退役歸檔（git 可考古）。
-- `CONVENTIONS.md` — AI 讀者書寫規範 11 條（agents-sync lint 據此執行）。
+- `CONVENTIONS.md` — AI 讀者書寫規範 13 條（agents-sync lint 機械強制其中子集）。
 
 ## tier 定義（同步強度隨 tier 遞減）
 
 | tier | 內容 | 守護強度 |
 |------|------|----------|
-| tier0 | 安全紅線（違反屬 bug） | 100% live；SessionStart 自動再生 + no-clobber + gitleaks |
+| tier0 | 安全紅線（違反屬 bug） | 100% live；SessionStart drift 巡檢告警（drift-check.sh，告警不自動再生）+ no-clobber + gitleaks |
 | tier1 | 工作流紀律 | 同管線；容忍最多一個 session 延遲 |
 | tier2 | 風格 | host 間差異可接受；只靠 git diff 巡檢，發現實害才升 tier |
 
