@@ -1,4 +1,4 @@
-<!-- tier: 1 | consumed-by: claude,codex,copilot | generated-from: core/routing.md | last-verified: 2026-07-07 -->
+<!-- tier: 1 | consumed-by: claude,codex,copilot | generated-from: core/routing.md | last-verified: 2026-07-13 -->
 <!-- FP:ROUTING-2026Q3 -->
 
 # 開發任務路由（薄層；workflow 正本在 dev-workflow skill）
