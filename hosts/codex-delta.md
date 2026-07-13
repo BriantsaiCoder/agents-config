@@ -1,4 +1,4 @@
-<!-- tier: host | consumed-by: codex | generated-from: hosts/codex-delta.md | last-verified: 2026-07-08 -->
+<!-- tier: host | consumed-by: codex | generated-from: hosts/codex-delta.md | last-verified: 2026-07-13 -->
 <!-- FP:CODEX-DELTA-2026Q3 -->
 
 # Codex CLI 差異層（僅注入 ~/.codex/AGENTS.md；正本安全 / 工作流 / 路由見 tier0-2 + routing）
@@ -13,9 +13,4 @@
 
 ## PR 監控（S6 之上的 codex 特有疊加：heartbeat）
 
-Bot-review triage 與 merge gate 正本見 dev-workflow S6 step 3 + [T0-9]。Codex 特有疊加：PR 仍開著則建立 heartbeat 持續監看 CI 與 review 至 terminal state / 明確不可用 / 合理 timeout；CI 失敗或 review 意見技術有效且可行動 → 自動修復、驗證、push、重新監看至 PR 關閉或 merge。優先 reviewer slug `copilot-pull-request-reviewer`，不可用則用 repo 支援的對等 slug 並記錄 fallback。
-
-## Codex 端事實（路由靠點名）
-
-- Codex 無 config import 機制，`AGENTS.md` 為唯一注入層（`AGENTS.override.md` 存在時整檔取代——終局遷移後 override 已退役，回歸 boring default 載入）。
-- Codex 端 skill description 被截斷至 2–6 字元（metadata budget）；skill 路由靠 routing.md 逐名點名，不靠 description。
+Bot-review triage 與 merge gate 見 dev-workflow S6 step 3 + [T0-9]。PR 開啟期間用 heartbeat 監看至 terminal state 或合理 timeout；可行動的 CI／review 問題自動修復、驗證、push 後續監看。優先 `copilot-pull-request-reviewer`，fallback 須記錄。
