@@ -16,6 +16,9 @@ paths:
 - Host：`WebApplication.CreateBuilder`（API）/ `Host.CreateApplicationBuilder`（Worker / Console）
 - EF Core + PostgreSQL；FluentValidation；Serilog
 
+## 專案結構
+- 每個 .NET 專案一律建立 solution（`.sln`）方案檔，即使只有單一專案；測試專案一併加入同一 `.sln`
+
 ## API Error Format
 - `{ error: string, code: string, details?: any }`
 
