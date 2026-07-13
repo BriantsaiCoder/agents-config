@@ -3,7 +3,7 @@ name: dev-workflow
 description: 所有開發任務都路由經過的 canonical workflow 正本——S0 路由 → S1 需求 → S2 計畫⏸ → S3 實作(TDD) → S4 驗證 → S5 審查 → S6 收尾，另含 BUGFIX 鏈、X0 機械判定契約與四態 gate 制度。routing 由三家注入層逐名點名觸發，不靠本 description；此描述僅供 Claude 與人類閱讀。
 ---
 
-<!-- tier: workflow | consumed-by: claude,codex,copilot | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md | last-verified: 2026-07-07 -->
+<!-- tier: workflow | consumed-by: claude,codex,copilot | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md | last-verified: 2026-07-14 -->
 
 # dev-workflow — 三主機共用開發 workflow 正本
 
@@ -11,22 +11,24 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 > 骨架 = Claude / Codex / Copilot 三家 100% 可執行的最大公約數；標「enhancement」者缺席時 workflow 仍完整成立。
 > 指紋（context 載入驗證用，勿刪）：FP:DEVWF-2026Q3。
 
-## X1 產物路徑表（後續階段引用此表，不重複拼路徑字串）
+## X1 選用的持久化產物（後續階段引用此表，不重複拼路徑字串）
 
-| 產物 | 路徑 | 產生階段 |
+需求與計畫先留在 session 內的 host plan/todo 或對話 artifact；取得用戶核准前不得為了滿足 workflow 而寫 repo。下表只在用戶／repo 明確要求，或核准後確有跨 session、多人交接、稽核價值時持久化；未建立不阻擋 S1–S3。
+
+| 產物 | 路徑 | 最早持久化階段 |
 |------|------|---------|
-| 領域詞彙 glossary | `CONTEXT.md` | S1（HEAVY） |
-| 架構決策紀錄 | `docs/adr/` | S1（HEAVY，lazily 建立） |
-| 設計 spec | `docs/superpowers/specs/` | S2（HEAVY） |
-| 實作計畫 doc | `docs/superpowers/plans/` | S2（HEAVY，或 LIGHT tasks >10 條升級） |
-| 輕量提案 | `sdd/<slug>/proposal.md` | S1（LIGHT） |
-| 輕量任務清單 | `sdd/<slug>/tasks.md` | S2（LIGHT） |
+| 領域詞彙 glossary | `CONTEXT.md` | S2 核准後（HEAVY） |
+| 架構決策紀錄 | `docs/adr/` | S2 核准後（HEAVY，lazily 建立） |
+| 設計 spec | `docs/superpowers/specs/` | S2 核准後（HEAVY） |
+| 實作計畫 doc | `docs/superpowers/plans/` | S2 核准後（HEAVY） |
+| 輕量提案 | `sdd/<slug>/proposal.md` | S2 核准後（LIGHT） |
+| 輕量任務清單 | `sdd/<slug>/tasks.md` | S2 核准後（LIGHT） |
 | 整庫測繪 + 架構 mermaid | `docs/codebase/`（含 `ARCHITECTURE.md`） | S0 接手時 `acquire-codebase-knowledge`；S6 動架構時同步 |
 | 專案教訓 | `tasks/lessons.md` | S6（沉澱） |
 
 ## X0 機械判定契約
 
-每個 gate 四段式：ENTER / ACTION / EXIT / FAILURE。ENTER 與 EXIT 只允許三種機械形態之一——(1) 檔案存在性（某檔存在 / checkbox 全勾 / 必填節非空）；(2) 用戶關鍵字（引用用戶原句）；(3) 指令 exit code（某指令 exit 0）。禁止寫需要人類散文判斷的 EXIT。
+每個 gate 四段式：ENTER / ACTION / EXIT / FAILURE。ENTER 與 EXIT 只允許四種機械形態之一——(1) 檔案存在性（某檔存在 / checkbox 全勾 / 必填節非空）；(2) 用戶關鍵字（引用用戶原句）；(3) 指令 exit code（某指令 exit 0）；(4) session 內 host plan/todo 或對話 artifact 存在，並附可引用的標題／摘錄。禁止寫需要人類散文判斷的 EXIT。
 
 ## 四態 gate 制度（全鏈通則）
 
@@ -45,44 +47,43 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 
 ### S0 ROUTE 進場判定（決策表由上而下第一命中即定路）
 
-| 序 | 命中條件（皆為 X0 三形態，無散文估計） | 定路 |
+| 序 | 命中條件（皆為 X0 四形態，無散文估計） | 定路 |
 |----|---------|------|
-| 1 | 無 manifest 或原始碼 < 5 檔（可用指令計數） | NEW-PROJECT（骨架手動落地 + baseline commit，不走 plan 工具鏈） |
+| 1 | 無 manifest 或原始碼 < 5 檔（可用指令計數） | NEW-PROJECT（先依 [T0-8] 判定是否需 S2，再落地骨架 + baseline commit） |
 | 2 | 描述含錯誤行為 / 測試失敗 / regression 關鍵字 | BUGFIX 鏈 |
 | 3 | 接手且 `docs/codebase/` 不存在 | 先提議 `acquire-codebase-knowledge`，完成後回 S0 |
-| 4 | 用戶明說走小需求 / sdd / 輕量（引用原句），或你提議 LIGHT 且用戶回覆同意 | LIGHT tier（產物走 `sdd/<slug>/`） |
-| 5 | 你研判像 LIGHT 但用戶未表態 | 停下提議 LIGHT 並等用戶關鍵字，不自選 |
-| 6 | 以上皆非 | HEAVY tier（機械預設，產物走 `docs/superpowers/plans/`） |
+| 4 | 用戶明說走小需求 / sdd / 輕量；或列出的 target file = 1、actionable tasks ≤3，且未命中 [T0-6] / [T1-1] / public API / schema / deploy pipeline | LIGHT tier（session plan；核准後可按需持久化到 `sdd/<slug>/`） |
+| 5 | 以上皆非 | HEAVY tier（機械預設；核准後可按需持久化到 `docs/superpowers/plans/`） |
 
 - ENTER：session 收到開發任務訊息（用戶送出的請求文字存在）。
-- ACTION：由上而下逐列比對本表，第一命中即定 tier。tier 大小的「預估」只作為第 5 列「提議 LIGHT」的觸發，永不直接當定路條件——LIGHT 一律要用戶關鍵字，HEAVY 為預設。
-- EXIT：第 1–3 列命中 = 純機械（manifest 檔數 / 描述關鍵字 / `docs/codebase/` 存在性）；LIGHT（第 4 列）= 引用用戶同意走輕量的原句；第 5 列 = 引用用戶最終 tier 原句；HEAVY（第 6 列）= 無 LIGHT 關鍵字時的機械預設。三形態齊備，散文估計不入 gate。
-- FAILURE：第 5 列命中且用戶未回覆 → 停在 S0 發問，禁止自選 tier（[T0-5]）。
+- ACTION：由上而下逐列比對本表，第一命中即定 tier。先列 target files 與 actionable tasks 再計數；不以「≤1 天」等主觀工時估計定路。LIGHT 條件不完整即機械預設 HEAVY，不必為 tier 選擇中斷工作。
+- EXIT：第 1–3 列命中 = manifest 檔數 / 描述關鍵字 / `docs/codebase/` 存在性；LIGHT（第 4 列）= 用戶原句，或 target file / task 計數 + risk trigger 掃描；HEAVY（第 5 列）= 第 4 列不成立。四形態齊備，散文估計不入 gate。
+- FAILURE：需求本身有多種合理解讀且將改變檔案或行為 → 依 [T0-5] 攤開假設與影響後發問；tier 不確定本身不構成 blocker，走 HEAVY。
 
 ### S1 NEEDS
 
-- ENTER：S0 tier 已定且非 NEW-PROJECT 純骨架路。
-- ACTION：HEAVY → `mp-grill-with-docs` 拷問需求，產出 X1 表的 `CONTEXT.md` +（lazily）`docs/adr/`；LIGHT → 3 問模板（為什麼做 / 要改什麼 / 影響範圍）寫入 X1 表的 `sdd/<slug>/proposal.md`。
-- EXIT：HEAVY = `CONTEXT.md` 存在；LIGHT = `sdd/<slug>/proposal.md` 存在且三節皆非空。
+- ENTER：S0 tier 已定。
+- ACTION：HEAVY → `mp-grill-with-docs` 拷問需求；LIGHT → 回答 3 問（為什麼做 / 要改什麼 / 影響範圍）。先把結果留在 session artifact；X1 產物只依表頭規則按需持久化。
+- EXIT：session 內需求摘要 artifact 存在，且含目標、範圍、驗收條件；若已持久化則對應 X1 檔案存在亦可作證。
 - FAILURE：關鍵模糊未決 → 停下發問（攤開假設 X、影響範圍 Y），禁止靜默推進（[T0-5]）。
 
 ### S2 PLAN ⏸（硬人工 gate）
 
-- ENTER：S1 EXIT 產物存在。
-- ACTION：host 中立指令——進 plan 模式或取得用戶明確確認前不得改檔（plan 工具名的 host 映射見文末 `## Host adapters` 各 host 段）。產 X1 表的 `sdd/<slug>/tasks.md`：每條 `- [ ]`、≤1h、驗收條件用情境句、每條內嵌測試名（紅→綠）；>10 條升 HEAVY 產 `docs/superpowers/plans/`。LIGHT / trivial 亦 MUST 產最小 3 行 `tasks.md`，禁以口頭確認代替檔案。HEAVY 雙硬 gate：`docs/superpowers/specs/` design spec 先過用戶簽核 ⏸，再進本 plan ⏸。executor enhancement：`superpowers:writing-plans`；缺該 plugin 時照 inline 規格手寫 `tasks.md`。
-- EXIT：`sdd/<slug>/tasks.md`（或 `docs/superpowers/plans/` doc）存在 且 引用用戶明確說開始實作的原句；HEAVY 另需引用用戶簽核 design spec 的原句。
+- ENTER：S1 EXIT 的 session 或 file artifact 存在。
+- ACTION：host 中立指令——進 plan 模式或取得用戶明確確認前不得改檔（plan 工具名的 host 映射見文末 `## Host adapters` 各 host 段）。LIGHT plan 每條 task ≤1h、≤3 條、含驗收情境與測試名（紅→綠）；超過即升 HEAVY。HEAVY 先提出 design spec 並簽核，再提出 implementation plan。取得核准後才依 X1 規則按需寫 repo plan file。executor enhancement：`superpowers:writing-plans`；缺 plugin 時直接在 session 產完整 plan artifact。
+- EXIT：session plan artifact（或已持久化的 X1 plan file）存在 且 引用用戶明確說開始實作的原句；HEAVY 另需引用用戶簽核 design spec 的原句。
 - FAILURE：無確認原句 → 停在 S2 ⏸；禁以「合理推定同意」代替引用（[INT-3]）。
 
 ### S3 IMPLEMENT（TDD 內嵌）
 
-- ENTER：S2 EXIT 成立（`tasks.md` 存在 + 用戶確認原句）。
-- ACTION：先開分支（`feat/` 或 `fix/`）；逐 task 紅→綠，紅燈輸出即證據；動高扇入共用檔前 MUST 跑 `deps-check`；stack `*-best-practices` skill MUST 套。subagent 回報 ≠ 完成證據，主 context MUST 親自驗（why：收自 Codex 反向統一，2026-07-07）。
-- EXIT：`sdd/<slug>/tasks.md` checkbox 全勾 且 全套測試指令 exit 0。
+- ENTER：S2 EXIT 成立（plan artifact + 用戶確認原句）。
+- ACTION：先開分支（`feat/` 或 `fix/`）；用 host todo 或已持久化的 tasks file 逐 task 追蹤紅→綠，紅燈輸出即證據；動高扇入共用檔前 MUST 跑 `deps-check`；stack `*-best-practices` skill MUST 套。subagent 回報 ≠ 完成證據，主 context MUST 親自驗（why：收自 Codex 反向統一，2026-07-07）。
+- EXIT：host todo 全完成（或 tasks file checkbox 全勾）且全套測試指令 exit 0。
 - FAILURE：同一 bug 連 3 次修復失敗 → 停手，用戶確認後交接 `mp-improve-codebase-architecture`；flaky / 效能找不到根因 → `mp-diagnose`。
 
 ### S4 VERIFY
 
-- ENTER：S3 EXIT 成立（checkbox 全勾 + 測試 exit 0）。
+- ENTER：S3 EXIT 成立（tracked tasks 全完成 + 測試 exit 0）。
 - ACTION 分兩類，EXIT 只由機械 gate 決定：
   - 機械 gate（標四態 + exit code / 產物證據）：(a) build / test / lint 全跑；(c) 前端 UI 變更跑 Playwright 產出截圖證據（headed 優先，缺 GUI 明確回報 fallback headless）；(d) 會部署 → `frontend-release-verification` 或 `backend-release-verification` + `dependency-security-scan`（三者正交必跑，非三選一）。
   - 散文檢核（記錄於 ledger，非機械 gate、不以四態標記；定義見 references/ledgers.md）：(b) Self-simplification 4 檢核——無 unrequested abstraction、無新依賴、無單一使用點抽象層、無 speculative config；(e) 中高風險 baseline capture（改動前後 API response / query count / 輸出樣本對照）。
@@ -112,7 +113,7 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 ### BUGFIX 鏈（同骨架映射）
 
 - S1 = reproduce + root cause。鐵則 inline：failing regression test MUST 先於 fix（[INT-2]）；無 seam 允許「記錄架構問題」例外但 MUST 明確標記，且 fix 落地後交接 `mp-improve-codebase-architecture`。
-- S2 = 輕量（root cause + 修法攤開等用戶確認，仍產最小 `sdd/<slug>/tasks.md`）。
+- S2 = 輕量（root cause + 修法在 session plan 攤開等用戶確認；核准後才按需持久化）。
 - S3 = 紅測 → fix → 綠。
 - S4 → S5 → S6（S6 含 `bug-fix-settlement`）。
 - escalation：重現率 <50% / flaky / 效能 regression 找不到根因 → `mp-diagnose`。
@@ -125,8 +126,8 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 
 ### Codex
 - 映射：plan = Plan Mode（`<proposed_plan>` 收斂）；todo = update_plan；子代理 = spawn_agent / wait_agent。
-- enhancement：S3 / S5 multi_agent spawn（file ownership 不重疊；UNAVAILABLE 須附 smoke spawn 失敗證據）；S4 codex-security 疊加；S6 heartbeat PR 監控。
-- 守護：hooks.json 三支皆 SessionStart（提示性注入，非 PreToolUse 攔截——勿假設有機械防線）；architecture-html-doc 退役為 mermaid→HTML 衍生器（勿手改衍生圖，見 X1 表 S6）。
+- enhancement：S3 / S5 僅在至少兩個可獨立驗證、file ownership 不重疊的 subtasks，且用戶／repo instructions 明確允許 delegation 時 multi_agent spawn；否則標 SKIPPED（附理由），不做 smoke spawn。S4 codex-security 疊加；S6 heartbeat PR 監控。
+- 守護：`~/.codex/hooks.json` 的 PreToolUse(Bash) Git guard + `~/.codex/rules/default.rules` forbidden rules 共同攔截已知危險 force push；PreToolUse 對 unified_exec 覆蓋不完整且 prefix rule 僅涵蓋明列型態，仍須 tier0 prose + repo pre-commit/CI 疊加；architecture-html-doc 退役為 mermaid→HTML 衍生器（勿手改衍生圖，見 X1 表 S6）。
 
 ### Copilot
 - 映射：plan = --mode plan（requestExitPlanMode）；todo = update_todo；子代理 = task 工具 / --agent。
