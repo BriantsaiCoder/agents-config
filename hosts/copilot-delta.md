@@ -1,4 +1,4 @@
-<!-- tier: host | consumed-by: copilot | generated-from: hosts/copilot-delta.md | last-verified: 2026-07-08 -->
+<!-- tier: host | consumed-by: copilot | generated-from: hosts/copilot-delta.md | last-verified: 2026-07-13 -->
 <!-- FP:COPILOT-DELTA-2026Q3 -->
 
 # Copilot CLI 差異層（正本安全 / 工作流 / 風格 / 路由見 tier0-2 + routing）
@@ -6,7 +6,7 @@
 ## 載入現況（附探針，禁未驗證肯定句）
 
 - 本檔與 tier0-2 + routing 由 agents-sync 組裝部署至 `~/.copilot/copilot-instructions.md`（唯一部署目標，見 agents-sync TARGETS；Copilot CLI 整檔原樣注入）。
-- UNVERIFIED：`~/.claude/CLAUDE.md` **不會**被 Copilot CLI 自動載入（2026-07-07 CLI 1.0.69 bundle 逐字驗證：home 層 conventionPaths 不含 `.claude`）；勿假設其內容在 context。探針：`copilot -p '複誦 context 內 FP: 開頭 codeword' --available-tools=` 應含 FP:AGENTS-T0 / FP:ROUTING。
+- UNVERIFIED：`~/.claude/CLAUDE.md` **不會**被 Copilot CLI 自動載入（2026-07-13 CLI 1.0.70 探針重驗：FP codeword 五枚全數複誦成功，僅來自本檔部署鏈）；勿假設其內容在 context。探針：`copilot -p '複誦 context 內 FP: 開頭 codeword' --available-tools=` 應含 FP:AGENTS-T0 / FP:ROUTING。
 
 ## Defaults — fallback 自動維護（覆寫）
 
