@@ -1,4 +1,4 @@
-<!-- agents-skill-index:begin (機械生成 · 51 個 · 勿手改) -->
+<!-- agents-skill-index:begin (機械生成 · 50 個 · 勿手改) -->
 acquire-codebase-knowledge
 agent-browser
 auditing-skill-folder
@@ -17,7 +17,6 @@ dotnet-framework-best-practices
 dotnet-logging-best-practices
 dotnet-testing-best-practices
 dotnet-winforms-best-practices
-ecpay
 ef-core-best-practices
 ef6-best-practices
 frontend-release-verification
