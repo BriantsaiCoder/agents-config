@@ -8,6 +8,8 @@
 #       任何 force 變體推 main/master；--force-with-lease 搭 --all/--mirror。
 # 放行：非保護分支的 --force-with-lease、一般 push（含 push origin main）、非 push 指令。
 # 無明示 refspec 時以 payload cwd 解析當前分支；解析失敗保守拒絕（fail-closed）。
+# git 可執行檔認 git / */git / git.exe / */git.exe——只認裸 token 會被完整路徑繞過。
+# jq 不可用或解析失敗時，對含 git+push 的 payload 保守拒絕（不得靜默放行）。
 #
 # 輸出契約依 host 分流：
 #   claude — {"decision":"block"} → stderr，exit 2
@@ -30,27 +32,43 @@ for arg in "$@"; do
   esac
 done
 
-JQ="$(command -v jq 2>/dev/null || echo /opt/homebrew/bin/jq)"
-INPUT="$(cat)"
-CMD=$(printf '%s' "$INPUT" | "$JQ" -r '.tool_input.command // empty' 2>/dev/null) || CMD=""
-[ -z "$CMD" ] && exit 0
-case "$CMD" in *git*push*) ;; *) exit 0 ;; esac
-CWD=$(printf '%s' "$INPUT" | "$JQ" -r '.cwd // empty' 2>/dev/null) || CWD=""
+# JSON 字串轉義：純 bash 參數展開，不依賴 jq——deny() 必須在 jq 不可用時仍能輸出合法 JSON
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"   # 反斜線必須先轉，否則會把後面補的反斜線再轉一次
+  s="${s//\"/\\\"}"
+  printf '"%s"' "$s"
+}
 
 deny() {
-  local reason_json
   case "$FORMAT" in
     codex)
-      reason_json=$(printf '%s' "$1" | "$JQ" -R -s '.')
-      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":%s}}\n' "$reason_json"
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":%s}}\n' "$(json_escape "$1")"
       exit 0
       ;;
     *)
-      printf '{"decision":"block","reason":"%s"}\n' "$1" >&2
+      printf '{"decision":"block","reason":%s}\n' "$(json_escape "$1")" >&2
       exit 2
       ;;
   esac
 }
+
+JQ="$(command -v jq 2>/dev/null || true)"
+INPUT="$(cat)"
+
+# jq 不可用或解析失敗時 MUST NOT 靜默放行（那會讓 [T0-3] 在缺 jq 的環境失效）。
+# 但也不能一律拒絕——那會擋掉所有 Bash 指令。折衷：只對「原始 payload 就含 git+push」
+# 的請求保守拒絕，其餘放行；使用者會看到明確理由而非靜默失去防線。
+if [ -z "$JQ" ] || ! CMD=$(printf '%s' "$INPUT" | "$JQ" -r '.tool_input.command // empty' 2>/dev/null); then
+  case "$INPUT" in
+    *git*push*) deny "[T0-3] jq 不可用或 payload 解析失敗，無法判定 push 目標，保守拒絕。請確認 jq 已安裝且在 PATH 中。" ;;
+  esac
+  exit 0
+fi
+
+[ -z "$CMD" ] && exit 0
+case "$CMD" in *git*push*) ;; *) exit 0 ;; esac
+CWD=$(printf '%s' "$INPUT" | "$JQ" -r '.cwd // empty' 2>/dev/null) || CWD=""
 
 check_target() {
   local target="${1##*:}"          # refspec 可能是 src:dst，取 dst
@@ -68,7 +86,10 @@ check_seg() {
   for ((i = 0; i < ${#toks[@]}; i++)); do
     t=${toks[i]}
     if (( ! seen_push )); then
-      [[ "$t" == git ]] && seen_git=1
+      # 只認裸 token `git` 會被完整路徑繞過（/usr/bin/git push --force …）。
+      # 去掉外層引號後，比對 git 可執行檔的常見型態。
+      local bare="${t%\"}"; bare="${bare#\"}"; bare="${bare%\'}"; bare="${bare#\'}"
+      case "$bare" in git|*/git|git.exe|*/git.exe) seen_git=1 ;; esac
       [[ $seen_git -eq 1 && "$t" == push ]] && seen_push=1
       continue
     fi

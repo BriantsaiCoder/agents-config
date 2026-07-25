@@ -18,6 +18,8 @@ fail=0
 
 # 固定分支的臨時 repo：讓「無明示 refspec」的案例可預期地解析到當前分支
 REPO="$(mktemp -d "${TMPDIR:-/tmp}/gpguard.XXXXXX")"
+FAKEBIN="$(mktemp -d "${TMPDIR:-/tmp}/gpfake.XXXXXX")"
+trap 'rm -rf "$REPO" "$FAKEBIN"' EXIT   # 不清會在 /tmp 累積 gpguard.* / gpfake.*
 git -C "$REPO" init -q
 git -C "$REPO" config user.email t@t
 git -C "$REPO" config user.name t
@@ -82,6 +84,14 @@ run_suite() {
 
   # 攔截：複合指令中的危險段
   probe "$fmt" deny "echo hi && git push --force origin main"
+
+  # 攔截：完整路徑 git（Copilot review agents-config#1 發現的第 5 個破口）
+  # 只比對裸 token `git` 時，下列全部放行
+  probe "$fmt" deny "/usr/bin/git push --force origin main"
+  probe "$fmt" deny "/opt/homebrew/bin/git push --force-with-lease origin main"
+  probe "$fmt" deny "'/usr/bin/git' push --force-with-lease --all origin"
+  probe "$fmt" deny "env git push --force origin main"
+  probe "$fmt" allow "/usr/bin/git push -u origin main"      # 完整路徑的一般 push 仍放行
 }
 
 run_suite codex
@@ -92,6 +102,33 @@ printf '── 當前分支 = main（無 refspec 解析）──\n'
 git -C "$REPO" branch -M main
 probe codex  deny "git push --force-with-lease"
 probe claude deny "git push --force-with-lease"
+
+# jq 不可用時 MUST NOT 靜默放行（fail-open 會讓 [T0-3] 在缺 jq 的環境失效）
+printf '── jq 不可用（降級路徑）──\n'
+printf '#!/bin/sh\nexit 1\n' > "$FAKEBIN/jq"; chmod +x "$FAKEBIN/jq"
+probe_nojq() {
+  local fmt="$1" expected="$2" command="$3" payload out rc actual=allow
+  payload=$("$JQ" -nc --arg command "$command" --arg cwd "$REPO" \
+            '{tool_input:{command:$command},cwd:$cwd}')   # payload 先建好，再破壞 PATH
+  out=$(printf '%s' "$payload" | PATH="$FAKEBIN:$PATH" bash "$GUARD" --format="$fmt" 2>/dev/null)
+  rc=$?
+  if [ "$fmt" = codex ]; then
+    printf '%s' "$out" | grep -q '"permissionDecision":"deny"' && actual=deny
+  else
+    [ "$rc" -eq 2 ] && actual=deny
+  fi
+  if [ "$actual" = "$expected" ]; then
+    pass=$((pass + 1)); printf '  PASS %-6s %-5s (jq 壞) %s\n' "$fmt" "$expected" "$command"
+  else
+    fail=$((fail + 1)); printf '  FAIL %-6s want=%s got=%s (jq 壞) %s\n' "$fmt" "$expected" "$actual" "$command"
+  fi
+}
+for f in codex claude; do
+  probe_nojq "$f" deny  "git push --force origin main"        # 保守拒絕
+  probe_nojq "$f" deny  "git push --force-with-lease origin feat/safe"
+  probe_nojq "$f" allow "npm test"                            # 非 git 指令不受影響
+  probe_nojq "$f" allow "ls -la"
+done
 
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
