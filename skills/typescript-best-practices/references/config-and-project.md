@@ -110,6 +110,33 @@ import type { User } from './types';  // ✅ 型別 import
 import { createUser } from './types'; // ✅ 值 import
 ```
 
+### Barrel exports（`index.ts` re-export）
+
+⛔ **家規禁用**（`~/.agents/rules/typescript.md`：「**NEVER** barrel exports（`index.ts` 重新匯出）」）。禁用的技術理由：
+
+| 代價 | 說明 |
+|---|---|
+| 循環相依 | 同目錄模組彼此經 barrel 取用時形成 `a → index → b → index` 迴圈。TS 不報錯，runtime 拿到 `undefined`，症狀還常出現在無關的第三個檔案，極難定位 |
+| 重編譯扇出 | IDE 自動 import 會挑路徑較短的 barrel，久了變成「每個檔案都依賴 index.ts，index.ts 又依賴每個檔案」。動任一葉節點就讓整個 barrel 的消費端重跑型別檢查，`tsc --watch` 與 HMR 隨檔案數線性變慢 |
+| tree-shaking 不可靠 | `export *` 要求 bundler 逐一證明 re-export 無副作用才能剪除。只要套件沒正確宣告 `sideEffects: false`，或任一模組有 top-level 副作用，整串就被保留進 bundle |
+
+正確做法是**直接從來源模組 import**：
+
+```typescript
+// ❌ src/utils/index.ts — barrel
+export * from './format';
+export * from './parse';
+export * from './validate';
+
+// 消費端：看似只取一個函式，實際牽動整個 barrel 的相依圖
+import { formatDate } from '@/utils';
+
+// ✅ 直接指到來源檔（路徑長一點，換到精確的相依邊）
+import { formatDate } from '@/utils/format';
+```
+
+搭配後面的 `paths` aliases 時尤其要留意：alias 讓 `@/utils` 這種寫法看起來很整潔，但解析後仍是整個 `index.ts`。alias 應指到目錄（`@/*`），由呼叫端補完到來源檔。
+
 ## tsconfig.json: Target Recommendations
 
 | 環境 | 建議 `target` | 說明 |

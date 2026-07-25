@@ -30,6 +30,7 @@ Why + code + patterns → `references/rules-expanded.md`.
 12. **ErrorBoundary for render errors.** Uncaught error crashes whole tree.
 13. **Lazy + Suspense** for route splitting. Smaller initial bundle.
 14. **TS: `interface` for Props, no `any`.** Self-doc; compile-time breaking-change catch.
+15. **`eslint-plugin-jsx-a11y` enabled.** Flags `<div onClick>` / missing `alt` at lint time; Lighthouse / axe only after render.
 
 ## Companion Skills
 

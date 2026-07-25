@@ -366,6 +366,24 @@ doctor() {
     [ -e "$HOME/.claude/core/$s" ] || { note "  core/$s 缺失 ❌（CLAUDE.md @import 斷鏈）"; rc=1; }
   done
 
+  # routing stamp 內容 == core/routing.md。manifest 只涵蓋 codex/copilot 兩個組裝體，
+  # Claude 端的 routing 走 CLAUDE.md 內嵌區塊，先前完全沒有守護。
+  # 實證 2026-07-26：sandbox 擋掉 refresh_claude_stamp 的 mv（Operation not permitted），
+  # 前兩家已部署成功而 stamp 沒寫進去——部分成功不回滾，而當時 doctor 三項全綠。
+  # 比的是 begin/end 之間的內容，不含兩個 marker 行：marker 帶 last-verified 日期，
+  # 逐字比會每天紅一次。
+  note '── CLAUDE.md routing stamp == core/routing.md ──'
+  local cf="$DEPLOY_ROOT/.claude/CLAUDE.md" rt="$AGENTS/core/routing.md"
+  if [ ! -f "$cf" ] || [ ! -f "$rt" ]; then
+    note '  UNAVAILABLE（CLAUDE.md 或 core/routing.md 不存在）❌'; rc=1
+  elif ! grep -q '<!-- agents-routing:begin' "$cf"; then
+    note '  stamp 區塊不存在 ❌（routing 未進 Claude 常駐面）'; rc=1
+  elif [ "$(awk '/<!-- agents-routing:begin/{f=1;next} /<!-- agents-routing:end/{f=0} f' "$cf")" = "$(cat "$rt")" ]; then
+    note '  routing stamp 相符 ✅'
+  else
+    note '  routing stamp DRIFT ❌（跑 agents-sync 重新部署；若被 sandbox 擋需停用 sandbox）'; rc=1
+  fi
+
   note '── override 不存在 ──'
   if [ -e "$HOME/.codex/AGENTS.override.md" ]; then note '  AGENTS.override.md 仍存在 ❌（3D 前為預期）'; rc=1; else note '  override 不存在 ✅'; fi
 

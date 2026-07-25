@@ -46,6 +46,17 @@ zh-TW；術語照附錄 A 用詞對照表（建立／物件／佇列；禁「創
 
 三家設定目錄（`~/.claude`、`~/.codex`、`~/.copilot`）的手工 `.bak` 慣例廢止：設定變更一律走 git commit；MUST NOT 再產生 `*.bak*`。既有 .bak 掃 secret 後刪除或歸檔 `attic/`。（實證 2026-07-07：`~/.codex` 累積 .bak，其中 3 份 `config.toml.bak` 額外複製了同一明文 API key——備份檔是 secrets 殘留的最大死角。）驗證：`ls ~/.claude/*.bak* ~/.codex/*.bak* ~/.copilot/*.bak* 2>/dev/null | wc -l` = 0。例外：app 自動生成的 runtime state 備份（如 `.codex-global-state.json.bak`，dotfile 開頭、app 自管生命週期）不算違規，不得手動刪除。
 
+**`attic/` 與 `backups/` 各有其一，不可互換**（2026-07-26 定義；此前兩者並存無成文分工，每次歸檔都要重猜一次）：
+
+| 目錄 | 放什麼 | 版控 | 命名 | 生命週期 |
+|---|---|---|---|---|
+| `attic/` | **退役物**——決定不再使用、但保留供考古的完整資產（退役 skill、被取代的 host 設定檔） | **進版控**，用 `git mv` 保留歷史 | 沿用原名（`attic/ecpay`、`attic/design-doc-mermaid`） | 長期；刪除需與當初退役決定同級的理由 |
+| `backups/` | **操作前快照**——某次批次變更動手前的狀態，用來回退或事後比對 | **不進版控**（`.gitignore:9`），純本機 | `YYYYMMDD-<操作代號>/`（`20260725-p0a-guard`） | 短期；該批變更驗證通過且已進 git 後即可清 |
+
+判準一句話：**「這東西以後還會不會被當成正本讀？」不會 → `attic/`；「這是某次操作的還原點嗎？」是 → `backups/`。** 退役一個 skill 走 `attic/` 並在 `vendored-forks.md` 或 commit message 留還原路徑；批次改設定前的快照走 `backups/`。
+
+版控狀態的差異不是疏漏而是分工的一部分：`attic/` 要能被未來的人 `git log --follow` 追到來歷，所以進版控；`backups/` 的還原機制本來就是 git 本身，快照只是操作當下的方便，進版控只會讓 repo 膨脹。**推論：`backups/` 裡的東西一旦本機刪掉就沒了——凡是刪掉會後悔的，它就不屬於 `backups/`，屬於 `attic/`。** 驗證（在 `~/.agents` 跑，worktree 內看不到 gitignored 目錄）：`ls ~/.agents/backups/` 每一項都符合 `YYYYMMDD-` 前綴；`git -C ~/.agents ls-files backups/ | wc -l` = 0。
+
 ## 12. Claude 常駐面預算（CLAUDE.md + core 合計）
 
 `~/.claude/CLAUDE.md` 與三個 `@import` 的 core 檔合計 ≤20KB（量測：`cat ~/.claude/CLAUDE.md ~/.agents/core/tier{0,1,2}-*.md | wc -c`）。觸發：編輯 CLAUDE.md 或 core。理由：2026-07-08 審計（F7）發現 CLAUDE.md 與 tier0-2 逐句重複 ~6KB——重複不只費 token，更製造 drift 面（改正本忘改副本）。CLAUDE.md 只放 Claude 專屬語意；與 tier 規則重疊者一律刪除改 rule-ID 引用。例外：無。驗證：量測式 ≤20480；`grep -c "原生（語言 / 框架" ~/.claude/CLAUDE.md` = 0（抽樣重複片語）。

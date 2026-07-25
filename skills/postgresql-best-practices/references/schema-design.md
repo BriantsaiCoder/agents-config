@@ -60,7 +60,7 @@ CREATE TABLE events (
 );
 ```
 
-For sequential (time-sortable) UUIDs, use UUIDv7. PostgreSQL does not natively generate UUIDv7, but you can:
+For sequential (time-sortable) UUIDs, use UUIDv7. PG 18+ generates it natively with `uuidv7()`; on PG 17 and earlier, generate it outside core:
 - Generate in the application layer (C#: `Guid.CreateVersion7()` in .NET 9+, or `UUIDNext` package; Node.js: `uuid` package v10+)
 - Use a PL/pgSQL function or the `pg_uuidv7` extension
 

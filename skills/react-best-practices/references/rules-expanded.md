@@ -98,6 +98,12 @@ const theme = useThemeStore((s) => s.theme);
 
 **Why**: Typed props are self-documenting + catch breaking changes at compile time.
 
+## 15. `eslint-plugin-jsx-a11y` enabled
+
+Recommended config on, in the same lint run as everything else.
+
+**Why**: A11y defects in JSX are invisible in review and in the browser until someone tabs through. The plugin flags JSX-level offenders — interaction handlers on non-interactive elements, missing `alt`, inputs with no associated label — at lint time; Lighthouse / axe only catch them once the page is rendered. Rule semantics + WCAG detail → `css-ui-best-practices`.
+
 ## Working Pattern — Writing
 
 1. Server Component or Client? Default to Server unless you need hooks / interactivity.

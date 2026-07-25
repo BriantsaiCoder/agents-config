@@ -37,7 +37,7 @@ Each rule's *why* + code examples + writing/reviewing patterns live in `referenc
 | Type inference, union/intersection, literal/template-literal/conditional/mapped/index access types | `references/type-system-fundamentals.md` |
 | Generic patterns (constraints, defaults, inference), built-in utility types, custom utilities | `references/generics-and-utilities.md` |
 | Discriminated unions, type guards (`is`/`asserts`), exhaustive checking, branded types, Zod / Valibot | `references/patterns-and-guards.md` |
-| `tsconfig` strict mode breakdown, `module`/`target`/`paths`, ESLint + typescript-eslint, declaration files, monorepo | `references/config-and-project.md` |
+| `tsconfig` strict mode breakdown, `module`/`target`/`paths`, barrel exports, ESLint + typescript-eslint, declaration files, monorepo | `references/config-and-project.md` |
 | Aggregated working patterns + advanced type design | `references/working-patterns.md` |
 
 Open one file at a time — don't preload.
