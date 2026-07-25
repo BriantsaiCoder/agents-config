@@ -5,15 +5,40 @@ Complete reference for all agent-browser commands. For quick start and common pa
 ## Navigation
 
 ```bash
-agent-browser open <url>      # Navigate to URL (aliases: goto, navigate)
+agent-browser open            # Launch browser (no navigation); stays on about:blank.
+                              # Pair with `network route`, `cookies set --curl`, or
+                              # `addinitscript` to stage state before the first navigation.
+agent-browser open <url>      # Launch + navigate (aliases: goto, navigate)
                               # Supports: https://, http://, file://, about:, data://
                               # Auto-prepends https:// if no protocol given
+agent-browser read [url]      # Fetch agent-readable text, or read rendered active-tab DOM
+                              # Explicit URLs send Accept: text/markdown, then try .md if needed
+                              # Walks ancestor paths for llms.txt before HTML fallback
+                              # --llms and --require-md without URL use the active tab URL
+                              # --filter narrows page content to matching heading sections
+                              # Honors --allowed-domains, --content-boundaries, and --max-output
+                              # Options: --raw, --require-md, --outline, --llms <index|full>, --filter, --timeout <ms>
 agent-browser back            # Go back
 agent-browser forward         # Go forward
 agent-browser reload          # Reload page
+agent-browser pushstate <url> # SPA client-side navigation. Auto-detects
+                              # window.next.router.push (triggers RSC fetch on Next.js);
+                              # falls back to history.pushState + popstate/navigate events.
 agent-browser close           # Close browser (aliases: quit, exit)
 agent-browser connect 9222    # Connect to browser via CDP port
 ```
+
+### Pre-navigation setup (one-turn batch)
+
+```bash
+agent-browser batch \
+  '["open"]' \
+  '["network","route","*","--abort","--resource-type","script"]' \
+  '["cookies","set","--curl","cookies.curl","--domain","localhost"]' \
+  '["navigate","http://localhost:3000/target"]'
+```
+
+`open` with no URL gives you a clean launch so any interception, cookies, or init scripts you register take effect on the *first* real navigation. Use for SSR-only debug (`--resource-type script`), protected-origin auth, or capturing fresh `react suspense`/`vitals` state without noise from a prior page.
 
 ## Snapshot (page analysis)
 
@@ -49,6 +74,8 @@ agent-browser drag @e1 @e2        # Drag and drop
 agent-browser upload @e1 file.pdf # Upload files
 ```
 
+Clicks fail before dispatch when another element covers the target's click point. The error names the covering element, for example `covered by <div#consent-banner>`. Dismiss or interact with that element, run a fresh snapshot, then retry the original action.
+
 ## Get Information
 
 ```bash
@@ -81,9 +108,12 @@ agent-browser screenshot --full   # Full page
 agent-browser pdf output.pdf      # Save as PDF
 ```
 
+Headless Chromium screenshots hide native scrollbars for consistent image output. Pass `--hide-scrollbars false` when launching to keep native scrollbars visible.
+
 ## Video Recording
 
 ```bash
+agent-browser open https://example.com     # Launch a browser session first
 agent-browser record start ./demo.webm    # Start recording
 agent-browser click @e1                   # Perform actions
 agent-browser record stop                 # Stop and save video
@@ -100,18 +130,6 @@ agent-browser wait --url "**/dashboard"    # Wait for URL pattern (or -u)
 agent-browser wait --load networkidle      # Wait for network idle (or -l)
 agent-browser wait --fn "window.ready"     # Wait for JS condition (or -f)
 ```
-
-> ⚠️ **避免在電商或動態網站使用 `--load networkidle`**
->
-> PChome、momo、蝦皮等電商網站頁面會持續發送廣告追蹤、分析、輪詢等背景請求，
-> 瀏覽器永遠不會進入 network idle 狀態，導致指令卡住直到超時。
->
-> **建議替代方案：**
-> ```bash
-> agent-browser wait --load load    # 等 DOM + 主資源載入即可（大多數情況適用）
-> agent-browser wait 3000           # 固定等待 3 秒（SPA / React / Vue 頁面適用）
-> agent-browser wait --load domcontentloaded  # 只等 DOM ready（最快）
-> ```
 
 ## Mouse Control
 
@@ -178,13 +196,32 @@ agent-browser network requests --filter api    # Filter requests
 ## Tabs and Windows
 
 ```bash
-agent-browser tab                 # List tabs
-agent-browser tab new [url]       # New tab
-agent-browser tab 2               # Switch to tab by index
-agent-browser tab close           # Close current tab
-agent-browser tab close 2         # Close tab by index
-agent-browser window new          # New window
+agent-browser tab                              # List tabs with tabId and label
+agent-browser tab new [url]                    # New tab
+agent-browser tab new --label docs [url]       # New tab with a memorable label
+agent-browser tab t2                           # Switch to tab by id
+agent-browser tab docs                         # Switch to tab by label
+agent-browser tab close                        # Close current tab
+agent-browser tab close t2                     # Close tab by id
+agent-browser tab close docs                   # Close tab by label
+agent-browser window new                       # New window
 ```
+
+Tab ids are stable strings of the form `t1`, `t2`, `t3`. They're never reused within a session, so the same id keeps referring to the same tab across commands. Positional integers are **not** accepted — `tab 2` errors with a teaching message; use `t2`.
+
+User-assigned labels (`docs`, `app`, `admin`) are interchangeable with ids everywhere a tab ref is accepted. Labels are the agent-friendly way to write multi-tab workflows:
+
+```bash
+agent-browser tab new --label docs https://docs.example.com
+agent-browser tab new --label app  https://app.example.com
+agent-browser tab docs                   # switch to docs
+agent-browser snapshot                   # populate refs for docs
+agent-browser click @e1                  # ref click on docs
+agent-browser tab app                    # switch to app
+agent-browser tab close docs             # close by label
+```
+
+Labels are never auto-generated, never rewritten on navigation, and must be unique within a session. To interact with another tab, switch to it first: the daemon maintains a single active tab, so refs (`@eN`) belong to the tab that was active when the snapshot ran.
 
 ## Frames
 
@@ -221,25 +258,13 @@ The `frame` command accepts:
 
 ## Dialogs
 
+By default, `alert` and `beforeunload` dialogs are automatically accepted so they never block the agent. `confirm` and `prompt` dialogs still require explicit handling. Use `--no-auto-dialog` to disable this behavior.
+
 ```bash
 agent-browser dialog accept [text]  # Accept dialog
 agent-browser dialog dismiss        # Dismiss dialog
+agent-browser dialog status         # Check if a dialog is currently open
 ```
-
-> ⚠️ **`dialog` 只適用於瀏覽器原生對話框（`alert` / `confirm` / `prompt`）**
->
-> 網頁自製的彈窗（HTML modal、overlay、toast）**不是原生對話框**，
-> 對它們使用 `dialog dismiss` 會導致指令卡住、無回應。
->
-> **遇到 HTML 彈窗的處理方式：**
-> ```bash
-> # 先用 snapshot -i 找到關閉按鈕的 ref，再用 click 關閉
-> agent-browser snapshot -i
-> agent-browser click @eXXX   # 點擊「確定」、「關閉」、「×」等按鈕
-> ```
-> 如何判斷是哪種彈窗：
-> - 原生對話框：頁面會整個鎖住，`dialog accept/dismiss` 才有效
-> - HTML 彈窗：頁面其他地方還能操作，要用 `click` 關閉
 
 ## JavaScript
 
@@ -262,6 +287,32 @@ Array.from(links).map(a => a.href);
 EOF
 ```
 
+## Authentication and Plugins
+
+```bash
+agent-browser auth save <name> --url <url> --username <user> --password-stdin
+agent-browser auth login <name>          # Login using saved credentials
+agent-browser auth login <name> --credential-provider <plugin> [--item <ref>] [--url <url>]
+agent-browser auth login <name> --username-selector <s> --password-selector <s> [--submit-selector <s>]
+agent-browser auth list                  # List saved auth profiles
+agent-browser auth show <name>           # Show profile metadata, no passwords
+agent-browser auth delete <name>         # Delete a saved profile
+agent-browser plugin add <ref>           # Add a plugin from npm or GitHub
+agent-browser plugin list                # List configured plugins
+agent-browser plugin show <name>         # Show one configured plugin
+agent-browser plugin run <name> <type> --payload <json>
+                                          # Run an arbitrary plugin request
+```
+
+Credential provider plugins run out-of-process over the `agent-browser.plugin.v1` stdio JSON protocol and must declare `credential.read`. Use `--confirm-actions plugin:<name>:credential.read` to require explicit approval before a plugin resolves secrets.
+
+Other capabilities use the same protocol:
+- `browser.provider`: `agent-browser --provider <name> open <url>`
+- `launch.mutate`: append local launch args, extensions, or init scripts
+- `command.run`: `agent-browser plugin run <name> <type> --payload <json>`
+
+`plugin run` is for `command.run` and custom capabilities. Core capabilities and protocol request types use their dedicated command paths.
+
 ## State Management
 
 ```bash
@@ -269,21 +320,62 @@ agent-browser state save auth.json    # Save cookies, storage, auth state
 agent-browser state load auth.json    # Restore saved state
 ```
 
+## MCP Server
+
+```bash
+agent-browser mcp
+agent-browser mcp --tools all
+agent-browser mcp --tools core,network,react
+```
+
+Starts a stdio Model Context Protocol server. MCP clients should configure the server command as `agent-browser` with args `["mcp"]`. The server defaults to MCP protocol 2025-11-25 and accepts older supported client protocol versions during initialization.
+
+The default tools profile is `core`, which keeps MCP context small for everyday browser automation. Use `--tools all` for the full typed CLI parity surface, or combine profiles with commas, such as `--tools core,network,react`.
+
+Profiles:
+
+- `core` - Default. Navigation, snapshots, interaction, waits, reads, screenshots, JavaScript eval, close, tab basics, and profile discovery
+- `network` - Network routes, request inspection, HAR, headers, credentials, offline
+- `state` - Cookies, storage, auth, saved state, sessions, profiles, skills
+- `debug` - Console/errors, tracing, profiling, recording, clipboard, plugins, doctor, dashboard, install, upgrade, chat, diff, batch, confirm/deny
+- `tabs` - Back/forward/reload, tabs, windows, frames, dialogs
+- `react` - React tree/inspect/renders/suspense, vitals, pushstate
+- `mobile` - Viewport/device/geolocation/media, touch, swipe, mouse, keyboard
+- `all` - Every MCP tool, including the full typed CLI parity surface
+
+Common tools include:
+
+- `agent_browser_tools_profiles`
+- `agent_browser_open`
+- `agent_browser_snapshot`
+- `agent_browser_click`
+- `agent_browser_fill`
+- `agent_browser_type`
+- `agent_browser_press`
+- `agent_browser_wait_for_selector`
+- `agent_browser_screenshot`
+- `agent_browser_get_url`
+- `agent_browser_eval`
+- `agent_browser_close`
+
+Tool calls use the same config files and environment variables as the CLI. Each tool accepts typed arguments plus `extraArgs` for advanced CLI flags and exact CLI parity. The common `allowedDomains` array maps to `--allowed-domains` and activates the same WebRTC containment and launch-mode restrictions. Tool discovery is paginated and includes read-only/open-world annotations so modern MCP clients can load the large typed surface incrementally. Use the `session` tool argument or `AGENT_BROWSER_SESSION` to isolate browser state.
+
 ## Global Options
 
 ```bash
 agent-browser --session <name> ...    # Isolated browser session
 agent-browser --json ...              # JSON output for parsing
-agent-browser --headed ...            # Show browser window (not headless)
-agent-browser --full ...              # Full page screenshot (-f)
+agent-browser --headed ...            # Show browser window (not headless; on displayless Linux an Xvfb display starts automatically)
+agent-browser --webgpu ...            # Enable WebGPU (SwiftShader software Vulkan on Linux, no GPU needed)
 agent-browser --cdp <port> ...        # Connect via Chrome DevTools Protocol
-agent-browser -p <provider> ...       # Cloud browser provider (--provider)
+agent-browser -p <provider> ...       # Browser provider or configured provider plugin
 agent-browser --proxy <url> ...       # Use proxy server
 agent-browser --proxy-bypass <hosts>  # Hosts to bypass proxy
 agent-browser --headers <json> ...    # HTTP headers scoped to URL's origin
 agent-browser --executable-path <p>   # Custom browser executable
 agent-browser --extension <path> ...  # Load browser extension (repeatable)
 agent-browser --ignore-https-errors   # Ignore SSL certificate errors
+agent-browser --hide-scrollbars false # Keep native scrollbars visible in headless Chromium screenshots
 agent-browser --help                  # Show help (-h)
 agent-browser --version               # Show version (-V)
 agent-browser <command> --help        # Show detailed help for a command
@@ -302,9 +394,51 @@ agent-browser errors --clear              # Clear errors
 agent-browser highlight @e1               # Highlight element
 agent-browser inspect                     # Open Chrome DevTools for this session
 agent-browser trace start                 # Start recording trace
-agent-browser trace stop trace.zip        # Stop and save trace
+agent-browser trace stop trace.json       # Stop and save trace
 agent-browser profiler start              # Start Chrome DevTools profiling
 agent-browser profiler stop trace.json    # Stop and save profile
+```
+
+## React / Web Vitals
+
+Requires `--enable react-devtools` at launch for the `react ...` commands. `vitals` and `pushstate` are framework-agnostic.
+
+```bash
+agent-browser open --enable react-devtools <url>    # Launch with React hook installed
+agent-browser react tree                            # Full component tree
+agent-browser react inspect <fiberId>               # Props, hooks, state, source
+agent-browser react renders start                   # Begin re-render recording
+agent-browser react renders stop [--json]           # Stop and print render profile
+agent-browser react suspense [--only-dynamic] [--json]  # Suspense boundaries + classifier
+                                                         # --only-dynamic hides the "static" list
+agent-browser vitals [url] [--json]                 # LCP/CLS/TTFB/FCP/INP + hydration
+agent-browser pushstate <url>                       # SPA client-side nav (auto-detects Next router)
+```
+
+`vitals` prints a summary by default and uses the same fields as the structured `--json` response.
+
+## Init scripts
+
+```bash
+agent-browser open --init-script <path>             # Register before first navigation (repeatable)
+agent-browser addinitscript <js>                    # Register at runtime (returns identifier)
+agent-browser removeinitscript <identifier>         # Remove a previously registered init script
+```
+
+## cURL cookie import
+
+```bash
+agent-browser cookies set --curl <file>                             # Auto-detects JSON/cURL/Cookie-header
+agent-browser cookies set --curl <file> --domain example.com        # Scope to a domain
+```
+
+Supported formats: JSON array of `{name, value}`, a cURL dump from DevTools -> Network -> Copy as cURL, or a bare Cookie header. Errors never echo cookie values.
+
+## Network route by resource type
+
+```bash
+agent-browser network route '*' --abort --resource-type script       # Block scripts only (SSR-lock pattern)
+agent-browser network route '*' --resource-type image,font --body '' # Stub images and fonts
 ```
 
 ## Environment Variables
@@ -313,7 +447,15 @@ agent-browser profiler stop trace.json    # Stop and save profile
 AGENT_BROWSER_SESSION="mysession"            # Default session name
 AGENT_BROWSER_EXECUTABLE_PATH="/path/chrome" # Custom browser path
 AGENT_BROWSER_EXTENSIONS="/ext1,/ext2"       # Comma-separated extension paths
-AGENT_BROWSER_PROVIDER="browserbase"         # Cloud browser provider
-AGENT_BROWSER_STREAM_PORT="9223"             # WebSocket streaming port
-AGENT_BROWSER_HOME="/path/to/agent-browser"  # Custom install location
+AGENT_BROWSER_INIT_SCRIPTS="/a.js,/b.js"     # Comma-separated init script paths
+AGENT_BROWSER_ENABLE="react-devtools"        # Comma-separated built-in init script features
+AGENT_BROWSER_HIDE_SCROLLBARS="false"        # Keep native scrollbars visible in headless Chromium screenshots
+AGENT_BROWSER_WEBGPU="1"                     # Enable the WebGPU launch preset (see references/webgpu.md)
+AGENT_BROWSER_NO_XVFB="1"                    # Disable automatic Xvfb for headed mode on displayless Linux
+AGENT_BROWSER_PROVIDER="browserbase"         # Browser provider or configured provider plugin
+AGENT_BROWSER_STREAM_PORT="9223"             # Override WebSocket streaming port (default: OS-assigned)
+AGENT_BROWSER_CONFIG="./agent-browser.json"  # Custom config file
+AGENT_BROWSER_CDP="9222"                     # Connect daemon to CDP port or WebSocket URL
+AGENT_BROWSER_ALLOWED_DOMAINS="example.com"  # Restrict network domains; requires a fresh controllable browser context without profile/session startup args, restore/state replay, or direct-page provider plugins
+AGENT_BROWSER_PLUGINS='[{"name":"vault","command":"agent-browser-plugin-vault","capabilities":["credential.read"]},{"name":"stealth","command":"agent-browser-plugin-stealth","capabilities":["launch.mutate"]}]'
 ```

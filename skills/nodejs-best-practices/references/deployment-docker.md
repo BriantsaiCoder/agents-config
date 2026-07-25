@@ -69,7 +69,7 @@ package-lock=true
 ```json
 {
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=24.0.0",
     "npm": ">=10.0.0"
   }
 }
@@ -83,7 +83,7 @@ package-lock=true
 
 ```dockerfile
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -99,7 +99,7 @@ COPY src/ ./src/
 RUN npm run build
 
 # Stage 2: Production
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 # Security: run as non-root user
 RUN apk add --no-cache dumb-init
@@ -154,7 +154,7 @@ docker-compose*.yml
 | Decision | Why |
 |----------|-----|
 | Multi-stage build | Final image has no devDependencies, TypeScript, or source code — smaller and more secure |
-| `node:20-alpine` | Minimal base image (~50MB vs ~350MB for non-alpine). Pin major version. |
+| `node:24-alpine` | Minimal base image (~50MB vs ~350MB for non-alpine). Pin major version. |
 | `USER node` | Run as non-root. The `node` user exists in official Node images. |
 | `dumb-init` | Properly forwards signals to Node. Without it, `docker stop` sends SIGTERM but Node (as PID 1) doesn't handle it, causing a 10s timeout then SIGKILL. |
 | `npm ci --omit=dev` | No devDependencies in production. Deterministic install. |

@@ -80,5 +80,19 @@ printf '{"tool_input":{"command":"git push --force-with-lease origin feat/x"},"c
 rc=$?
 [ "$rc" -eq 0 ] && ok "guard 放行 lease 非保護分支 rc=0" || ng "guard 誤攔 lease 非保護分支 rc=$rc"
 
+# ── 8. Codex-native PreToolUse guard：allow / deny contract canary ──
+if "$HOME/.agents/tests/codex-git-push-guard.sh" >/dev/null 2>&1; then
+  ok "Codex hook + exec policy allow/deny canary 12 cases"
+else
+  ng "Codex hook + exec policy allow/deny canary 未通過"
+fi
+
+# ── 9. 共用 guard 雙格式回歸（2026-07-25 四破口：--all / --mirror / 多 refspec / -fu 捆綁）──
+if "$HOME/.agents/tests/git-push-guard.sh" >/dev/null 2>&1; then
+  ok "共用 guard 雙格式 50 cases（四破口回歸）"
+else
+  ng "共用 guard 雙格式回歸未通過"
+fi
+
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

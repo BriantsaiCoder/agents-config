@@ -17,7 +17,7 @@ paths:
 
 > Stack 工具選擇（xUnit / Vitest / GoogleTest / Playwright config 細則）+ Deployment Gate 細則 → 對應 `*-best-practices` / `*-release-verification` skill。
 
-- E2E 工具分工：**Playwright MCP**（headed）跑 user journey；**Chrome DevTools MCP** 限 perf / network / Web Vitals 除錯，不替代 E2E
+- E2E 工具分工：**Playwright MCP**（headed）跑 user journey；**Chrome DevTools MCP** 用於 HTML / CSS / Mermaid 視覺問題與 perf / network / Web Vitals 除錯，不替代 E2E
 - E2E 義務：frontend UI / user-facing 變更後 **MUST** 跑 Playwright MCP（headed）；缺 GUI 環境（CI / 遠端 / Docker）明確回報 fallback headless，不靜默降級
 - RWD viewport：mobile（375）+ desktop（1280）baseline；critical flow（auth / 結帳 / 表單 / 資料變更 / 路由）加 tablet（768）
 - **MUST** 每 viewport 截圖 + console / page error log；缺一視同未驗證
