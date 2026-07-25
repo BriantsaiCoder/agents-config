@@ -62,7 +62,7 @@ Claude Code、Codex CLI、Copilot CLI 三家過去各有一份設定，各自漂
 三道守護（**每台機器要先跑一次 `bash hooks/install-hooks.sh`**，hooks 不進版控）：
 
 1. `post-checkout` — 在 `~/.agents` 切離 main 時警告；linked worktree 內靜音（那是預期做法）
-2. `agents-sync --doctor` 的**出處戳記**節 — 比對部署檔 banner 的 `@<sha>` 與當前 HEAD，不符標 `STALE`
+2. `agents-sync --doctor` 的**出處戳記**節 — 比對部署檔 banner 的 `@<sha>` 與 **`core/`/`hosts/`/`rules/` 最後變更的 commit**（不是 HEAD——拿 HEAD 比會無窮追逐：deploy 改 banner → `dist/*` 變更 → 提交 → HEAD 前進 → 又「過期」）。在 main 上不符 = 已 commit 但忘記部署，`rc=1`；在分支上不符屬預期，只報告
 3. `hooks/drift-check.sh`（SessionStart）— 每次開 session 跑 doctor，把上面那條自動曝光
 
 刻意**不**自動跑 `agents-sync`：那會讓狀態變一致，但也讓「切到過時分支 → 全域 agent 設定靜默回退」變得完全無聲。一致的錯比不一致的錯更難發現。
