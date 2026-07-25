@@ -11,9 +11,15 @@ description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skil
 
 **Not for:** writing a new skill (use `superpowers:writing-skills`); debugging one skill's single trigger.
 
+## Step 0 — Vendored gate (run FIRST; it decides which verdicts are legal)
+
+`scripts/check-vendored.sh <folder>` → `VND` / `vnd?` / `ERR` / `-`. Steps 1–2 repeat the flag as a column.
+
+**Vendored skills take no IN-PLACE structural edit** — no Trim, no Split, no rewriting their files. Editing upstream in place is a fork; report the defect instead. Removing or replacing the whole skill stays legal. Details: `step0-vendored-gate.md`.
+
 ## Six-Step Protocol
 
-Run in order. Steps 1–2 mechanical, 3–5 read, 6 is the call you wanted to start with — defer it.
+Run in order after Step 0. Steps 1–2 mechanical, 3–5 read, 6 is the call you wanted to start with — defer it.
 
 | # | Step | Tool | Output |
 |---|---|---|---|
@@ -36,6 +42,8 @@ Run in order. Steps 1–2 mechanical, 3–5 read, 6 is the call you wanted to st
 | "Type is obviously Technique" | Step 5 skipped; mixed-type is the common defect, not absent type |
 | "Built-in coverage is what matters at the end" | Step 6 of 6, not step 1 of 1 |
 | "Stance and operation inseparable here" | True for some — document the call, don't skip step 3 wholesale |
+| "Bloated AND third-party, so trim hard" | Backwards — vendored makes the trim illegal, not overdue |
+| "I'll eyeball which are vendored" | Two hand-scans missed 2 (`LICENSE.md` ≠ `LICENSE`). Run Step 0. |
 
 ## Step 7 (optional) — Style anti-patterns
 
@@ -44,5 +52,7 @@ Run in order. Steps 1–2 mechanical, 3–5 read, 6 is the call you wanted to st
 ## Iron Law
 
 **Every audit produces a written report scoring each skill against all six steps**, ending in a verdict block: Keep / Trim / Move-to-CLAUDE.md / Convert-to-hook / Split / Delete. "Looked at it, looks fine" is not a verdict. If you cannot fill in a step result, you did not run that step. Skipping any of steps 1–5 means restart.
+
+**Step 0 is a gate, not a scored step:** an in-place structural verdict on a `VND` skill is void however well steps 1–6 argue it. Record Keep plus a reported defect. Treat `ERR` as `VND` until proven otherwise.
 
 **REQUIRED BACKGROUND:** `superpowers:writing-skills` (authoritative source for the six standards).
