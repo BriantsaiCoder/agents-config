@@ -41,7 +41,7 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 
 - [INT-1] MUST 收尾類 skill（`finishing-a-development-branch` 等）只在 S4 且 S5 兩者皆 PASS 後 invoke。觸發：任務進入 S6，或偵測收尾 skill 被 routing 選中。例外：無。驗證：S4/S5 gate 四態皆 PASS 且有證據。
 - [INT-2] MUST 在 fix 之前先有 failing regression test（紅→綠）。觸發：任務為 BUGFIX 或修改既有行為。例外：無可測 seam 時允許以「記錄架構問題」替代，但 MUST 明確標記例外並於 fix 落地後交接 `mp-improve-codebase-architecture`。驗證：commit 序中紅測早於 fix。
-- [INT-3] MUST NOT 在 auto / autopilot 模式豁免 S2 ⏸ plan gate。觸發：任何自動模式啟動且任務將改檔。例外：無。驗證：S2 EXIT 含用戶確認原句。
+- [INT-3] 命中 [T0-8] 時，MUST NOT 在 auto / autopilot 模式豁免 S2 ⏸ plan gate；未命中時可引用用戶明確的 change／build／fix 原句將 S2 標為 SKIPPED。觸發：任務將改檔。例外：無。驗證：S2 EXIT 含計畫核准原句，或 SKIPPED 理由 + 用戶實作原句。
 
 ## Canonical 骨架（S0–S6）
 
@@ -67,16 +67,16 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 - EXIT：session 內需求摘要 artifact 存在，且含目標、範圍、驗收條件；若已持久化則對應 X1 檔案存在亦可作證。
 - FAILURE：關鍵模糊未決 → 停下發問（攤開假設 X、影響範圍 Y），禁止靜默推進（[T0-5]）。
 
-### S2 PLAN ⏸（硬人工 gate）
+### S2 PLAN ⏸（依 [T0-8] 判定）
 
 - ENTER：S1 EXIT 的 session 或 file artifact 存在。
-- ACTION：host 中立指令——進 plan 模式或取得用戶明確確認前不得改檔（plan 工具名的 host 映射見文末 `## Host adapters` 各 host 段）。LIGHT plan 每條 task ≤1h、≤3 條、含驗收情境與測試名（紅→綠）；超過即升 HEAVY。HEAVY 先提出 design spec 並簽核，再提出 implementation plan。取得核准後才依 X1 規則按需寫 repo plan file。executor enhancement：`superpowers:writing-plans`；缺 plugin 時直接在 session 產完整 plan artifact。
-- EXIT：session plan artifact（或已持久化的 X1 plan file）存在 且 引用用戶明確說開始實作的原句；HEAVY 另需引用用戶簽核 design spec 的原句。
-- FAILURE：無確認原句 → 停在 S2 ⏸；禁以「合理推定同意」代替引用（[INT-3]）。
+- ACTION：先依 [T0-8] 判定。命中時，進 plan 模式或取得用戶明確確認前不得改檔（plan 工具名的 host 映射見文末 `## Host adapters` 各 host 段）；LIGHT plan 每條 task ≤1h、≤3 條、含驗收情境與測試名（紅→綠），超過即升 HEAVY；HEAVY 先提出 design spec 並簽核，再提出 implementation plan。未命中時，以用戶明確的 change／build／fix 原句作為授權，將本 gate 標為 SKIPPED。取得核准後才依 X1 規則按需寫 repo plan file。executor enhancement：`superpowers:writing-plans`；缺 plugin 時直接在 session 產完整 plan artifact。
+- EXIT：命中 [T0-8] 時，session plan artifact（或已持久化的 X1 plan file）存在且引用用戶明確說開始實作的原句；HEAVY 另需引用用戶簽核 design spec 的原句。未命中時，S2 = SKIPPED，附理由 + 用戶實作原句。
+- FAILURE：命中 [T0-8] 但無確認原句 → 停在 S2 ⏸；禁以「合理推定同意」代替引用（[INT-3]）。
 
 ### S3 IMPLEMENT（TDD 內嵌）
 
-- ENTER：S2 EXIT 成立（plan artifact + 用戶確認原句）。
+- ENTER：S2 EXIT 成立（plan artifact + 用戶確認原句，或 SKIPPED 理由 + 用戶實作原句）。
 - ACTION：先開分支（`feat/` 或 `fix/`）；用 host todo 或已持久化的 tasks file 逐 task 追蹤紅→綠，紅燈輸出即證據；動高扇入共用檔前 MUST 跑 `deps-check`；stack `*-best-practices` skill MUST 套。subagent 回報 ≠ 完成證據，主 context MUST 親自驗（why：收自 Codex 反向統一，2026-07-07）。
 - EXIT：host todo 全完成（或 tasks file checkbox 全勾）且全套測試指令 exit 0。
 - FAILURE：同一 bug 連 3 次修復失敗 → 停手，用戶確認後交接 `mp-improve-codebase-architecture`；flaky / 效能找不到根因 → `mp-diagnose`。
@@ -113,7 +113,7 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 ### BUGFIX 鏈（同骨架映射）
 
 - S1 = reproduce + root cause。鐵則 inline：failing regression test MUST 先於 fix（[INT-2]）；無 seam 允許「記錄架構問題」例外但 MUST 明確標記，且 fix 落地後交接 `mp-improve-codebase-architecture`。
-- S2 = 輕量（root cause + 修法在 session plan 攤開等用戶確認；核准後才按需持久化）。
+- S2 = 依 [T0-8] 判定；命中時將 root cause + 修法在 session plan 攤開等用戶確認，未命中時以用戶明確 fix 原句標 SKIPPED。
 - S3 = 紅測 → fix → 綠。
 - S4 → S5 → S6（S6 含 `bug-fix-settlement`）。
 - escalation：重現率 <50% / flaky / 效能 regression 找不到根因 → `mp-diagnose`。
@@ -131,8 +131,8 @@ description: 所有開發任務都路由經過的 canonical workflow 正本—�
 
 ### Copilot
 - 映射：plan = --mode plan（requestExitPlanMode）；todo = update_todo；子代理 = task 工具 / --agent。
-- S2 強制令：非 plan 模式啟動時，改檔前 MUST 先輸出計畫並取得用戶明確確認（補償 autopilot alias 風險）。
-- S5：內建 code-review agent 或 feature-dev:code-reviewer + references/reviewer-template.md；.NET 深審降級為已知取捨（實測不足再轉寫 `.agent.md`，延後決策避免預養第三格式）。
+- S2 強制令：命中 [T0-8] 時，非 plan 模式改檔前 MUST 先輸出計畫並取得用戶明確確認（補償 autopilot alias 風險）。
+- S5：內建 code-review agent 或泛用 subagent + references/reviewer-template.md；.NET 深審降級為已知取捨（實測不足再轉寫 `.agent.md`，延後決策避免預養第三格式）。
 - 守護：Copilot 已支援 user-level hooks（`~/.copilot/hooks/` + config.json inline），現況未配置；機械守護目前依賴 repo 層 `.github/hooks/` + pre-commit + CI。
 - MCP：chrome-devtools（已更名，見 B0.5）；codegraph 視需要補。
 
