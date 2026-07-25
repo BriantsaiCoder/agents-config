@@ -117,11 +117,19 @@ if [ -z "$HOOKS_DIR" ]; then
 else
   for pair in pre-commit-agents.sh:pre-commit post-checkout-agents.sh:post-checkout; do
     src="$AG/hooks/${pair%%:*}"; name="${pair##*:}"; dst="$HOOKS_DIR/$name"
+    # -f 必須先於 -x：`[ -x dir ]` 對可進入的目錄為 **TRUE**，會讓同名目錄通過可執行
+    # 檢查，接著 cmp 把 "Is a directory" 洩到 stderr（違反本檔「只回報 PASS/FAIL」的
+    # 紅線），而且 FAIL 訊息會錯——叫人重裝，但重裝修不了「那裡是目錄」。實測確認。
+    # cmp 一律 2>/dev/null：不可讀等其它情形同樣不該讓雜訊混進輸出。
     if [ ! -f "$src" ]; then
       ng "hook 來源缺失 hooks/${pair%%:*}"
+    elif [ ! -e "$dst" ]; then
+      ng "hook $name 未安裝（跑 bash hooks/install-hooks.sh）"
+    elif [ ! -f "$dst" ]; then
+      ng "hook $name 不是一般檔案（目錄或特殊檔？手動移除後跑 install-hooks.sh）"
     elif [ ! -x "$dst" ]; then
-      ng "hook $name 未安裝或不可執行（跑 bash hooks/install-hooks.sh）"
-    elif ! cmp -s "$src" "$dst"; then
+      ng "hook $name 不可執行（跑 bash hooks/install-hooks.sh 重裝）"
+    elif ! cmp -s "$src" "$dst" 2>/dev/null; then
       ng "hook $name 與版控來源不同步（來源已改？跑 bash hooks/install-hooks.sh 重裝）"
     else
       ok "hook $name 已安裝且與來源同步"
