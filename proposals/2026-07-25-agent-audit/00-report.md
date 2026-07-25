@@ -83,6 +83,29 @@
 
 ### 2.2 `code-reviewer`（泛用）— **Delete（唯一建議刪的）**
 
+> **[更正 2026-07-26] 判決改為 Keep — 兩個支柱之一已不成立。**
+>
+> 本節的 Delete 建立在兩點上：(1) 0 次使用；(2)「`CLAUDE.md:23` 同一行同時規定了兩條路徑」。
+> **第 (2) 點已失效**：2026-07-26 實測 `grep -n 'code-reviewer\|general-purpose\|reviewer-template' ~/.claude/CLAUDE.md`
+> 只命中 `:19` 的「review dispatch 與 reviewer-template … 照 dev-workflow SKILL.md 當場讀取」，
+> 那是指向 workflow 正本、不是指向本 agent。所謂的雙路徑那行已在 7/25 某次編輯中移除，
+> 因此「卡在兩者中間、兩邊都不需要」的論證失去前提。
+>
+> 第 (1) 點仍成立但改變不了結論：`~/.claude/agents/code-reviewer.md` 的 description 明寫
+> 「Use this agent proactively after writing or modifying code … For .NET-specific reviews use
+> dotnet-code-reviewer instead」——它是**非 .NET 專案**的 proactive review 選項。0 次使用的原因是
+> 語料 87% 為 .NET ETL 專案（走 `dotnet-code-reviewer`，7 月實測 9 次），與 skill 側
+> 「用量低是 corpus 偏斜、不是無價值」是同一個誤判形狀（見 memory `skill-usage-corpus-confound`）。
+>
+> 成本面也不支持刪除：agent 定義不佔常駐 context，只在 dispatch 時載入，留著的代價接近零。
+>
+> **實際的 review 路徑（`dev-workflow/SKILL.md:125`，2026-07-26 實測確認）**：
+> S4 → `code-simplifier` agent；S5 → `superpowers:requesting-code-review` 或 stack 專精 agent
+> （`dotnet-code-reviewer` / `uiux-reviewer`）。無 Stop hook、無 review 相關 hook——
+> 「開發完成後自動跑」是 workflow 的流程步驟，不是 hook 觸發。刪不刪本 agent 都不影響這條路徑；
+> 差別只在下次做非 .NET 專案時是否還有這個 proactive 選項。
+
+
 - 0 次使用，且**原因已查明不是意外**：`CLAUDE.md:23` 同一行同時規定了兩條路徑——「dispatch `general-purpose` + 套 `code-reviewer.md` 模板」與「其餘 → `code-reviewer` agent」。那 303 次 `general-purpose` 就是實際跑的 review。
 - `dev-workflow/references/reviewer-template.md` 開頭已明寫設計意圖：**「沒有專屬 review agent 的 host 用本檔；有專屬 agent 的 host 改用 agent」**。泛用 `code-reviewer` 卡在兩者中間，兩邊都不需要它。
 - → **刪 `~/.claude/agents/code-reviewer.md`，並把 `CLAUDE.md:23` 的「其餘 → `code-reviewer`」改成「其餘 → `general-purpose` + `reviewer-template.md`」**（這也讓 Claude 與 Codex / Copilot 走同一條路，符合三家統一目標）。
