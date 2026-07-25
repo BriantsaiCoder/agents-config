@@ -15,8 +15,18 @@ set -euo pipefail
 # 會讓 mkdir 報 "Not a directory" 並在 set -e 下直接死掉。
 # `--git-path hooks` 兩種情形都對，且在 worktree 內回傳共用的 common dir hooks
 # （實測：worktree 內回傳 ~/.agents/.git/hooks，正是 git 實際會執行的位置）。
-HOOKS_DIR="$(cd "$(git rev-parse --show-toplevel)" && git rev-parse --git-path hooks)"
-SRC_DIR="$(git rev-parse --show-toplevel)/hooks"
+# 且路徑一律由**腳本自身位置**解析，不用 cwd：`--show-toplevel` 解析的是 **cwd** 的
+# repo，所以從別的 repo 內以絕對路徑呼叫本腳本（`bash ~/.agents/hooks/install-hooks.sh`）
+# 會去操作**那個** repo 的 .git/hooks——實測從 DCT 專案內呼叫，它試圖 `mkdir .git/hooks`
+# 指向 DCT repo；本次只因 SRC_DIR 同樣跑掉（該 repo 無 hooks/）加上沙箱攔阻才沒真裝錯。
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT="$(cd "$SELF_DIR" && git rev-parse --show-toplevel)"
+SRC_DIR="$REPO_ROOT/hooks"
+hp="$(cd "$REPO_ROOT" && git rev-parse --git-path hooks)"
+case "$hp" in
+  /*) HOOKS_DIR="$hp" ;;
+  *)  HOOKS_DIR="$REPO_ROOT/$hp" ;;
+esac
 mkdir -p "$HOOKS_DIR"
 
 install_one() {

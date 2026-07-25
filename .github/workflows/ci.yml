@@ -63,6 +63,30 @@ jobs:
           done
           exit $rc
 
+      # install-hooks.sh 自身可用性。CI **無法**斷言「hooks 已安裝」——那是每台開發機
+      # 的屬性，runner 是全新 checkout 必然沒裝。但可以斷言**安裝器本身沒壞**：跑它，
+      # 然後驗結果與版控來源逐位元組相同。
+      # 這條會抓到的實際 bug（2026-07-25）：install-hooks.sh 曾用
+      # `git rev-parse --show-toplevel` 解析路徑，那解析的是 **cwd** 的 repo，從別的
+      # 目錄以絕對路徑呼叫會去操作錯的 repo。從 repo 外呼叫的情形一併覆蓋。
+      - name: install-hooks.sh 可用且產物與來源一致
+        run: |
+          bash hooks/install-hooks.sh
+          hp="$(git rev-parse --git-path hooks)"
+          case "$hp" in /*) d="$hp" ;; *) d="$GITHUB_WORKSPACE/$hp" ;; esac
+          rc=0
+          for p in pre-commit-agents.sh:pre-commit post-checkout-agents.sh:post-checkout; do
+            src="hooks/${p%%:*}"; dst="$d/${p##*:}"
+            [ -x "$dst" ] || { echo "::error::${p##*:} 未安裝或不可執行"; rc=1; continue; }
+            cmp -s "$src" "$dst" || { echo "::error file=$src::${p##*:} 安裝結果與來源不同"; rc=1; }
+          done
+          # 從 repo 外以絕對路徑呼叫也必須作用在本 repo（cwd bug 回歸）
+          ( cd "$RUNNER_TEMP" && bash "$GITHUB_WORKSPACE/hooks/install-hooks.sh" >/dev/null ) \
+            || { echo "::error::從 repo 外呼叫 install-hooks.sh 失敗"; rc=1; }
+          cmp -s hooks/post-checkout-agents.sh "$d/post-checkout" \
+            || { echo "::error::從 repo 外呼叫後產物不一致（cwd 解析 bug 回歸）"; rc=1; }
+          exit $rc
+
   # conformance.sh 不納入 CI：它斷言的是 ~/.claude、~/.codex 的實際部署結果
   # （settings.json 的 $defaults、audit log 權限、部署後 AGENTS.md、codex
   # execpolicy 等），runner 上不存在這些。它仍是本機動 guard / hook / settings
