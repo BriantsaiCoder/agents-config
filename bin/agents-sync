@@ -46,9 +46,11 @@ strip_meta() { sed '/^<!-- tier:/d' "$1"; }
 # 產物落 dist/skill-index.md 供 lint 名稱校驗 + Claude 參考；不注入 host 常駐預算——
 # 三家皆原生枚舉自身 skill 名，注入全量 52 名是重複的注意力稅（02 line 81 attention-economy）。
 emit_skill_index() {
-  local n; n="$(ls -1 skills | wc -l | tr -d ' ')"
+  # LC_ALL=C：ls 的排序依 locale 而定。本產物在 macOS 生成、CI 於 Linux 比對，
+  # 跨機 collation 差異會讓比對偶發失敗（skill 名一旦含大寫或非 ASCII 即現形）。
+  local n; n="$(LC_ALL=C ls -1 skills | wc -l | tr -d ' ')"
   printf '<!-- agents-skill-index:begin (機械生成 · %s 個 · 勿手改) -->\n' "$n"
-  ls -1 skills
+  LC_ALL=C ls -1 skills
   printf '<!-- agents-skill-index:end -->\n'
 }
 

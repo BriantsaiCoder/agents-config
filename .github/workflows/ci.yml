@@ -35,9 +35,11 @@ jobs:
 
       # 2026-07-25 踩過：新增 skill 未跑 agents-sync，dist/skill-index.md 停在 52
       # 而 skills/ 已 53，該 skill 對三家 host 都不可見。這條把它變成機械攔截。
+      # LC_ALL=C 與 emit_skill_index 對齊：index 在 macOS 生成、此處於 Linux 比對，
+      # 裸 ls 的 collation 依 locale 而定，跨機會偶發失敗。
       - name: skill-index 與 skills/ 一致
         run: |
-          ls -1 skills > "$RUNNER_TEMP/dirs.txt"
+          LC_ALL=C ls -1 skills > "$RUNNER_TEMP/dirs.txt"
           grep -v '^<!-- agents-skill-index' dist/skill-index.md > "$RUNNER_TEMP/idx.txt"
           if ! diff -u "$RUNNER_TEMP/dirs.txt" "$RUNNER_TEMP/idx.txt"; then
             echo "::error::dist/skill-index.md 與 skills/ 不一致——請跑 bin/agents-sync 重生後提交"
