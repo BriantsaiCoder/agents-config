@@ -26,46 +26,17 @@ e.g.  oklch(45% 0.2 260)  →  --color-primary  →  bg-primary (Button)
 
 ## 2. HSL CSS Variables — shadcn 相容風格（替代 OKLCH）
 
-若你的元件庫基於 shadcn/ui，沿用 HSL 變數格式比 OKLCH 更省麻煩（shadcn CLI 直接吐這個）：
-
-```css
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --destructive: 0 84.2% 60.2%;
-    --border: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --border: 217.2 32.6% 17.5%;
-  }
-}
-```
-
-Tailwind 對應（v4 `@theme`）：
-
-```css
-@theme {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-}
-```
-
 OKLCH vs HSL 取捨：OKLCH 色彩感知均勻、漸變自然，適合純自訂品牌系統；HSL + shadcn 相容性最好，沿用社群生態較省成本。
+
+**token 接線的正本是 `tailwind-v4-shadcn`**（`templates/index.css` + `SKILL.md` 的 Critical Rules），本檔不重複。理由是 v3 與 v4 的 token 形式不相容，兩份並存會讓實作端挑錯版本：
+
+| | v3（已過時） | v4（正本） |
+|---|---|---|
+| `:root` 位置 | 包在 `@layer base` 內 | **頂層**，不得放進 `@layer base` |
+| 變數值 | 裸 triplet `--primary: 222.2 47.4% 11.2%` | 自帶函式 `--primary: hsl(221.2 83.2% 53.3%)` |
+| 對應 utility | `@theme { --color-primary: hsl(var(--primary)) }` | `@theme inline` 純 var 映射 |
+
+兩套混用會產出 `hsl(hsl(...))`，整站顏色靜默壞掉。實作 shadcn token 一律讀 `tailwind-v4-shadcn`。
 
 ## 3. `cn()` Utility — className 合併的標配
 

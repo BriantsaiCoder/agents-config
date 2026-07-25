@@ -49,8 +49,7 @@ Read reference before implementing — flow details, claim names, timing windows
 ## Boundary
 
 - **This skill** = vendor-neutral patterns (model, lifecycle, RBAC/ABAC, threat, "done").
-- **`better-auth-best-practices`** = Better Auth library specifics.
-- NextAuth / IdentityServer / Keycloak: this skill gives the model; library syntax via Context7 MCP.
+- Better Auth / NextAuth / IdentityServer / Keycloak: this skill gives the model; library syntax via Context7 MCP.
 
 ## Notes
 

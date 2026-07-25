@@ -405,7 +405,7 @@ const faqs = [
 ### 何時選用完整元件庫
 
 - **PrimeVue**：企業應用首選，80+ 元件，內建多種主題（Material、Bootstrap 風格），支援 Tailwind 主題（`@primevue/themes`）。適合需要大量 DataTable、表單元件的後台管理系統。
-- **Element Plus**：中文生態最完整的 Vue 3 元件庫，文件與社群資源豐富，適合中文市場的 B 端產品。
+- **Element Plus**：⛔ **家規禁用**（`~/.agents/rules/frontend-spa.md`：「禁用：Vuetify、Element Plus、Bootstrap、CSS-in-JS」）。中文生態雖完整，但不在本專案選型內——僅在既有專案已採用時維護，不用於新專案。
 
 ```vue
 <!-- PrimeVue DataTable 範例 -->
@@ -433,4 +433,4 @@ const products = ref([
 </template>
 ```
 
-**選擇原則**：預設 **Naive UI**（user default，styled + a11y 完備、TypeScript 友善、theme 系統強）。若團隊有設計師且需要高度自訂外觀，選 Radix Vue / Headless UI + Tailwind。PrimeVue / Element Plus 為其他完整 UI 替代方案。
+**選擇原則**：預設 **Naive UI**（user default，styled + a11y 完備、TypeScript 友善、theme 系統強）。若團隊有設計師且需要高度自訂外觀，選 Radix Vue / Headless UI + Tailwind。需要重型後台元件（大量 DataTable）時，PrimeVue 為可選替代。**Element Plus / Vuetify / Bootstrap 為家規禁用，不列入選型。**

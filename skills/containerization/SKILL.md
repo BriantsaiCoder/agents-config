@@ -26,7 +26,6 @@ Use this skill for production-grade container images: small, reproducible, cache
 | ASP.NET Core / .NET 6+ / Linux container / Kestrel / `mcr.microsoft.com/dotnet/*` | `references/dotnet-aspnet-core.md` |
 | ASP.NET .NET Framework / IIS / Windows container / `mcr.microsoft.com/dotnet/framework/*` | `references/dotnet-framework.md` |
 | Node.js / Python / Go / Java / generic multi-stage | `references/generic.md` |
-| Trigger regression cases (when this skill was previously misapplied) | `references/trigger-regression.md` |
 
 For mixed solutions (e.g., .NET 8 API + Python data pipeline) read both relevant references.
 
