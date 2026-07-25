@@ -94,5 +94,40 @@ else
   ng "共用 guard 雙格式回歸未通過"
 fi
 
+# ── 10. git hooks 已安裝且與版控來源同步 ──
+# 為什麼要驗「同步」而不只是「存在」：.git/hooks/ 是 install-hooks.sh 的**複製**不是
+# symlink，且 .git 不進版控。所以有三種靜默失效，只驗存在只抓到第一種：
+#   (a) 新機器 clone 後沒跑 install-hooks.sh → 完全無守護
+#   (b) 跑過但之後改了 hooks/*.sh 沒重裝 → 執行的是舊版邏輯
+#   (c) 有人直接改 .git/hooks/ 而非改版控來源 → 正本與實際分岔
+# 三者都不會報錯。cmp 逐位元組比對同時覆蓋三種。
+# hooks 目錄問 git 而非自己拼：linked worktree 內 .git 是檔案不是目錄，且 --git-path
+# 在一般 repo 回相對路徑、在 worktree 回絕對路徑，故需補上 repo root。
+# AGENTS_HOME override 沿用 agents-sync 的既有慣例——本探針的三條失敗路徑（未安裝／
+# 來源已改未重裝／.git/hooks 被直接改）都必須對隔離 clone 驗證，否則就得動 live hooks。
+AG="${AGENTS_HOME:-$HOME/.agents}"
+hp=$(cd "$AG" && git rev-parse --git-path hooks 2>/dev/null || echo '')
+case "$hp" in
+  '')  HOOKS_DIR='' ;;
+  /*)  HOOKS_DIR="$hp" ;;
+  *)   HOOKS_DIR="$AG/$hp" ;;
+esac
+if [ -z "$HOOKS_DIR" ]; then
+  ng "無法解析 git hooks 目錄（$AG 不是 git repo？）"
+else
+  for pair in pre-commit-agents.sh:pre-commit post-checkout-agents.sh:post-checkout; do
+    src="$AG/hooks/${pair%%:*}"; name="${pair##*:}"; dst="$HOOKS_DIR/$name"
+    if [ ! -f "$src" ]; then
+      ng "hook 來源缺失 hooks/${pair%%:*}"
+    elif [ ! -x "$dst" ]; then
+      ng "hook $name 未安裝或不可執行（跑 bash hooks/install-hooks.sh）"
+    elif ! cmp -s "$src" "$dst"; then
+      ng "hook $name 與版控來源不同步（來源已改？跑 bash hooks/install-hooks.sh 重裝）"
+    else
+      ok "hook $name 已安裝且與來源同步"
+    fi
+  done
+fi
+
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
