@@ -87,5 +87,12 @@ else
   ng "Codex hook + exec policy allow/deny canary 未通過"
 fi
 
+# ── 9. 共用 guard 雙格式回歸（2026-07-25 四破口：--all / --mirror / 多 refspec / -fu 捆綁）──
+if "$HOME/.agents/tests/git-push-guard.sh" >/dev/null 2>&1; then
+  ok "共用 guard 雙格式 50 cases（四破口回歸）"
+else
+  ng "共用 guard 雙格式回歸未通過"
+fi
+
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
