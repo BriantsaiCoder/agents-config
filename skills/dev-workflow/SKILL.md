@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: 所有開發任務都路由經過的 canonical workflow 正本——S0 路由 → S1 需求 → S2 計畫⏸ → S3 實作(TDD) → S4 驗證 → S5 審查 → S6 收尾，另含 BUGFIX 鏈、X0 機械判定契約與四態 gate 制度。routing 由三家注入層逐名點名觸發，不靠本 description；此描述僅供 Claude 與人類閱讀。
+description: 收到任何開發任務（feature、bug fix、refactor、接手陌生 repo、release）時先讀本檔並照 S0 決策表路由——這是所有開發任務共用的 canonical workflow 正本：S0 路由 → S1 需求 → S2 計畫⏸ → S3 實作(TDD) → S4 驗證 → S5 審查 → S6 收尾，另含 BUGFIX 鏈、X0 機械判定契約與四態 gate 制度。三家注入層另以逐名點名觸發，不單靠本 description。
 ---
 
 <!-- tier: workflow | consumed-by: claude,codex,copilot | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md | last-verified: 2026-07-14 -->
