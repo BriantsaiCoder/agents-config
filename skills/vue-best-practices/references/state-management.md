@@ -143,6 +143,28 @@ watchEffect((onCleanup) => {
 </script>
 ```
 
+### onWatcherCleanup (Vue 3.5+)
+
+3.5 起可改用 `onWatcherCleanup()`，不必把 `onCleanup` 當參數往下傳——它能在 watcher 的**同步**呼叫堆疊中任何一層註冊清理，所以抽出去的 helper 函式也能自己收尾。
+
+```vue
+<script setup lang="ts">
+import { ref, watch, onWatcherCleanup } from 'vue'
+
+const userId = ref(1)
+
+function fetchUser(id: number) {
+  const controller = new AbortController()
+  onWatcherCleanup(() => controller.abort())   // 在 helper 內註冊，不需傳 onCleanup
+  return fetch(`/api/users/${id}`, { signal: controller.signal })
+}
+
+watch(userId, id => fetchUser(id))
+</script>
+```
+
+必須在 watcher callback 的同步階段呼叫；`await` 之後才呼叫會拿不到當前 watcher，靜默失效。`onCleanup` 參數寫法在 3.5+ 仍然有效，維護既有檔案時沿用即可。
+
 ---
 
 ## Pinia 狀態管理

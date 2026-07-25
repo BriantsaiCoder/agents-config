@@ -11,6 +11,7 @@ name: Vue Component Patterns
 - [Emits 模式](#emits-模式)
 - [Slots 插槽](#slots-插槽)
 - [v-model 雙向綁定](#v-model-雙向綁定)
+- [Template Refs 模板引用](#template-refs-模板引用)
 - [Dynamic Components 動態元件](#dynamic-components-動態元件)
 - [Async Components 非同步元件](#async-components-非同步元件)
 - [Teleport 傳送門](#teleport-傳送門)
@@ -71,6 +72,37 @@ const props = withDefaults(defineProps<Props>(), {
   <span v-for="tag in props.tags" :key="tag">{{ tag }}</span>
 </template>
 ```
+
+### Reactive Props Destructure (Vue 3.5+)
+
+Vue 3.5 起，從 `defineProps()` 解構出來的變數**保有反應性**——編譯器會自動把 `foo` 改寫成 `props.foo`。3.5 之前解構會凍結成一次性快照，所以同一份程式碼在兩個版本語意相反，**先確認專案的 Vue minor 版本再決定寫法**。
+
+```vue
+<script setup lang="ts">
+const { foo } = defineProps<{ foo: string }>()
+
+watchEffect(() => {
+  // 3.5 之前：只跑一次
+  // 3.5 之後：foo prop 變動時重跑
+  console.log(foo)
+})
+</script>
+```
+
+3.5+ 也讓型別宣告可以直接用原生預設值語法，不再需要 `withDefaults`：
+
+```vue
+<script setup lang="ts">
+interface Props {
+  msg?: string
+  labels?: string[]
+}
+
+const { msg = 'hello', labels = ['one', 'two'] } = defineProps<Props>()
+</script>
+```
+
+> 上一節的 `withDefaults` 寫法在 3.5+ 仍然有效，維護既有檔案時沿用該檔既有風格即可；新檔優先用解構預設值。
 
 ### Props Validator 自訂驗證
 
@@ -237,6 +269,38 @@ const maxVal = ref(90)
   <RangeSlider v-model:min="minVal" v-model:max="maxVal" />
 </template>
 ```
+
+---
+
+## Template Refs 模板引用
+
+### useTemplateRef (Vue 3.5+)
+
+`useTemplateRef('name')` 用字串對應 `ref="name"`，**不再要求變數名與 `ref` 屬性同名**，因此可以安全地重新命名變數、或在 `v-for` / 條件渲染中動態決定要抓哪一個。
+
+```ts
+function useTemplateRef<T>(key: string): Readonly<ShallowRef<T | null>>
+```
+
+回傳是 **readonly 的 shallow ref 且可為 `null`**——不要對它賦值，取用一律走 `?.`。
+
+```vue
+<script setup lang="ts">
+import { useTemplateRef, onMounted } from 'vue'
+
+const inputEl = useTemplateRef<HTMLInputElement>('search-input')
+
+onMounted(() => inputEl.value?.focus())
+</script>
+
+<template>
+  <input ref="search-input" />
+</template>
+```
+
+3.5 之前只能靠「同名 `ref` 變數」隱式綁定（`const searchInput = ref(null)` 對應 `ref="searchInput"`）。該寫法在 3.5+ 仍可用，但改名即靜默失效——**新程式碼一律用 `useTemplateRef`**。
+
+子元件的 ref 只暴露 `defineExpose` 宣告過的成員；`v-if` 未渲染或 `await` 之前取用皆為 `null`（見 `vue-debug-guides`）。
 
 ---
 

@@ -129,6 +129,25 @@ const randomValue = useState('random', () => Math.random())
 </template>
 ```
 
+### ✅ Correct: `useId()` for element IDs (Vue 3.5+)
+
+For the specific case of **element IDs** — `for`/`id` pairs, `aria-describedby`, `aria-labelledby` — use Vue's `useId()` rather than a `useState` counter. It is stable across server and client render by construction, so it cannot mismatch.
+
+```vue
+<script setup>
+import { useId } from 'vue'
+
+const id = useId()
+</script>
+
+<template>
+  <label :for="id">Email</label>
+  <input :id="id" type="email" />
+</template>
+```
+
+Do not call `useId()` inside a `computed` — the generated id is tied to the component instance. Set `app.config.idPrefix` when more than one Vue app shares a page.
+
 ### ❌ Wrong: Conditional Rendering on Client State
 
 ```vue

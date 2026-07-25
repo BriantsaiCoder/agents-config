@@ -17,4 +17,4 @@ Use this as a first-pass map. Verify with the actual component, warning text, an
 
 ## Escalation
 
-If the symptom is still unclear, search current Vue/Nuxt documentation or the archived detailed guides in the disabled skill cleanup folder.
+If the symptom is still unclear, search current Vue/Nuxt documentation, then hand off to the companion skill that owns the area — `vue-best-practices` (component / reactivity patterns), `pinia` (store state), `nuxt` (SSR, Nitro, hydration), `vueuse-functions` (composables).

@@ -1,11 +1,11 @@
 ---
 name: vue-debug-guides
-description: 'Use when diagnosing or fixing Vue 3 / Nuxt 3 runtime bugs — reactivity not updating, hydration mismatch, async/await in setup, ref unwrapping, watcher loops, SSR-only crashes, memory leaks, errorCaptured/errorHandler. Apply even when user just says "this isn''t reactive", "page flashes on load", "I get a hydration warning", or "watch keeps firing" without naming Vue debugging specifically.'
+description: 'Use when diagnosing or fixing Vue 3 and Nuxt 3/4 runtime bugs — reactivity not updating, hydration mismatch, async/await in setup, ref unwrapping, watcher loops, SSR-only crashes, memory leaks, errorCaptured/errorHandler. Apply even when user just says "this isn''t reactive", "page flashes on load", "I get a hydration warning", or "watch keeps firing" without naming Vue debugging specifically.'
 ---
 
 # Vue Debug Guides
 
-Vue 3 / Nuxt 3 debugging for runtime issues, warnings, async failures, and hydration bugs. For writing new Vue code and conventions, use `vue-best-practices`.
+Vue 3 and Nuxt 3/4 debugging for runtime issues, warnings, async failures, and hydration bugs. The symptom categories below are major-agnostic — Nuxt 4 changes directory layout, not these failure modes. For writing new Vue code and conventions, use `vue-best-practices`.
 
 ## How to Use
 

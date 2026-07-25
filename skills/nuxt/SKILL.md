@@ -1,17 +1,17 @@
 ---
 name: nuxt
-description: Use when working with Nuxt 3+ apps — file-based routing, server routes, Nitro, useFetch/useAsyncData/$fetch, middleware, runtime config, SSR/hydration, modules, layers, hybrid rendering. Apply even when user just says "hydration mismatch", "server route 500", "data fetched twice", or "env not loading on prod" without naming Nuxt.
+description: Use when working with Nuxt 3 / 4 apps — file-based routing, server routes, Nitro, useFetch/useAsyncData/$fetch, middleware, runtime config, SSR/hydration, modules, layers, hybrid rendering. Apply even when user just says "hydration mismatch", "server route 500", "data fetched twice", or "env not loading on prod" without naming Nuxt.
 ---
 
 # Nuxt
 
-> Nuxt 3.x. Verify project's Nuxt + Nitro version — SSR/hydration and `useFetch` defaults shifted across 3.7 / 3.10 / 3.12.
+> Nuxt 3.x / 4.x — **check the major first**. Nuxt 4 defaults `srcDir` to `app/`: `pages/` `composables/` `layouts/` `middleware/` move under it, `server/` stays at root, `srcDir: '.'` reverts. Then verify Nitro version — SSR/hydration and `useFetch` defaults shifted across 3.7 / 3.10 / 3.12.
 
 Top-3 bug sources: (1) where code runs (SSR / client / Nitro / build-time), (2) double-hydrate / cross-request state leak, (3) runtime config leaked to client.
 
 ## Workflow
 
-1. Read `nuxt.config.*`, `pages/` / `server/` / `composables/` / `layouts/` / `middleware/`, `.env*`.
+1. Read `nuxt.config.*`, `[app/]pages/` / `[app/]composables/` / `[app/]layouts/` / `[app/]middleware/` + `server/`, `.env*`.
 2. Rendering: SSR / SSG (`nitro.prerender`) / SPA (`ssr: false`) / Hybrid (`routeRules`).
 3. For any code — SSR / hydration / Nitro / build?
 4. Data fetching → decision tree below.
