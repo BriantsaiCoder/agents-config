@@ -4,3 +4,17 @@
 *.bak.*
 *.bak-*
 backups/
+
+# proposals/ 是已完成的稽核成果，不是家規所指的「AI 生成 plan / scratch」
+# ——in-flight 計畫在 docs/superpowers/plans/。多份 auto-memory 直接把這裡
+# 標成「正本」（optimization-review-2026-07-17、config-rereview-2026-07-12、
+# three-host-config-audit-facts、claude-automode-defaults-and-async-hooks），
+# 不備份等於讓記憶索引指向換機後就不存在的檔。
+#
+# 規則：報告（.md）追蹤，其餘（原始判決 JSON、.DS_Store）不追蹤。用機械規則
+# 而非靠記得——否則一次 `git add -A` 就會把 431KB 的 _raw-verdicts.json 掃進來。
+# 只涵蓋 proposals/<提案>/ 一層；日後若出現子目錄需另外放行。
+proposals/*
+!proposals/*/
+proposals/*/*
+!proposals/*/*.md
