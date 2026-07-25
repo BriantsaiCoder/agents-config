@@ -1,5 +1,8 @@
 .DS_Store
 .claude/
+# bin/agents-branch 的 linked worktree 根目錄——分支工作放這裡，讓 ~/.agents 本身
+# 永遠釘在 main（host 讀的就是它）。絕不進版控：worktree 是機器本地狀態。
+.worktrees/
 *.bak
 *.bak.*
 *.bak-*
