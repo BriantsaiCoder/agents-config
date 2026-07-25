@@ -1,4 +1,4 @@
-<!-- tier: workflow-reference | consumed-by: codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-07-07 -->
+<!-- tier: workflow-reference | consumed-by: codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-07-25 -->
 
 # S5 泛用 reviewer prompt（host 中立）
 
@@ -27,6 +27,13 @@
 2. **security** — 注入、憑證外洩、認證與授權破口、不安全反序列化、輸入未於信任邊界驗證。
 3. **performance regression** — 新增 N+1、全表掃描、同步阻塞熱路徑、演算法複雜度惡化、非必要重複計算。
 4. **correctness** — 邊界條件、null / 空集合、off-by-one、錯誤處理遺漏、狀態機轉換錯誤。
+5. **stack 專項** — 只套用 diff 實際命中的技術棧，未命中者跳過：
+   - **ASP.NET Core**：DI 生命週期不匹配（singleton 取 scoped）、middleware 順序（auth 在 endpoint 之後）、`CancellationToken` 未往下傳、`HttpClient` 未走 factory、`BackgroundService` 吞例外後靜默停止。
+   - **EF Core / Dapper**：N+1、該用 `AsNoTracking` 卻追蹤、transaction 邊界跨越 repository、字串拼接取代參數化。
+   - **React**：`useEffect` 缺 cleanup、stale closure、`key` 用陣列 index、context value 每次 render 新物件造成全樹 re-render。
+   - **Vue**：解構 `reactive()` 丟失響應性、`watch` 未清理副作用、`computed` 內有副作用、`v-for` 與 `v-if` 同元素。
+   - **TypeScript**：`any` 從邊界洩漏進內部、`as` 斷言掩蓋型別不符、公開簽名被放寬（optional 化 / union 加寬）。
+   - **Node.js**：unhandled rejection、stream / socket / listener 未清理、同步 I/O 或 CPU 密集運算落在請求熱路徑。
 
 先掃高風險級別，命中就記；同一級別掃完再往下一級。不確定是否為問題時，用 `question:` 提出而非略過。
 
