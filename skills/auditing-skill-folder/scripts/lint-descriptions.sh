@@ -39,7 +39,12 @@ GOOD_RE='^[Uu]se when\b'
 # are not unescaped. Each would need a real YAML parser to do correctly.
 read_desc() {
   awk '
-    NR==1 { sub(/^\xef\xbb\xbf/, "") }        # strip UTF-8 BOM so line 1 can match the opener
+    # Strip UTF-8 BOM so line 1 can match the opener. The BOM is built with sprintf rather than
+    # written as \xef\xbb\xbf or \357\273\277 — BSD awk (macOS system awk, 20200816) silently
+    # supports NEITHER escape form: sub() returns 0 and the BOM survives, which then makes the
+    # frontmatter opener unmatchable. sprintf("%c%c%c") is the portable form. Verified on
+    # awk 20200816: escapes -> sub()=0, sprintf -> sub()=1.
+    NR==1 { sub("^" sprintf("%c%c%c", 239, 187, 191), "") }
     { sub(/\r$/, "") }                         # CRLF: a stray CR corrupts the printf columns
     NR==1 && /^---[[:space:]]*$/ { fm=1; next }
     fm==0 { exit }                             # no frontmatter opener on line 1 -> no description
