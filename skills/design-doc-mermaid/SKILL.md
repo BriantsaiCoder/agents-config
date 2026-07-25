@@ -140,172 +140,32 @@ Common request patterns and guide selection. See [When to Use What](#when-to-use
 
 ## Resilient Workflow
 
-**CRITICAL:** This is the recommended approach for ALL diagram generation. It ensures validation, error recovery, and consistent file organization.
-
-**Full Guide:** `references/guides/resilient-workflow.md`
-
-### Workflow Overview
-
-```mermaid
-flowchart LR
-    A[1. Identify Type] --> B[2. Save .mmd + Image]
-    B --> C{3. Valid?}
-    C -->|Yes| D[4. Add to Markdown]
-    C -->|No| E[5. Error Recovery]
-    E --> F{Fix Found?}
-    F -->|Yes| A
-    F -->|No| G[Search External]
-    G --> A
-
-    classDef step fill:#90EE90,stroke:#333,color:darkgreen
-    classDef decision fill:#FFD700,stroke:#333,color:black
-    class A,B,D,E,G step
-    class C,F decision
-```
-
-### Key Principle
-
-**NEVER add a diagram to markdown until it passes validation.** This prevents broken diagrams in documentation.
-
-### Using the Script (Recommended)
+**CRITICAL:** use this for ALL diagram generation. **NEVER add a diagram to markdown until it passes validation** — that is what keeps broken diagrams out of docs.
 
 ```bash
-# Generate with full error recovery
-python scripts/resilient_diagram.py \
-    --code "flowchart TD; A-->B" \
-    --markdown-file design_doc \
-    --diagram-num 1 \
-    --title "process_flow" \
-    --format png \
-    --json
+python scripts/resilient_diagram.py --code "flowchart TD; A-->B" \
+    --markdown-file design_doc --diagram-num 1 --title "process_flow" --format png --json
 ```
 
-**Output:** Both `.mmd` and `.png` files in `./diagrams/` directory.
+Writes both `.mmd` and the image to `./diagrams/`. On validation failure it walks the error-recovery chain automatically (troubleshooting guide → perplexity → brave → gemini → WebSearch).
 
-### File Naming Convention
-
-```
-./diagrams/<markdown_file>_<num>_<type>_<title>.mmd
-./diagrams/<markdown_file>_<num>_<type>_<title>.png
-```
-
-**Example:** `./diagrams/api_design_01_sequence_auth_flow.png`
-
-### Error Recovery Priority
-
-When validation fails, the workflow automatically:
-
-1. **Check troubleshooting guide** - `references/guides/troubleshooting.md` (28 documented errors)
-2. **Search with perplexity** - `perplexity_ask` MCP for syntax questions
-3. **Search with brave** - `brave_web_search` MCP for recent solutions
-4. **Ask gemini** - `gemini` skill for alternative perspective
-5. **General search** - `WebSearch` tool as fallback
-
-### Manual Fallback Steps
-
-If the script is unavailable:
-
-1. **Identify diagram type** from first line (flowchart, sequence, etc.)
-2. **Load reference guide** from `references/guides/diagrams/`
-3. **Save to** `./diagrams/<markdown_file>_<num>_<type>_<title>.mmd`
-4. **Validate:** `mmdc -i file.mmd -o file.png -b transparent`
-5. **On error:** Search `references/guides/troubleshooting.md` for matching error
-6. **If not found:** Use search tools in priority order above
-7. **Add reference:** `![Description](./diagrams/filename.png)`
-
-### Pattern 6: Resilient Diagram Generation
-
-**User:** "Create a sequence diagram and add it to the design doc"
-
-**Skill Actions:**
-1. Identify intent: **diagram generation** + **markdown integration**
-2. Load workflow guide: `references/guides/resilient-workflow.md`
-3. Identify diagram type: **sequence**
-4. Load diagram guide: `references/guides/diagrams/sequence-diagrams.md`
-5. Generate Mermaid code using templates
-6. Execute resilient workflow:
-   ```bash
-   python scripts/resilient_diagram.py \
-       --code "[generated code]" \
-       --markdown-file design_doc \
-       --diagram-num 1 \
-       --title "api_sequence" \
-       --json
-   ```
-7. If validation fails → Apply troubleshooting fix → Retry
-8. On success → Add `![API Sequence](./diagrams/design_doc_01_sequence_api_sequence.png)` to markdown
+Full spec — 5 workflow steps, file-naming + sanitization rules, CLI options, JSON output shape, manual fallback without the script, search-tool priority, worked integration examples: `references/guides/resilient-workflow.md`. Error catalogue (28 documented errors): `references/guides/troubleshooting.md`.
 
 ## Unicode Semantic Symbols
 
-Always use Unicode symbols to enhance diagram clarity. Common patterns:
+Always use Unicode symbols to enhance diagram clarity — 👤 user, 🌐 gateway / load balancer, ⚙️ service or worker, 💾 database, ⚡ cache, 🔐 auth, 📬 queue, 📦 storage, 🚀 start, ✅ / ❌ outcome.
 
-### Infrastructure & Deployment
-```mermaid
-graph TB
-    Client[👤 User] --> LB[🌐 Load Balancer]
-    LB --> App1[⚙️ App Server 1]
-    LB --> App2[⚙️ App Server 2]
-    App1 --> DB[(💾 Database)]
-    App1 --> Cache[(⚡ Redis)]
-```
-
-### Activity Flow with States
-```mermaid
-flowchart TD
-    Start([🚀 Start]) --> Process[⚙️ Process Data]
-    Process --> Check{✓ Valid?}
-    Check -->|Yes| Save[💾 Save]
-    Check -->|No| Error[❌ Error]
-    Save --> Complete([✅ Complete])
-```
-
-### Microservices Architecture
-```mermaid
-graph TB
-    API[🌐 API Gateway] --> Auth[🔐 Auth Service]
-    API --> Orders[📋 Order Service]
-    Orders --> Queue[📬 Message Queue]
-    Queue --> Worker[⚙️ Background Worker]
-    Worker --> Storage[📦 Object Storage]
-```
-
-**For complete symbol reference, load:** `references/guides/unicode-symbols/guide.md`
+Complete symbol reference with worked infrastructure / activity-flow / microservices examples: `references/guides/unicode-symbols/guide.md`.
 
 ## Python Utilities
 
-### Extract Mermaid Diagrams
+| Script | Purpose |
+|--------|---------|
+| `scripts/resilient_diagram.py` | Generate + validate + place a diagram (the workflow above) |
+| `scripts/extract_mermaid.py` | List / extract / validate diagrams in a markdown file; `--replace-with-images` for Confluence upload |
+| `scripts/mermaid_to_image.py` | Render `.mmd` → PNG/SVG; accepts a directory (`--recursive`) or stdin (`-`) |
 
-```bash
-# List all diagrams
-python scripts/extract_mermaid.py document.md --list-only
-
-# Extract to separate files
-python scripts/extract_mermaid.py document.md --output-dir diagrams/
-
-# Validate all diagrams
-python scripts/extract_mermaid.py document.md --validate
-
-# Replace with image references (for Confluence upload)
-python scripts/extract_mermaid.py document.md --replace-with-images \
-  --image-format png --output-markdown output.md
-```
-
-### Convert to Images
-
-```bash
-# Single conversion
-python scripts/mermaid_to_image.py diagram.mmd output.png
-
-# With custom settings
-python scripts/mermaid_to_image.py diagram.mmd output.svg \
-  --theme dark --background white --width 1200
-
-# Batch convert directory
-python scripts/mermaid_to_image.py diagrams/ output/ --format png --recursive
-
-# From stdin
-echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
-```
+All three take `--help` for the full flag set (theme, background, width, output dir, JSON).
 
 ## Decision Tree Examples
 
