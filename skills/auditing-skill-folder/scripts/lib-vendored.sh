@@ -73,9 +73,12 @@ vendored_flag() {
 # three levels above this library.
 fork_recorded() {
   local name="$1" folder="${2:-}" f
-  for f in "${VENDORED_FORKS:-}" \
+  # Every candidate uses :+ so an unset variable contributes NOTHING. With :- an empty
+  # LIB_SELF_DIR would expand to "/../../../vendored-forks.md" -> "/vendored-forks.md",
+  # letting an unrelated file at the filesystem root drive VND* classification.
+  for f in "${VENDORED_FORKS:+$VENDORED_FORKS}" \
            "${folder:+$folder/../vendored-forks.md}" \
-           "${LIB_SELF_DIR:-}/../../../vendored-forks.md"; do
+           "${LIB_SELF_DIR:+$LIB_SELF_DIR/../../../vendored-forks.md}"; do
     [ -n "$f" ] && [ -r "$f" ] || continue
     grep -qF -- "| \`$name\` |" "$f" 2>/dev/null && return 0
   done
