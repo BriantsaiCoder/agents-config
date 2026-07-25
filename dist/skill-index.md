@@ -1,4 +1,4 @@
-<!-- agents-skill-index:begin (機械生成 · 52 個 · 勿手改) -->
+<!-- agents-skill-index:begin (機械生成 · 51 個 · 勿手改) -->
 acquire-codebase-knowledge
 agent-browser
 auditing-skill-folder
@@ -11,7 +11,6 @@ css-ui-best-practices
 dapper-best-practices
 dependency-security-scan
 deps-check
-design-doc-mermaid
 dev-workflow
 dotnet-core-best-practices
 dotnet-framework-best-practices
