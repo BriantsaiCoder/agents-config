@@ -385,13 +385,23 @@ doctor() {
     [ -n "$host" ] || continue
     [ -f "$DEPLOY_ROOT/$out" ] || continue
     stamp="$(head -1 "$DEPLOY_ROOT/$out" | sed -n 's/.*@\([0-9a-f][0-9a-f]*\) hash:.*/\1/p')"
+    # ${} 必要：變數後緊接全形字元時，bash 會把該多位元組字元的首個 byte 吃進
+    # 變數名，變成 unbound variable（set -u 下直接 die）。凡變數後緊跟中日韓／
+    # 全形字元一律加大括號。
     if [ "$stamp" = "$head_sha" ]; then
       note "  $out @$stamp == HEAD ✅"
-    else
-      note "  $out @$stamp ≠ HEAD @$head_sha（branch=$cur_branch）STALE ❌"
-      note "    → 這台機器上 Claude 已在讀 $cur_branch 的 skills（symlink 即時生效），"
-      note "      但 Codex/Copilot 還在讀 @$stamp 的組裝體。跑 agents-sync 對齊，或切回 main。"
+    elif [ "$cur_branch" = "main" ]; then
+      # main 上過期 = 已 commit 但忘記部署。實害：三家讀的是舊組裝體。
+      note "  $out @$stamp ≠ HEAD @${head_sha} STALE ❌（在 main 上，等同忘記部署）"
+      note "    → 跑 agents-sync 對齊。"
       rc=1
+    else
+      # 分支上過期是**預期**——我們刻意不從分支部署（見 README「分支工作」）。
+      # 所以只報告不失敗；否則會逼人從分支部署，正好破壞這個設計。
+      # 切換當下的提醒由 hooks/post-checkout-agents.sh 負責。
+      note "  $out @$stamp ≠ HEAD @${head_sha}（branch=${cur_branch}）—— 分支上屬預期，不計入失敗"
+      note "    → Claude 已在讀 ${cur_branch} 的 skills（symlink 即時生效），Codex/Copilot 仍讀 @${stamp}。"
+      note "      這是刻意的：分支工作請用 bin/agents-branch 的 worktree，別從分支部署。"
     fi
   done <<< "$TARGETS"
 
