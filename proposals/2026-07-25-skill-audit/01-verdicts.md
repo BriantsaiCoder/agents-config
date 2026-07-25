@@ -8,12 +8,14 @@
 
 | 判決 | 數量 | 意義 |
 |---|---|---|
-| **Keep** | 29 | 不動 |
-| **Trim** | 21 | 保留 skill，刪/修其 references 或部分段落 |
+| **Keep** | ~~29~~ **32** | 不動 |
+| **Trim** | ~~21~~ **18** | 保留 skill，刪/修其 references 或部分段落 |
 | **Split** | 1 | 內容拆給別的 skill |
 | **Delete** | 1 | 整個移除（且附前置條件） |
 
 初評 6 個 Delete，對抗驗證後**只剩 1 個**。
+
+> **[更新 2026-07-25 晚]** Keep 29→32 / Trim 21→18：`native-feel-cross-platform-desktop`、`vueuse-functions`、`design-doc-mermaid` 三者因 vendored 約束由 Trim 改判 Keep（見表後〔註1〕）。合計仍為 52。
 
 ---
 
@@ -89,12 +91,12 @@ step1（字數）與 step2（description trap）見 `00-mechanical-scan.md`；st
 | `auth-implementation-patterns` | **Trim** | high | 有明確立場滲漏，且是三重複述。SKILL.md L57「CLAUDE.md default: JWT in httpOnly cookie, p… | 主體不可機械化：雙層授權、租戶邊界要驗在 repository 層而非 controller 層、refresh rotation… | Pattern 為主且很純。SKILL.md 幾乎全是判準：情境→token 型別→儲存… | 多數是模型穩定知識（PKCE、alg:none、RS256 與 HS256 混淆、Argon2id）。但有兩處屬「知道 ≠ 會照順序做」：jwt.md 明列驗證次序（先 alg… |
 | `c-cpp-best-practices` | **Trim** | high | 立場集中在 core-rules.md Part C/D，且與 ~/.agents/rules/cpp.md 逐項重複：C1「Min CMake… | 嚴重度表的 Critical/High 幾乎全可機械化，且 skill 自己就寫出了 check 名稱：A6 strcpy/spri… | Mixed 但已用檔案切分。SKILL.md ＝ Technique（4 步 workf… | Part A/B 皆為 Opus 5 穩定核心知識（ownership 命名、errno vs 回傳碼、goto cleanup、extern "C" + opaque han… |
 | `containerization` | **Trim** | high | 輕度立場但性質良性：generic.md 的 Defaults 段（優先 slim/runtime/distroless、tag 至少 pin… | 檢查清單有三條可 100% 機械化：.dockerignore 是否排除 .git/.env*/node_modules/__pyc… | Mixed 且混得不乾淨。SKILL.md 與 generic.md 是乾淨的 Tech… | 分兩半，結論是部分不覆蓋、而不覆蓋的那半正是使用者用得到的那半。Linux/.NET Core、Node、Python、Go 多階段那半全屬模型穩定知識，Opus 5 加 Co… |
-| `design-doc-mermaid` | **Trim** | high | 立場滲漏以「反向」形式發生，這是本組最嚴重的發現：skill 強制的產物形狀與使用者立場相反。SKILL.md:143 標 CRITICAL 的… | 幾乎全機械化但目前 0 守護。「每個 classDef 必須有 color: 屬性」「diagram 進 markdown 前必須通… | Mixed，且是嚴重混型別。SKILL.md 本體同時塞 Technique（Resil… | 內建覆蓋高，且有三重外部覆蓋。(a) Opus 5 寫 mermaid flowchart / sequence / architecture 語法屬穩定知識；(b) 本 ho… |
+| `design-doc-mermaid` | ~~**Trim**~~ → **Keep**〔註1〕 | high | 立場滲漏以「反向」形式發生，這是本組最嚴重的發現：skill 強制的產物形狀與使用者立場相反。SKILL.md:143 標 CRITICAL 的… | 幾乎全機械化但目前 0 守護。「每個 classDef 必須有 color: 屬性」「diagram 進 markdown 前必須通… | Mixed，且是嚴重混型別。SKILL.md 本體同時塞 Technique（Resil… | 內建覆蓋高，且有三重外部覆蓋。(a) Opus 5 寫 mermaid flowchart / sequence / architecture 語法屬穩定知識；(b) 本 ho… |
 | `dev-workflow` | **Trim** | high | 整體是流程紀律（procedure）不是純立場，但有三處確實滲漏：(1) S6 第 3 點『zh-TW Conventional Commit、… | 不可機械化替代——S0 決策表與 S1–S6 是判斷型流程。但內含三個可疊加機械守護的點：(a) S3『動高扇入共用檔前 MUST… | Mixed，但已部分正確切分。主體 S0–S6 + BUGFIX 鏈 = Techniq… | 完全未被覆蓋。Opus 5 知道泛用的 plan→implement→test→review 流程，Context7 / microsoft-learn 完全不涵蓋個人 wor… |
 | `dotnet-testing-best-practices` | **Trim** | high | 有兩處立場滲漏，皆應移出。(1) 規則 2「Name `Method_Scenario_ExpectedResult`」與 ~/.agents/… | 部分可機械化，但不宜整體 Convert-to-hook——可機械化的三條恰好就是 Trim 要刪/搬的內容。可 100% 強制者：… | Mixed，但 Trim 後即收斂，不需 split。SKILL.md（441 字）=… | 大部分屬模型穩定知識（AAA、Theory/InlineData、mock 邊界、覆蓋率取捨），Opus 5 無需提示即可正確產出；microsoft-learn MCP 覆蓋… |
 | `dotnet-winforms-best-practices` | **Trim** | medium | 無立場滲漏——但那正是因為使用者的 WinForms 立場「已經」抽到 ~/.agents/rules/winforms.md（MUST UI… | 12 條中 3 條可 100% 機械強制，且價值高於 skill 本身：R3（禁手改 `.Designer.cs`）＝ PreToo… | Mixed（因判 Delete 不建議 split）。SKILL.md（493 字，逼近… | 全部內容皆屬模型穩定知識，無任何 2026-05 cutoff 之後或冷門項目。Control.Invoke/BeginInvoke 語意、GDI+ 句柄洩漏與 10k 上限、… |
 | `mp-tdd` | **Trim** | high | 立場滲漏輕微且分散。SKILL.md 幾乎純方法紀律，無版本 pin、無 stack 立場。有立場味的兩處都在衛星檔：references/tr… | 不可機械化。「one test → one impl，never two ahead」理論上可從 commit 粒度側面推斷，但實務… | Mixed 且是四者中唯一真正該處理的。SKILL.md（Technique：verti… | 分層看：SKILL.md 本體未被覆蓋——tracer bullet 概念（Pragmatic Programmer）Opus 5 當然知道，但「把 horizontal sl… |
-| `native-feel-cross-platform-desktop` | **Trim** | high | 無使用者立場滲漏——這是 vendored 第三方 skill（LICENSE: MIT, Copyright (c) 2026 yetone；… | 幾乎完全不可機械化。checklists/ship-readiness.md 實測 75 項全是人工觀察或計時判定：「hotkey… | Mixed，但是四者中檔案切分最乾淨的，型別已按檔對齊：01-philosophy（Pa… | 這是四者中唯一內建覆蓋明確不足者。具體超出 Opus 5 的內容：(1) 03-webview-survival A.1 的 window.setValue(false, fo… |
+| `native-feel-cross-platform-desktop` | ~~**Trim**~~ → **Keep**〔註1〕 | high | 無使用者立場滲漏——這是 vendored 第三方 skill（LICENSE: MIT, Copyright (c) 2026 yetone；… | 幾乎完全不可機械化。checklists/ship-readiness.md 實測 75 項全是人工觀察或計時判定：「hotkey… | Mixed，但是四者中檔案切分最乾淨的，型別已按檔對齊：01-philosophy（Pa… | 這是四者中唯一內建覆蓋明確不足者。具體超出 Opus 5 的內容：(1) 03-webview-survival A.1 的 window.setValue(false, fo… |
 | `next-best-practices` | **Trim** | medium | 立場滲漏集中在單一檔案，界線很乾淨。references/project-init.md（347 字）幾乎整檔是立場：create-next-a… | 三處可機械化：(1) tsconfig 的 strict / noUncheckedIndexedAccess / verbatim… | Mixed，且是本組混得最明顯的。SKILL.md 本體是純索引（20 行 Refere… | 內建覆蓋高，但有兩個冷門殘值。屬模型穩定知識的：Next 15 的 async params / searchParams / cookies() / headers()（20… |
 | `nodejs-best-practices` | **Trim** | high | 純立場句密集且無 rules 家可歸：Golden Rule 1「Structure by feature, not technical rol… | 可 100% 機械化者：Rule 2「never empty catch {}」→ eslint no-empty；Rule 7「n… | Mixed。SKILL.md 本身混三型：Technique（Mode: Writing… | 全部技術內容皆屬 Opus 5 穩定核心知識，無 2026-05 cutoff 後或冷門項：Express 4/5 error-middleware arity、asyncHa… |
 | `nuxt` | **Trim** | high | 立場滲漏近乎為零，分層是本叢集最乾淨的。採用門檻的立場（「SSR / SEO 才升 Next.js（App Router）/ Nuxt 3」）正… | 幾乎不可機械化。SKILL.md:31「useFetch / useAsyncData MUST be at <script set… | Mixed，且 Reference 層嚴重肥大。SKILL.md = Technique… | Nuxt 3 核心屬模型穩定知識（Nuxt 3 GA 於 2022-11，Nuxt 4 於 2025-07 發布，皆在 2026-05 cutoff 內），Context7 的… |
@@ -106,7 +108,7 @@ step1（字數）與 step2（description trap）見 `00-mechanical-scan.md`；st
 | `typescript-best-practices` | **Trim** | high | 純立場句：Rule 8「satisfies over as const + type annotation」、Rule 11「Avoid enu… | 12 條裡至少 6 條 100% 可 lint 強制，且 skill 自己在 config-and-project.md:309 就… | Mixed，且混得最嚴重處正好是可刪處。references/type-system-f… | 全部技術內容皆屬模型穩定知識，無 cutoff 後項目：satisfies（TS 4.9）、verbatimModuleSyntax（TS 5.0）、const type pa… |
 | `vue-best-practices` | **Trim** | high | 立場滲漏嚴重且已與 rules 重複。Golden Rule 12（SKILL.md:30）在 references/rules-expande… | 部分可機械化，但不建議轉 hook。Rule 8（v-for 必須 stable key、禁 index）、Rule 9（禁 v-i… | Mixed（三型混雜）。SKILL.md 本身 = Pattern（14 條判斷準則）+… | 全部內容皆屬模型穩定知識，無任何 2026-05 cutoff 後或冷門項。<script setup> 自 Vue 3.2（2021-08）穩定，defineModel 自… |
 | `vue-debug-guides` | **Trim** | medium | 無使用者立場滲漏 — 全文 599 字（SKILL 389 + INDEX 210）沒有任何選型偏好、版本 pin 或團隊慣例，不需要搬去 ru… | 完全不可機械化。全部是症狀→根因的推理映射（「ref 沒更新 → 檢查 reactive 解構 / 漏 .value / shall… | Technique 為主（SKILL.md:11-16 的 5 步 how-to-use… | 全部內容皆屬模型穩定知識，無一項在 2026-05 cutoff 後或屬冷門。列舉的症狀（reactive 解構失效、hydration mismatch 來自 Date.no… |
-| `vueuse-functions` | **Trim** | high | 有兩條立場句，但**兩條都已是全域常駐硬規則的重複**，移除後零損失：SKILL.md:23「Never persist tokens / PI… | 不可機械化，但也不需要 — 唯一可機械化的那條（storage 存 token/PII）已由 [T0-4] 的 gitleaks +… | 名義上是 Reference（分類 → 函式名的查表），但**這是一個刻意不含 refe… | 完全覆蓋，且 skill 自己承認。VueUse 自 2021 穩定，列出的 41 個函式（useStorage / useEventListener / onClickOut… |
+| `vueuse-functions` | ~~**Trim**~~ → **Keep**〔註1〕 | high | 有兩條立場句，但**兩條都已是全域常駐硬規則的重複**，移除後零損失：SKILL.md:23「Never persist tokens / PI… | 不可機械化，但也不需要 — 唯一可機械化的那條（storage 存 token/PII）已由 [T0-4] 的 gitleaks +… | 名義上是 Reference（分類 → 函式名的查表），但**這是一個刻意不含 refe… | 完全覆蓋，且 skill 自己承認。VueUse 自 2021 穩定，列出的 41 個函式（useStorage / useEventListener / onClickOut… |
 | `acquire-codebase-knowledge` | **Keep** | high | 立場含量低，且僅有的立場屬「輸出契約」而非「團隊偏好」，不適合外搬：Output Contract 固定產物為 docs/codebase/ 七… | 不可機械化。已機械化的部分本來就外包給 scripts/scan.py（Phase 1 掃描）；「七檔是否存在」理論上可寫成 tes… | Mixed，屬「Technique 主體 + 外掛資產」的健康型：SKILL.md 純… | 「讀 repo 寫文件」本身完全在 Opus 5 能力內，Context7 也不需要。超出內建的是流程紀律與契約：七檔固定命名、evidence-per-claim、[ASK… |
 | `agent-browser` | **Keep** | high | skill 內文**沒有**使用者立場句——全篇是上游 CLI 的操作說明（install.sh 寫入 $GITHUB_ENV，證實是 vend… | 該機械化的部分**已經機械化且已落地**：frontmatter `allowed-tools: Bash(agent-browse… | Mixed。Technique = core loop（open→snapshot -i… | **不覆蓋**。agent-browser 是冷門 CLI，其指令面與 Playwright/Puppeteer 完全不同（accessibility-tree snapsho… |
 | `auditing-skill-folder` | **Keep** | high | **無使用者專屬技術立場**（不含 Serilog/barrel/版本 pin 這類內容）。skill 內的「立場」全部是稽核方法論本身：「St… | **已機械化的部分已正確落地**：step1 = scripts/count-words.sh（依 skill 名套 150/200… | Mixed 但**分層正確、不需 split**。SKILL.md（492 字，恰在 5… | **完全不覆蓋，且屬第 3 類永不可 Delete（workflow discipline）**。理由具體：(1) 六步協定的順序約束（step6『內建覆蓋』必須最後判、跳過… |
@@ -136,6 +138,19 @@ step1（字數）與 step2（description trap）見 `00-mechanical-scan.md`；st
 | `security-audit` | **Keep** | high | 零使用者立場滲漏。全文英文、L12 明示「This skill is agent-neutral」，無 zh-TW、無 tier0/rules… | 不可機械化。核心是 Phase 3「派另一組獨立 agent 嘗試推翻每一個 finding」與跨輪覆蓋補洞，屬編排與判斷，rege… | Technique 為主（六階段流程 + subagent 編排 + 產物契約），內嵌一… | 漏洞類別本身 Opus 5 全知道，但三件事模型不會自發做：(1) 派獨立 agent 反證自己的 finding；(2) 讀前輪 findings.json 做跨輪去重與導向… |
 | `vite` | **Keep** | high | 立場滲漏輕度但確實存在，集中在 3 處：(1) Workflow 第 3 條「Prefer `vite.config.ts` + ESM unl… | 部分可機械化但不足以整體轉 hook。可 100% 強制的子集：`process.env.X` 出現在 client 端原始碼（ES… | Mixed，且 SKILL.md 與 references/ 分屬不同型別。SKILL.… | 覆蓋不均。**已被完全覆蓋**：Vite 4/5/6 的 config 形狀、alias、server.proxy、build.lib、assets query（?raw/?u… |
 | `vitest` | **Keep** | high | 立場滲漏中度，且集中在 references/vitest-deep.md 而非 SKILL.md。實際觀察到的純立場句：(1)「Mock ex… | 三條可 100% 機械化，且都是 config 層：`clearMocks: true` 是否設於 vitest.config.ts… | Mixed，且是五個裡型別最不純的。SKILL.md（403 字）= Technique… | 覆蓋度高，是五個裡最容易被內建取代的。**完全覆蓋**：`it`/`describe`/`expect` matcher、hooks 生命週期、CLI flag、snapsho… |
+
+> **〔註1〕2026-07-25 晚 — 3 個 vendored skill 由 Trim 改判 Keep**
+> 適用：`native-feel-cross-platform-desktop`、`vueuse-functions`、`design-doc-mermaid`。
+> `design-doc-mermaid` 是對抗驗證才揪出來的：它沒有 LICENSE 檔，vendored 身分來自 README 的 Skilz Marketplace 來源標記——**而 commit `6daf12c` 已經對它執行了 −153 行的結構性 Trim**，fork 已經發生。詳見 `00-mechanical-scan.md` §G 的 ⚠️ 段。
+>
+> 本報告 §判決總表 對 Trim 的定義是「保留 skill，刪/修其 **references 或部分段落**」，對上游 skill 執行即等同 fork，往後每次上游更新都要人工解合併衝突。**vendored 這條約束凌駕 Trim 的收益計算**（收益一次性、衝突成本持續），故一律改判 Keep，原判列出的缺陷改為「回報但不修」。
+> 特別是 `native-feel-cross-platform-desktop`：它的 step3 欄位**自己就寫出了「這是 vendored 第三方 skill（LICENSE: MIT, Copyright (c) 2026 yetone）」**，卻仍下 Trim——事實已在格內，只是沒有任何機制讓它影響判決。
+> 全域 5 個 vendored 的清單與判定方式見 `00-mechanical-scan.md` §G。另 3 個（`ecpay`、`security-audit`、`playwright-best-practices`）原判即為 Keep，不受影響。
+> 此註不影響 `02-recommendations.md` §A2 把 skill 補進 `core/routing.md` 點名清單的建議——那是外部整合層，不動 skill 檔案。
+>
+> **這是本報告「單向棘輪」自我揭露的第二個實例，但方向相反**：前次是驗證 prompt 的保留偏誤造成 uniform-keep；這次是**掃描軸缺漏**（step1/2 沒把 vendored 列為機械軸）造成對上游檔案下重構判決。前者讓判決過鬆，後者讓判決不可執行——兩者都源自軸不完整，不是個案誤判。
+>
+> **後續已機械化：** `auditing-skill-folder` 新增 Step 0 硬閘（`scripts/check-vendored.sh`），且 step1/2 輸出加 `VND` 欄。補這個軸的過程本身又驗證了一次必要性——散文版 §G 初稿用 `ls */LICENSE` 手掃，漏了兩個用 `LICENSE.md` 的（3 vs 實際 5）；腳本第一次跑就對。**軸寫進散文擋不住，寫進腳本才擋得住。**
 
 ---
 
@@ -217,14 +232,16 @@ step1（字數）與 step2（description trap）見 `00-mechanical-scan.md`；st
 ## 7. Verdict Block
 
 ```
-Keep                        29
-Trim（有缺陷引文，可執行）   16
-Trim（僅體積論證，不執行）    5   ← 實質 = Keep
+Keep                        32   (29 + 3 個 vendored 改判,見〔註1〕)
+Trim（有缺陷引文，可執行）   14   (原 16,native-feel / design-doc-mermaid 因 vendored 移出)
+Trim（僅體積論證，不執行）    4   ← 實質 = Keep  (原 5,vueuse-functions 已移入 Keep)
 Split                        1   (css-ui-best-practices → tailwind-v4-shadcn，但目的地需先修)
 Delete                       1   (postgresql-optimization，附合併前置條件)
 Move-to-rules                0   (初評 1 個，被推翻)
 Convert-to-hook              0   (但 deps-check 的 PreToolUse hook 文件已寫、settings.json 未掛)
 ```
+
+> **[更新 2026-07-25 晚]** 本區塊原本停留在改判前的數字，與 §判決總表 相矛盾。已同步：3 個 vendored skill（`native-feel-cross-platform-desktop`、`vueuse-functions`、`design-doc-mermaid`）的結構性判決全數失效。合計 31+15+4+1+1 = 52。
 
 > **與 `02-recommendations.md` D3 的關係**：本區塊的 `Delete 1` 是**協定判決**——`postgresql-optimization` 三軸皆過、對抗驗證未推翻、第四軸不保護它。D3 討論的是**執行時機**（先做內容合併再刪 vs 延後），不是推翻判決。兩處不衝突。
 
