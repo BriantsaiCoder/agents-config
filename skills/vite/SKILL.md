@@ -1,6 +1,6 @@
 ---
 name: vite
-description: Use when configuring, debugging, or reviewing Vite projects — `vite.config.*`, plugins, dev server behavior, library builds, SSR, env vars, asset handling, HMR weirdness, or Rolldown migration. Apply even if user just says "build is slow", "HMR broken", "env not loading", or "library export missing types" without naming Vite.
+description: 'Use when configuring, debugging, or reviewing Vite projects — `vite.config.*`, plugins, dev server behavior, library builds, SSR, env vars, asset handling, HMR weirdness, Rolldown migration; "build is slow", "HMR broken", "env not loading", "library export missing types". Test runner config → vitest.'
 ---
 
 # Vite

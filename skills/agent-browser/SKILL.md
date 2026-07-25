@@ -1,6 +1,6 @@
 ---
 name: agent-browser
-description: Core agent-browser usage guide. Read this before running any agent-browser commands. Covers the snapshot-and-ref workflow, navigating pages, interacting with elements (click, fill, type, select), extracting text and data, taking screenshots, managing tabs, handling forms and auth, waiting for content, running multiple browser sessions in parallel, and troubleshooting common failures. Use when the user asks to interact with a website, fill a form, click something, extract data, take a screenshot, log into a site, test a web app, or automate any browser task.
+description: 'Use when interacting with a website or automating any browser task via the agent-browser CLI — snapshot-and-ref workflow, navigating pages, click/fill/type/select, extracting text and data, screenshots, tabs, forms, auth and logging into a site, waiting for content, parallel browser sessions, testing a web app, troubleshooting failures. Read before running any agent-browser command.'
 allowed-tools: Bash(agent-browser:*), Bash(npx agent-browser:*)
 ---
 
