@@ -41,3 +41,28 @@ Claude Code、Codex CLI、Copilot CLI 三家過去各有一份設定，各自漂
 ```
 
 改規則只改 `core/` `hosts/` `rules/` 正本，重跑 agents-sync；**MUST NOT 手改 `dist/` 或各 host 部署檔**（有 no-clobber banner）。書寫規範見 [CONVENTIONS.md](CONVENTIONS.md)，設計理由見 `proposals/2026-07-07-three-host-unification/`。
+
+## 分支工作：用 worktree，別在 `~/.agents` 切分支
+
+`~/.agents` 是三家 host **實際讀取**的目錄，而兩半的生效機制不同：
+
+| 消費端 | 機制 | 切分支時 |
+|---|---|---|
+| Claude | `~/.claude/skills/*` 是指回 `~/.agents/skills/` 的 symlink | **當下就變**，不需任何指令 |
+| Codex / Copilot | `~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md` 是生成的部署檔 | 不動，直到跑 `agents-sync` |
+
+所以在這裡切分支不是「內容變舊」，而是**三家進入互相矛盾的狀態**——而 `manifest 相符` 仍會顯示綠燈（它只證明部署檔沒被手改，證明不了對應哪個 commit）。
+
+```sh
+~/.agents/bin/agents-branch <branch>        # 在 .worktrees/<branch> 開工，~/.agents 留在 main
+~/.agents/bin/agents-branch --list
+~/.agents/bin/agents-branch --done <branch> # 收工（分支保留）
+```
+
+三道守護（**每台機器要先跑一次 `bash hooks/install-hooks.sh`**，hooks 不進版控）：
+
+1. `post-checkout` — 在 `~/.agents` 切離 main 時警告；linked worktree 內靜音（那是預期做法）
+2. `agents-sync --doctor` 的**出處戳記**節 — 比對部署檔 banner 的 `@<sha>` 與當前 HEAD，不符標 `STALE`
+3. `hooks/drift-check.sh`（SessionStart）— 每次開 session 跑 doctor，把上面那條自動曝光
+
+刻意**不**自動跑 `agents-sync`：那會讓狀態變一致，但也讓「切到過時分支 → 全域 agent 設定靜默回退」變得完全無聲。一致的錯比不一致的錯更難發現。

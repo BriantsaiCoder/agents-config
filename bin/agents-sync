@@ -313,18 +313,33 @@ bootstrap() {
       */.agents/skills/*) rm -f -- "$s"; note "  - 清除斷鏈 skill symlink：$(basename "$s")" ;;
     esac
   done
+  # ln 失敗不得中止整個 bootstrap：`set -e` 下第一個失敗的 ln 會讓腳本直接死掉，
+  # 且**永遠走不到後面的 deploy**——部署檔與 manifest 靜默停留在舊版，而 stderr 常被
+  # 呼叫端的 grep 濾掉，看起來像什麼都沒發生。實際踩到的情境：Claude Code 沙箱把
+  # ~/.claude/skills 列為唯讀，每次 `--bootstrap` 都在第一個 ln 死亡（2026-07-25）。
+  # 改為累計失敗、繼續建其餘連結、仍執行 deploy，最後才 fail-loud 列出所有失敗項。
+  local ln_failed=''
   for s in skills/*/; do
     name="$(basename "$s")"
-    ln -sfn "../../.agents/skills/$name" "$HOME/.claude/skills/$name"
+    ln -sfn "../../.agents/skills/$name" "$HOME/.claude/skills/$name" 2>/dev/null \
+      || ln_failed="$ln_failed $name"
   done
   if compgen -G 'rules/*.md' >/dev/null 2>&1; then
     mkdir -p "$HOME/.claude/rules"
     for s in rules/*.md; do
       name="$(basename "$s")"
-      ln -sfn "../../.agents/rules/$name" "$HOME/.claude/rules/$name"
+      ln -sfn "../../.agents/rules/$name" "$HOME/.claude/rules/$name" 2>/dev/null \
+        || ln_failed="$ln_failed rules/$name"
     done
   fi
   deploy
+  # deploy 之後才報 ln 失敗：部署是三家共用層的正本刷新，不該被 Claude 端的
+  # 檔案權限問題連坐。非零 exit 讓呼叫端（含 hooks/drift-check.sh）看得見。
+  if [ -n "$ln_failed" ]; then
+    note "bootstrap: 以下 symlink 建立失敗（~/.claude 端寫入被拒？）：$ln_failed"
+    note "  deploy 已完成，但 Claude 端的 skill/rule 連結不完整——手動建立或放寬該路徑寫入權限後重跑。"
+    return 1
+  fi
 }
 
 doctor() {
@@ -354,6 +369,41 @@ doctor() {
   else
     note '  manifest.tsv 不存在 UNAVAILABLE（尚未部署）❌'; rc=1
   fi
+
+  # ── 出處戳記 == 當前 HEAD ──
+  # manifest 檢查只證明「部署檔沒被手改」，證明不了「部署檔對應的是哪個 commit」。
+  # 切到別的分支後 ~/.claude/skills/* 因為是 symlink 會**立刻**跟著變，但部署檔要等
+  # 下次 deploy 才動——三家 host 於是進入互相矛盾的狀態，且 manifest 仍顯示「相符」。
+  # banner 的 @<sha> 是唯一能區分的訊號，改用它比對當前 HEAD。
+  # 本檢查經 hooks/drift-check.sh 在每次 SessionStart 曝光，不靠人記得跑。
+  note '── 出處戳記（部署檔 banner @sha == 當前 HEAD）──'
+  local head_sha stamp
+  head_sha="$(git -C "$AGENTS" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+  local cur_branch
+  cur_branch="$(git -C "$AGENTS" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+  while IFS='|' read -r host out delta; do
+    [ -n "$host" ] || continue
+    [ -f "$DEPLOY_ROOT/$out" ] || continue
+    stamp="$(head -1 "$DEPLOY_ROOT/$out" | sed -n 's/.*@\([0-9a-f][0-9a-f]*\) hash:.*/\1/p')"
+    # ${} 必要：變數後緊接全形字元時，bash 會把該多位元組字元的首個 byte 吃進
+    # 變數名，變成 unbound variable（set -u 下直接 die）。凡變數後緊跟中日韓／
+    # 全形字元一律加大括號。
+    if [ "$stamp" = "$head_sha" ]; then
+      note "  $out @$stamp == HEAD ✅"
+    elif [ "$cur_branch" = "main" ]; then
+      # main 上過期 = 已 commit 但忘記部署。實害：三家讀的是舊組裝體。
+      note "  $out @$stamp ≠ HEAD @${head_sha} STALE ❌（在 main 上，等同忘記部署）"
+      note "    → 跑 agents-sync 對齊。"
+      rc=1
+    else
+      # 分支上過期是**預期**——我們刻意不從分支部署（見 README「分支工作」）。
+      # 所以只報告不失敗；否則會逼人從分支部署，正好破壞這個設計。
+      # 切換當下的提醒由 hooks/post-checkout-agents.sh 負責。
+      note "  $out @$stamp ≠ HEAD @${head_sha}（branch=${cur_branch}）—— 分支上屬預期，不計入失敗"
+      note "    → Claude 已在讀 ${cur_branch} 的 skills（symlink 即時生效），Codex/Copilot 仍讀 @${stamp}。"
+      note "      這是刻意的：分支工作請用 bin/agents-branch 的 worktree，別從分支部署。"
+    fi
+  done <<< "$TARGETS"
 
   note '── 三家 FP 探針指令（依 CLI 0.142.5 介面；升版後可能變動）──'
   note "  claude  -p '輸出 context 中所有 FP: 開頭 codeword'"

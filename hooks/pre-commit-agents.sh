@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pre-commit 守門（~/.agents）：阻擋 .bak 誤 commit（CONVENTIONS 11）+ gitleaks 明文 secret 掃描。
-# 安裝：bash hooks/install-pre-commit.sh
+# 安裝：bash hooks/install-hooks.sh
 # 繞過（謹慎）：git commit --no-verify
 
 set -euo pipefail

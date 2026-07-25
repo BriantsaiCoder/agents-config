@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# 在 linked worktree 開分支工作，讓 ~/.agents 永遠釘在 main。
+#
+# 用法：
+#   agents-branch <branch>          建立（或接上既有）worktree 並印出路徑
+#   agents-branch --list            列出所有 worktree
+#   agents-branch --done <branch>   移除該 worktree（分支本身保留）
+#
+# 為什麼：~/.agents 是三家 host 實際讀的目錄，而 ~/.claude/skills/* 是指回它的
+# symlink——在這裡切分支，Claude 讀到的 skill 內容**當下就變了**，而 Codex/Copilot
+# 的部署檔要等 agents-sync 才動，三家因此互相矛盾。worktree 把分支工作搬到沒有任何
+# host 讀的路徑，結構上消除這個狀態，而不是靠記得跑對齊指令。
+#
+# 代價講清楚：worktree 裡的 skill 改動**不會**被 host 看到。要實測就得刻意切回
+# ~/.agents（那時你是有意識的），或在 worktree 內跑 agents-sync 部署（會把
+# Codex/Copilot 指向該分支，Claude 端仍讀 main 的 symlink，別忘了切回來）。
+set -euo pipefail
+
+AGENTS="${AGENTS_HOME:-$HOME/.agents}"
+# 預設放 repo 內的 .worktrees/（gitignored）而不是 ~/.agents-wt：
+#   1. 開箱即用——Claude Code 的沙箱允許 ~/.agents 寫入，~/.agents-wt 不在清單內，
+#      放外面會 mkdir 被拒（實測 2026-07-25）。
+#   2. 深度剛好避開掃描——host 與稽核腳本都用 `-mindepth 2 -maxdepth 2` 找
+#      skills/*/SKILL.md，worktree 內的落在深度 4，不會被誤收。
+# 想放別處：export AGENTS_WORKTREE_ROOT=/path
+WT_ROOT="${AGENTS_WORKTREE_ROOT:-$AGENTS/.worktrees}"
+
+die() { printf 'agents-branch: %s\n' "$*" >&2; exit 1; }
+
+[ -d "$AGENTS/.git" ] || die "$AGENTS 不是 git repo"
+cd "$AGENTS"
+
+case "${1:-}" in
+  ''|-h|--help)
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+  --list)
+    git worktree list
+    exit 0
+    ;;
+  --done)
+    br="${2:?用法：agents-branch --done <branch>}"
+    wt="$WT_ROOT/$br"
+    [ -d "$wt" ] || die "找不到 worktree：$wt"
+    git worktree remove "$wt" || die "移除失敗（有未提交變更？加 --force 需自行判斷）"
+    printf '已移除 worktree %s（分支 %s 保留）\n' "$wt" "$br"
+    exit 0
+    ;;
+esac
+
+br="$1"
+case "$br" in
+  main) die 'main 就在 '"$AGENTS"'，不需要 worktree' ;;
+  -*)   die "未知選項：$br" ;;
+esac
+
+wt="$WT_ROOT/$br"
+mkdir -p "$WT_ROOT"
+
+if [ -d "$wt" ]; then
+  printf '已存在：%s\n' "$wt"
+elif git show-ref -q --verify "refs/heads/$br"; then
+  git worktree add "$wt" "$br"
+else
+  git worktree add "$wt" -b "$br"
+fi
+
+cat <<EOF
+
+worktree: $wt
+分支:     $br
+
+  cd $wt
+
+~/.agents 仍在 $(git rev-parse --abbrev-ref HEAD)，三家 host 的讀取來源未變。
+完成後：agents-branch --done $br
+EOF
