@@ -8,15 +8,18 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
      An index row MUST begin with "| `" followed by the exact skill directory name.
      check-vendored.sh renders recorded forks as VND* instead of VND. -->
 
-| Skill | Upstream | Forked from | Local change |
-|---|---|---|---|
-| `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication |
+| Skill | Upstream | Forked from | Local change | Status |
+|---|---|---|---|---|
+| `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
+
+Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
 ---
 
 ## design-doc-mermaid
 
-**Decision (2026-07-25): accept the fork. Do not re-pull.**
+**Decision 1 (2026-07-25): accept the fork. Do not re-pull.**
+**Decision 2 (2026-07-25, same day): retire the skill entirely to `attic/`.** See "Retired" below — this supersedes the fork question in practice, but the record is kept because the `attic/` copy is still a fork of upstream.
 
 ### Why re-pulling was rejected
 
@@ -44,6 +47,16 @@ Preserved: the behavioural rule *"NEVER add a diagram to markdown until it passe
 4. Re-verify every `references/`, `scripts/`, `checklists/`, `unicode-symbols/` pointer in the result still resolves.
 5. Update the "Forked from" cell in the index above with the new upstream ref.
 
-### Open question, tracked separately
+### Retired (2026-07-25)
 
-This skill has **0 dispatches across 398 startups**, despite being hard-referenced in four routing files plus `dist/skill-index.md`. Wholesale removal is legal under the gate (what is forbidden is editing in place). Whether to keep it at all is unresolved and does not depend on this fork decision.
+Moved to `attic/design-doc-mermaid` and removed from routing. Wholesale removal is legal under the gate — what is forbidden is editing in place.
+
+Evidence it contributed nothing:
+
+- **`mmdc` is not installed.** All three of its scripts hard-depend on `@mermaid-js/mermaid-cli`, so none of them could run. Its entire mechanical value — validation, image conversion, the resilient error-recovery chain — was never available on this machine.
+- **The artifact it supposedly produced needs no tooling.** `docs/codebase/ARCHITECTURE.md` in the DCT project is 8 inline ````` ```mermaid ````` fenced blocks, 0 image references, no `diagrams/` directory. `專案架構視覺化.html` renders client-side via mermaid.js, not from pre-rendered images.
+- **0 dispatches across 398 startups**, despite being hard-referenced in four routing files plus `dist/skill-index.md`.
+
+What remains capable of producing the same output: writing ````` ```mermaid ````` fences directly. GitHub, Claude artifacts, and that HTML all render mermaid natively.
+
+**The one scenario that would justify restoring it:** wanting pre-rendered PNG/SVG architecture diagrams committed to the repo, rather than fences rendered by the viewer. That needs `npm i -g @mermaid-js/mermaid-cli` plus this skill back out of `attic/` — follow the re-merge procedure above if upstream has moved by then.

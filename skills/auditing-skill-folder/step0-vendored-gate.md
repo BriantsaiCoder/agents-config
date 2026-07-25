@@ -18,10 +18,10 @@ The record lives at the repo root (`vendored-forks.md`), never inside the vendor
 
 Detection is the **union** of two signals because neither alone is sufficient — this was learned the hard way, twice:
 
-- LICENSE alone misses `design-doc-mermaid`: no LICENSE file at all, upstream is a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README.
+- LICENSE alone missed `design-doc-mermaid`: no LICENSE file at all, upstream was a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README. That skill has since been retired to `attic/`, but it remains the reason this is a union and not a single test.
 - The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker.
 
-The union returns 6/6 known vendored with 0 false positives across the other 46 skills.
+The union returns every known vendored skill with 0 false positives across the corpus.
 
 `README.md`'s **existence** is not a signal — plenty of self-owned skills have one. Only its provenance **content** counts (marketplace listing, "install this skill", a github URL naming a skill repo).
 

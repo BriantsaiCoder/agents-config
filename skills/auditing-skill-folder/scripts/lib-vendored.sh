@@ -20,10 +20,11 @@ LIB_SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd) || LI
 #   -     self-owned.
 #
 # Detection is the UNION of two signals because neither alone is sufficient:
-#   - LICENSE alone missed `design-doc-mermaid` (Skilz Marketplace, no LICENSE file).
+#   - LICENSE alone missed `design-doc-mermaid` (Skilz Marketplace, no LICENSE file). That skill
+#     has since been retired to attic/, but it is the reason this is a union and not a single test.
 #   - A marketplace/upstream marker alone misses `playwright-best-practices` / `vueuse-functions`
 #     (LICENSE.md, no marker).
-# The union returns 6/6 known vendored with 0 false positives across the other 46 skills.
+# The union returns every known vendored skill with 0 false positives across the corpus.
 # README.md *existence* is still not a signal — only its provenance CONTENT is.
 vendored_flag() {
   local dir="$1" f

@@ -117,9 +117,14 @@ skill 的**常駐成本只有 description 一行**；body 是 invoke 當下才�
 1. `git mv skills/X attic/`（**不是 `rm`**；`attic/codex-legacy-skills` 已有先例）
 2. 從 `core/routing.md` / `.claude/CLAUDE.md` 移除點名（如有）
 3. 從其他 skill 的 SKILL.md / references 移除交叉引用（如有）
-4. 跑 `~/.agents/bin/agents-sync` 重生 `dist/{AGENTS.md,copilot-instructions.md,skill-index.md,manifest.tsv}`
+4. 跑 `~/.agents/bin/agents-sync --bootstrap` — 重生 `dist/*` **並清掉 `~/.claude/skills/` 的孤兒 symlink**
 5. 跑 `~/.agents/tests/conformance.sh` 確認四態綠
 6. 重啟三家 host 確認 skill listing 不含死名
+
+> **[更正 2026-07-25 晚——本流程原本會留下一個必 FAIL 的殘骸]**
+> 原第 4 步只寫 `agents-sync`（部署），漏了 `~/.claude/skills/X` 這條 symlink：`git mv` 走實體後它變斷鏈，`--doctor` 的斷鏈掃描直接 FAIL、`conformance.sh` 掉到 11/12。而 `--bootstrap` 當時只用 `ln -sfn` **建**連結、不刪孤兒，所以偵測得到卻沒有任何指令修得掉，只能手動 `unlink`（而 `~/.claude/skills` 有沙箱保護，手動這條還會被擋）。
+> 已在 `bin/agents-sync` 的 `bootstrap()` 補上 prune：只刪「指向 `.agents/skills/` 且已斷鏈」者，實體檔與指向他處的 symlink 一律不碰（以隔離 fixture 驗證四種情況）。第 4 步因此改成 `--bootstrap`。
+> 這是實際執行本流程移除 `design-doc-mermaid` 時撞到的——**流程寫在散文裡時少一步不會有人發現，直到有人真的照著跑**。
 
 > ⚠️ 前置：`~/.agents` 目前有 **10 個未 commit 修改**（`core/routing.md`、`core/tier1-workflow.md`、`core/tier2-style.md`、`dist/*`、`hosts/*-delta.md`、`rules/testing.md`、`skills/mp-zoom-out/SKILL.md`）+ 2 個 `.bak-20260718-1346` 檔 + 未追蹤的 `proposals/2026-07-17-*`。動 skill 前應先 commit 或 stash，否則 rollback 會混在一起。
 

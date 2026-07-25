@@ -303,6 +303,16 @@ bootstrap() {
     ln -sfn "../../.agents/core/$name" "$HOME/.claude/core/$name"
   done
   mkdir -p "$HOME/.claude/skills"
+  # 先清孤兒：skill 被 git mv 到 attic/ 後，~/.claude/skills 下的 symlink 會變斷鏈，
+  # doctor 會 FAIL 但 ln -sfn 只建不刪，修不掉。只刪「指向 .agents/skills/ 且已斷鏈」者，
+  # 不碰實體檔與指向他處的 symlink。
+  for s in "$HOME/.claude/skills"/*; do
+    [ -L "$s" ] || continue
+    [ -e "$s" ] && continue
+    case "$(readlink "$s")" in
+      */.agents/skills/*) rm -f -- "$s"; note "  - 清除斷鏈 skill symlink：$(basename "$s")" ;;
+    esac
+  done
   for s in skills/*/; do
     name="$(basename "$s")"
     ln -sfn "../../.agents/skills/$name" "$HOME/.claude/skills/$name"
