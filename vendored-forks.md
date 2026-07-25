@@ -5,13 +5,20 @@ Vendored skills take no in-place structural edit (see `skills/auditing-skill-fol
 Listing a skill here does NOT reopen it for further editing. It records one decision already taken, with the procedure to reconcile it when upstream moves.
 
 <!-- MACHINE-READ by skills/auditing-skill-folder/scripts/lib-vendored.sh (fork_recorded).
-     An index row MUST begin with "| `" followed by the exact skill directory name.
+     An index row MUST begin with "| `" followed by the exact skill directory name, and MUST sit
+     between the fork-index markers below — the lookup is confined to that block, so a row of the
+     same shape anywhere else in this file is inert. It did not used to be: a table elsewhere in
+     this document promoted `agent-browser` to VND* by accident (2026-07-25).
      check-vendored.sh renders recorded forks as VND* instead of VND. -->
+
+<!-- fork-index:begin -->
 
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
+
+<!-- fork-index:end -->
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
@@ -34,16 +41,26 @@ Deliberately outside the index table above: these were never edited, so they are
 
 **Decision (2026-07-25): accept the fork. Two factual corrections, both confirmed against upstream's current version.**
 
-### Detection caveat — read this before trusting `check-vendored.sh` on this skill
+### How this fork happened without anyone deciding to make one
 
-`check-vendored.sh` does **not** flag `tailwind-v4-shadcn`, and adding it to the index above will not make it render `VND*`. The detector reads a LICENSE file plus an upstream marker inside the frontmatter; this skill has neither. Its only provenance is `.claude-plugin/plugin.json`, a marketplace manifest the detector never opens:
+Its only provenance is `.claude-plugin/plugin.json`, a marketplace manifest the detector did not open at the time:
 
 ```json
 { "author": { "name": "Jeremy Dawes", "email": "jeremy@jezweb.net" },
   "license": "MIT", "repository": "https://github.com/jezweb/claude-skills" }
 ```
 
-The same blind spot hides `agent-browser` (its `upstream:` marker sits in an HTML comment *after* the closing `---`, so the detector's awk exits before reaching it). Real vendored count is 7, detector finds 5 — see "## Detector gap — check-vendored.sh misses 2 of 7" below.
+No LICENSE, no README, nothing in frontmatter — so `check-vendored.sh` rendered it `-` (self-owned) and the corrections below were made before its vendored status was known. The detector was fixed the next day and now flags it `VND*`; see "## Detector gap — check-vendored.sh missed 2 of 6 (fixed)" below for that fix and its test coverage.
+
+The decision to keep the corrections was taken **after** the status was known, on the merits recorded below — not by default.
+
+### Not fixed, deliberately: the `rules/` subdirectory
+
+`rules/tailwind-v4-shadcn.md` carries a `paths:` frontmatter (single-line comma form, unlike the YAML-list form `~/.agents/rules/*` uses). Inside a skill that frontmatter never fires — path-triggered loading only reads `~/.claude/rules/` and `.claude/rules/` — so it is upstream residue that reads like a live rule. `SKILL.md:39` indexes the file correctly as "Rule text for agents/tools", and its content is correct (the `@apply` correction above landed there).
+
+Left alone on purpose. Removing the dead frontmatter, or moving the file to `references/` where it belongs by type, is a second structural edit to someone else's skill — a new override decision bought for the removal of a misleading comment. That trade is the wrong way round, and per this file's opening rule, an existing record does not authorise further editing.
+
+The tempting alternative is also rejected: promoting it to `~/.agents/rules/` would be legal (external integration touches none of the skill's own files) but wrong. External integration is already done — `core/routing.md:8` routes "Tailwind v4 → `tailwind-v4-shadcn`" and `rules/frontend-spa.md:16` declares the Tailwind + shadcn stack. A new rules file would duplicate skill content into the path-triggered layer on `**/*.css` / `**/*.tsx`, re-inflating resident context that a 2026-07-25 pass had just trimmed.
 
 ### What was wrong
 
@@ -123,20 +140,19 @@ What remains capable of producing the same output: writing ````` ```mermaid ````
 
 ---
 
-## Detector gap — check-vendored.sh misses 2 of 7
+## Detector gap — check-vendored.sh missed 2 of 6 (fixed)
 
-Recorded 2026-07-25. `scripts/check-vendored.sh` reports 5 vendored skills; the real count is 7. Both misses were found by hand during the description-trim pass, which is exactly the review the detector exists to make unnecessary.
+Found 2026-07-25, fixed 2026-07-26. `check-vendored.sh` reported 4 vendored skills out of `skills/`; the real count was 6. Both misses were caught by hand during the description-trim pass — exactly the review this detector exists to make unnecessary.
 
-| Skill | Provenance | Why the detector misses it |
-|---|---|---|
-| `agent-browser` | `SKILL.md:7` `<!-- ... upstream: agent-browser CLI ... -->`; `install.sh:20` writes `$GITHUB_ENV`; `SKILL.md:24` self-declares `references/` + `templates/` as cached upstream copies | The `upstream:` token sits in an HTML comment **after** the closing `---`. `lib-vendored.sh`'s awk (`/^---$/ {fm++; if (fm==2) exit}`) exits at the frontmatter close, before reaching it. No LICENSE either. |
-| `tailwind-v4-shadcn` | `.claude-plugin/plugin.json` carries `author`, `license: MIT`, `repository: github.com/jezweb/claude-skills` | The detector never opens `.claude-plugin/plugin.json`. No LICENSE file, no frontmatter marker. |
+Both were false negatives of the same shape: **provenance recorded somewhere the detector did not read.** That is the dangerous direction. A false VND costs one manual check; a false `-` silently licenses editing someone else's skill — and did: the `tailwind-v4-shadcn` corrections recorded above were made before anyone knew whose skill it was.
 
-Both are false negatives of the same shape: **provenance recorded somewhere the detector does not read**. A false negative here is worse than a false positive — it silently licenses the in-place edits the gate exists to prevent (and did: the `tailwind-v4-shadcn` corrections above were made before the vendored status was known).
+| Skill | Provenance | Why it was missed | Fix |
+|---|---|---|---|
+| agent-browser | `SKILL.md:7` `<!-- tier: … \| consumed-by: … \| upstream: agent-browser CLI … -->`; `SKILL.md:24` self-declares `references/` + `templates/` as cached upstream copies; `install.sh:20` writes `$GITHUB_ENV` | The `upstream:` token sits in an HTML comment **after** the closing `---`, where the frontmatter-bounded awk (`fm==2 exit`) had already stopped. No LICENSE either. | Marker scan moved out of the frontmatter to the whole file, anchored on `^` / `<!--` / `\|`. The `\|` anchor is required — the marker is the comment's 4th pipe-delimited field. |
+| tailwind-v4-shadcn | `.claude-plugin/plugin.json` carries `author`, `license: MIT`, `repository: github.com/jezweb/claude-skills` | The detector never opened `.claude-plugin/plugin.json`. No LICENSE, no README, nothing in frontmatter. | That file joined the provenance file set. Its content already matched the existing URL pattern, so the fix was the file set, not the pattern — content-only detection stays the single rule. |
 
-Two mechanical fixes, neither implemented (out of scope for the trim pass that found them):
+Both fixes landed in `vendored_flag()` **and** `vendored_owner()`. Fixing only the flag would have produced two VND rows with an empty OWNER column, which reads as a detector bug rather than as the finding.
 
-1. Scan `.claude-plugin/plugin.json` for `author` / `license` / `repository`.
-2. Scan the whole file for `upstream:` / `vendored:` / `forked-from:`, not just inside the frontmatter.
+A third defect surfaced while writing this section: `fork_recorded()` matched `| \`name\` |` anywhere in this file, so the table above — documentation, not an index — promoted `agent-browser` to `VND*`, asserting an accepted fork decision that was never made. The fork index now sits between `<!-- fork-index:begin/end -->` markers and the lookup is confined to that block; a file with no markers fails closed.
 
-Until then, treat a `-` from `check-vendored.sh` as "no marker found in the two places it looks", not as "self-owned".
+Regression coverage: `tests/vendored-detection.sh`, 30 cases — every provenance form, the false-positive defences (prose `upstream` with no colon; a README that merely exists), flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the fix itself was a baseline diff: exactly two skill rows changed, nothing else.
