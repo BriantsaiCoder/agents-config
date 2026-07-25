@@ -165,6 +165,9 @@ echo
 echo "── 真實 corpus：修復後的分類必須完全符合已知事實 ──"
 
 if [ -d "$AGENTS/skills" ]; then
+  # 這是刻意的 tripwire,不是待維護的清單:新增或退役任何 skill 都會讓這條紅燈,直到有人
+  # 回來更新它。那正是要的行為——「悄悄多了一個 vendored skill」本來就該被攔下來人工確認。
+  # 與 CI 的「skill-index 與 skills/ 一致」不同:那條比對兩個生成產物,這條釘死已知事實。
   expect_vnd="agent-browser native-feel-cross-platform-desktop playwright-best-practices security-audit tailwind-v4-shadcn vueuse-functions"
   actual=""
   for sd in "$AGENTS"/skills/*/; do

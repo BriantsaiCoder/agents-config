@@ -22,6 +22,30 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
+## Hybrid — house wrapper over vendored payload
+
+Outside the index table: nothing here is forked. The entry exists because the `VND` flag is
+directory-level while the provenance is file-level, and treating the whole directory as untouchable
+costs real work every audit.
+
+**`agent-browser` — house `SKILL.md`, vendored payload.** Recorded 2026-07-26.
+
+- **House-authored, editable, editing it is NOT a fork**: `SKILL.md`. Its banner is our own format
+  per CONVENTIONS rule 1 (`tier: skill-wrapper | consumed-by: … | last-verified: …`) and it states
+  「本檔刻意不快取上游內容，見下方權威來源」. The `upstream:` token in that banner is the wrapper
+  *describing what it wraps*, not declaring itself foreign.
+- **Vendored, no in-place edit**: `references/` (9 files), `templates/` (3 files) — `SKILL.md:24`
+  declares them 「同一份上游內容的快取副本」, offline fallback only, CLI output wins on conflict.
+  Also `install.sh`, an upstream CI artifact (`install.sh:20` writes `$GITHUB_ENV`; no workflow in
+  this repo consumes it).
+- **Why the flag is still `VND`**: detection resolves per directory, and fail-closed is the right
+  default for a gate whose false-`-` authorises editing someone else's work. The flag is correct;
+  this record is what narrows it.
+- **Concrete cost of not recording it**: `agent-browser`'s description is 563 chars — the second
+  longest in the corpus — and it was excluded from the 2026-07-25 trim pass on this flag alone.
+  That exclusion was wrong: the description lives in the house-authored `SKILL.md`. Trimming it
+  remains available and is not a fork.
+
 ## Retired vendored — no local modification (NOT forks)
 
 Deliberately outside the index table above: these were never edited, so they are not forks and must not render as recorded forks. The record exists because retirement itself is a decision that needs a restore path.

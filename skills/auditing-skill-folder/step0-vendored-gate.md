@@ -6,24 +6,27 @@
 
 | Flag | Signal | Meaning |
 |---|---|---|
-| `VND` | a LICENSE variant (`LICENSE`/`.md`/`.txt`/`COPYING`) **or** an upstream-provenance marker in `README.md`/`SKILL.md` | Vendored |
-| `VND*` | `VND`, and listed in `vendored-forks.md` | Vendored, **already forked by a recorded decision** — read the record before judging it |
-| `vnd?` | frontmatter `homepage:` / `source:` / `upstream:` only | Probable — confirm by hand |
+| `VND` | a LICENSE variant (`LICENSE`/`.md`/`.txt`/`COPYING`), **or** an upstream-provenance marker in `README.md` / `SKILL.md` / `.claude-plugin/plugin.json`, **or** an `upstream:` declaration anywhere in `SKILL.md` | Vendored |
+| `VND*` | `VND`, and listed in the fork-index block of `vendored-forks.md` | Vendored, **already forked by a recorded decision** — read the record before judging it |
+| `vnd?` | frontmatter `homepage:` / `source:` only | Probable — confirm by hand |
 | `ERR` | directory or `SKILL.md` unreadable | **Unknown. Treat as vendored** until proven otherwise |
 | `-` | none of the above | Self-owned |
 
 `VND*` exists so the gate can say more than "don't". A vendored skill that has been edited in place is either a recorded decision or a defect, and if those look identical the same accepted fork gets re-litigated at every audit. `VND*` means the decision is already made and documented with a re-merge procedure — do not reopen it, and do not treat it as licence to edit further. A vendored skill that has been edited but is **not** listed is an unrecorded fork: that is the defect.
 
-The record lives at the repo root (`vendored-forks.md`), never inside the vendored skill — writing the record into the skill would itself be the in-place edit the gate forbids. Lookup order: `$VENDORED_FORKS`, then `<audited-folder>/../vendored-forks.md`, then the repo root above this skill.
+The record lives at the repo root (`vendored-forks.md`), never inside the vendored skill — writing the record into the skill would itself be the in-place edit the gate forbids. It must sit **between the `<!-- fork-index:begin/end -->` markers**; the lookup is confined to that block, so a table row of the same shape elsewhere in that file is inert (it was not always — a documentation table once promoted `agent-browser` to `VND*` by accident). A file with no markers fails closed. Lookup order: `$VENDORED_FORKS`, then `<audited-folder>/../vendored-forks.md`, then the repo root above this skill.
 
-Detection is the **union** of two signals because neither alone is sufficient — this was learned the hard way, twice:
+Detection is the **union** of three signals because none alone is sufficient — every one of them was learned from a miss:
 
 - LICENSE alone missed `design-doc-mermaid`: no LICENSE file at all, upstream was a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README. That skill has since been retired to `attic/`, but it remains the reason this is a union and not a single test.
 - The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker.
+- Both together still missed two skills (2026-07-25, caught by hand, fixed 2026-07-26): `tailwind-v4-shadcn` declares provenance only in `.claude-plugin/plugin.json`, which was not in the scanned file set; `agent-browser` puts its `upstream:` marker in an HTML comment **after** the closing `---`, where the frontmatter-bounded scan had already stopped. Both are now covered — the marker scan reads the whole `SKILL.md`, anchored on `^` / `<!--` / `|`.
 
-The union returns every known vendored skill with 0 false positives across the corpus.
+The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (30 cases, in CI) pins that: every provenance form, both false-positive defences, and the exact `VND` set of `skills/`.
 
-`README.md`'s **existence** is not a signal — plenty of self-owned skills have one. Only its provenance **content** counts (marketplace listing, "install this skill", a github URL naming a skill repo).
+**File existence is never the signal — provenance content is.** Plenty of self-owned skills have a `README.md`; `.claude-plugin/plugin.json` is read for its `repository` / `author`, not counted for being there. (The existence test would also have been 0-false-positive on this corpus — exactly 1 of 50 skills has that directory — and was rejected anyway, because content-only keeps this one rule rather than two.)
+
+`upstream:` resolves to `VND`, not `vnd?`: naming that key is an explicit statement of foreign origin. `homepage:` / `source:` stay `vnd?` because a skill can legitimately link its own project.
 
 Everything fails closed: an unreadable file resolves toward `VND`, never toward `-`. A false `VND` costs one manual check; a false `-` authorises editing someone else's skill.
 
