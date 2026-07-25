@@ -2,3 +2,5 @@
 .claude/
 *.bak
 *.bak.*
+*.bak-*
+backups/
