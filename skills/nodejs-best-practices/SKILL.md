@@ -1,6 +1,6 @@
 ---
 name: nodejs-best-practices
-description: 'Use when writing, reviewing, or testing Node.js server code for JS/TS backends — Express/Fastify/Koa/NestJS/Hono routes/middleware, req/res, ESM/CJS interop, tsconfig, request validation, auth, DB clients, background jobs, async error propagation, supertest, testcontainers, nock, or API review. Apply even when user says "scaffold an Express API", "this Fastify route is unhandled-rejecting", "wire up middleware", "add Node API tests", or "mock this outbound call".'
+description: 'Use when writing, reviewing, or testing Node.js JS/TS backend server code — Express/Fastify/Koa/NestJS/Hono routes/middleware, req/res, ESM/CJS interop, tsconfig, request validation, auth, DB clients, background jobs, async error propagation, supertest, testcontainers, nock, API review, API tests, scaffold Express API, unhandled-rejecting, wire up middleware, mock outbound call.'
 ---
 
 # Node.js & Express Best Practices

@@ -1,6 +1,6 @@
 ---
 name: dotnet-framework-best-practices
-description: 'Use when writing or maintaining .NET Framework 4.x — System.Web, Web.config, MVC 5, Web API 2, OWIN/Katana, IIS, Global.asax, WCF, Windows Services, HttpClient lifetime, NLog/log4net. Symptoms: socket exhaustion / TIME_WAIT, IIS 502/503, ConfigurationManager null, HttpClient leak, AppDomain unload, web.config transform not applied. Apply even when user just says "fix this MVC 5 controller", "patch WCF service", or "wire up OWIN" without naming the skill.'
+description: 'Use when writing or maintaining .NET Framework 4.x — System.Web, Web.config, Web API 2, OWIN/Katana, Global.asax, Windows Services, HttpClient lifetime, NLog/log4net. Symptoms: socket exhaustion/TIME_WAIT, IIS 502/503, ConfigurationManager null, HttpClient leak, AppDomain unload, web.config transform not applied. Also "fix this MVC 5 controller", "patch WCF service", "wire up OWIN".'
 ---
 
 # .NET Framework 4.x Best Practices

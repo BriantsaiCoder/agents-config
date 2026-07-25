@@ -1,6 +1,6 @@
 ---
 name: css-ui-best-practices
-description: 'Use when writing or reviewing CSS, UI, or a11y — SCSS, CSS Modules, native nesting, container queries, @layer, :has(), responsive/flex/grid, animation, semantic HTML, alt text, contrast, focus states, CLS. Symptoms: CLS spike, mobile overflow, z-index war, missing focus ring, contrast fail, animation jank. Apply even when user says "fix this layout", "make it responsive", "broken on mobile", or "tab skips button". For Tailwind v4 + shadcn tokens see tailwind-v4-shadcn.'
+description: 'Use when writing or reviewing CSS, UI, a11y — SCSS, CSS Modules, native nesting, container queries, @layer, :has(), responsive/flex/grid, semantic HTML, alt text, focus states, CLS spike, mobile overflow, z-index war, missing focus ring, contrast fail, animation jank, "fix this layout", "make it responsive", "broken on mobile", "tab skips button". Tailwind v4 + shadcn tokens → tailwind-v4-shadcn.'
 ---
 
 # CSS / UI / Accessibility Best Practices

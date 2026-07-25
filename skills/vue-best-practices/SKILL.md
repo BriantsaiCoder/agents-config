@@ -1,6 +1,6 @@
 ---
 name: vue-best-practices
-description: 'Use when writing or reviewing Vue 3 SFCs and component-level patterns — Composition API, script setup syntax, ref/reactive, computed/watch, defineProps/emits, provide/inject, v-if/v-for, slots, async components, TypeScript with Vue. Apply when user says "add a Vue component", "is this reactive", "ref or reactive". For Pinia state, see pinia skill; for SSR, see nuxt; for browser composables, see vueuse-functions; for runtime debugging, see vue-debug-guides.'
+description: 'Use when writing or reviewing Vue 3 SFCs and component-level patterns — Composition API, script setup, ref/reactive, computed/watch, defineProps/emits, provide/inject, v-if/v-for, slots, async components, TypeScript with Vue; "add a Vue component", "is this reactive". Not: Pinia state→pinia, SSR→nuxt, browser composables→vueuse-functions, runtime debugging→vue-debug-guides.'
 ---
 
 # Vue 3 Best Practices

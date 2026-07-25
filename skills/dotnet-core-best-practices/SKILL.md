@@ -1,6 +1,6 @@
 ---
 name: dotnet-core-best-practices
-description: 'Use when writing or reviewing .NET 6+ / ASP.NET Core — WebApplication.CreateBuilder, Minimal API or controllers, DI lifetimes, middleware ordering, BackgroundService, HttpClientFactory, ProblemDetails, options pattern, configuration binding. Symptoms: DI scope mismatch (scoped from singleton), BackgroundService stops silently, middleware misorder (auth after endpoint), HttpClient socket exhaustion, IOptions returns default. Apply even on "scaffold ASP.NET Core API", "wire up DI".'
+description: 'Use when writing or reviewing .NET 6+ / ASP.NET Core — WebApplication.CreateBuilder, Minimal API, controllers, DI lifetimes, middleware ordering, HttpClientFactory, ProblemDetails, options pattern, configuration binding, "scaffold ASP.NET Core API", "wire up DI". Symptoms: DI scope mismatch (scoped from singleton), BackgroundService stops silently, middleware misorder (auth after endpoint), HttpClient socket exhaustion, IOptions returns default.'
 ---
 
 # .NET 6/8/10 & ASP.NET Core Best Practices
