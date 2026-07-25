@@ -342,24 +342,23 @@ npm install @tailwindcss/vite
 
 ❌ **WRONG:**
 ```bash
-npm install tailwindcss-animate  # Deprecated package
-```
-
-```css
-@import "tw-animate-css";  # Package doesn't exist in v4
+npm install tailwindcss-animate  # v3 package, unmaintained for v4
 ```
 
 ✅ **CORRECT:**
 ```bash
-# Don't install tailwindcss-animate at all
-# Use native CSS animations or @tailwindcss/motion
+npm install -D tw-animate-css
+```
+
+```css
+@import "tailwindcss";
+@import "tw-animate-css";
 ```
 
 **Why:**
-- `tailwindcss-animate` is deprecated in Tailwind v4
-- Causes import errors during build
-- shadcn/ui docs may still reference it (outdated)
-- The skill handles animations differently in v4
+- `tailwindcss-animate` is a v3-era package and is no longer maintained for Tailwind v4
+- `tw-animate-css` is the v4 replacement, and is what shadcn/ui now emits into `globals.css`
+- The `tw-animate-css` import must come after `@import "tailwindcss";`
 
 **Impact:** Build failure, requires manual CSS file cleanup
 

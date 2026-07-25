@@ -61,12 +61,22 @@ plugins: [require('@tailwindcss/typography')]
 ```
 
 ### @apply Directive
-```css
-/* ❌ Deprecated in v4 */
-.btn { @apply px-4 py-2 bg-primary; }
 
-/* ✅ Use direct classes or CSS */
-.btn { padding: 0.5rem 1rem; background-color: var(--primary); }
+`@apply` is still supported in v4. In a separate compilation unit (CSS Modules, Vue SFC
+`<style>`, Svelte `<style>`) add `@reference` pointing at your Tailwind entry CSS
+(e.g. `@reference "../../index.css";`) so theme values resolve.
+
+Two things not to do with it:
+- Semantic token plumbing — wire those from the CSS variable instead (see below).
+- `@apply` against classes you defined in `@layer base` — define a custom utility with
+  `@utility` and apply that instead.
+
+```css
+/* ❌ Semantic tokens routed through @apply */
+.btn { @apply bg-primary text-primary-foreground; }
+
+/* ✅ Read the semantic token directly */
+.btn { background-color: var(--primary); color: var(--primary-foreground); }
 ```
 
 ## Variable Architecture
@@ -114,5 +124,5 @@ CSS variables must follow this structure:
 | `tailwind.config.ts` | `@theme inline` in CSS |
 | `tailwindcss-animate` | `tw-animate-css` |
 | `require('@plugin')` | `@plugin "@plugin"` |
-| `@apply` | Direct CSS or utility classes |
+| `@apply` for semantic tokens | `var(--token)` directly |
 | `hsl(var(--color))` | `var(--color)` (already has hsl) |
