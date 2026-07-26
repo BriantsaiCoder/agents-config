@@ -202,15 +202,20 @@ export default <Environment>{
 For real browser testing, use Vitest Browser Mode:
 
 ```ts
+// Vitest 4
+import { playwright } from '@vitest/browser-playwright'
+
 defineConfig({
   test: {
     browser: {
       enabled: true,
-      name: 'chromium', // or 'firefox', 'webkit'
-      provider: 'playwright',
+      provider: playwright(),
+      instances: [{ browser: 'chromium' }], // or 'firefox', 'webkit'
     },
   },
 })
+
+// Vitest 3 shape (invalid in 4): provider: 'playwright' + browser.name: 'chromium'
 ```
 
 ## CSS and Assets

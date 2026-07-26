@@ -207,6 +207,19 @@ var orders = await db.Orders
     .ToListAsync(ct);
 ```
 
+### Collection parameters (default changed in EF Core 10)
+
+A captured *collection* used in `Contains` is translated differently depending on version:
+
+```csharp
+int[] ids = [1, 2, 3];
+// EF Core 10 default: WHERE [b].[Id] IN (@ids1, @ids2, @ids3) — one scalar parameter per element
+// EF Core 8–9 default: a single collection parameter (OPENJSON on SQL Server)
+var blogs = await db.Blogs.Where(b => ids.Contains(b.Id)).ToListAsync(ct);
+```
+
+EF Core 10 expands the collection so the planner gets cardinality information, which usually yields better plans — but each distinct collection *length* now produces a distinct plan. For hot paths with highly variable list sizes, measure. EF Core 10 also simplified generated SQL parameter names, so any code or test asserting on `@p0`-style names needs review.
+
 ### Inline constants vs captured variables
 
 Constants embedded directly in a LINQ expression are inlined as literal SQL values. Each unique value produces a distinct query plan:
@@ -294,6 +307,20 @@ Limitations:
 - Parameters must be scalar; you cannot pass a collection as a parameter.
 - The compiled query is tied to a specific `DbContext` type.
 - Use only for queries that appear in profiling as translation hot spots — not as a blanket optimization.
+
+### Precompiled queries (EF Core 9+, stabilizing in EF Core 10)
+
+Hand-written `EF.CompileAsyncQuery` is not the only option. EF Core 9 added query precompilation: the CLI statically finds your LINQ queries and generates C# interceptors holding pre-compiled SQL and materialization code, so translation cost leaves startup entirely — no delegates to maintain, no scalar-only parameter restriction at the call site.
+
+```bash
+# Precompile queries only — removes translation overhead from startup.
+dotnet ef dbcontext optimize --precompile-queries
+
+# Also generates the compiled model; required for NativeAOT publishing.
+dotnet ef dbcontext optimize
+```
+
+This was explicitly experimental in EF Core 9 ("not recommended for production use"), with stabilization targeted at EF Core 10. Confirm the status for your exact EF Core version before adopting; on versions where it applies, prefer it over hand-written `EF.CompileAsyncQuery`.
 
 ---
 

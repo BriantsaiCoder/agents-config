@@ -99,11 +99,11 @@ const theme = inject(ThemeKey); // Ref<'light' | 'dark'> | undefined
 
 **Why**: Prevents runtime `undefined`, gives full editor autocomplete.
 
-## 12. Naive UI default; Headless UI / Radix Vue when fully custom visuals needed
+## 12. Naive UI default; Headless UI / Reka UI when fully custom visuals needed
 
 User default: **Naive UI** — ships styled, a11y-aware components, fastest path for typical app UI.
 
-Reach for **Headless UI / Radix Vue** only when the design demands fully self-styled primitives (Tailwind from scratch). They give behavior + ARIA without imposing visual style.
+Reach for **Headless UI / Reka UI** only when the design demands fully self-styled primitives (Tailwind from scratch). They give behavior + ARIA without imposing visual style. Package name is `reka-ui`; projects still on the pre-rename `radix-vue` keep that name until migrated (`radix-vue` → `reka-ui`, `--radix-*` → `--reka-*`, `data-radix-*` → `data-reka-*`).
 
 **Why**: Naive UI covers the common case without re-implementing layout/theming. Headless libraries add value only when Naive UI's style is a constraint, not when you just want components.
 
@@ -125,7 +125,7 @@ Don't reinvent `useFetch`, `useLocalStorage`, `useIntersectionObserver`, etc.
 4. Global state → Pinia setup store. Server data → VueUse `useFetch` or dedicated data layer; wrap async actions in try/catch + expose `error`/`loading` refs.
 5. Unique IDs from `crypto.randomUUID()` or counter — never array index.
 6. Forms: `@submit.prevent`, `v-model`, clear inputs after success.
-7. UI: Naive UI by default; Headless UI / Radix Vue only when fully custom visuals are required.
+7. UI: Naive UI by default; Headless UI / Reka UI only when fully custom visuals are required.
 8. Style with `<style scoped>` + Tailwind. Plain CSS in `<style scoped>` if no Tailwind. Avoid runtime CSS-in-JS.
 9. `<template v-for>` + `:key` for lists; never `v-if` + `v-for` on same element.
 10. Tests for composables + stores (`references/testing.md`).

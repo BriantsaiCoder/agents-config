@@ -2,7 +2,7 @@
 title: Middleware & Context API
 description: Server and client middleware, context API for sharing data
 tags: [middleware, context, authentication, logging, request-processing]
-requires: [react-router@7.9.0+, v8_middleware: true]
+requires: [react-router@7.9.0+ (v8_middleware flag only on 7.x; on by default in 8.0+)]
 ---
 
 # Middleware & Context API
@@ -15,9 +15,10 @@ requires: [react-router@7.9.0+, v8_middleware: true]
 npm list react-router
 ```
 
-| Feature    | Minimum Version | Config Flag Required  |
-| ---------- | --------------- | --------------------- |
-| Middleware | 7.9.0+          | `v8_middleware: true` |
+| Feature    | Version    | Config Flag Required                       |
+| ---------- | ---------- | ------------------------------------------ |
+| Middleware | 7.9.0–7.x  | `v8_middleware: true`                      |
+| Middleware | 8.0+       | None — enabled by default, flag is removed |
 
 **If your version is below 7.9.0:**
 
@@ -27,16 +28,20 @@ npm list react-router
 
 ### Enabling Middleware
 
+**Only 7.9.0 ≤ version < 8.0 needs this flag:**
+
 ```ts
 // react-router.config.ts
 import type { Config } from "@react-router/dev/config";
 
 export default {
   future: {
-    v8_middleware: true, // Required for middleware
+    v8_middleware: true, // Required for middleware on 7.9.0–7.x ONLY
   },
 } satisfies Config;
 ```
+
+**React Router 8+**: middleware is on by default and the `future` object should be empty or removed entirely. A leftover `v8_middleware` (or any other `v8_*` key) is treated as a removed flag by the `react-router-dev` config validator and errors the build.
 
 See https://reactrouter.com/how-to/middleware#changes-to-getloadcontextapploadcontext for migration instructions.
 

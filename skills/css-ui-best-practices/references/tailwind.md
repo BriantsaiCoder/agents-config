@@ -183,7 +183,8 @@ Container queries 讓元件根據「父容器寬度」而非「視窗寬度」�
 @import "tailwindcss";
 
 /* v4 中 dark mode 預設使用 media strategy，改用 class strategy 需明確指定 */
-@variant dark (&:where(.dark, .dark *));
+/* 定義自訂 variant 一律用 @custom-variant；@variant 只能在自訂 CSS 區塊內套用既有 variant */
+@custom-variant dark (&:where(.dark, .dark *));
 ```
 
 ```html

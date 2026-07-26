@@ -4,6 +4,7 @@ Reference for rule 10 in SKILL.md. Read this when you need to check feature avai
 
 ## Table of contents
 - [5.7 vs 8.0 feature matrix](#57-vs-80-feature-matrix)
+- [Beyond 8.0: 8.4 LTS and 9.x innovation](#beyond-80-84-lts-and-9x-innovation)
 - [MySQL 5.7 end of life](#mysql-57-end-of-life)
 - [my.cnf key settings](#mycnf-key-settings)
 - [Monitoring essentials](#monitoring-essentials)
@@ -43,14 +44,30 @@ Reference for rule 10 in SKILL.md. Read this when you need to check feature avai
 
 ---
 
+## Beyond 8.0: 8.4 LTS and 9.x innovation
+
+The matrix above compares 5.7 against 8.0 because that is the migration most legacy projects face. It is **not** a statement that 8.0 is the current version. Since 8.1, MySQL ships on a two-track model:
+
+| Track | Versions | What it means |
+|---|---|---|
+| **LTS** | 8.4 (current LTS) | Critical patch updates only; no new features mid-track. The default target for a new deployment or an upgrade. |
+| **Innovation** | 8.1, 8.2, 8.3, then 9.x (9.7 as of April 2026) | New features land here regularly; you must keep re-upgrading to stay supported. Pick only when you need a feature the LTS lacks. |
+| **GA (legacy)** | 8.0 | Predates the split. Treat as a stepping stone, not a destination. |
+
+Practical reading of the matrix: everything marked "Yes (8.0.x)" is also present in 8.4 LTS and 9.x. Feature availability questions above 8.0 are about *innovation-only* features (e.g. `VECTOR`, see `schema-design.md`), not about the 8.0 rows.
+
+Likewise in the my.cnf section below, settings annotated `# 8.0:` apply unchanged to 8.4 LTS unless a note says otherwise.
+
+---
+
 ## MySQL 5.7 end of life
 
 - **Premier Support ended:** October 2023.
 - **Extended Support ended:** October 2023 (Oracle changed the support policy).
 - **Security patches:** No longer provided. Running 5.7 in production is a security risk.
 
-**Migration path:** Upgrade to MySQL 8.0 (or 8.4 LTS). Key breaking changes to watch:
-1. Default authentication changed to `caching_sha2_password`. Update connection strings or create users with `mysql_native_password` temporarily.
+**Migration path:** Target MySQL 8.4 LTS — that is the current LTS and the default destination. 8.0 is a stepping stone, not an endpoint. Choose 9.x innovation only if you need a feature 8.4 lacks and can absorb frequent version bumps. Key breaking changes to watch:
+1. Default authentication changed to `caching_sha2_password`. On 8.0 you can create users with `mysql_native_password` as a temporary bridge; on 8.4 LTS that plugin ships **disabled by default**, and MySQL **9.0 removed it from the server entirely** (client-side only). Migrating straight to 8.4/9.x means fixing the client driver, not falling back to the old plugin.
 2. `utf8mb4` is the default charset; `utf8mb4_0900_ai_ci` is the default collation.
 3. Reserved words added: `RANK`, `ROW_NUMBER`, `GROUPS`, `LATERAL`, etc. Escape with backticks if used as column/table names.
 4. `GROUP BY` no longer implicitly sorts. Add explicit `ORDER BY` if you relied on sorted GROUP BY results.

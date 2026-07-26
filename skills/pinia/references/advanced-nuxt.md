@@ -10,8 +10,10 @@ Pinia works seamlessly with Nuxt 3/4, handling SSR, serialization, and XSS prote
 ## Installation
 
 ```bash
-npx nuxi@latest module add pinia
+npx nuxt module add pinia
 ```
+
+> `npx nuxi@latest module add pinia` is the older Nuxt 3-era alias. It still resolves, but `nuxt` is the documented entry point throughout the Nuxt 4 docs — use it in new work.
 
 This installs both `@pinia/nuxt` and `pinia`. If `pinia` isn't installed, add it manually.
 

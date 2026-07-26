@@ -17,10 +17,11 @@ Any settings that are not specified will be set to default values. The default v
    - `[ProjectName (provide path to .csproj file)]`
 
 2. .NET version to use:
-   - `[8.0 or 9.0 (Default 8.0)]`
+   - `[10.0, 9.0, or 8.0 (Default 10.0 — current LTS, supported through 2028-11-14; 8.0 and 9.0 both reach end of support on 2026-11-10)]`
 
 3. Linux distribution to use:
-   - `[debian, alpine, ubuntu, chiseled, or Azure Linux (mariner) (Default debian)]`
+   - `[debian, alpine, ubuntu, chiseled, or Azure Linux (mariner) (Default ubuntu for 10.0; debian for 8.0 / 9.0)]`
+   - Version split: Debian (`*-bookworm-slim`) images are published for 8.0 / 9.0 only. .NET 10.0 has no Debian variant — choose ubuntu (`10.0-noble`), chiseled, alpine, or Azure Linux.
 
 4. Custom base image for the build stage of the Docker image ("None" to use standard Microsoft base image):
    - `[Specify base image to use for build stage (Default None)]`
@@ -216,14 +217,18 @@ An example Dockerfile for an ASP.NET Core (.NET) application using a Linux base 
 
 # Base Image - Select the appropriate .NET SDK version and Linux distribution
 # Possible tags include:
+# - 10.0-noble (Ubuntu 24.04)
+# - 10.0-alpine (Alpine Linux)
+# - 10.0-azurelinux3.0 (Azure Linux)
 # - 8.0-bookworm-slim (Debian 12)
 # - 8.0-noble (Ubuntu 24.04)
 # - 8.0-alpine (Alpine Linux)
 # - 9.0-bookworm-slim (Debian 12)
 # - 9.0-noble (Ubuntu 24.04)
 # - 9.0-alpine (Alpine Linux)
+# Note: *-bookworm-slim (Debian) is published for 8.0 / 9.0 only; 10.0 has no Debian SDK image.
 # Uses the .NET SDK image for building the application
-FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 ARG BUILD_CONFIGURATION=Release
 
 WORKDIR /src
@@ -260,6 +265,10 @@ RUN dotnet publish "YourProject.csproj" -c $BUILD_CONFIGURATION -o /app/publish 
 
 # Base Image - Select the appropriate .NET runtime version and Linux distribution
 # Possible tags include:
+# - 10.0-noble (Ubuntu 24.04)
+# - 10.0-alpine (Alpine Linux)
+# - 10.0-noble-chiseled (Ubuntu 24.04 Chiseled)
+# - 10.0-azurelinux3.0 (Azure Linux)
 # - 8.0-bookworm-slim (Debian 12)
 # - 8.0-noble (Ubuntu 24.04)
 # - 8.0-alpine (Alpine Linux)
@@ -270,8 +279,9 @@ RUN dotnet publish "YourProject.csproj" -c $BUILD_CONFIGURATION -o /app/publish 
 # - 9.0-alpine (Alpine Linux)
 # - 9.0-noble-chiseled (Ubuntu 24.04 Chiseled)
 # - 9.0-azurelinux3.0 (Azure Linux)
+# Note: *-bookworm-slim (Debian) is published for 8.0 / 9.0 only; 10.0 has no Debian runtime image.
 # Uses the .NET runtime image for running the application
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS final
 
 # Install system packages if needed (uncomment and modify as needed)
 # RUN apt-get update && apt-get install -y \
@@ -282,7 +292,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim AS final
 #     && rm -rf /var/lib/apt/lists/*
 
 # Install additional .NET tools if needed (uncomment and modify as needed)
-# RUN dotnet tool install --global dotnet-ef --version 8.0.0
+# RUN dotnet tool install --global dotnet-ef --version 10.0.0   # keep the major aligned with the SDK/runtime version chosen above
 # ENV PATH="$PATH:/root/.dotnet/tools"
 
 WORKDIR /app
@@ -346,10 +356,10 @@ When adapting this example Dockerfile:
 For smaller image sizes, you can use Alpine Linux:
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 # ... build steps ...
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 # Install packages using apk
 RUN apk update && apk add --no-cache curl ca-certificates
 ```
@@ -358,15 +368,17 @@ RUN apk update && apk add --no-cache curl ca-certificates
 For minimal attack surface, consider using chiseled images:
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy-chiseled AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
 # Note: Chiseled images have minimal packages, so you may need to use a different base for additional dependencies
+# Version split: the chiseled tag tracks the base distro. 10.0 / 9.0 use noble (Ubuntu 24.04);
+# 8.0 additionally still publishes the older jammy-chiseled (Ubuntu 22.04) tag.
 ```
 
 ### Azure Linux (Mariner)
 For Azure-optimized containers:
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-azurelinux3.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-azurelinux3.0 AS final
 # Install packages using tdnf
 RUN tdnf update -y && tdnf install -y curl ca-certificates && tdnf clean all
 ```

@@ -5,6 +5,7 @@ name: React Performance Optimization
 # React Performance Optimization
 
 ## Table of Contents
+- [React Compiler](#react-compiler)
 - [React.memo](#reactmemo)
 - [useMemo and useCallback](#usememo-and-usecallback)
 - [React DevTools Profiler](#react-devtools-profiler)
@@ -13,6 +14,25 @@ name: React Performance Optimization
 - [Concurrent Features](#concurrent-features)
 - [Virtualization](#virtualization)
 - [Image Optimization](#image-optimization)
+
+---
+
+## React Compiler
+
+React 19 起可啟用 React Compiler（build 端的 `babel-plugin-react-compiler`，或框架自帶的 compiler 開關），由它自動處理 memoization。**啟用後多數手動 `useMemo` / `useCallback` / `React.memo` 應直接移除**，而非「量測後保留」。
+
+搭配 `eslint-plugin-react-hooks` 的 `preserve-manual-memoization`：手動 memo 無法被 compiler 保留時會報錯，官方建議多半是把該手動 memo 刪掉，交給 compiler 最佳化。
+
+```js
+// eslint.config.js（eslint-plugin-react-hooks v6+，recommended 預設走 flat config）
+import reactHooks from 'eslint-plugin-react-hooks';
+import { defineConfig } from 'eslint/config';
+
+export default defineConfig([reactHooks.configs.flat.recommended]);
+// 舊版 .eslintrc 走 recommended-legacy preset
+```
+
+未啟用 compiler 的專案（含 React 18）才適用以下「量測後再手動 memo」路線。
 
 ---
 
@@ -305,6 +325,20 @@ function SearchResults({ query }: { query: string }) {
   );
 }
 ```
+
+### Activity（React 19.2+）
+
+把暫時不顯示的子樹設為 `hidden`，React 會保留其 state 並以低優先度預先 render，切回時不需重新載入。取代「卸載後再重建」或手動保存 state 的做法。
+
+```tsx
+import { Activity } from 'react';
+
+<Activity mode={tab === 'details' ? 'visible' : 'hidden'}>
+  <Details id={id} />
+</Activity>
+```
+
+注意：`hidden` 期間 state 保留但 effect 會被卸載，切回 `visible` 才重新掛載；同頁的 ViewTransition / addTransitionType 目前僅在 canary/experimental，勿用於 production。
 
 ---
 

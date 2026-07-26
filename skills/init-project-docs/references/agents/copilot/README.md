@@ -19,7 +19,7 @@ Copilot CLI 的自訂 agent 使用 Markdown + YAML frontmatter。套用 `referen
 | `name` | 保留 | 保留；可含空白，建議與檔名語意一致 |
 | `description` | 保留 | 保留 |
 | `tools` | `Read, Grep, Glob, Bash` 等 Claude tool 名 | 轉成 Copilot tool ids 陣列 |
-| `model` | `opus` / `sonnet` | 改為目前 Copilot 帳號可用模型 id（例如 `claude-opus-4.7`、`gpt-5.5`、`claude-sonnet-4.6`） |
+| `model` | `opus` / `sonnet` | 改為目前 Copilot 帳號可用模型 id（跑 `copilot /model` 或看帳號設定取得；模型 id 隨帳號與時間變動，勿沿用任何文件內的範例字串） |
 | `color` | 有 | 刪除 |
 | `target` | — | 不確定時省略 |
 | `user-invocable` | — | 不確定時省略 |

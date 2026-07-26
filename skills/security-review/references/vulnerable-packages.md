@@ -16,7 +16,7 @@ Load this during Step 2 (Dependency Audit). Check versions in the project's lock
 | tar | < 6.1.9 | Path traversal | >= 6.1.9 |
 | minimist | < 1.2.6 | Prototype pollution | >= 1.2.6 |
 | qs | < 6.7.3 | Prototype pollution | >= 6.7.3 |
-| express | < 4.19.2 | Open redirect | >= 4.19.2 |
+| express | < 4.21.2 (4.x line) | Open redirect (4.19.2) + later 4.x fixes | >= 4.21.2 on 4.x; 5.x is current (5.2.0) |
 | multer | < 1.4.4 | DoS | >= 1.4.4-lts.1 |
 | xml2js | < 0.5.0 | Prototype pollution | >= 0.5.0 |
 | fast-xml-parser | < 4.2.4 | ReDoS | >= 4.2.4 |
@@ -44,7 +44,7 @@ Load this during Step 2 (Dependency Audit). Check versions in the project's lock
 | paramiko | < 3.4.0 | Authentication bypass | >= 3.4.0 |
 | requests | < 2.31.0 | Proxy auth info leak | >= 2.31.0 |
 | urllib3 | < 2.0.7 | Header injection | >= 2.0.7 |
-| Django | < 4.2.16 | Various | >= 4.2.16 |
+| Django | < 4.2.24 (4.2 LTS) / < 5.2.6 (5.2) | Various | >= 4.2.24 on 4.2; >= 5.2.6 on current LTS; 6.0 released |
 | Flask | < 3.0.3 | Various | >= 3.0.3 |
 | Jinja2 | < 3.1.4 | HTML attribute injection | >= 3.1.4 |
 | sqlalchemy | < 2.0.28 | Various | >= 2.0.28 |

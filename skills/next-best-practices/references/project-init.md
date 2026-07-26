@@ -1,8 +1,10 @@
-# Next.js 15 Project Init Scaffold
+# Next.js 16 Project Init Scaffold
 
 新專案起手式。其他 `*.md` 講「寫 Next.js code 的 best practice」；本檔講「新專案第一天怎麼開」。
 
 ## 1. Create + Install
+
+> `create-next-app@latest` 現行產出 Next 16。Next 16 已把 `middleware.ts` 更名為 `proxy.ts`（named export 由 `middleware` 改為 `proxy`、`config` 改為 `proxyConfig`），新專案直接照 [file-conventions.md](file-conventions.md) 的 v16+ 寫法，勿沿用 v14-15 的 `middleware.ts`。
 
 ```bash
 # App Router + TS + Tailwind v4 + src/ + @/* alias
@@ -20,7 +22,7 @@ npm i zustand @tanstack/react-query @tanstack/react-query-devtools
 npm i react-hook-form @hookform/resolvers zod lucide-react
 ```
 
-可選：Drizzle ORM（`drizzle-orm` + `drizzle-kit`）、Better Auth、`tailwindcss-animate`。
+可選：Drizzle ORM（`drizzle-orm` + `drizzle-kit`）、Better Auth、`tw-animate-css`（`tailwindcss-animate` 是 v3 期套件，Tailwind v4 + shadcn 已改用前者）。
 
 ## 2. Directory Layout（feature-based）
 

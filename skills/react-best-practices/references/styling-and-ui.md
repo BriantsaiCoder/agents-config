@@ -175,13 +175,19 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  ref?: React.Ref<HTMLButtonElement>; // React 19+：ref 是一般 prop
+}
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => (
-    <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
-  )
+// React 19+：不需 forwardRef
+const Button = ({ className, variant, size, ref, ...props }: ButtonProps) => (
+  <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
 );
+
+// React 18 專案：拿掉上面的 ref prop，改用
+// const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+//   ({ className, variant, size, ...props }, ref) => (...)
+// );
 ```
 
 ### 擴充元件

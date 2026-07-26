@@ -367,7 +367,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - run: npm ci                    # Deterministic install
@@ -380,6 +380,10 @@ jobs:
 
       - run: npm audit --audit-level=high  # Security check
 ```
+
+Keep `node-version` on the same major as the Dockerfile base image (`node:24-alpine` above) — a green CI on
+a different major is no evidence the production image runs. Node 18 and 20 are past end-of-life (20 "Iron"
+left Maintenance in April 2026); only Active LTS or Maintenance LTS lines belong in a CI matrix.
 
 ### Pre-commit hooks (optional)
 

@@ -227,8 +227,11 @@ router.post(
 export { router as usersRouter };
 ```
 
-**Note:** Express 5 (currently in beta) natively catches async rejections, making this wrapper unnecessary.
-Until Express 5 is stable, always use the wrapper.
+**Note:** Express 5 is the current stable line (5.2.x). Its router forwards a rejected promise returned by
+an async handler to the 4-parameter error middleware, so **`asyncHandler` is unnecessary on 5.x** — only
+projects still on Express 4 (4.21.x, maintenance-only) need the wrapper. When upgrading you can drop the
+wrappers wholesale, but budget for the other 5.x breaking changes at the same time: `req.query` becomes
+getter-only (no reassignment) and `path-to-regexp` route syntax is stricter.
 
 ---
 

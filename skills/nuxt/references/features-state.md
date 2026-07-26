@@ -97,7 +97,7 @@ clearNuxtState()
 For complex state management, use Pinia:
 
 ```bash
-npx nuxi module add pinia
+npx nuxt module add pinia
 ```
 
 ```ts

@@ -32,10 +32,13 @@ Routes (`app/routes.ts`); `loader` / `clientLoader` data; `action` / `clientActi
 
 Verify with `npm list react-router` before implementing.
 
-| Feature | Min Version | Notes |
+| Feature | Version | Notes |
 |---|---|---|
-| Middleware | 7.9.0+ | Requires `v8_middleware` flag |
+| Middleware | 7.9.0–7.x | Requires `future.v8_middleware: true` |
+| Middleware | 8.0+ | On by default — do **not** set `v8_middleware` |
 | Core framework | 7.0.0+ | loaders, actions, Form |
+
+On 8.x, delete every `future.v8_*` key from `react-router.config.ts`: those flags were removed once their behavior became the default, and leftovers fail config validation.
 
 ## Critical Patterns
 

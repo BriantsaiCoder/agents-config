@@ -24,7 +24,7 @@ Reference for rules 8, 9 in SKILL.md. Read this when configuring connection pool
 | **Prepared statements** | Full support, server-side caching | Supported |
 | **Bulk copy** | `MySqlBulkCopy` class | `MySqlBulkLoader` (LOAD DATA LOCAL) |
 | **Cancellation support** | Full `CancellationToken` support | Limited |
-| **.NET version support** | .NET Framework 4.6.1+, .NET 6/7/8/9 | .NET Framework 4.5.2+, .NET 6/7/8 |
+| **.NET version support** | .NET Framework 4.8+, .NET 8/9/10 (2.3.0 dropped net461 + netcoreapp3.1; 2.5.0 added .NET 10) | .NET Framework 4.5.2+, .NET 6/7/8 |
 | **License** | MIT | GPLv2 (commercial license available) |
 | **NuGet package** | `MySqlConnector` | `MySql.Data` |
 | **Actively maintained** | Yes (community + corporate sponsors) | Yes (Oracle) |

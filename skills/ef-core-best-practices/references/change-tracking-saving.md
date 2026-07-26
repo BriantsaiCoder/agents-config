@@ -5,7 +5,7 @@ Reference for how EF Core detects changes, SaveChanges patterns, bulk operations
 ## Table of contents
 - [Change tracking fundamentals](#change-tracking-fundamentals)
 - [SaveChanges patterns](#savechanges-patterns)
-- [Bulk operations (EF7+)](#bulk-operations-ef7)
+- [Bulk operations (EF7+, extended in EF10)](#bulk-operations-ef7-extended-in-ef10)
 - [Concurrency control](#concurrency-control)
 - [Disconnected entities](#disconnected-entities)
 - [Transactions](#transactions)
@@ -127,7 +127,7 @@ foreach (var chunk in items.Chunk(chunkSize))
 
 ---
 
-## Bulk operations (EF7+)
+## Bulk operations (EF7+, extended in EF10)
 
 EF Core 7 introduced `ExecuteUpdate` and `ExecuteDelete` for set-based operations that do not require loading entities into memory.
 
@@ -144,6 +144,26 @@ await db.Orders
         .SetProperty(o => o.UpdatedAt, DateTimeOffset.UtcNow),
         ct);
 ```
+
+#### Conditional setters (EF Core 10+)
+
+EF Core 10 added an `ExecuteUpdateAsync` overload that takes a plain (non-expression) lambda, so setters can be applied with ordinary control flow instead of a fixed chain:
+
+```csharp
+// EF Core 10+ — build the setter list conditionally.
+await db.Orders
+    .Where(o => o.CustomerId == customerId)
+    .ExecuteUpdateAsync(s =>
+    {
+        s.SetProperty(o => o.Status, OrderStatus.Cancelled);
+        if (reasonChanged)
+        {
+            s.SetProperty(o => o.CancelReason, reason);
+        }
+    }, ct);
+```
+
+On EF Core 7–9 only the chained-expression form above exists; branch by issuing separate `ExecuteUpdateAsync` calls instead.
 
 ### ExecuteDelete
 

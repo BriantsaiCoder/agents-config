@@ -1,6 +1,6 @@
 # Architecture and Dependency Injection
 
-Reference for the built-in DI container, service lifetimes, the Options pattern, project structure, and common DI patterns in .NET 6+/8/10. Read this when registering services, debugging lifetime issues, designing project layout, or implementing cross-cutting patterns like factories, decorators, and strategies.
+Reference for the built-in DI container, service lifetimes, the Options pattern, project structure, and common DI patterns in .NET 8/10. Read this when registering services, debugging lifetime issues, designing project layout, or implementing cross-cutting patterns like factories, decorators, and strategies.
 
 ## Table of contents
 - [Built-in DI container](#built-in-di-container)

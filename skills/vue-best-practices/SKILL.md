@@ -29,7 +29,7 @@ Why + code + patterns → `references/rules-expanded.md`.
 9. **Never `v-if` + `v-for` on same element** — `<template v-for>` + inner `v-if` or filter via `computed`. Vue 3: `v-if` evaluates before `v-for`.
 10. **Composables for shared logic, `use` prefix.** Mixin replacement, no collisions.
 11. **Provide/Inject with typed `InjectionKey`** — prevents runtime undefined.
-12. **Naive UI default; Headless UI / Radix Vue for custom visuals.** Naive ships styled + a11y; headless = a11y + keyboard only when self-styling Tailwind.
+12. **Naive UI default; Headless UI / Reka UI (`reka-ui`, ex `radix-vue`) for custom visuals.** Naive ships styled + a11y; headless = a11y + keyboard only when self-styling Tailwind.
 13. **VueUse for composables** — tested, tree-shakable, Vue core maintained.
 14. **`<style scoped>` default; CSS Modules for stricter isolation.**
 

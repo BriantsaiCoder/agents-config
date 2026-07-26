@@ -76,7 +76,7 @@ Specific catch blocks around `SaveChangesAsync`. For optimistic concurrency, ins
 
 ## Working Pattern — Writing
 
-1. Confirm EF Core version (7+ for `ExecuteUpdate`/`ExecuteDelete`; 8+ for primitive collections, complex types).
+1. Confirm EF Core version (7+ for `ExecuteUpdate`/`ExecuteDelete`; 8+ for primitive collections, complex types, `EF.Constant`, `SqlQuery<T>`; 9+ for `EnableThreadSafetyChecks` and experimental precompiled queries; 10+ for non-expression `ExecuteUpdateAsync` setters, multi-parameter collection translation, and named default-value constraints via `HasConstraintName`).
 2. DI: `AddDbContext` (scoped) or `AddDbContextFactory` (manual lifetime). High-throughput → `AddDbContextPool`.
 3. Model: Fluent API for column types, lengths, precision, indexes. Navigation properties for every FK.
 4. Read paths: `AsNoTracking()` + `Select` projection. Eager-load with `Include`/`ThenInclude`; deep loads → `AsSplitQuery()`.

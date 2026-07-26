@@ -12,7 +12,7 @@ Walk this list when implementing or reviewing any auth flow. Each item is a "won
 ## Tokens
 
 - Access tokens **short-lived** (5–30 min typical).
-- Refresh tokens **rotated** on every use, **hashed at rest**, **revocable** server-side. Detect rotation reuse.
+- Refresh tokens **rotated** on every use, **hashed at rest**, **revocable** server-side. Detect rotation reuse. For public clients OAuth 2.1 (draft) accepts either rotation or **sender-constrained** tokens (DPoP / mTLS) — one of the two is mandatory, see `references/jwt.md` § Refresh Token Patterns.
 - JWT validation: verify **signature**, **iss**, **aud**, **exp**, **nbf**, and an **algorithm allowlist** (reject `alg: none`; reject HS256 when expecting RS256). Support key rotation via `kid` + JWKS.
 - Cookies: `HttpOnly` + `Secure` + appropriate `SameSite` (`Lax` default, `Strict` for sensitive). CSRF protection (token or `SameSite=Strict`) on every state-changing endpoint that uses cookie auth.
 

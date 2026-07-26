@@ -40,7 +40,7 @@ A9. **Test pure C with Unity or cmocka; reserve GoogleTest for C++ wrapping a C 
 
 ---
 
-## Part B — Modern C++ (`.cpp` / `.hpp` / `.cc`, C++17/20)
+## Part B — Modern C++ (`.cpp` / `.hpp` / `.cc`, C++17/20/23)
 
 B1. **Default to `std::unique_ptr`; `std::shared_ptr` only for genuinely shared ownership.** `unique_ptr` is zero-overhead vs raw pointer; `shared_ptr` adds atomic refcount cost and obscures ownership. Use `std::weak_ptr` to break cycles. Raw pointer is acceptable for non-owning observation (see B2). ❌ `new`/`delete` outside library internals — use `std::make_unique` / `std::make_shared`.
 
@@ -56,7 +56,7 @@ B6. **STL algorithms / ranges over raw loops.** `std::ranges::sort(v)` not `std:
 
 B7. **Concurrency: `std::jthread` (C++20) over `std::thread`; `std::shared_mutex` for read-heavy; choose atomic memory order deliberately.** `jthread` auto-joins on destruction (RAII); `thread` requires explicit `.join()` or `std::terminate`. Default atomic to `seq_cst`; relax to `acquire/release` only with measured benefit and documented happens-before reasoning. Pad shared atomics to cache-line size (`alignas(64)`) to avoid false sharing.
 
-B8. **PIMPL for ABI stability and compile-time isolation; modules only when toolchain-mature.** PIMPL (`std::unique_ptr<Impl> impl_;` in header, `Impl` defined in `.cpp`) hides implementation; ABI changes don't recompile consumers. C++20 modules eliminate header-include overhead but `import std` is unstable on MSVC / GCC / Clang as of 2026 — wait. Until then: `pragma once` + forward-declare aggressively (include-what-you-use principle).
+B8. **PIMPL for ABI stability and compile-time isolation; modules only when toolchain-mature.** PIMPL (`std::unique_ptr<Impl> impl_;` in header, `Impl` defined in `.cpp`) hides implementation; ABI changes don't recompile consumers. C++20 modules eliminate header-include overhead; compiler support for `import std` has shipped (Clang 18.1.2+ with libc++ or libstdc++, MSVC toolset 14.36+ / VS 17.6+, GCC 15+), but the CMake side is still behind the experimental `CMAKE_EXPERIMENTAL_CXX_IMPORT_STD` gate and `CXX_MODULE_STD` defaults to off for backward compatibility (`CMAKE_CXX_MODULE_STD` needs CMake 3.30+) — production projects wait. Until then: `pragma once` + forward-declare aggressively (include-what-you-use principle).
 
 B9. **Performance: alignment, layout, move semantics, RVO.** Hot structs: `alignas(64)` for cache-line alignment; group hot fields together (SoA over AoS for SIMD-friendly traversal). Pass / return by value to enable copy elision (RVO/NRVO); explicit `std::move` for sink parameters and returning local objects through `try`/`catch`. ❌ `return std::move(local);` defeats RVO — just `return local;`.
 
@@ -70,7 +70,7 @@ B10. **Anti-patterns: `new`/`delete`, C-style cast, macro for constants, singlet
 
 ## Part C — Shared (CMake, toolchain, sanitizers, testing)
 
-C1. **CMake: target-based; `PUBLIC` / `PRIVATE` / `INTERFACE` keywords are mandatory.** `target_link_libraries(app PRIVATE foo)` — `app` uses `foo` but doesn't expose `foo`'s headers. `PUBLIC` propagates to consumers. `INTERFACE` for header-only libs. ❌ `link_libraries(...)` / `include_directories(...)` (global, pollutes siblings). Min CMake 3.20 for `CMakePresets.json`.
+C1. **CMake: target-based; `PUBLIC` / `PRIVATE` / `INTERFACE` keywords are mandatory.** `target_link_libraries(app PRIVATE foo)` — `app` uses `foo` but doesn't expose `foo`'s headers. `PUBLIC` propagates to consumers. `INTERFACE` for header-only libs. ❌ `link_libraries(...)` / `include_directories(...)` (global, pollutes siblings). CMake version window: 3.20+ for `CMakePresets.json`; on the upper side, CMake 4.0 removed compatibility with versions older than 3.5 — `cmake_minimum_required(VERSION <3.5)` or a `cmake_policy` targeting such a version is now a hard error, not a warning. On a legacy repo, read the top of `CMakeLists.txt` first: either raise the floor to 3.5+ or keep old policy behavior via range syntax (`cmake_minimum_required(VERSION 3.5...4.0)`), and verify the policy changes instead of bumping blind.
 
 C2. **`CMakePresets.json` defines the toolchain matrix; CI runs every preset.** Define `windows-msvc` (VC++ / cl.exe), `windows-mingw` (mingw64 GCC), `linux-gcc`, `linux-clang`, `macos-clang`. CLAUDE.md mandates MSVC + MinGW both green for Windows code — ABI / runtime divergence catches latent bugs (e.g., MSVCRT vs UCRT mismatch).
 

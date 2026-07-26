@@ -38,5 +38,6 @@ Each rule's *why* + writing/reviewing patterns live in `references/rules-expande
 | `buffered`, `IAsyncEnumerable`, `QueryMultipleAsync`, multi-mapping + `splitOn` pitfalls, `.Result` / `ConfigureAwait` | `references/performance.md` |
 | `IDbConnectionFactory`, DI lifetimes, `IDbTransaction` vs `TransactionScope`, `IEnumerable from using` trap, unit-of-work | `references/connections-transactions.md` |
 | `Dapper.Contrib`, `SqlBulkCopy` + `FastMember`, output params, TVP, JSON, provider notes (PG / SQLite / MySQL / Oracle) | `references/advanced.md` |
+| `Dapper.AOT` — build-time interceptors, NativeAOT / trimming, reflection-free materialization | `references/advanced.md` |
 
 Open one file at a time — don't preload.

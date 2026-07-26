@@ -66,7 +66,26 @@ Use Joi if the team already uses it or needs Joi-specific features (conditional 
 
 ## Validation Middleware Pattern
 
-A reusable middleware that validates `body`, `params`, and/or `query` against Zod schemas:
+A reusable middleware that validates `body`, `params`, and/or `query` against Zod schemas.
+
+**Express 5 note:** `req.query` is a getter-only property (defined via `Object.defineProperty` with no
+setter), so assigning to it throws `TypeError: Cannot set property query of #<IncomingMessage> which has
+only a getter`. Put the validated query on a custom field instead and read it as `req.validatedQuery`
+(declare it with module augmentation on `Express.Request`). `req.body` and `req.params` are plain data
+properties and stay assignable. On Express 4 the direct `req.query = ...` assignment still works, but the
+`validatedQuery` shape below is forward-compatible with both.
+
+```typescript
+// src/types/express.d.ts — declare the custom field once so handlers can read it
+declare global {
+  namespace Express {
+    interface Request {
+      validatedQuery?: unknown;
+    }
+  }
+}
+export {};
+```
 
 ```typescript
 // src/common/middleware/validate.ts
@@ -84,14 +103,16 @@ export const validate = (schemas: ValidationSchemas) => {
     try {
       if (schemas.body) req.body = schemas.body.parse(req.body);
       if (schemas.params) req.params = schemas.params.parse(req.params) as any;
-      if (schemas.query) req.query = schemas.query.parse(req.query) as any;
+      // Express 5: req.query is getter-only — assigning to it throws. Expose the parsed
+      // value on the augmented field; handlers read req.validatedQuery.
+      if (schemas.query) req.validatedQuery = schemas.query.parse(req.query);
       next();
     } catch (err) {
       if (err instanceof ZodError) {
         res.status(400).json({
           error: {
             message: 'Validation failed',
-            details: err.errors.map((e) => ({
+            details: err.issues.map((e) => ({
               path: e.path.join('.'),
               message: e.message,
             })),
@@ -104,6 +125,11 @@ export const validate = (schemas: ValidationSchemas) => {
   };
 };
 ```
+
+**Zod version note:** Zod v4 removed `ZodError.errors` (a v3-only alias for `.issues`) — on v4 `err.errors`
+is `undefined` and `.map()` throws. `.format()` and `.flatten()` are deprecated there too; use
+`z.treeifyError(err)`. Zod v3 projects may keep `.errors`, but write `.issues` in anything new — it works on
+both majors.
 
 ### Usage in routes
 
@@ -122,8 +148,8 @@ router.get(
   '/',
   validate({ query: listUsersQuerySchema }),
   asyncHandler(async (req, res) => {
-    // req.query.page and req.query.limit are numbers (coerced by Zod)
-    const result = await usersService.list(req.query as ListUsersQuery);
+    // validatedQuery.page and .limit are numbers (coerced by Zod); req.query stays raw strings
+    const result = await usersService.list(req.validatedQuery as ListUsersQuery);
     res.json(result);
   }),
 );

@@ -44,6 +44,8 @@ Web applications use `Web.config`; console apps and services use `App.config`.
 </configuration>
 ```
 
+`4.8` is the safe value here, not the newest one: 4.8.1 is the last release of the 4.x line (in-box on Windows 11 22H2+ and Windows Server 2022; targeting it needs VS 2022 17.3+ plus the 4.8.1 Developer Pack). Bump `compilation`/`httpRuntime targetFramework` to `4.8.1` only when every target server has 4.8.1 installed — a `targetFramework` later than the installed framework is a startup configuration error. The quirks contract keyed on `httpRuntime targetFramework` is satisfied at 4.8 or higher either way.
+
 ### Reading Configuration Values
 
 ```csharp

@@ -52,6 +52,6 @@ WCAG 2.2 AA = legal floor (ADA / EAA / EN 301 549). Full → `references/accessi
 ## Reference Navigation
 
 - `references/tailwind.md` — v4 setup, `@theme`, tokens, plugins, dark mode, shadcn/Headless UI
-- `references/design-system-patterns.md` — token hierarchy, HSL (shadcn), `cn()`, CVA, `size-*`, `@custom-variant`, compound, animate, review
+- `references/design-system-patterns.md` — token hierarchy, OKLCH token (shadcn), `cn()`, CVA, `size-*`, `@custom-variant`, compound, `tw-animate-css`, review
 - `references/native-css-and-modules.md` — nesting, `@layer`, `:has()`, container, `@scope`, custom property, CSS Modules
 - `references/accessibility-responsive.md` — WCAG 2.2 AA, ARIA, keyboard, responsive, Vitals

@@ -369,12 +369,33 @@ function UserProfile({ userPromise }: { userPromise: Promise<User> }) {
 
 讓父元件透過 ref 呼叫子元件的命令式方法。常用於 focus、scroll、動畫控制。
 
+版本分界：`useImperativeHandle` 兩版都照用；差別只在要不要 `forwardRef` 包裹。React 19 起 `ref` 已是一般 prop，`forwardRef` 被 deprecate（未移除，18 專案仍合法）。
+
 ```tsx
 interface InputHandle {
   focus: () => void;
   clear: () => void;
 }
+```
 
+### React 19+：ref 為一般 prop，不需 forwardRef
+
+```tsx
+function FancyInput({ ref, label }: { ref?: React.Ref<InputHandle>; label: string }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+    clear: () => { if (inputRef.current) inputRef.current.value = ''; },
+  }));
+
+  return <label>{label}<input ref={inputRef} /></label>;
+}
+```
+
+### React 18：forwardRef 包裹（維護中的專案沿用）
+
+```tsx
 const FancyInput = forwardRef<InputHandle, { label: string }>(({ label }, ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -385,8 +406,11 @@ const FancyInput = forwardRef<InputHandle, { label: string }>(({ label }, ref) =
 
   return <label>{label}<input ref={inputRef} /></label>;
 });
+```
 
-// 父元件使用
+### 父元件使用（兩版相同）
+
+```tsx
 function Form() {
   const inputRef = useRef<InputHandle>(null);
   return (

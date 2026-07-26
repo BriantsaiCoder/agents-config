@@ -1,4 +1,4 @@
-# .NET 6+ Code Patterns per Golden Rule
+# .NET 8+ Code Patterns per Golden Rule
 
 Complete code examples for each Golden Rule in main `SKILL.md`, plus the 7-step writing pattern, Console app patterns, and .NET version feature matrix. For deeper treatment of DI, hosting, API design, security/performance, see the other reference files in this folder.
 
@@ -213,9 +213,9 @@ public IActionResult Delete(int id) { /* ... */ }
 | .NET 7 | Rate limiting middleware, output caching, `IResult` improvements, `StringSyntaxAttribute` |
 | .NET 8 | Keyed DI services, Identity API endpoints, native AOT, `TimeProvider`, `FrozenDictionary`, `IExceptionHandler` |
 | .NET 9 | `HybridCache`, built-in OpenAPI, `SearchValues<T>`, `Task.WhenEach`, LINQ `CountBy`/`AggregateBy` |
-| .NET 10 | Extended `Minimal API`, improved AOT, enhanced `System.Text.Json` source gen |
+| .NET 10 | Built-in Minimal API validation (`AddValidation()` / `DisableValidation()`, `Microsoft.Extensions.Validation`), `AddOpenApiOperationTransformer` replacing deprecated `WithOpenApi` (`ASPDEPR002`), extended `Minimal API`, improved AOT, enhanced `System.Text.Json` source gen |
 
-## 7-Step Writing Pattern for New .NET 6+ Code
+## 7-Step Writing Pattern for New .NET 8+ Code
 
 1. **Choose the hosting model.** `WebApplication.CreateBuilder()` for web APIs. `Host.CreateDefaultBuilder()` for Worker Services. Minimal API for simple endpoints, Controllers for complex APIs with filters and versioning.
 
@@ -231,7 +231,7 @@ public IActionResult Delete(int id) { /* ... */ }
 
 7. **Secure the application.** Use authorization policies (not inline role checks), store secrets in User Secrets / vault, enable CORS only for known origins, use `ProblemDetails` for error responses.
 
-## Console Application Patterns (.NET 6+)
+## Console Application Patterns (.NET 8+)
 
 ### Generic Host for Console Apps
 

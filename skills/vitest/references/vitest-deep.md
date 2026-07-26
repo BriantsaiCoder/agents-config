@@ -29,7 +29,7 @@ Always pair `vi.mock` with `vi.restoreAllMocks()` (or `clearMocks: true` in conf
 
 - Default thresholds (`statements`, `branches`, `functions`, `lines` ≥ 80%) are a starting point, not a goal. Aim for **branch coverage** in critical paths (auth, payment, persistence).
 - Exclude generated code, type-only files (`*.d.ts`), test utilities, and barrel files via `coverage.exclude`.
-- Use `v8` provider (default in Vitest 3) for speed; switch to `istanbul` only if you need source-map–based reports for older toolchains.
+- Use `v8` provider (default in Vitest 3 and 4) for speed. Vitest 4's v8 uses AST-aware remapping (`experimentalAstAwareRemapping` removed — now the only mode), so accuracy is close to istanbul and `ignoreClassMethods` is supported; switch to `istanbul` only when an existing toolchain requires its report format.
 - `coverage.thresholds.autoUpdate: true` is dangerous — it silently lowers thresholds when coverage drops. Don't enable.
 
 ## Type Testing — When To Use

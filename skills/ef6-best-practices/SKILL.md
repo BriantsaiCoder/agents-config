@@ -1,15 +1,15 @@
 ---
 name: ef6-best-practices
-description: 'Use when writing or reviewing EF6 (System.Data.Entity) data access on .NET Framework — DbContext/ObjectContext, EDMX, Database/Code First, lazy/eager loading, Include, migrations, raw SQL via SqlQuery, change tracking, or query performance. Apply even when user just says "fix this EF6 query", "EDMX update", or "lazy loading is firing N+1" without naming this skill.'
+description: 'Use when writing or reviewing EF6 (System.Data.Entity) data access on .NET Framework or .NET 6+ — DbContext/ObjectContext, EDMX, Database/Code First, lazy/eager loading, Include, migrations, raw SQL via SqlQuery, change tracking, or query performance. Apply even when user just says "fix this EF6 query", "EDMX update", or "lazy loading is firing N+1" without naming this skill.'
 ---
 
 # EF6 Best Practices
 
-Use this skill for Entity Framework 6 code in .NET Framework projects. EF6 is not EF Core: APIs, migration tooling, async behavior, lifetime guidance, and Include syntax differ.
+Use this skill for Entity Framework 6 code on any supported runtime. EF 6.3+ (Sept 2019) runs on .NET Core 3.0 and later as well as .NET Framework; EF 6.5.2 (April 2026) is .NET 10 compatible. EF6 is not EF Core: APIs, migration tooling, async behavior, lifetime guidance, and Include syntax differ.
 
 ## When This Skill Applies
 
-Use when code references `EntityFramework` NuGet or `System.Data.Entity` and targets .NET Framework / classic ASP.NET / WinForms / WPF.
+Use when code references `EntityFramework` NuGet or `System.Data.Entity` — regardless of target framework. That covers .NET Framework / classic ASP.NET / WinForms / WPF and also .NET Core 3.0+ / .NET 5–10 projects (EF 6.3+ is cross-platform). The package and namespace are the signal, not the TFM.
 
 Do not use when code references `Microsoft.EntityFrameworkCore`; use `ef-core-best-practices` instead.
 

@@ -74,7 +74,7 @@ Confidence: HIGH / MEDIUM / LOW
   const query = 'SELECT * FROM users WHERE id = ?';
   db.execute(query, [req.params.id]);
 
-📚 Reference: OWASP A03:2021 – Injection
+📚 Reference: OWASP A05:2025 – Injection (was A03:2021)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -94,8 +94,9 @@ Confidence: HIGH / MEDIUM / LOW
   CVE-2023-45857: CSRF via withCredentials
   Fix: npm install axios@1.6.0
 
-⚪ INFO — express@4.18.2
-  No known CVEs. Current version is 4.19.2 — consider updating.
+⚪ INFO — express@4.21.2
+  No known CVEs. Current major is 5.x (5.2.0); 4.x is maintenance-only
+  (4.21.2) — consider updating.
 ```
 
 ---

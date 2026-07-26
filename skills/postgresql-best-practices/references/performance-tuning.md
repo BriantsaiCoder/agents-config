@@ -65,6 +65,8 @@ CREATE UNIQUE INDEX uq_users_email ON users (email);
 
 **Column order matters in composite indexes.** The index is useful for queries that filter on a leading prefix of the columns. `(customer_id, status)` helps `WHERE customer_id = 1` and `WHERE customer_id = 1 AND status = 'active'` but NOT `WHERE status = 'active'` alone.
 
+That last exclusion is unconditional only through PG 17. **PG 18+**: B-tree *skip scan* generates dynamic equality constraints for the missing leading column, so `WHERE status = 'active'` alone can still use `(customer_id, status)` — but only when `customer_id` has few distinct values. Treat skip scan as a fallback, not a design target: with a high-cardinality leading column it does not help, and column order still has to follow the access pattern. Confirm it actually fired via the `Index Searches` count in `EXPLAIN ANALYZE`.
+
 ### GIN (Generalized Inverted Index)
 
 For multi-valued data: arrays, JSONB, full-text search (tsvector), trigram similarity.

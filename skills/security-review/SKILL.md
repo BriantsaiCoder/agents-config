@@ -50,7 +50,7 @@ AI scanner reasoning like a human researcher — data flow, component interactio
 ## Reference Files
 
 - `references/workflow.md` — 8-step workflow
-- `references/vuln-categories.md` — SQLi / XSS / cmdi / SSRF / BOLA / IDOR / JWT / CSRF / secrets / crypto / race / path traversal
+- `references/vuln-categories.md` — SQLi / XSS / cmdi / SSRF / BOLA / IDOR / JWT / CSRF / secrets / crypto / supply chain / race / path traversal / error-path handling
 - `references/secret-patterns.md` — regex / entropy / CI-CD risks (.env, Actions, Docker, Terraform)
 - `references/language-patterns.md` — Express / React / Next / Django / Flask / FastAPI / Spring / PHP / Go / Rails / Rust
 - `references/vulnerable-packages.md` — npm / pip / Maven / Rubygems / Cargo / Go CVE watchlist

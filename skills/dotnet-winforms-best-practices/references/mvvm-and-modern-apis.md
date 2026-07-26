@@ -1,4 +1,4 @@
-# Modern WinForms APIs — MVVM, Async, Dark Mode, Exceptions (.NET 8+/9+)
+# Modern WinForms APIs — MVVM, Async, Dark Mode, Exceptions (.NET 8+ / 9 / 10+)
 
 Covers R15 (modern .NET WinForms APIs) and application-level exception handling. For classic binding mechanics see `data-binding-patterns.md`; for threading see `threading-and-resources.md`.
 
@@ -71,7 +71,7 @@ b.Format += DecimalToCurrencyString;
 b.Parse += CurrencyStringToDecimal;
 ```
 
-## Async APIs (.NET 9+)
+## Async APIs (.NET 9+ — async forms need WFO5002 on .NET 9, stable from .NET 10)
 
 ### `Control.InvokeAsync` overload selection
 
@@ -90,10 +90,13 @@ await InvokeAsync<string>(() => await LoadDataAsync());
 await InvokeAsync<string>(async ct => await LoadDataAsync(ct), outerCancellationToken);
 ```
 
-### Async form display
+### Async form display (.NET 9 experimental — WFO5002 / .NET 10+ stable)
 
 - `ShowAsync()` — completes when the form closes. The returned task's async state holds a **weak** reference to the form for lookup.
 - `ShowDialogAsync()` — modal, with its own message queue.
+- **.NET 10+**: no suppression needed — these APIs are no longer experimental.
+- **.NET 9 only**: both are `[Experimental]` and emit **compiler error WFO5002**; the build fails unless you suppress it — `#pragma warning disable WFO5002`, `<NoWarn>$(NoWarn);WFO5002</NoWarn>`, or `dotnet_diagnostic.WFO5002.severity = none` in `.editorconfig`.
+- Not available on .NET Framework. `Control.InvokeAsync` above is .NET 9+ and is **not** experimental — it never needs suppression.
 
 ### Async event handlers
 
@@ -102,9 +105,10 @@ Applies equally to `async void` handlers and to overridden `async void OnLoad` /
 - `async void` is the correct pattern for WinForms UI events (see R2).
 - **Always** wrap `await` calls in try/catch inside them — an unhandled exception crashes the process.
 
-## Dark Mode (.NET 9+)
+## Dark Mode (.NET 9 experimental / .NET 10+ stable)
 
-- Enable at startup: `Application.SetColorMode(SystemColorMode.System);` (also `Dark`, `Classic`).
+- **.NET 10+**: `Application.SetColorMode(SystemColorMode.System);` at startup (also `Dark`, `Classic`). No suppression needed — the API is no longer experimental.
+- **.NET 9 only**: `SetColorMode` / `IsDarkModeEnabled` are `[Experimental]` and emit **compiler error WFO5001**; the build fails unless you suppress it — `#pragma warning disable WFO5001` around the call, `<NoWarn>$(NoWarn);WFO5001</NoWarn>` in the project file, or `dotnet_diagnostic.WFO5001.severity = none` in `.editorconfig`.
 - Query current state with `Application.IsDarkModeEnabled`.
 - Only `SystemColors` values flip automatically. Owner-drawn controls, custom painting, and DataGridView theming use absolute colors and must be adjusted explicitly.
 

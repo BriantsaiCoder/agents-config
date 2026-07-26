@@ -107,6 +107,12 @@ CREATE TABLE tickets (
 
 **Tip:** Store UUIDs as `BINARY(16)` with `UUID_TO_BIN(uuid, 1)` (8.0+) for the most compact and index-friendly representation.
 
+### VECTOR type (9.x only)
+
+The MySQL 9.x innovation series added a `VECTOR` type for embedding storage. On the .NET side it needs MySqlConnector 2.5.0+.
+
+**8.4 LTS does not have it.** If the deployment target is the LTS track, do not design a schema around `VECTOR` — keep embeddings in a dedicated vector store and join by id. Adopting `VECTOR` means committing to the innovation track and its upgrade cadence (see `version-dba.md`).
+
 ---
 
 ## C# type mapping

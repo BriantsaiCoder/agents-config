@@ -1,6 +1,6 @@
 # Configuration and Hosting Patterns
 
-Reference for .NET 6+/8/10 configuration providers, environment handling, Kestrel tuning, health checks, background services, and hosting models. Read this when setting up a new project, debugging configuration override order, or adding production-readiness features.
+Reference for .NET 8/10 configuration providers, environment handling, Kestrel tuning, health checks, background services, and hosting models. Read this when setting up a new project, debugging configuration override order, or adding production-readiness features.
 
 ## Table of contents
 - [Configuration system](#configuration-system)

@@ -122,7 +122,10 @@ ObjectInputStream ois = new ObjectInputStream(inputStream);
 Object obj = ois.readObject();  // only safe with allowlist
 
 // Spring Security — permitAll on sensitive endpoint
-.antMatchers("/admin/**").permitAll()
+// Spring Security 6/7 (current):
+.authorizeHttpRequests(auth -> auth.requestMatchers("/admin/**").permitAll())
+// Spring Security 5 (legacy codebases): .antMatchers("/admin/**").permitAll()
+// antMatchers/authorizeRequests were removed in 6 — grepping for them misses every modern project
 
 // Actuator endpoints exposed
 management.endpoints.web.exposure.include=*  # in application.properties

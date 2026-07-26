@@ -1,11 +1,11 @@
 ---
 name: mysql-best-practices
-description: 'Use when writing or reviewing MySQL 5.7/8.x SQL, schema, or DAL code — MySqlConnector, mysql2, DDL/migrations, stored procedures, my.cnf tuning, utf8mb4, InnoDB choices, keyset pagination, transactions, or deadlock diagnosis. Apply even when user just says "design this MySQL schema", "this query is slow on MySQL", or "fix this deadlock" without naming this skill.'
+description: 'Use when writing or reviewing MySQL 8.x / 8.4 LTS / 9.x (plus 5.7 legacy) SQL, schema, or DAL code — MySqlConnector, mysql2, DDL/migrations, stored procedures, my.cnf tuning, utf8mb4, InnoDB choices, keyset pagination, transactions, or deadlock diagnosis. Apply even when user just says "design this MySQL schema", "this query is slow on MySQL", or "fix this deadlock" without naming this skill.'
 ---
 
 # MySQL Best Practices
 
-MySQL 5.7 / 8.x across .NET (MySqlConnector + Dapper) and Node.js (mysql2). PostgreSQL / SQL Server / SQLite → skill does **not** apply.
+MySQL 8.0 / 8.4 LTS / 9.x innovation across .NET (MySqlConnector + Dapper) and Node.js (mysql2). 5.7 is EOL — still covered, but only when taking over legacy; see `references/version-dba.md`. PostgreSQL / SQL Server / SQLite → skill does **not** apply.
 
 ## Mode
 
@@ -37,7 +37,7 @@ Why → `references/rules-expanded.md`.
 - `references/query-writing.md` — params, JOIN, CTE, window, JSON, EXPLAIN, pagination
 - `references/connections-transactions.md` — MySqlConnector vs MySql.Data, pool, isolation, deadlock retry, outbox
 - `references/performance-tuning.md` — slow log, pt-query-digest, covering indexes, bulk insert, hints, buffer pool
-- `references/version-dba.md` — 5.7 vs 8.0 matrix, my.cnf, monitoring, replication
+- `references/version-dba.md` — 5.7 vs 8.0 matrix + where 8.4 LTS / 9.x sit, my.cnf, monitoring, replication
 - `references/backup-restore.md` — mysqldump / XtraBackup, binlog PITR, retention
 
 Open one at a time.

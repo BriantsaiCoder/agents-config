@@ -5,7 +5,7 @@ description: 'Use when writing or reviewing .NET tests — xUnit [Fact]/[Theory]
 
 # .NET Testing Best Practices
 
-xUnit primary (NUnit alt). Compose Moq/NSubstitute, AutoFixture/Bogus, FluentAssertions, WebApplicationFactory, Testcontainers. Not for production code (`dotnet-core-best-practices` / `dotnet-framework-best-practices`) or E2E (Playwright). Cross-ref: `ef-core-best-practices`, `dapper-best-practices`. Detail in `references/code-patterns.md#rule-N`.
+xUnit v3 primary (NUnit alt). Compose Moq/NSubstitute, AutoFixture/Bogus, WebApplicationFactory, Testcontainers. Assert with the built-in `Assert` by default — FluentAssertions v8+ requires a paid licence for commercial use (v7 is the last permanently open-source line; pin `7.*`, or use AwesomeAssertions/Shouldly). Not for production code (`dotnet-core-best-practices` / `dotnet-framework-best-practices`) or E2E (Playwright). Cross-ref: `ef-core-best-practices`, `dapper-best-practices`. Detail in `references/code-patterns.md#rule-N`.
 
 ## 12 Golden Rules
 
@@ -40,8 +40,8 @@ xUnit primary (NUnit alt). Compose Moq/NSubstitute, AutoFixture/Bogus, FluentAss
 ## xUnit Reminders
 
 - `[Fact]` one scenario; `[Theory]` parameterized.
-- Constructor for per-test init; `IAsyncLifetime` for async setup/teardown.
-- `IClassFixture<T>` / `ICollectionFixture<T>` only for expensive shared context; mutable data per-test.
+- Constructor for per-test init; `IAsyncLifetime` for async setup/teardown — **v3: `IAsyncLifetime : IAsyncDisposable`, both members return `ValueTask`; v2: both return `Task`.**
+- `IClassFixture<T>` / `ICollectionFixture<T>` only for expensive shared context (v3 adds `[assembly: AssemblyFixture(typeof(T))]`); mutable data per-test.
 - Be explicit about parallelization. Disable parallel only for shared external resources, not to hide order bugs.
 - `Assert.Throws<T>` / `Assert.ThrowsAsync<T>` for exceptions.
 

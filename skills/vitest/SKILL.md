@@ -5,7 +5,7 @@ description: 'Use when configuring or debugging the Vitest runner: vitest.config
 
 # Vitest
 
-> Vitest 3.x. Verify installed version — 1.x→2.x→3.x had breaking changes in mocks, projects (was `workspace`), browser mode.
+> Vitest 4.x. Verify installed version — 3.x→4.x removed `coverage.all` / `coverage.extensions` and the third options arg on `test`/`describe`, and reshaped browser mode; 1.x→2.x→3.x changed mocks and projects (was `workspace`).
 
 Vite-native runner. Looks like Jest, but value is *Vite-shared* config: same plugins / aliases / env. Pain comes from treating it as Jest. Scope: runner / config / mocking / timers / coverage / environments. RTL patterns → `testing-library-react-best-practices`; component architecture → React/Vue skill.
 
@@ -43,7 +43,7 @@ Jest gotchas:
 - `vi.mock` hoisted at parse — calls inside `it`/`beforeEach` fail; use `vi.doMock` + dynamic re-import.
 - `clearMocks: true` in config > scattering `vi.restoreAllMocks()`.
 - Vite alias / plugins flow through — don't re-declare.
-- Browser mode API changed in 3.x — verify version.
+- Browser mode reshaped in 3.x and again in 4.0 — 4.0 takes `provider: playwright()` from `@vitest/browser-playwright` (string names gone) + `instances: [{ browser: 'chromium' }]`, and context imports moved from `@vitest/browser/context` to `vitest/browser`.
 
 ## Reference Map
 

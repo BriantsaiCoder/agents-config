@@ -7,7 +7,7 @@ description: Vite library mode, multi-page apps, JavaScript API, and SSR guidanc
 
 ## Library Mode
 
-Build a library for distribution:
+Build a library for distribution (`rolldownOptions` is the Vite 8 key; Vite 7 and earlier use `rollupOptions`):
 
 ```ts
 // vite.config.ts
@@ -77,7 +77,7 @@ build: {
 ```ts
 export default defineConfig({
   build: {
-    rolldownOptions: {
+    rolldownOptions: { // Vite 8 key; Vite ≤7 uses `rollupOptions`
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         nested: resolve(import.meta.dirname, 'nested/index.html'),

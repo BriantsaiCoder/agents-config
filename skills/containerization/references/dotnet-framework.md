@@ -18,7 +18,7 @@ Any settings that are not specified will be set to default values. The default v
    - `[Windows Server Core (Default) or Windows Server Full]`
 
 3. Windows Server version to use:
-   - `[2022, 2019, or 2016 (Default 2022)]`
+   - `[2025, 2022, 2019, or 2016 (Default 2022)]`
 
 4. Custom base image for the build stage of the Docker image ("None" to use standard Microsoft base image):
    - `[Specify base image to use for build stage (Default None)]`
@@ -108,7 +108,7 @@ Any settings that are not specified will be set to default values. The default v
 4. Select the appropriate Windows Server container image based on:
    - The .NET Framework version detected from the project
    - The Windows Server SKU specified in containerization settings (Core or Full)
-   - The Windows Server version specified in containerization settings (2016, 2019, or 2022)
+   - The Windows Server version specified in containerization settings (2016, 2019, 2022, or 2025)
    - Windows Server Core tags can be found at: https://github.com/microsoft/dotnet-framework-docker/blob/main/README.aspnet.md#full-tag-listing
 5. Ensure that required NuGet packages are installed. **DO NOT** install these if they are missing. If they are not installed, the user must install them manually. If they are not installed, pause executing this prompt and ask the user to install them using the Visual Studio NuGet Package Manager or Visual Studio package manager console. The following packages are required:
    - `Microsoft.Configuration.ConfigurationBuilders.Environment`
@@ -263,7 +263,6 @@ An example Dockerfile for an ASP.NET (.NET Framework) application using a Window
 # - 3.5-windowsservercore-ltsc2025 (Windows Server 2025)
 # - 3.5-windowsservercore-ltsc2022 (Windows Server 2022)
 # - 3.5-windowsservercore-ltsc2019 (Windows Server 2019)
-# - 3.5-windowsservercore-ltsc2019 (Windows Server 2016)
 # Uses the .NET Framework SDK image for building the application
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022 AS build
 ARG BUILD_CONFIGURATION=Release
@@ -316,7 +315,6 @@ RUN msbuild /p:Configuration=$BUILD_CONFIGURATION `
 # - 3.5-windowsservercore-ltsc2025 (Windows Server 2025)
 # - 3.5-windowsservercore-ltsc2022 (Windows Server 2022)
 # - 3.5-windowsservercore-ltsc2019 (Windows Server 2019)
-# - 3.5-windowsservercore-ltsc2019 (Windows Server 2016)
 # Uses the .NET Framework ASP.NET image for running the application
 FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022
 

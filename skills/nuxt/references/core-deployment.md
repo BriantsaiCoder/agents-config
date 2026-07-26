@@ -156,7 +156,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Must match the Dockerfile base image major below — otherwise a green CI
+          # says nothing about whether the production image can run the build output.
+          node-version: 24
       
       - run: npm ci
       - run: npm run build

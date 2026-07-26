@@ -3,7 +3,7 @@
 ## EXPLAIN Workflow
 
 1. Run `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query>` on a representative dataset.
-2. Look for: `Seq Scan` on large tables, `Sort` spilling to disk (`external merge`), high `Buffers: shared read=` (cold cache hits), row estimate vs actual mismatch (planner has bad stats).
+2. Look for: `Seq Scan` on large tables, `Sort` spilling to disk (`external merge`), high `Buffers: shared read=` (cold cache hits), row estimate vs actual mismatch (planner has bad stats), and — PG 18+ — `Index Searches` far above 1 on a B-tree scan (skip scan fired, but the leading column's cardinality is too high for it to pay off; fix the column order or add an index).
 3. If estimate is off by >10× → run `ANALYZE <table>`; if persistently off → bump per-column stats target.
 
 ```sql
@@ -30,6 +30,8 @@ ANALYZE orders;
 
 ```sql
 -- Composite: column order matches WHERE clause from most-selective to least
+-- PG 18+: skip scan lets a composite index serve queries that omit the leading column,
+-- but only when that column has few distinct values. Order by access pattern, not by skip scan.
 CREATE INDEX idx_orders_user_date ON orders(user_id, order_date);
 
 -- Partial: skip rows that never qualify

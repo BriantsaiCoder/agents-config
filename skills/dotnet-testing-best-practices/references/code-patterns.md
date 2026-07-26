@@ -2,6 +2,8 @@
 
 Complete code examples for each Golden Rule in main `SKILL.md`. For Moq/NSubstitute deep dive see `mocking-frameworks.md`; for WebApplicationFactory/Testcontainers see `integration-testing.md`.
 
+**xUnit version stance:** examples target xUnit v3 (package `xunit.v3` 3.x), where `IAsyncLifetime : IAsyncDisposable` and both members return `ValueTask`. On xUnit v2 (package `xunit` 2.x) change them back to `Task InitializeAsync()` / `Task DisposeAsync()`. v3 also adds an assembly-wide fixture level — `[assembly: AssemblyFixture(typeof(TFixture))]` — for resources too expensive even per collection.
+
 ## Rule 1 — AAA Pattern
 
 ```csharp
@@ -188,8 +190,8 @@ public class DatabaseFixture : IAsyncLifetime
 
     public string ConnectionString => _container.GetConnectionString();
 
-    public async Task InitializeAsync() => await _container.StartAsync();
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask InitializeAsync() => new(_container.StartAsync());
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 }
 
 [CollectionDefinition("Database")]
@@ -236,13 +238,13 @@ public class OrderTests : IAsyncLifetime
 {
     private AppDbContext _context;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _context = CreateFreshContext(); // clean database per test
         await SeedTestData(_context);
     }
 
-    public async Task DisposeAsync() => await _context.DisposeAsync();
+    public ValueTask DisposeAsync() => _context.DisposeAsync();
 }
 ```
 

@@ -11,7 +11,7 @@ name: Vue Styling and UI Libraries
 - [CSS v-bind 響應式樣式](#css-v-bind-響應式樣式)
 - [Tailwind CSS + Vue 整合](#tailwind-css--vue-整合)
 - [Headless UI Vue](#headless-ui-vue)
-- [Radix Vue](#radix-vue)
+- [Reka UI](#reka-ui)
 - [PrimeVue 與 Element Plus](#primevue-與-element-plus)
 
 ---
@@ -366,13 +366,13 @@ const selected = ref(people[0])
 
 ---
 
-## Radix Vue
+## Reka UI
 
-Radix Vue 是 Radix UI 的 Vue 移植版，提供更多元件種類（Tooltip、Popover、Accordion、Tabs 等），同樣是 headless 設計，可存取性極佳。
+Reka UI（原 Radix Vue，2024 更名）是 Radix UI 的 Vue 移植版，提供更多元件種類（Tooltip、Popover、Accordion、Tabs 等），同樣是 headless 設計，可存取性極佳。新專案一律裝 `reka-ui`；既有專案若還停在 `radix-vue`，遷移時 import 來源 `radix-vue` → `reka-ui`、Nuxt module `radix-vue/nuxt` → `reka-ui/nuxt`、CSS 變數 `--radix-*` → `--reka-*`、屬性選擇器 `[data-radix-*]` → `[data-reka-*]` 要一併換。
 
 ```vue
 <script setup lang="ts">
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from 'radix-vue'
+import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from 'reka-ui'
 
 const faqs = [
   { id: '1', question: '如何開始？', answer: '安裝套件後參考文件即可快速上手。' },
@@ -396,7 +396,7 @@ const faqs = [
 </template>
 ```
 
-**Radix Vue vs Headless UI**：Radix Vue 元件種類更多（30+），社群活躍度高，是建立設計系統的首選。Headless UI 元件較少但由 Tailwind Labs 官方維護，與 Tailwind 整合度最高。
+**Reka UI vs Headless UI**：Reka UI 元件種類更多（30+），社群活躍度高，是建立設計系統的首選。Headless UI 元件較少但由 Tailwind Labs 官方維護，與 Tailwind 整合度最高。
 
 ---
 
@@ -433,4 +433,4 @@ const products = ref([
 </template>
 ```
 
-**選擇原則**：預設 **Naive UI**（user default，styled + a11y 完備、TypeScript 友善、theme 系統強）。若團隊有設計師且需要高度自訂外觀，選 Radix Vue / Headless UI + Tailwind。需要重型後台元件（大量 DataTable）時，PrimeVue 為可選替代。**Element Plus / Vuetify / Bootstrap 為家規禁用，不列入選型。**
+**選擇原則**：預設 **Naive UI**（user default，styled + a11y 完備、TypeScript 友善、theme 系統強）。若團隊有設計師且需要高度自訂外觀，選 Reka UI / Headless UI + Tailwind。需要重型後台元件（大量 DataTable）時，PrimeVue 為可選替代。**Element Plus / Vuetify / Bootstrap 為家規禁用，不列入選型。**

@@ -492,7 +492,7 @@ export default defineNuxtModule({
   "types": "./dist/types.d.ts",
   "files": ["dist"],
   "scripts": {
-    "dev": "nuxi dev playground",
+    "dev": "nuxt dev playground",
     "build": "nuxt-module-build build",
     "prepare": "nuxt-module-build build --stub"
   },
@@ -501,10 +501,12 @@ export default defineNuxtModule({
   },
   "devDependencies": {
     "@nuxt/module-builder": "latest",
-    "nuxt": "^3.0.0"
+    "nuxt": "^4.0.0"
   }
 }
 ```
+
+Develop against the current major: `"nuxt": "^3.0.0"` is a caret range that never installs Nuxt 4, so a module pinned that way is never actually tested on the major most users are on. The `meta.compatibility.nuxt: '>=3.0.0'` declaration above already covers both majors — keep it if you support Nuxt 3 too, and add a Nuxt 3 CI job rather than downgrading the devDependency.
 
 ## Disabling Modules
 
@@ -525,7 +527,7 @@ export default defineNuxtConfig({
 
 ## Development Workflow
 
-1. **Create module**: `npx nuxi init -t module my-module`
+1. **Create module**: `npm create nuxt@latest -- -t module my-module`
 2. **Develop**: `npm run dev` (runs playground)
 3. **Build**: `npm run build`
 4. **Test**: `npm run test`

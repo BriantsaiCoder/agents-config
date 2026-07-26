@@ -185,7 +185,7 @@ Never "refactor" one form into another without understanding the semantic differ
 
 ## New Project Defaults
 
-- Prefer the latest .NET (MVVM binding requires .NET 8+; dark mode and `InvokeAsync` require .NET 9+).
-- Enable the Windows API projection by default: `<TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>`.
+- Prefer the latest .NET (MVVM binding requires .NET 8+; `Control.InvokeAsync` requires .NET 9+ and is not experimental; dark mode and `Form.ShowAsync`/`ShowDialogAsync` both ship on .NET 9 behind **WFO5001** / **WFO5002** respectively and are stable from .NET 10).
+- Enable the Windows API projection by default: `<TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>` — on this TFM neither suppression above is needed.
 - `app.config` is discouraged on modern .NET — set high DPI in code via `Application.SetHighDpiMode(...)` at startup, not via config or manifest.
 - NuGet: prefer well-known stable packages compatible with the project TFM; pin to the latest stable major with a floating range, e.g. `[2.*,)`.

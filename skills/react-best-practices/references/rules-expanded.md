@@ -45,9 +45,9 @@ Place state in the closest common ancestor that needs it.
 
 **Why**: Lifting too high → unnecessary re-renders across the entire subtree.
 
-## 6. `React.memo` / `useMemo` / `useCallback` need a measured reason
+## 6. Evaluate React Compiler first; without it, `React.memo` / `useMemo` / `useCallback` need a measured reason
 
-**Why**: Premature memoization = complexity + memory cost. Only when profiling shows it matters.
+**Why**: On React 19 with React Compiler enabled, memoization is automatic — manual memo is mostly redundant and should be deleted (`eslint-plugin-react-hooks` → `preserve-manual-memoization` flags it). Without the compiler, premature memoization = complexity + memory cost; only when profiling shows it matters.
 
 ## 7. Stable unique key, never array index for dynamic lists
 

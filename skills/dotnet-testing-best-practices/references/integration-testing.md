@@ -1,5 +1,7 @@
 # .NET Integration Testing Reference
 
+**xUnit version stance:** fixtures below target xUnit v3 (package `xunit.v3` 3.x), where `IAsyncLifetime : IAsyncDisposable` and both `InitializeAsync()` and `DisposeAsync()` return `ValueTask`. On xUnit v2 (package `xunit` 2.x) both members return `Task` — change the signatures back or you get CS0535. v3 also adds `[assembly: AssemblyFixture(typeof(TFixture))]` for a container shared by the whole test assembly, above `ICollectionFixture<T>`.
+
 ## WebApplicationFactory<T> Deep Dive
 
 `WebApplicationFactory<TEntryPoint>` from `Microsoft.AspNetCore.Mvc.Testing` creates an in-memory test server for ASP.NET Core applications.
@@ -243,14 +245,14 @@ public class SqlServerFixture : IAsyncLifetime
 
     public string ConnectionString => _container.GetConnectionString();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
         using var context = CreateDbContext();
         await context.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     public AppDbContext CreateDbContext()
     {
@@ -277,14 +279,14 @@ public class PostgresFixture : IAsyncLifetime
 
     public string ConnectionString => _container.GetConnectionString();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
         using var context = CreateDbContext();
         await context.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     public AppDbContext CreateDbContext()
     {
@@ -305,7 +307,7 @@ public class SharedDatabaseFixture : IAsyncLifetime
     private readonly MsSqlContainer _container = new MsSqlBuilder().Build();
     public string ConnectionString => _container.GetConnectionString();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
         // Run migrations once
@@ -313,7 +315,7 @@ public class SharedDatabaseFixture : IAsyncLifetime
         await context.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     public AppDbContext CreateDbContext() =>
         new(new DbContextOptionsBuilder<AppDbContext>()
@@ -396,8 +398,18 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>, IAsyncLife
         });
     }
 
-    public async Task InitializeAsync() => await _dbContainer.StartAsync();
-    public new async Task DisposeAsync() => await _dbContainer.DisposeAsync();
+    public async ValueTask InitializeAsync() => await _dbContainer.StartAsync();
+
+    // xUnit v3: IAsyncLifetime.DisposeAsync and WebApplicationFactory's own
+    // `public virtual ValueTask DisposeAsync()` are the same member -- override it
+    // and chain to base so the TestServer/host is disposed too.
+    // On xUnit v2 this was `public new async Task DisposeAsync()`, which shadowed
+    // the base method instead of overriding it.
+    public override async ValueTask DisposeAsync()
+    {
+        await _dbContainer.DisposeAsync();
+        await base.DisposeAsync();
+    }
 }
 ```
 
@@ -417,7 +429,7 @@ public class DatabaseFixture : IAsyncLifetime
 
     public string ConnectionString => _connectionString;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
         _connectionString = _container.GetConnectionString();
@@ -434,7 +446,7 @@ public class DatabaseFixture : IAsyncLifetime
 
     public async Task ResetAsync() => await _respawner.ResetAsync(_connectionString);
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 }
 
 // Use in tests: reset before each test
@@ -443,8 +455,8 @@ public class OrderTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     private readonly DatabaseFixture _db;
     public OrderTests(DatabaseFixture db) => _db = db;
 
-    public Task InitializeAsync() => _db.ResetAsync(); // Clean before each test
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => new(_db.ResetAsync()); // Clean before each test
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task CreateOrder_Persists()
@@ -497,7 +509,7 @@ public class IsolatedDatabaseFixture : IAsyncLifetime
 
     public string ConnectionString => _connectionString;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
         var baseConn = _container.GetConnectionString();
@@ -518,7 +530,7 @@ public class IsolatedDatabaseFixture : IAsyncLifetime
         await context.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     public AppDbContext CreateDbContext() =>
         new(new DbContextOptionsBuilder<AppDbContext>()
@@ -536,7 +548,7 @@ public class SnapshotDatabaseFixture : IAsyncLifetime
     private string _connectionString = null!;
     private readonly MsSqlContainer _container = new MsSqlBuilder().Build();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
         _connectionString = _container.GetConnectionString();
@@ -569,7 +581,7 @@ public class SnapshotDatabaseFixture : IAsyncLifetime
         await cmd.ExecuteNonQueryAsync();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     public AppDbContext CreateDbContext() =>
         new(new DbContextOptionsBuilder<AppDbContext>()

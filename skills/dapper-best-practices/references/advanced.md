@@ -9,6 +9,7 @@ Reference for rules 9, 10 in SKILL.md. Read this when the task goes beyond plain
 - [Table-Valued Parameters (TVP)](#table-valued-parameters-tvp)
 - [JSON columns](#json-columns)
 - [Custom type handlers](#custom-type-handlers)
+- [Dapper.AOT: when to reach for it](#dapperaot-when-to-reach-for-it)
 - [Provider-specific notes](#provider-specific-notes)
 
 ## Dapper.Contrib: when and when not
@@ -187,6 +188,19 @@ public sealed class UserIdHandler : SqlMapper.TypeHandler<UserId>
 SqlMapper.AddTypeHandler(new UserIdHandler());
 ```
 Register handlers in a single bootstrap path (e.g. a `DapperConfiguration` class called from `Program.cs`), not scattered across repositories. Registering twice is a silent no-op for the same type but a code-smell signal that the bootstrap isn't centralized.
+
+## Dapper.AOT: when to reach for it
+
+Plain Dapper materializes rows by emitting IL at runtime (`GetDeserializer`). That breaks under NativeAOT and trimming, and costs a first-call warmup per query shape.
+
+`Dapper.AOT` is a separate build-time package that uses C# interceptors to replace your Dapper call sites with generated, ahead-of-time compiled code — same source, no runtime reflection. It also surfaces analyzer diagnostics for incorrect Dapper usage.
+
+Use it when:
+- Publishing NativeAOT or trimmed.
+- Per-query-shape warmup cost is visible in the profile.
+- You want compile-time diagnostics on your Dapper calls.
+
+Skip it when: a normally JIT-hosted service where reflection warmup never shows up in a profile — it is an extra package and an extra build step, not a default.
 
 ## Provider-specific notes
 

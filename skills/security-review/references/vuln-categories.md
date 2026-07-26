@@ -1,6 +1,7 @@
 # Vulnerability Categories — Deep Reference
 
-This file contains detailed detection guidance for every vulnerability category.
+This file contains detailed detection guidance per vulnerability category, mapped
+to OWASP Top 10:2025 where the mapping is not obvious.
 Load this during Step 4 of the scan workflow.
 
 ---
@@ -227,14 +228,32 @@ argon2.hash(password)
 
 ---
 
-## 5. Insecure Dependencies
+## 5. Software Supply Chain Failures (OWASP A03:2025)
 
-### What to flag:
+Ranked 3rd in OWASP Top 10:2025 — up from "Vulnerable and Outdated Components"
+(A06:2021), and broadened from "which package versions" to the whole path from
+source to deployed artifact. Scan both halves.
+
+### Dependencies — what to flag:
 - Packages with known CVEs in installed version range
 - Packages abandoned > 2 years with no security updates
 - Packages with extremely broad permissions for their stated purpose
 - Transitive dependencies pulling in known-bad packages
 - Pinned versions that are significantly behind current (possible unpatched vulns)
+
+### Build & CI pipeline — what to flag:
+- **Unpinned GitHub Actions**: `uses: some/action@main` or `@v3` (mutable tag) —
+  pin to a full commit SHA. A retagged action executes attacker code in CI.
+- **Missing or ignored lockfile**: no `package-lock.json` / `poetry.lock` / `go.sum`,
+  or CI running `npm install` instead of `npm ci` — the build is not reproducible.
+- **Post-install scripts**: `postinstall` / `setup.py` executing on `npm install` or
+  `pip install`. Arbitrary code at dependency-install time.
+- **Over-permissioned pipeline**: workflow with `permissions: write-all`, publish
+  credentials available to PR-triggered jobs, `pull_request_target` checking out
+  untrusted refs.
+- **Unverified artifacts**: releases without signature / checksum verification,
+  container images pulled by mutable `:latest` tag rather than digest.
+- **No SBOM / provenance** for anything shipped to customers.
 
 ### High-risk package watchlist: see `references/vulnerable-packages.md`
 
@@ -279,3 +298,34 @@ safe_path = os.path.join('/var/uploads', filename)
 if not safe_path.startswith('/var/uploads/'):
     abort(400)
 ```
+
+---
+
+## 8. Mishandling of Exceptional Conditions (OWASP A10:2025)
+
+New entry in OWASP Top 10:2025. The bug is in the **error path**, so it never shows
+up on the happy path a normal review walks — read every `catch` / `except` /
+`if err != nil` and ask what state the process is left in.
+
+**What to look for:**
+- **Fail-open security checks**: auth or authorization throws, and the handler
+  catches and continues. Validation fails but the response is still `200`.
+  ```js
+  // VULNERABLE: verification error is swallowed → request proceeds unauthenticated
+  try { req.user = jwt.verify(token, key); } catch (e) { /* ignore */ }
+  ```
+- **Empty or log-only catch blocks** around a security-relevant operation
+  (signature check, permission lookup, rate-limit increment).
+- **Resources not released on the error path**: DB connection / file handle / lock
+  acquired, exception thrown before the release. Use `finally`, `using`, `defer`,
+  or a context manager. Leaked connections are a DoS.
+- **Catching too broadly**: `catch (Exception)` / `except:` hides `OutOfMemory`,
+  cancellation, and programming errors alongside the expected failure.
+- **Error messages leaking internal state**: stack traces, SQL text, file paths, or
+  library versions returned to the client (see also §3).
+- **Inconsistent state after partial failure**: multi-step operation with no
+  transaction or compensating action — money deducted, order never created.
+- **Unhandled rejection / panic ending the process** on attacker-reachable input.
+
+**Escalation checker:** for each `catch`, ask "if an attacker can force this
+exception, do they get *more* access than on the success path?" If yes → HIGH.

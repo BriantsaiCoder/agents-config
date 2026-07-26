@@ -80,7 +80,7 @@ For `poetry` / `uv`: prefer the lockfile they own — use `poetry export` to `re
 ### Go
 
 ```dockerfile
-FROM golang:1.24-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -94,6 +94,8 @@ ENTRYPOINT ["/app"]
 ```
 
 Distroless static gives ~5MB images and runs as non-root by default.
+
+Go's security policy only supports the two most recent major releases. As of 2026-07 that means 1.26 and 1.25; a builder pinned to 1.24 or older no longer receives security fixes and imports CVEs into the build stage.
 
 ### Java (Maven)
 

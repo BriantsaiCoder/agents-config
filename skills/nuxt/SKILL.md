@@ -5,7 +5,7 @@ description: Use when working with Nuxt 3 / 4 apps — file-based routing, serve
 
 # Nuxt
 
-> Nuxt 3.x / 4.x — **check the major first**. Nuxt 4 defaults `srcDir` to `app/`: `pages/` `composables/` `layouts/` `middleware/` move under it, `server/` stays at root, `srcDir: '.'` reverts. Then verify Nitro version — SSR/hydration and `useFetch` defaults shifted across 3.7 / 3.10 / 3.12.
+> Nuxt 3.x / 4.x — **check the major first**. Nuxt 4 defaults `srcDir` to `app/`: `pages/` `composables/` `layouts/` `middleware/` move under it, `server/` stays at root, `srcDir: '.'` reverts. Then `nuxt.config.ts`: `compatibilityDate` pins Nitro/Image presets; `future.compatibilityVersion: 5` = v5 defaults, not v4. Then verify Nitro version — SSR/hydration and `useFetch` defaults shifted across 3.7 / 3.10 / 3.12.
 
 Top-3 bug sources: (1) where code runs (SSR / client / Nitro / build-time), (2) double-hydrate / cross-request state leak, (3) runtime config leaked to client.
 
@@ -16,7 +16,7 @@ Top-3 bug sources: (1) where code runs (SSR / client / Nitro / build-time), (2) 
 3. For any code — SSR / hydration / Nitro / build?
 4. Data fetching → decision tree below.
 5. State → `useState(key, init)` or Pinia. Module-scope `let x = ...` leaks across requests.
-6. Verify `npm run build && npm run preview` (catches Nitro-only bugs `dev` hides) + `nuxi typecheck`.
+6. Verify `npm run build && npm run preview` (catches Nitro-only bugs `dev` hides) + `npx nuxt typecheck`.
 
 ## Data Fetching
 
@@ -53,7 +53,7 @@ Anti-patterns, hydration bugs, full review checklist → `references/pitfalls-an
 
 - `references/pitfalls-and-review.md` — review PR, hydration debug, server route final
 - `references/core-directory-structure.md` — auto-import scope
-- `references/core-config.md`, `references/core-cli.md` — `nuxt.config.ts`, `nuxi`
+- `references/core-config.md`, `references/core-cli.md` — `nuxt.config.ts`, `nuxt` CLI
 - `references/core-routing.md` — file routes, dynamic params, layouts
 - `references/core-data-fetching.md`, `references/best-practices-data-fetching.md` — fetch deep dive
 - `references/features-server.md`, `references/core-deployment.md` — Nitro, deploy presets

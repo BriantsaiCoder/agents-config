@@ -22,7 +22,7 @@ OAuth2.1 (in progress) standardizes: PKCE always, no implicit, no ROPC. Aim for 
 3. User authenticates and consents at IdP.
 4. IdP redirects back to `redirect_uri` with `code` and the original `state`.
 5. **Client verifies `state`** matches what was sent (CSRF defense). Reject mismatches.
-6. Client POSTs to token endpoint: `code`, `redirect_uri`, `client_id`, `code_verifier`. IdP verifies `SHA-256(code_verifier) == code_challenge`.
+6. Client POSTs to token endpoint: `code`, `client_id`, `code_verifier` — plus `redirect_uri` under OAuth 2.0, which OAuth 2.1 (draft) drops from this request. Most deployed ASs are still 2.0 and require it; send what the AS's metadata calls for. IdP verifies `SHA-256(code_verifier) == code_challenge`.
 7. IdP returns access token + refresh token (+ id_token for OIDC).
 8. **For OIDC**: validate id_token signature, `iss`, `aud`, `exp`, **`nonce`** (matches what client sent), `at_hash` if present.
 

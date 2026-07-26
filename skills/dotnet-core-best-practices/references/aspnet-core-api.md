@@ -1,6 +1,6 @@
 # ASP.NET Core API Patterns
 
-Reference for Minimal API vs Controllers, endpoint routing, model binding, filters, output caching, rate limiting, API versioning, and OpenAPI on .NET 6+/8/10.
+Reference for Minimal API vs Controllers, endpoint routing, model binding, filters, output caching, rate limiting, API versioning, and OpenAPI on .NET 8/10.
 
 ## Table of contents
 - [Minimal API vs Controllers](#minimal-api-vs-controllers)
@@ -169,9 +169,24 @@ public class CreateOrderValidator : AbstractValidator<CreateOrderDto>
 builder.Services.AddScoped<IValidator<CreateOrderDto>, CreateOrderValidator>();
 ```
 
-### IEndpointFilter for validation (.NET 7+)
+### Built-in validation (.NET 10+) — reach for this first
 
-Centralizes validation so handlers stay focused on business logic.
+```csharp
+// <PackageReference Include="Microsoft.Extensions.Validation" Version="10.0.1" />
+builder.Services.AddValidation();   // discovers validatable types, wires the endpoint filter itself
+
+// DataAnnotations / IValidatableObject on the bound type are enforced automatically; 400 on failure.
+app.MapPost("/api/orders", CreateOrder);
+
+// Opt a single endpoint out
+app.MapPost("/api/internal/bulk", BulkImport).DisableValidation();
+```
+
+Shape the 400 body by registering an `IProblemDetailsService`.
+
+### IEndpointFilter for validation (.NET 7–9, or FluentValidation rules on .NET 10+)
+
+Centralizes validation so handlers stay focused on business logic. Hand-write this only when targeting pre-.NET 10, or when the rules go beyond what DataAnnotations can express.
 
 ```csharp
 public class ValidationFilter<T>(IValidator<T> validator) : IEndpointFilter where T : class
@@ -464,7 +479,21 @@ app.MapGet("/api/products/{id:int}", GetProduct)
     .Produces(404);
 ```
 
-### WithOpenApi() extension
+### Per-endpoint OpenAPI metadata
+
+.NET 10+ — `AddOpenApiOperationTransformer()`. `WithOpenApi()` still compiles but is deprecated (diagnostic `ASPDEPR002`):
+
+```csharp
+app.MapPost("/api/orders", CreateOrder)
+    .AddOpenApiOperationTransformer((operation, context, ct) =>
+    {
+        operation.Summary = "Create a new order";
+        operation.Responses["201"].Description = "Order created successfully";
+        return Task.CompletedTask;
+    });
+```
+
+.NET 8/9 — `WithOpenApi()`:
 
 ```csharp
 app.MapPost("/api/orders", CreateOrder)

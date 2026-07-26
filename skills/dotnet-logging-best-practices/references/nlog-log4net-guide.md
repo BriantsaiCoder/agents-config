@@ -2,6 +2,8 @@
 
 ## NLog Configuration Deep Dive
 
+**Package prerequisites.** The core `NLog` package carries the File / Console family of targets only; database, mail, and cloud targets come from extension packages. On NLog v6+ the Mail target needs `NLog.Targets.Mail` (or the `NLog.MailKit` alternative), and the Database target needs the ADO.NET provider package for your database. A missing package is a config-load failure — under `throwConfigExceptions="true"` it throws at startup.
+
 ### XML Configuration (NLog.config)
 
 ```xml
@@ -33,10 +35,12 @@
             name="consoleTarget"
             layout="${longdate} [${level:uppercase=true}] ${message}${onexception:inner=${newline}${exception:format=tostring}}" />
 
-    <!-- Database target -->
+    <!-- Database target — extension package + the ADO.NET provider package for your database
+         (Microsoft.Data / System.Data / PostgreSQL / Oracle / MySql / SQLite).
+         Legacy apps still on System.Data.SqlClient use dbProvider="System.Data.SqlClient". -->
     <target xsi:type="Database"
             name="dbTarget"
-            dbProvider="System.Data.SqlClient"
+            dbProvider="Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient"
             connectionString="${var:connectionString}">
       <commandText>
         INSERT INTO Logs (Timestamp, Level, Logger, Message, Exception, MachineName)
@@ -57,7 +61,8 @@
             layout="${longdate}|${level}|${logger}|${message}|${exception:format=tostring}"
             keepConnection="true" />
 
-    <!-- Mail target -->
+    <!-- Mail target — NLog v6+ requires the NLog.Targets.Mail package (or NLog.MailKit);
+         it is not part of the core NLog package -->
     <target xsi:type="Mail"
             name="mailTarget"
             smtpServer="smtp.company.com"

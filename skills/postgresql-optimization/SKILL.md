@@ -26,6 +26,7 @@ This skill is the deep tuning companion to `postgresql-best-practices`. Use `pos
 | Time-series / multi-tenant table beyond ~50–100M rows | Declarative partitioning (`PARTITION BY RANGE/LIST`) | `references/partitioning.md` |
 | Booking / scheduling overlap, time ranges | Range types + GiST exclusion constraint | `references/partitioning.md` |
 | Pagination, bulk insert, UPSERT, missing indexes, monitoring | Indexes + query patterns + `pg_stat_*` | `references/performance.md` |
+| Composite index but queries often omit the leading column | Check leading-column cardinality; PG 18+ B-tree skip scan | `references/performance.md` |
 
 ## Always-True Anti-Patterns
 

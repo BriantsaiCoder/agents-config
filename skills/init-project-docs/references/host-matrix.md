@@ -95,7 +95,7 @@ Claude 與 Copilot 共用同一批 `references/agents/*.md`，套用時調整 fr
 | `name` | 必填 | 必填 |
 | `description` | 必填 | 必填 |
 | `tools` | 逗號分隔工具名 | Copilot tool ids 陣列或清單（如 `search/codebase`、`edit/editFiles`、`runCommands`；依 `references/agents/copilot/README.md` 轉換） |
-| `model` | `opus` / `sonnet` / `haiku` | Copilot 模型名（如 `claude-opus-4.7` / `gpt-5.5`，依使用者帳號可用模型） |
+| `model` | `opus` / `sonnet` / `haiku` | Copilot 模型 id（跑 `copilot /model` 或看帳號設定取當前可用 id；模型 id 隨帳號與時間變動，勿沿用任何文件內的範例字串） |
 | `target` | —（不需要） | 選填，指定適用範圍 |
 | `user-invocable` | —（不需要） | 選填，是否可由使用者直接呼叫 |
 

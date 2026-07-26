@@ -39,8 +39,8 @@ defineConfig({
         '**/*.test.ts',
       ],
       
-      // Report uncovered files
-      all: true,
+      // Vitest 4 removed coverage.all / coverage.extensions — use include above
+      // (Vitest 3: `all: true` to report uncovered files)
       
       // Thresholds
       thresholds: {
@@ -197,7 +197,7 @@ vitest --merge-reports --coverage --reporter=json
 
 - V8 is faster, Istanbul is more compatible
 - Use `--coverage` flag or `coverage.enabled: true`
-- Include `all: true` to see uncovered files
+- Set `coverage.include` to see uncovered files — Vitest 4 removed `coverage.all` and covers only files loaded during the run unless `include` is set (Vitest 3 used `all: true`)
 - Set thresholds to enforce minimum coverage
 - Use `@preserve` comment to keep ignore hints
 

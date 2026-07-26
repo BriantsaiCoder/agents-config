@@ -43,10 +43,16 @@ name: Config and Project Setup
     "noUncheckedIndexedAccess": true,   // obj[key] 回傳 T | undefined
     "noPropertyAccessFromIndexSignature": true, // 強制 bracket notation 存取 index signature
     "exactOptionalPropertyTypes": true, // 區分 undefined 和 missing
+    "erasableSyntaxOnly": true,         // TS 5.8+：禁用無法純抹除的語法
     "noFallthroughCasesInSwitch": true  // switch case 必須 break/return
   }
 }
 ```
+
+`erasableSyntaxOnly`（TS 5.8+）會擋掉六類無法純抹除的語法：parameter properties、`<T>expr` 型別斷言、
+非 ambient 的 `enum` / `const enum`、非 ambient 的 instantiated namespace、非 ambient 的 `import =` 與
+`export =`。它把 Golden Rule 11（避免 `enum`）機械化，也是讓 `.ts` 直接餵給 Node 原生 type stripping 的前提。
+既有專案若大量使用 NestJS 風格的 constructor parameter properties，一開會噴大量錯誤 — 屬於漸進式啟用的最後一階。
 
 ### 漸進式啟用（for legacy projects）
 
@@ -64,8 +70,12 @@ name: Config and Project Setup
 | 場景 | `module` | `moduleResolution` | 說明 |
 |---|---|---|---|
 | Node.js (ESM) | `NodeNext` | `NodeNext` | 支援 .mjs/.cjs，尊重 package.json `exports` |
+| Node.js（TS 5.9+，鎖定語意） | `node20` | 省略（自動推導） | Node 20/22/24 語意的**固定快照**；TS 官方建議 5.9 之後改用此值 |
 | Bundler (Vite/webpack) | `ESNext` | `Bundler` | Bundler 處理 resolution，TS 不需要嚴格檢查 |
 | Library (同時支援 CJS/ESM) | `NodeNext` | `NodeNext` | 確保輸出的 .d.ts 對消費者正確 |
+
+`nodenext` 與 `node20` 都支援 `require("esm")`；差別在 `nodenext` 是滾動目標，升 TS 版本就可能改變模組語意，
+而 `node20` 不會漂移。需要可重現建置／鎖定模組語意的專案優先挑 `node20`（TS 5.9 以下沒有這個值，只能用 `NodeNext`）。
 
 ```jsonc
 // Node.js ESM 專案
@@ -141,8 +151,9 @@ import { formatDate } from '@/utils/format';
 
 | 環境 | 建議 `target` | 說明 |
 |---|---|---|
-| Node.js 18+ | `ES2022` | 支援 top-level await, `at()`, cause in Error |
-| Node.js 20+ | `ES2023` | 加上 `findLast`, `findLastIndex` |
+| Node.js 24（現行 Active LTS） | `ES2024` | `@tsconfig/node24` 的 base 值（`lib` 亦為 `ES2024`），搭配 `"module": "nodenext"` |
+| Node.js 22（Maintenance LTS） | `ES2023` | TS 官方 Node-Target-Mapping 建議值；同時相容 Node 24 |
+| Node.js 18 / 20 | — | **已 EOL**（18 於 2025-04、20 於 2026-04 結束支援），新專案勿以此為 target |
 | 現代瀏覽器 | `ES2022` | 大多數瀏覽器都支援 |
 | 需要舊瀏覽器支援 | `ES2017`-`ES2020` | 搭配 polyfill |
 | Library | `ES2020` 或更低 | 依最低支援版本決定 |
@@ -195,8 +206,8 @@ node -r tsconfig-paths/register src/index.ts
 社群維護的 tsconfig base packages，避免從零設定：
 
 ```jsonc
-// Node.js 20 專案
-{ "extends": "@tsconfig/node20/tsconfig.json" }
+// Node.js 現行 Active LTS（24.x）專案
+{ "extends": "@tsconfig/node24/tsconfig.json" }
 
 // 最嚴格設定（學習或新專案推薦）
 { "extends": "@tsconfig/strictest/tsconfig.json" }
@@ -205,7 +216,8 @@ node -r tsconfig-paths/register src/index.ts
 { "extends": "@tsconfig/vite-react/tsconfig.json" }
 ```
 
-安裝：`npm install -D @tsconfig/node20` 或 `@tsconfig/strictest`
+安裝：`npm install -D @tsconfig/node24` 或 `@tsconfig/strictest`（Node 18 / 20 已 EOL，`@tsconfig/node18` /
+`@tsconfig/node20` 勿再用於新專案；維護中的舊專案沿用即可，升級 runtime 時一併換 base）
 
 ### @tsconfig/strictest 包含什麼
 
@@ -220,16 +232,16 @@ node -r tsconfig-paths/register src/index.ts
 
 ## Example tsconfig Configs
 
-### Node.js 20 Backend
+### Node.js 24 Backend（Active LTS）
 
 ```jsonc
 {
-  "extends": "@tsconfig/node20/tsconfig.json",
+  "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    "module": "NodeNext",
+    "module": "NodeNext",        // TS 5.9+ 可改 "node20" 鎖定語意，moduleResolution 則省略
     "moduleResolution": "NodeNext",
-    "target": "ES2022",
+    "target": "ES2024",
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,

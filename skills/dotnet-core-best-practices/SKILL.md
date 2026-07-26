@@ -1,9 +1,9 @@
 ---
 name: dotnet-core-best-practices
-description: 'Use when writing or reviewing .NET 6+ / ASP.NET Core — WebApplication.CreateBuilder, Minimal API, controllers, DI lifetimes, middleware ordering, HttpClientFactory, ProblemDetails, options pattern, configuration binding, "scaffold ASP.NET Core API", "wire up DI". Symptoms: DI scope mismatch (scoped from singleton), BackgroundService stops silently, middleware misorder (auth after endpoint), HttpClient socket exhaustion, IOptions returns default.'
+description: 'Use when writing or reviewing .NET 8+ / ASP.NET Core — WebApplication.CreateBuilder, Minimal API, controllers, DI lifetimes, middleware ordering, HttpClientFactory, ProblemDetails, options pattern, configuration binding, "scaffold ASP.NET Core API", "wire up DI". Symptoms: DI scope mismatch (scoped from singleton), BackgroundService stops silently, middleware misorder (auth after endpoint), HttpClient socket exhaustion, IOptions returns default.'
 ---
 
-# .NET 6/8/10 & ASP.NET Core Best Practices
+# .NET 8/10 & ASP.NET Core Best Practices
 
 Prefer built-in primitives over third-party workarounds. Not for .NET Framework 4.x (use `dotnet-framework-best-practices`). Cross-ref: `ef-core-best-practices`, `dapper-best-practices`, `dotnet-logging-best-practices`. Rule detail in `references/code-patterns.md#rule-N`.
 
@@ -20,7 +20,7 @@ Prefer built-in primitives over third-party workarounds. Not for .NET Framework 
 9. **No secrets in `appsettings.json`** — User Secrets (dev), env (CI), Key Vault / Vault (prod).
 10. **Global error handling** — `UseExceptionHandler` + `ProblemDetails` (RFC 9457); `AddProblemDetails()` auto-wires on .NET 8+.
 11. **Authorization policies** — `AddAuthorizationBuilder().AddPolicy(...)` + `[Authorize(Policy = "...")]`. Not inline `User.IsInRole`.
-12. **Platform features** — `RateLimiter`/`OutputCache` (.NET 7+), keyed services (.NET 8+), `HybridCache`/OpenAPI (.NET 9), AOT. Matrix → `code-patterns.md`.
+12. **Platform features** — `RateLimiter`/`OutputCache` (.NET 7+), keyed services (.NET 8+), `HybridCache`/OpenAPI (.NET 9+), built-in validation `AddValidation()` + `AddOpenApiOperationTransformer` replacing deprecated `WithOpenApi` (.NET 10+), AOT. Matrix → `code-patterns.md`.
 
 ## Review Severity Checklist
 

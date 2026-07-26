@@ -91,11 +91,19 @@ Risks for production:
 - No review gate before SQL runs.
 - Startup time increases.
 
-### Option C — `Migrate.exe` (EF6 command-line tool)
+### Option C — EF6 command-line tool
+
+Which tool depends on the target framework — they are not interchangeable.
+
+**.NET Framework projects — `migrate.exe`** (ships in the `EntityFramework` NuGet `tools/` folder):
 
 ```
 migrate.exe MyApp.dll /startupConfigurationFile="Web.config" /targetMigration="latest"
 ```
+
+**.NET Core 3.0+ / .NET 5–10 projects — `ef6.exe`**: EF 6.3.0 rewrote the migrations commands to run out of process and introduced the `ef6` utility. `migrate.exe` does not apply to these projects, and neither does `/startupConfigurationFile="Web.config"` — there is no `Web.config`. EF 6.5.2 (April 2026) allows the `ef6` tool to run on the newest .NET SDK.
+
+Either way this is a CI/CD step, not a startup hook — same reasoning as Option B's risks above.
 
 ---
 

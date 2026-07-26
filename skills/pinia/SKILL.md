@@ -1,6 +1,6 @@
 ---
 name: pinia
-description: Use when working with Pinia stores in Vue 3 / Nuxt 3 — defining state/getters/actions, store composition, SSR hydration, HMR, testing, plugins, createTestingPinia, store unit tests, or "use outside component" patterns. Apply even when user just says "share state across components", "where do I put this global state", "mock this store", "stub this action", or "this state needs to persist" without naming Pinia.
+description: Use when working with Pinia stores in Vue 3 / Nuxt 3 or 4 — defining state/getters/actions, store composition, SSR hydration, HMR, testing, plugins, createTestingPinia, store unit tests, or "use outside component" patterns. Apply even when user just says "share state across components", "where do I put this global state", "mock this store", "stub this action", or "this state needs to persist" without naming Pinia.
 ---
 
 # Pinia

@@ -14,7 +14,7 @@ Pick **one secret scan + one dep scan per language + one container scan + one SB
 
 ## CLI Reference
 
-- Secret scan full history: `gitleaks detect --source . --log-opts="--all"`
+- Secret scan full history: `gitleaks git --log-opts="--all" .` — the scan target is a positional argument; there is no `--source` flag. `detect` / `protect` were deprecated in v8.19.0 and hidden from `--help` (still functional, so older pipelines keep working — migrate them). Files not yet tracked by git: `gitleaks dir .`
 - Container scan blocking on critical/high: `trivy image --severity CRITICAL,HIGH --exit-code 1 <image>`
 - SBOM generation (CycloneDX JSON): `syft <image> -o cyclonedx-json > sbom.json`
 - .NET transitive vuln check: requires `--include-transitive` flag (default omits transitives)

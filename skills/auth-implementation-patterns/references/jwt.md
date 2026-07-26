@@ -40,8 +40,11 @@ Skipping step 4 and reading claims is the most common bug. Library defaults usua
 | Pattern | Pros | Cons |
 |---|---|---|
 | **Rotation + reuse detection** | Detects stolen tokens | Requires server state |
+| **Sender-constrained** (DPoP or mTLS binding) | Stolen token is unusable on its own; no rotation state to keep | Needs client-side key management and AS support |
 | Stateless refresh (just longer JWT) | Simple | Can't revoke |
 | Sliding session cookie | Simple, works with stateful sessions | Requires sticky sessions or shared store |
+
+For **public clients**, OAuth 2.1 (draft) requires one of the first two: refresh tokens must be sender-constrained **or** one-time-use with rotation. Doing neither is a compliance failure, not merely a weaker choice. Confidential clients have more latitude, but rotation is still the default recommendation.
 
 **Recommended (rotation + reuse detection)**:
 
@@ -69,7 +72,7 @@ Pick one and document it. "We use JWT" without a stated revocation strategy is a
 - **Trusting claims before signature verification**: any header/payload data is attacker-controlled until signature is verified.
 - **JWT in localStorage**: XSS = full token theft. Use httpOnly cookies (default in global CLAUDE.md).
 - **Refresh token in localStorage**: same issue, worse blast radius (long-lived).
-- **No refresh rotation**: stolen refresh = permanent access until manual revocation.
+- **No refresh rotation and no sender-constraint**: stolen refresh = permanent access until manual revocation. Rotation is the default recommendation, but a DPoP/mTLS sender-constrained refresh token satisfies the same requirement without rotation state (see the pattern table above) — the pitfall is doing *neither*.
 - **Refresh tokens stored plaintext in DB**: DB leak = all sessions compromised. Hash like passwords.
 
 ## Tenant Claim Handling (B2B Multi-Tenant)

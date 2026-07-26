@@ -99,6 +99,9 @@ defineConfig({
 ## Browser + Node Projects
 
 ```ts
+// Vitest 4
+import { playwright } from '@vitest/browser-playwright'
+
 defineConfig({
   test: {
     projects: [
@@ -115,8 +118,9 @@ defineConfig({
           include: ['tests/browser/**/*.test.ts'],
           browser: {
             enabled: true,
-            name: 'chromium',
-            provider: 'playwright',
+            provider: playwright(),
+            instances: [{ browser: 'chromium' }],
+            // Vitest 3 shape (invalid in 4): provider: 'playwright', name: 'chromium'
           },
         },
       },

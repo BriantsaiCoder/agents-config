@@ -182,10 +182,12 @@ import { something } from '#layers/my-layer/utils'
     "@nuxt/ui": "^2.0.0"
   },
   "devDependencies": {
-    "nuxt": "^3.0.0"
+    "nuxt": "^4.0.0"
   }
 }
 ```
+
+`^3.0.0` never resolves to Nuxt 4, so a layer pinned that way is only ever exercised on the older major. Develop against `^4.0.0` and add a Nuxt 3 CI job if the layer must keep supporting it.
 
 ### Private Layers
 
@@ -241,7 +243,7 @@ export default defineNuxtConfig({
 Create a new layer:
 
 ```bash
-npx nuxi init --template layer my-layer
+npm create nuxt@latest -- --template layer my-layer
 ```
 
 ## Example: Theme Layer

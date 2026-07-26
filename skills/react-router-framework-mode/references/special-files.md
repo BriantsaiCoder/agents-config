@@ -238,7 +238,8 @@ export default {
   // Base path for all routes
   basename: "/my-app",
 
-  // Future flags
+  // Future flags — 7.x only. On 8.0+ these behaviors are the default and any
+  // leftover `v8_*` key errors config validation; leave `future` out entirely.
   future: {
     v8_middleware: true,
   },

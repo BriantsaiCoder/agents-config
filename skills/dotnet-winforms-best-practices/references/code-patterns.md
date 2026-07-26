@@ -301,6 +301,9 @@ public class BufferedPanel : Panel
 | `async void` in events | Same behavior | Same behavior |
 | `Task.Run` | Available (.NET 4.5+) | Available |
 | `BackgroundWorker` | Available (legacy) | Available but deprecated pattern |
+| Clipboard / drag-drop of custom types | `BinaryFormatter`-backed `SetData`/`GetData` | `BinaryFormatter` removed from the runtime in **.NET 9** — `SetData` silently fails to serialize custom types. **.NET 10** restores it via `Clipboard.SetDataAsJson<T>` + `Clipboard.TryGetData<T>` / `DataObject.TryGetData<T>` (JSON-backed); `GetData` is obsolete (**WFDEV005**) |
+| Legacy `BinaryFormatter` clipboard payloads | Implicit | Opt back in only as a migration bridge: reference `System.Runtime.Serialization.Formatters`, set the `EnableUnsafeBinaryFormatterSerialization` runtime switch and the WinForms `Windows.ClipboardDragDrop.EnableUnsafeBinaryFormatterSerialization` app-context switch in `runtimeconfig.json` |
+| Screen-capture exclusion | n/a | `ScreenCaptureMode` API (.NET 10) |
 
 ## DI in .NET 8+ WinForms
 

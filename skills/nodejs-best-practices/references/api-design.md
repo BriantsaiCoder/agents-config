@@ -21,10 +21,10 @@ Covers **Rule 5** (TypeScript strict mode), **Rule 6** (Express middleware), and
 ```json
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "Node16",
-    "lib": ["ES2022"],
+    "target": "ES2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2024"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -43,6 +43,13 @@ Covers **Rule 5** (TypeScript strict mode), **Rule 6** (Express middleware), and
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
 ```
+
+`module: nodenext` is what enables Node 22+ semantics such as `require("esm")`; the older `Node16` value
+still compiles but locks the file to Node 16 module semantics. On TypeScript 5.9+ prefer
+`"module": "node20"` — a fixed snapshot of Node 20/22/24 semantics that will not drift when TypeScript is
+upgraded, with `moduleResolution` inferred automatically (no need to write it). Keep `target`/`lib` aligned
+with the runtime this skill's Dockerfile pins (`node:24-alpine`) — `ES2024` is what `@tsconfig/node24` ships.
+Drop to `ES2023` (the TS Node-Target-Mapping value for Node 22) only if you must still run on Node 22.
 
 ### Key strict mode rules and why they matter
 
@@ -84,7 +91,7 @@ For new projects, prefer ESM (`"type": "module"` in `package.json`):
 // package.json
 {
   "type": "module",
-  "engines": { "node": ">=18" }
+  "engines": { "node": ">=24" }
 }
 ```
 
@@ -131,7 +138,8 @@ app.use(errorHandler);
 
 ### The async handler wrapper
 
-Express 4 does not catch promise rejections. This wrapper forwards them to error middleware:
+Express 4 does not catch promise rejections. This wrapper forwards them to error middleware.
+**Express 5 (current stable, 5.2.x) handles rejected promises natively — skip this section on 5.x.**
 
 ```typescript
 // src/common/middleware/async-handler.ts

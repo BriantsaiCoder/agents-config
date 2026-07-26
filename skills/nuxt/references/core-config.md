@@ -14,11 +14,28 @@ The main configuration file at the root of your project:
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
+  compatibilityDate: '2025-07-15',
   // Configuration options
   devtools: { enabled: true },
   modules: ['@nuxt/ui'],
 })
 ```
+
+### compatibilityDate
+
+`compatibilityDate` pins the behavior of Nitro presets, Nuxt Image, and other modules to a point in time, letting them change defaults without a major bump. Scaffolded Nuxt 4 projects always include it; a hand-written config without it will silently drift when dependencies update. To adopt newer behavior, move the date forward and re-verify with `npm run build && npm run preview`.
+
+### future.compatibilityVersion
+
+Opt in to the *next* major's defaults ahead of time:
+
+```ts
+export default defineNuxtConfig({
+  future: { compatibilityVersion: 5 },
+})
+```
+
+Setting `5` on Nuxt 4 enables Nuxt v5 defaults and the Vite Environment API — when this key is present, the documented v4 defaults no longer describe the project. Read it before reasoning about any default.
 
 ### Environment Overrides
 
@@ -144,15 +161,17 @@ export default defineNuxtConfig({
 
 ## Vue Configuration
 
-Enable Vue experimental features:
+Since Vue 3.5, variables destructured from `defineProps()` are reactive on their own, and Nuxt 4 enables reactive props destructure by default — you do **not** need `vue.propsDestructure`. The key still exists, but it only matters when maintaining a project on Vue < 3.5:
 
 ```ts
 export default defineNuxtConfig({
   vue: {
-    propsDestructure: true,
+    propsDestructure: true, // only needed on Vue < 3.5
   },
 })
 ```
+
+Other `vue` sub-keys (e.g. shipping the Vue compiler into the runtime bundle) stay off by default to keep the bundle small.
 
 <!-- 
 Source references:

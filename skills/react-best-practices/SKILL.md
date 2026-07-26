@@ -21,7 +21,7 @@ Why + code + patterns → `references/rules-expanded.md`.
 3. **No new refs in render.** Defeats `React.memo`, causes child re-renders.
 4. **Custom hooks for shared logic, `use` prefix.** Testable; no render props / HOCs.
 5. **State at lowest needed level.** Lifting too high → subtree re-renders.
-6. **`memo` / `useMemo` / `useCallback` need measured reason.** Premature = complexity + memory cost.
+6. **Evaluate React Compiler first; without it, `memo` / `useMemo` / `useCallback` need measured reason.** Compiler on → manual memo mostly redundant, delete it; off → premature = complexity + memory cost.
 7. **Stable unique `key`, never index for dynamic lists.** Wrong keys → state bleeds, UI corruption.
 8. **RSC default; `"use client"` only for hooks / interactivity / browser APIs.**
 9. **No runtime CSS-in-JS in new projects** — Tailwind or CSS Modules.

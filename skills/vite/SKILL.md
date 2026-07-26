@@ -5,7 +5,7 @@ description: 'Use when configuring, debugging, or reviewing Vite projects — `v
 
 # Vite
 
-> Vite 7 stable / 8 beta + Rolldown. Verify project's major version — config shape, plugin hooks, SSR API differ across 4→5→6→7.
+> Vite 8 stable (Rolldown + Oxc default); 7 still common in lockfiles. Verify major version — config shape, plugin hooks, SSR API differ across 5→6→7→8.
 
 ## Workflow
 
@@ -21,7 +21,7 @@ description: 'Use when configuring, debugging, or reviewing Vite projects — `v
 | Goal | Use | Key constraint |
 |---|---|---|
 | Standard SPA | `vite build` → `dist/` | Framework plugin handles SSR if needed |
-| Library | `build.lib` + `rollupOptions.external` | Externalize peers, emit `.d.ts` via `vite-plugin-dts` |
+| Library | `build.lib` + `rolldownOptions.external` (Vite ≤7: `rollupOptions`) | Externalize peers, emit `.d.ts` via `vite-plugin-dts` |
 | Manual SSR | `vite build --ssr` + split entries | `ssr.noExternal` for ESM-only deps that must bundle |
 | Static | `vite build` + `vite preview` | Check `base` for subpath deploys |
 | Monorepo | one config per app + `mergeConfig` | One root config breaks `root` / `outDir` |
@@ -46,9 +46,9 @@ HMR broken after plugin add → suspect order first.
 - `build.outDir` outside `root` without `emptyOutDir: true` → Vite refuses (avoids wiping files).
 - CommonJS plugins in ESM config → wrap with `vite-plugin-commonjs` or upgrade.
 
-## Rolldown Migration (Vite 7 → 8)
+## Rolldown (default in Vite 8)
 
-Migrate iff build >30s on medium project AND all plugins have Rolldown-compatible versions AND CI can A/B Rollup vs Rolldown output. Not for novelty. See `references/rolldown-migration.md`.
+Vite 8 = Rolldown + Oxc; compat layer auto-converts old config, so most projects upgrade directly. Plugin-heavy: try `rolldown-vite` on Vite 7 first. See `references/rolldown-migration.md`.
 
 ## Review Checklist
 

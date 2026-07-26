@@ -5,7 +5,7 @@ description: Nuxt CLI commands for development, building, and project management
 
 # CLI Commands
 
-Nuxt provides CLI commands via `nuxi` (or `npx nuxt`) for development, building, and project management.
+Nuxt provides CLI commands via `npx nuxt` for development, building, and project management. `nuxi` is the Nuxt 3-era alias — it still resolves, but the Nuxt 4 docs use `nuxt` everywhere, so write `nuxt` in new work and only expect `nuxi` in older Nuxt 3 projects. Creating a project is its own entry point: `npm create nuxt@latest`.
 
 ## Project Initialization
 
@@ -13,29 +13,35 @@ Nuxt provides CLI commands via `nuxi` (or `npx nuxt`) for development, building,
 
 ```bash
 # Interactive project creation
-npx nuxi@latest init my-app
+npm create nuxt@latest my-app
 
 # With specific package manager
-npx nuxi@latest init my-app --packageManager pnpm
+npm create nuxt@latest my-app --packageManager pnpm
 
 # With modules
-npx nuxi@latest init my-app --modules "@nuxt/ui,@nuxt/image"
-
-# From template
-npx nuxi@latest init my-app --template v3
+npm create nuxt@latest my-app --modules "@nuxt/ui,@nuxt/image"
 
 # Skip module selection prompt
-npx nuxi@latest init my-app --no-modules
+npm create nuxt@latest my-app --no-modules
+
+# Nightly channel
+npm create nuxt@latest my-app --nightly
 ```
+
+Other package managers: `yarn create nuxt`, `pnpm create nuxt@latest`, `bun create nuxt@latest`, `deno -A npm:create-nuxt@latest`. Nuxt 3-era `npx nuxi@latest init my-app` still works for legacy projects.
 
 **Options:**
 | Option | Description |
 |--------|-------------|
-| `-t, --template` | Template name |
+| `-t, --template` | Template name (from `nuxt/starter`) |
 | `--packageManager` | npm, pnpm, yarn, or bun |
 | `-M, --modules` | Modules to install (comma-separated) |
 | `--gitInit` | Initialize git repository |
 | `--no-install` | Skip installing dependencies |
+| `--nightly` | Nightly release channel |
+| `--offline` / `--preferOffline` | Use only / prefer the package cache |
+| `--shell` | Open a shell in the project after install |
+| `-f, --force` | Overwrite a non-empty target directory |
 
 ## Development
 
