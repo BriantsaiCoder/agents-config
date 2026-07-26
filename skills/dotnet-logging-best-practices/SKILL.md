@@ -3,6 +3,7 @@ name: dotnet-logging-best-practices
 description: 'Use when adding or reviewing logging in .NET applications, .NET 6+ or .NET Framework — Microsoft.Extensions.Logging ILogger generic logging, Serilog/NLog/log4net, LoggerMessage source generators, structured logs, sinks, log levels, correlation IDs, Activity/ActivitySource, OpenTelemetry exporters, appsettings configuration. Also "add logging here", "wire up Serilog".'
 ---
 
+<!-- last-verified: 2026-07-26 -->
 # .NET Logging Best Practices
 
 Four pillars: structured logging, log-level strategy, performance, sensitive-data protection.
@@ -22,7 +23,7 @@ Detail: `references/code-patterns.md` (R8 → `serilog-deep-dive.md`; R9 → `nl
 5. **Never log secrets / PII** — passwords, tokens, credit cards. Violates GDPR/PCI-DSS. Log IDs not JWT. Serilog destructure policies for redaction.
 6. **Per-namespace log levels.** EF Core / HttpClient / ASP.NET emit verbose Debug. Filter via `appsettings.json` `Logging.LogLevel` or NLog `<rules>`.
 7. **Correlation IDs** — trace requests across services. ASP.NET middleware + `BeginScope`; Serilog `.Enrich.WithCorrelationId()`.
-8. **Serilog on .NET 6+** — two-stage init: bootstrap logger → `builder.Host.UseSerilog(...)`. `Main` try/catch/finally + `Log.CloseAndFlush()`.
+8. **Serilog on .NET 6+** — two-stage init: bootstrap logger → `builder.Services.AddSerilog(...)`. `Main` try/catch/finally + `Log.CloseAndFlush()`.
 9. **NLog on .NET Framework — XML config, not code.** `NLog.config` Copy Always; targets/rules/JsonLayout. Ops change levels without recompile.
 10. **Log at boundaries.** Entry/exit of significant ops (requests, outgoing calls, business decisions, error recovery). Skip trivial steps.
 11. **Error logs need exception + operation + IDs.** `LogError(ex, "Payment failed for order {OrderId}", id)`, not `LogError("Failed")`.

@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # PostgreSQL Connections and Transactions
 
 ## Npgsql Connection String Settings
@@ -44,67 +45,46 @@ Host=db.example.com;Database=myapp;Username=app;Password=secret;Multiplexing=tru
 
 ## Dapper Integration Pattern with Npgsql
 
+Npgsql 7+ uses one thread-safe `NpgsqlDataSource` per database/pool. Register it
+through `Npgsql.DependencyInjection`, then open and dispose a logical connection
+per operation.
+
 ```csharp
-// Register a connection factory
-services.AddScoped<NpgsqlConnection>(sp =>
-{
-    var connStr = sp.GetRequiredService<IConfiguration>().GetConnectionString("PostgreSQL");
-    return new NpgsqlConnection(connStr);
-});
+var connectionString = builder.Configuration.GetConnectionString("PostgreSQL")
+    ?? throw new InvalidOperationException("PostgreSQL connection string not configured.");
+
+builder.Services.AddNpgsqlDataSource(connectionString);
 
 // In a repository
 public class OrderRepository
 {
-    private readonly NpgsqlConnection _conn;
+    private readonly NpgsqlDataSource _dataSource;
 
-    public OrderRepository(NpgsqlConnection conn)
+    public OrderRepository(NpgsqlDataSource dataSource)
     {
-        _conn = conn;
+        _dataSource = dataSource;
     }
 
     public async Task<Order?> GetByIdAsync(long id, CancellationToken ct)
     {
+        await using var conn = await _dataSource.OpenConnectionAsync(ct);
         var cmd = new CommandDefinition(
             "SELECT id, customer_id, total, created_at FROM orders WHERE id = @Id",
             new { Id = id },
             cancellationToken: ct);
-        return await _conn.QueryFirstOrDefaultAsync<Order>(cmd);
+        return await conn.QueryFirstOrDefaultAsync<Order>(cmd);
     }
 }
 ```
 
-Alternatively, use a factory pattern to create connections per operation:
+`NpgsqlDataSource` owns the pool; disposing a connection returns its physical
+connection to that pool. Do not hold a scoped connection for the lifetime of an
+HTTP request.
 
-```csharp
-public interface IDbConnectionFactory
-{
-    NpgsqlConnection Create();
-}
+References:
 
-public class NpgsqlConnectionFactory : IDbConnectionFactory
-{
-    private readonly string _connectionString;
-
-    public NpgsqlConnectionFactory(IConfiguration config)
-    {
-        _connectionString = config.GetConnectionString("PostgreSQL")
-            ?? throw new InvalidOperationException("PostgreSQL connection string not configured.");
-    }
-
-    public NpgsqlConnection Create() => new(_connectionString);
-}
-
-// Usage: create-per-operation pattern
-public async Task<Order?> GetByIdAsync(long id, CancellationToken ct)
-{
-    await using var conn = _factory.Create();
-    var cmd = new CommandDefinition(
-        "SELECT id, customer_id, total, created_at FROM orders WHERE id = @Id",
-        new { Id = id },
-        cancellationToken: ct);
-    return await conn.QueryFirstOrDefaultAsync<Order>(cmd);
-}
-```
+- https://www.npgsql.org/doc/basic-usage.html
+- https://www.npgsql.org/doc/diagnostics/logging.html
 
 ## PgBouncer
 

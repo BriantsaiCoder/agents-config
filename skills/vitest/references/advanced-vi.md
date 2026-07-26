@@ -3,6 +3,7 @@ name: vi-utilities
 description: vi helper for mocking, timers, utilities
 ---
 
+<!-- last-verified: 2026-07-26 -->
 # Vi Utilities
 
 The `vi` helper provides mocking and utility functions.
@@ -31,7 +32,7 @@ fn.mockImplementationOnce(() => 'once')
 
 // Clear/reset
 fn.mockClear()    // Clear call history
-fn.mockReset()    // Clear history + implementation
+fn.mockReset()    // Clear history + restore original implementation
 fn.mockRestore()  // Restore original (for spies)
 ```
 

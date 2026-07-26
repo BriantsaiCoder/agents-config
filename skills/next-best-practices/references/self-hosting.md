@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Self-Hosting Next.js
 
 Deploy Next.js outside of Vercel with confidence.
@@ -71,8 +72,6 @@ CMD ["node", "server.js"]
 ### Docker Compose
 
 ```yaml
-version: '3.8'
-
 services:
   web:
     build: .
@@ -87,6 +86,11 @@ services:
       timeout: 10s
       retries: 3
 ```
+
+Compose uses the current Compose Specification; omit the obsolete top-level
+`version` field.
+
+Reference: https://docs.docker.com/reference/compose-file/version-and-name/
 
 ## PM2 Deployment
 

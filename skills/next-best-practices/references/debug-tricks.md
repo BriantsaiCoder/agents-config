@@ -1,13 +1,18 @@
+<!-- last-verified: 2026-07-26 -->
 # Debug Tricks
 
 Tricks to speed up debugging Next.js applications.
 
 ## MCP Endpoint (Dev Server)
 
-Next.js exposes a `/_next/mcp` endpoint in development for AI-assisted debugging via MCP (Model Context Protocol).
+Next.js 16+ exposes a `/_next/mcp` development endpoint consumed by
+`next-devtools-mcp` for AI-assisted debugging via MCP (Model Context
+Protocol).
 
-- **Next.js 16+**: Enabled by default, use `next-devtools-mcp`
-- **Next.js < 16**: Requires `experimental.mcpServer: true` in next.config.js
+- **Next.js 16+**: Configure `next-devtools-mcp`; it discovers running
+  development servers automatically.
+- **Next.js < 16**: The endpoint is unavailable. Upgrade Next.js instead of
+  inventing an experimental config flag.
 
 Reference: https://nextjs.org/docs/app/guides/mcp
 

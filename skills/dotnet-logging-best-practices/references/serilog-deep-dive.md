@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Serilog Deep Dive
 
 ## Architecture Overview
@@ -82,38 +83,29 @@ Seq sink uses durable batching: events are written to a local buffer file, then 
 ### Elasticsearch Sink
 
 ```csharp
-// Package: Serilog.Sinks.Elasticsearch
+// Package: Elastic.Serilog.Sinks (Elasticsearch 8+)
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
-    {
-        IndexFormat = "app-logs-{0:yyyy.MM.dd}",
-        AutoRegisterTemplate = true,
-        AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7,
-        BatchPostingLimit = 50,
-        Period = TimeSpan.FromSeconds(2),
-        BufferBaseFilename = "./logs/elastic-buffer",  // Durable shipping
-        NumberOfShards = 2,
-        NumberOfReplicas = 1
-    })
+    .WriteTo.Elasticsearch(
+        [new Uri("https://elastic.example.com")],
+        options =>
+        {
+            options.DataStream = new DataStreamName("logs", "myapp", "production");
+            options.BootstrapMethod = BootstrapMethod.Failure;
+        })
     .CreateLogger();
 ```
+
+The former community sink is archived. For durable delivery, emit ECS JSON to
+a file or stdout and ship it with Elastic Agent/Filebeat; the official direct
+sink does not provide durable mode.
+
+Reference: https://www.elastic.co/docs/reference/ecs/logging/dotnet/serilog-data-shipper
 
 ### Application Insights Sink
 
 ```csharp
 // Package: Serilog.Sinks.ApplicationInsights
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.ApplicationInsights(
-        telemetryConfiguration: TelemetryConfiguration.Active,
-        telemetryConverter: TelemetryConverter.Traces,  // or TelemetryConverter.Events
-        restrictedToMinimumLevel: LogEventLevel.Warning)
-    .CreateLogger();
-```
-
-In .NET 6+ with DI:
-
-```csharp
-builder.Host.UseSerilog((context, services, config) => config
+builder.Services.AddSerilog((services, config) => config
     .WriteTo.ApplicationInsights(
         services.GetRequiredService<TelemetryConfiguration>(),
         TelemetryConverter.Traces));
@@ -281,8 +273,8 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog((context, services, config) => config
-        .ReadFrom.Configuration(context.Configuration)
+    builder.Services.AddSerilog((services, config) => config
+        .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .WriteTo.Console()
@@ -301,6 +293,8 @@ finally
     Log.CloseAndFlush();               // Always flush on shutdown
 }
 ```
+
+Reference: https://github.com/serilog/serilog-aspnetcore
 
 ---
 
@@ -498,8 +492,8 @@ Log.Logger = new LoggerConfiguration()
 
 ```csharp
 // Program.cs
-builder.Host.UseSerilog((context, services, config) => config
-    .ReadFrom.Configuration(context.Configuration)   // Reads from appsettings.json
+builder.Services.AddSerilog((services, config) => config
+    .ReadFrom.Configuration(builder.Configuration)   // Reads from appsettings.json
     .ReadFrom.Services(services));                    // Resolves sinks/enrichers from DI
 ```
 

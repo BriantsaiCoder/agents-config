@@ -3,9 +3,14 @@ name: pinia
 description: Use when working with Pinia stores in Vue 3 / Nuxt 3 or 4 — defining state/getters/actions, store composition, SSR hydration, HMR, testing, plugins, createTestingPinia, store unit tests, or "use outside component" patterns. Apply even when user just says "share state across components", "where do I put this global state", "mock this store", "stub this action", or "this state needs to persist" without naming Pinia.
 ---
 
+<!-- last-verified: 2026-07-26 -->
 # Pinia
 
 Pinia is the official Vue 3 state management library. This skill covers store design, SSR safety, plugins, and behavior-first testing.
+
+> **Pinia 4:** ESM-only; install `@vue/devtools-api` separately. Its peers require
+> Vue `^3.5.11` and TypeScript `>=5.6` when TypeScript is installed.
+> Source: [Pinia v4 changelog](https://github.com/vuejs/pinia/blob/v4/packages/pinia/CHANGELOG.md).
 
 ## Workflow
 
@@ -45,11 +50,3 @@ Pinia is the official Vue 3 state management library. This skill covers store de
 | SSR | Server-side rendering, state hydration, request safety | [advanced-ssr](references/advanced-ssr.md) |
 | Nuxt | Nuxt integration, auto-imports, SSR best practices | [advanced-nuxt](references/advanced-nuxt.md) |
 | HMR | Hot module replacement for development | [advanced-hmr](references/advanced-hmr.md) |
-
-## Key Recommendations
-
-- Prefer setup stores for complex logic, composables, and watchers.
-- Use `storeToRefs()` when destructuring state/getters.
-- Actions can be destructured directly because they are bound to the store.
-- Call stores inside functions, not at module scope, especially for SSR.
-- Use deterministic, behavior-first tests and reset mocks per test.

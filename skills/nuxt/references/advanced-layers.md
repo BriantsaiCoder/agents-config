@@ -3,6 +3,7 @@ name: nuxt-layers
 description: Extending Nuxt applications with layers for code sharing and reusability
 ---
 
+<!-- last-verified: 2026-07-26 -->
 # Nuxt Layers
 
 Layers allow sharing and reusing partial Nuxt applications across projects. They can include components, composables, pages, layouts, and configuration.
@@ -179,7 +180,7 @@ import { something } from '#layers/my-layer/utils'
   "type": "module",
   "main": "./nuxt.config.ts",
   "dependencies": {
-    "@nuxt/ui": "^2.0.0"
+    "@nuxt/ui": "^4.0.0"
   },
   "devDependencies": {
     "nuxt": "^4.0.0"
@@ -188,6 +189,9 @@ import { something } from '#layers/my-layer/utils'
 ```
 
 `^3.0.0` never resolves to Nuxt 4, so a layer pinned that way is only ever exercised on the older major. Develop against `^4.0.0` and add a Nuxt 3 CI job if the layer must keep supporting it.
+
+Verify current module compatibility before publishing:
+[Nuxt UI releases](https://github.com/nuxt/ui/releases).
 
 ### Private Layers
 

@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # C / C++ Core Rules
 
 ## Contents
@@ -34,7 +35,9 @@ A6. **String / buffer: `snprintf` with explicit size; never `strcpy` / `sprintf`
 
 A7. **`static` for internal linkage; default `extern` is too leaky.** Functions and globals not in the public header get `static`. Reduces symbol pollution, enables LTO inlining, prevents accidental cross-TU collision. ❌ unmarked global helper used by one `.c`. ✅ `static int helper(...)`.
 
-A8. **C standard: target C17 explicitly.** Set `set(CMAKE_C_STANDARD 17)` + `CMAKE_C_STANDARD_REQUIRED ON`. C23 (typeof, nullptr, constexpr, true/false keywords) needs GCC 13+ / Clang 18+ / MSVC v17.9+ — adopt only when the entire compiler matrix supports it.
+A8. **C standard: target C17 explicitly.** Set `set(CMAKE_C_STANDARD 17)` + `CMAKE_C_STANDARD_REQUIRED ON`. C23 support remains feature-by-feature: GCC and Clang implement it incrementally, while MSVC does not provide a complete C23 mode. Do not infer support from one compiler version. Add a `try_compile` probe for every required C23 feature and run it across the complete CI compiler matrix before raising `CMAKE_C_STANDARD`.
+
+Compiler status: https://en.cppreference.com/w/c/compiler_support/23
 
 A9. **Test pure C with Unity or cmocka; reserve GoogleTest for C++ wrapping a C lib.** Unity is single-file MIT, easy CMake integration; cmocka has built-in mocking. Don't compile `.c` as `.cpp` to use GoogleTest — language semantics differ (e.g., `void*` implicit conversion, struct initializer rules).
 
@@ -76,7 +79,7 @@ C2. **`CMakePresets.json` defines the toolchain matrix; CI runs every preset.** 
 
 C3. **Dependencies: vcpkg manifest mode (`vcpkg.json` + baseline) preferred; Conan 2 (`conanfile.txt` + `conan.lock`) as alternative.** Both lockfiles must commit. `find_package` consumes vcpkg / Conan output identically. ❌ `FetchContent_Declare` for production deps — no version pinning, no binary cache, slow CI.
 
-C4. **Sanitizers: ASan + UBSan in dev and CI; TSan for multi-threaded modules.** GCC / Clang: `-fsanitize=address,undefined`. MSVC v16.9+: `/fsanitize=address` (UBSan not supported on MSVC — use Clang in CI for UBSan coverage). Run unit tests under sanitizers in at least one CI job. MinGW sanitizer support is patchy — fall back to MSVC ASan or valgrind on Windows-only targets.
+C4. **Sanitizers: ASan + UBSan in dev and CI; TSan for multi-threaded modules.** GCC / Clang: `-fsanitize=address,undefined`. MSVC v16.9+: `/fsanitize=address` (UBSan not supported on MSVC — use Clang in CI for UBSan coverage). Run unit tests under sanitizers in at least one CI job. MinGW sanitizer support is patchy; for Windows-only targets use MSVC or clang-cl ASan. Valgrind is not a Windows fallback.
 
 C5. **clang-tidy + clang-format: committed config, CI gate.** Minimum `.clang-tidy` checks: `bugprone-*`, `cppcoreguidelines-*` (with project-specific suppressions for legitimate C-style buffer code), `modernize-*`, `performance-*`, `clang-analyzer-*`, `readability-*`. `.clang-format`: pick `Google` or `LLVM` base, customize once, never rotate styles within a repo (every rotation = full-tree diff noise).
 

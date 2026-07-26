@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Data Patterns
 
 Choose the right data fetching pattern for each use case.
@@ -57,7 +58,7 @@ Server Actions are the recommended way to handle mutations.
 // app/actions.ts
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 
 export async function createPost(formData: FormData) {
   const title = formData.get('title') as string;
@@ -70,9 +71,11 @@ export async function createPost(formData: FormData) {
 export async function deletePost(id: string) {
   await db.post.delete({ where: { id } });
 
-  revalidateTag('posts');
+  updateTag('posts');
 }
 ```
+
+Reference: https://nextjs.org/docs/app/api-reference/functions/updateTag
 
 ```tsx
 // app/posts/new/page.tsx

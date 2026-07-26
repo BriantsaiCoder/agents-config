@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Language-Specific Vulnerability Patterns
 
 Load the relevant section during Step 1 (Scope Resolution) after identifying languages.
@@ -136,8 +137,12 @@ management.endpoints.web.exposure.include=*  # in application.properties
 ## PHP
 
 ```php
-// Direct user input in queries
-$result = mysql_query("SELECT * FROM users WHERE id = " . $_GET['id']);
+// Direct user input interpolated into a current PDO query
+$result = $pdo->query("SELECT * FROM users WHERE id = " . $_GET['id']);
+
+// Safe: bind the value instead
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
+$stmt->execute(['id' => $_GET['id']]);
 
 // File inclusion
 include($_GET['page'] . ".php");  // local/remote file inclusion

@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # .NET Mocking Frameworks Reference
 
 ## Moq Deep Dive
@@ -519,7 +520,7 @@ public void ProcessOrder_WithValidOrder_ReturnsSuccess()
 ### xUnit Integration with AutoData
 
 ```csharp
-// Package: AutoFixture.Xunit2
+// Package: AutoFixture.Xunit3
 [Theory, AutoMoqData]
 public void GetOrder_ReturnsOrder(
     [Frozen] Mock<IOrderRepository> repoMock,
@@ -547,6 +548,11 @@ public class AutoNSubstituteDataAttribute : AutoDataAttribute
         : base(() => new Fixture().Customize(new AutoNSubstituteCustomization())) { }
 }
 ```
+
+Use `AutoFixture.Xunit3` with xUnit v3; `AutoFixture.Xunit2` targets the xUnit
+v2 integration. Check the installed xUnit major before choosing the adapter.
+
+Reference: https://github.com/AutoFixture/AutoFixture
 
 ---
 

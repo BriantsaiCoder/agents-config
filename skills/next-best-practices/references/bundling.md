@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Bundling
 
 Fix common bundling issues with third-party packages.
@@ -98,12 +99,7 @@ Next.js includes common polyfills automatically. Don't load redundant ones from 
 
 Already included: `Array.from`, `Object.assign`, `Promise`, `fetch`, `Map`, `Set`, `Symbol`, `URLSearchParams`, and 50+ others.
 
-```tsx
-// Bad: Redundant polyfills
-<script src="https://polyfill.io/v3/polyfill.min.js?features=fetch,Promise,Array.from" />
-
-// Good: Next.js includes these automatically
-```
+Remove redundant polyfill CDN tags; Next.js includes these automatically.
 
 ## ESM/CommonJS Issues
 
@@ -161,7 +157,10 @@ Reference: https://nextjs.org/docs/app/guides/package-bundling
 
 ## Migrating from Webpack to Turbopack
 
-Turbopack is the default bundler in Next.js 15+. If you have custom webpack config, migrate to Turbopack-compatible alternatives:
+Turbopack is the default bundler for both `next dev` and `next build` in
+Next.js 16+. Next.js 15 made Turbopack stable for development but did not make
+it the default production bundler. If you have custom webpack config, migrate
+to Turbopack-compatible alternatives:
 
 ```js
 // next.config.js
