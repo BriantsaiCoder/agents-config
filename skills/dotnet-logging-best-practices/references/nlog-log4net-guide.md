@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # NLog and log4net Guide
 
 ## NLog Configuration Deep Dive
@@ -567,7 +568,7 @@ Log.Logger = new LoggerConfiguration()
 ```csharp
 // Use MEL as the abstraction layer -- both frameworks can feed it
 builder.Logging.ClearProviders();
-builder.Host.UseSerilog();  // New code uses Serilog via MEL
+builder.Services.AddSerilog();  // New code uses Serilog via MEL
 
 // Legacy code using ILog/NLog.ILogger still works through its own provider
 ```

@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Advanced: Contrib, Bulk, Stored Procedures, TVP, JSON, Providers
 
 Reference for rules 9, 10 in SKILL.md. Read this when the task goes beyond plain CRUD — bulk inserts, stored procedures with output parameters, table-valued parameters, JSON columns, or non-SQL Server providers.
@@ -15,6 +16,14 @@ Reference for rules 9, 10 in SKILL.md. Read this when the task goes beyond plain
 ## Dapper.Contrib: when and when not
 
 `Dapper.Contrib` adds `Insert<T>`, `Update<T>`, `Delete<T>`, `Get<T>`, `GetAll<T>` extension methods on `IDbConnection` based on attribute conventions:
+
+It is a separately versioned package and repository, not part of Dapper core's
+API surface. Before introducing it, check its current NuGet release, repository
+activity, target frameworks, and provider issues. Existing use can remain when
+the mapping fits; do not expand adoption solely to shorten straightforward
+parameterized SQL.
+
+Source: https://github.com/DapperLib/Dapper.Contrib
 
 ```csharp
 [Table("Users")]

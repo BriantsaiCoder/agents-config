@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # .NET 8+ Code Patterns per Golden Rule
 
 Complete code examples for each Golden Rule in main `SKILL.md`, plus the 7-step writing pattern, Console app patterns, and .NET version feature matrix. For deeper treatment of DI, hosting, API design, security/performance, see the other reference files in this folder.
@@ -277,8 +278,9 @@ LogMessages.OrderCreated(_logger, order.Id, order.CustomerId);
 ### Serilog Integration
 
 ```csharp
-builder.Host.UseSerilog((context, config) => config
-    .ReadFrom.Configuration(context.Configuration)
+builder.Services.AddSerilog((services, config) => config
+    .ReadFrom.Configuration(builder.Configuration)
+    .ReadFrom.Services(services)
     .Enrich.FromLogContext()
     .WriteTo.Console()
     .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day));

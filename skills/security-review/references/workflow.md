@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Security Review Workflow
 
 Follow these steps **in order** for every review.
@@ -20,7 +21,11 @@ Audit dependencies first (fast wins):
 - **Rust** — `Cargo.toml`
 - **Go** — `go.sum`
 
-Flag packages with known CVEs, deprecated crypto libs, or suspiciously old pinned versions. Read `vulnerable-packages.md` for the curated watchlist.
+Flag packages with known CVEs, deprecated crypto libs, or suspiciously old pinned versions.
+
+**REQUIRED SUB-SKILL:** Use `dependency-security-scan` with a live advisory
+source. Use `vulnerable-packages.md` only for review signals and source routing;
+it is not an authoritative safe-version table.
 
 ## Step 3 — Secrets & Exposure Scan
 

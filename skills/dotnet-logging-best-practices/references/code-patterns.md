@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # .NET Logging — Code Patterns per Golden Rule
 
 Complete code examples for each Golden Rule in the main `SKILL.md`, plus the .NET 6+ / .NET Framework platform quick reference. For Serilog-specific patterns see `serilog-deep-dive.md`; for NLog/log4net see `nlog-log4net-guide.md`.
@@ -219,7 +220,7 @@ catch (PaymentGatewayException ex)
 | Solution | Best For | Setup |
 |----------|---------|-------|
 | **Seq** | .NET-native, development + small teams | `Serilog.Sinks.Seq` |
-| **ELK Stack** | Large-scale, self-hosted | `Serilog.Sinks.Elasticsearch` or NLog Elasticsearch target |
+| **Elastic Stack** | Elasticsearch 8+, self-hosted or cloud | `Elastic.Serilog.Sinks` or NLog Elasticsearch target |
 | **Azure App Insights** | Azure-hosted applications | `Serilog.Sinks.ApplicationInsights` or `Microsoft.Extensions.Logging.ApplicationInsights` |
 | **Grafana Loki** | Kubernetes, cost-efficient | `Serilog.Sinks.Grafana.Loki` |
 

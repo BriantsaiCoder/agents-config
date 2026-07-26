@@ -3,6 +3,7 @@ name: mocking
 description: Mock functions, modules, timers, and dates with vi utilities
 ---
 
+<!-- last-verified: 2026-07-26 -->
 # Mocking
 
 ## Mock Functions
@@ -209,14 +210,22 @@ const fn = vi.fn()
 fn()
 
 fn.mockClear()       // Clear call history
-fn.mockReset()       // Clear history + implementation
-fn.mockRestore()     // Restore original (for spies)
+fn.mockReset()       // Clear history + reset to initial implementation
+fn.mockRestore()     // Reset vi.fn(); remove vi.spyOn wrapper
 
 // Global
 vi.clearAllMocks()
 vi.resetAllMocks()
 vi.restoreAllMocks()
 ```
+
+`mockReset()` resets to the mock's initial state: `vi.fn()` becomes an empty
+function returning `undefined`, `vi.fn(impl)` returns to `impl`, and a spy
+returns to the original method behavior while remaining a spy. For spies,
+`mockRestore()` restores the original property descriptor and removes the spy
+wrapper. For `vi.fn()`, `mockRestore()` behaves like `mockReset()`.
+
+Reference: https://vitest.dev/api/mock#mockreset
 
 ## Config Auto-Reset
 

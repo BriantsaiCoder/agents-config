@@ -1,111 +1,66 @@
-# Vulnerable & High-Risk Package Watchlist
+<!-- last-verified: 2026-07-26 -->
+# Dependency Advisory Sources and High-Risk Signals
 
-Load this during Step 2 (Dependency Audit). Check versions in the project's lock files.
+Load this during Step 2 (Dependency Audit).
 
----
+**Do not decide that a dependency is safe from a version floor in this file.**
+New advisories invalidate static “safe version” tables. Resolve the installed
+version from the lock file, then query a live advisory source.
 
-## npm / Node.js
+## Required live checks
 
-| Package | Vulnerable Versions | Issue | Safe Version |
-|---------|-------------------|-------|--------------|
-| lodash | < 4.17.21 | Prototype pollution (CVE-2021-23337) | >= 4.17.21 |
-| axios | < 1.6.0 | SSRF, open redirect | >= 1.6.0 |
-| jsonwebtoken | < 9.0.0 | Algorithm confusion bypass | >= 9.0.0 |
-| node-jose | < 2.2.0 | Key confusion | >= 2.2.0 |
-| shelljs | < 0.8.5 | ReDoS | >= 0.8.5 |
-| tar | < 6.1.9 | Path traversal | >= 6.1.9 |
-| minimist | < 1.2.6 | Prototype pollution | >= 1.2.6 |
-| qs | < 6.7.3 | Prototype pollution | >= 6.7.3 |
-| express | < 4.21.2 (4.x line) | Open redirect (4.19.2) + later 4.x fixes | >= 4.21.2 on 4.x; 5.x is current (5.2.0) |
-| multer | < 1.4.4 | DoS | >= 1.4.4-lts.1 |
-| xml2js | < 0.5.0 | Prototype pollution | >= 0.5.0 |
-| fast-xml-parser | < 4.2.4 | ReDoS | >= 4.2.4 |
-| semver | < 7.5.2 | ReDoS | >= 7.5.2 |
-| tough-cookie | < 4.1.3 | Prototype pollution | >= 4.1.3 |
-| word-wrap | < 1.2.4 | ReDoS | >= 1.2.4 |
-| vm2 | ANY | Sandbox escape (deprecated) | Use isolated-vm instead |
-| serialize-javascript | < 3.1.0 | XSS | >= 3.1.0 |
-| node-fetch | < 2.6.7 | Open redirect | >= 2.6.7 or 3.x |
+**REQUIRED SUB-SKILL:** Use `dependency-security-scan` for the project ecosystem.
+Prefer the repository's existing audit command; otherwise use the matching
+official or maintained scanner.
 
-### Patterns to flag (regardless of version):
-- `eval` or `vm.runInContext` in dependencies
-- Any package pulling in `node-gyp` native addons from unknown publishers
-- Packages with < 1000 weekly downloads but required in production code (supply chain risk)
+| Ecosystem | Lock files | Live check |
+|-----------|------------|------------|
+| npm / Node.js | `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock` | `npm audit`, `pnpm audit`, or the package manager's current audit command |
+| Python | `requirements.txt`, `pyproject.toml`, lock file | `pip-audit` or OSV-Scanner |
+| Java | `pom.xml`, `build.gradle`, lock/dependency report | OSV-Scanner or OWASP Dependency-Check |
+| Ruby | `Gemfile.lock` | `bundle audit check --update` |
+| Rust | `Cargo.lock` | `cargo audit` / RustSec |
+| Go | `go.sum` | `govulncheck ./...` |
 
----
+If a scanner is unavailable, query the
+[GitHub Advisory Database](https://github.com/advisories),
+[OSV](https://osv.dev/), and the package maintainer's security advisories.
+Record the advisory ID, affected range, installed version, and fixed version
+used for the finding.
 
-## Python / pip
+## Packages requiring special handling
 
-| Package | Vulnerable Versions | Issue | Safe Version |
-|---------|-------------------|-------|--------------|
-| Pillow | < 10.0.1 | Multiple CVEs, buffer overflow | >= 10.0.1 |
-| cryptography | < 41.0.0 | OpenSSL vulnerabilities | >= 41.0.0 |
-| PyYAML | < 6.0 | Arbitrary code via yaml.load() | >= 6.0 |
-| paramiko | < 3.4.0 | Authentication bypass | >= 3.4.0 |
-| requests | < 2.31.0 | Proxy auth info leak | >= 2.31.0 |
-| urllib3 | < 2.0.7 | Header injection | >= 2.0.7 |
-| Django | < 4.2.24 (4.2 LTS) / < 5.2.6 (5.2) | Various | >= 4.2.24 on 4.2; >= 5.2.6 on current LTS; 6.0 released |
-| Flask | < 3.0.3 | Various | >= 3.0.3 |
-| Jinja2 | < 3.1.4 | HTML attribute injection | >= 3.1.4 |
-| sqlalchemy | < 2.0.28 | Various | >= 2.0.28 |
-| aiohttp | < 3.9.4 | SSRF, path traversal | >= 3.9.4 |
-| werkzeug | < 3.0.3 | Various | >= 3.0.3 |
+These are review signals, not a complete vulnerability list:
 
----
+- `vm2` — deprecated after repeated sandbox escapes. Treat every use as high
+  risk and verify whether process or container isolation can replace it.
+- Legacy `node-fetch` — on supported Node.js releases, prefer the native Fetch
+  API unless the project has a documented compatibility requirement.
+- Parsers, archive tools, template engines, serializers, auth libraries, and
+  cryptography packages — always check live advisories even when recently
+  updated because input-handling flaws recur across releases.
+- Native addons downloaded through install scripts — verify publisher,
+  checksums/provenance, supported platforms, and install-time network access.
 
-## Java / Maven
+## Supply-chain red flags
 
-| Package | Vulnerable Versions | Issue |
-|---------|-------------------|-------|
-| log4j-core | 2.0-2.14.1 | Log4Shell RCE (CVE-2021-44228) — CRITICAL |
-| log4j-core | 2.15.0 | Incomplete fix — still vulnerable |
-| Spring Framework | < 5.3.28, < 6.0.13 | Various CVEs |
-| Spring Boot | < 3.1.4 | Various |
-| Jackson-databind | < 2.14.0 | Deserialization |
-| Apache Commons Text | < 1.10.0 | Text4Shell RCE (CVE-2022-42889) |
-| Apache Struts | < 6.3.0 | Various RCE |
-| Netty | < 4.1.94 | HTTP request smuggling |
+Flag a dependency for manual review when it:
 
----
+1. Is deprecated or archived by its maintainer.
+2. Has been transferred to a new owner or suddenly changed publisher.
+3. Is a fork or near-spelling of a popular package.
+4. Has install scripts, bundled binaries, or unexplained native addons.
+5. Has very low usage but is required in a production trust boundary.
+6. Is pinned outside the scanner's supported ecosystem or excluded from its
+   result.
 
-## Ruby / Gems
+Do not turn age, download count, or ownership change into a vulnerability by
+itself. Use those signals to deepen provenance and code review.
 
-| Gem | Vulnerable Versions | Issue |
-|-----|-------------------|-------|
-| rails | < 7.1.3 | Various | 
-| nokogiri | < 1.16.2 | XXE, various |
-| rexml | < 3.2.7 | ReDoS |
-| rack | < 3.0.9 | Various |
-| devise | < 4.9.3 | Various |
+## Authoritative ecosystem sources
 
----
-
-## Rust / Cargo
-
-| Crate | Issue |
-|-------|-------|
-| openssl | Check advisory db for current version |
-| hyper | Check advisory db for current version |
-
-Reference: https://rustsec.org/advisories/
-
----
-
-## Go
-
-Reference: https://pkg.go.dev/vuln/ and https://vuln.go.dev
-
-Common risky patterns:
-- `golang.org/x/crypto` — check if version is within 6 months of current
-- Any dependency using `syscall` package directly — review carefully
-
----
-
-## General Red Flags (Any Ecosystem)
-
-Flag any dependency that:
-1. Has not been updated in > 2 years AND has > 10 open security issues
-2. Has been deprecated by its maintainer with a security advisory
-3. Is a fork of a known package from an unknown publisher (typosquatting)
-4. Has a name that's one character off from a popular package (e.g., `lodash` vs `1odash`)
-5. Was recently transferred to a new owner (check git history / npm transfer notices)
+- Rust: [RustSec Advisory Database](https://rustsec.org/advisories/)
+- Go: [Go Vulnerability Database](https://vuln.go.dev/) and
+  [pkg.go.dev/vuln](https://pkg.go.dev/vuln/)
+- Python: [PyPA pip-audit](https://github.com/pypa/pip-audit)
+- Cross-ecosystem: [OSV-Scanner](https://google.github.io/osv-scanner/)

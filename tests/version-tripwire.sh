@@ -2,11 +2,11 @@
 #
 # version-tripwire.sh — 版本回歸絆線（skills/ 專用）
 #
-# 這是回歸測試，不是預測。每一條都對應 2026-07-26 那輪版本時效稽核實際
-# 修掉的缺陷（commit 1b3d600 / 3370201 / f3bb004 / 6c8093a）：那批缺陷是
-# 「skill 教了已死的 API 或版本」，照抄會編譯失敗、docker build 失敗、或
-# 測試假綠。挖掘它們花了約 4.6M subagent token；這支腳本讓同一批缺陷的
-# 複發成本歸零。
+# 這是回歸測試，不是預測。每一條都對應已用官方文件確認並修掉的版本缺陷；
+# 初始 28 條來自 2026-07-26 稽核（commit 1b3d600 / 3370201 / f3bb004 /
+# 6c8093a），後續 refresh 只在同樣有 live evidence 時加絆線。這些缺陷是
+# 「skill 教了已死的 API 或版本」，照抄會編譯失敗、build 失敗、測試假綠，
+# 或讓 security review 漏掉新 advisory。這支腳本讓已知缺陷的複發成本歸零。
 #
 # 三個設計決定，每個都有實測理由：
 #
@@ -94,6 +94,22 @@ E	claude-opus-4\.7|gpt-5\.5|claude-sonnet-4\.6	init-project-docs 原本在 Copil
 E	^FROM golang:1\.24	Go 安全政策只支援最近兩個 major release；2026-07 當下為 1.26 / 1.25，pin 1.24 的 builde
 F	Reference: OWASP A03:2021	OWASP Top 10:2025 已重排：Injection 由 A03:2021 變成 A05:2025
 F	windows-container-tools/releases/download/v2.1.1	dotnet-framework 容器範本以「The correct LogMonitor.exe URL is:」斷言 + Dockerf
+E	\| Package \| Vulnerable Versions \| Issue \| Safe Version \||curated watchlist	靜態 safe-version 表與 authoritative watchlist 會過期；dependency review 必須查 live advisory source
+F	Requires `experimental.mcpServer: true`	Next.js 16 才支援 next-devtools-mcp；舊版沒有 experimental.mcpServer 開關
+F	Turbopack is the default bundler in Next.js 15+	Turbopack 自 Next.js 16 才同時成為 next dev 與 next build 預設
+F	<script src="https://polyfill.io	已知不應使用的 CDN 不得留在可複製的裸 code example
+E	revalidateTag\('posts'\);	Next.js 16 的 revalidateTag 單參數形式已 deprecated 且會產生 TypeScript error
+F	version: '3.8'	Compose Specification 已不需要頂層 version；保留會產生 obsolete warning
+F	"@nuxt/ui": "^2.0.0"	Nuxt 4 reference 不得把 @nuxt/ui 釘在已淘汰的 v2 major
+E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)|mockRestore\(\).*Same reset; also restore spy descriptors	Vitest reset/restore 必須區分 vi.fn 與 vi.spyOn；restore 對 spy 會移除 wrapper
+F	<PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />	FluentValidation.AspNetCore 已 deprecated；新 ASP.NET Core 專案應用 core package + manual validation
+F	// Package: AutoFixture.Xunit2	xUnit v3 reference 不得繼續推薦 xUnit v2 integration package
+F	services.AddScoped<NpgsqlConnection>	Npgsql current DI pattern 是 singleton NpgsqlDataSource + per-operation open connection
+F	MSVC v17.9+ — adopt only	C23 feature matrix 不能宣稱 MSVC 17.9 完整支援該組功能
+F	valgrind on Windows-only targets	Valgrind 不支援 Windows-only target
+F	mysql_query("SELECT	PHP 7 已移除 mysql_query；current PHP injection example 應使用 PDO 或 mysqli
+F	TelemetryConfiguration.Active	Application Insights 的 global active configuration 已淘汰；ASP.NET Core 應從 DI 取得 TelemetryConfiguration
+E	Serilog\.Sinks\.Elasticsearch|^[[:space:]]*\[new Uri\("https://elastic\.example\.com"\)\],	community sink 已 archived；官方 sink 範例須同時相容本 skill 支援的 .NET 6 / C# 10
 TRIPWIRES
   printf '\nselftest: %d 條會觸發 / %d 條已失效\n' "$st_pass" "$st_fail"
   [ "$st_fail" -eq 0 ] || exit 1
@@ -140,6 +156,22 @@ E	claude-opus-4\.7|gpt-5\.5|claude-sonnet-4\.6	init-project-docs 原本在 Copil
 E	^FROM golang:1\.24	Go 安全政策只支援最近兩個 major release；2026-07 當下為 1.26 / 1.25，pin 1.24 的 builde
 F	Reference: OWASP A03:2021	OWASP Top 10:2025 已重排：Injection 由 A03:2021 變成 A05:2025
 F	windows-container-tools/releases/download/v2.1.1	dotnet-framework 容器範本以「The correct LogMonitor.exe URL is:」斷言 + Dockerf
+E	\| Package \| Vulnerable Versions \| Issue \| Safe Version \||curated watchlist	靜態 safe-version 表與 authoritative watchlist 會過期；dependency review 必須查 live advisory source
+F	Requires `experimental.mcpServer: true`	Next.js 16 才支援 next-devtools-mcp；舊版沒有 experimental.mcpServer 開關
+F	Turbopack is the default bundler in Next.js 15+	Turbopack 自 Next.js 16 才同時成為 next dev 與 next build 預設
+F	<script src="https://polyfill.io	已知不應使用的 CDN 不得留在可複製的裸 code example
+E	revalidateTag\('posts'\);	Next.js 16 的 revalidateTag 單參數形式已 deprecated 且會產生 TypeScript error
+F	version: '3.8'	Compose Specification 已不需要頂層 version；保留會產生 obsolete warning
+F	"@nuxt/ui": "^2.0.0"	Nuxt 4 reference 不得把 @nuxt/ui 釘在已淘汰的 v2 major
+E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)|mockRestore\(\).*Same reset; also restore spy descriptors	Vitest reset/restore 必須區分 vi.fn 與 vi.spyOn；restore 對 spy 會移除 wrapper
+F	<PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />	FluentValidation.AspNetCore 已 deprecated；新 ASP.NET Core 專案應用 core package + manual validation
+F	// Package: AutoFixture.Xunit2	xUnit v3 reference 不得繼續推薦 xUnit v2 integration package
+F	services.AddScoped<NpgsqlConnection>	Npgsql current DI pattern 是 singleton NpgsqlDataSource + per-operation open connection
+F	MSVC v17.9+ — adopt only	C23 feature matrix 不能宣稱 MSVC 17.9 完整支援該組功能
+F	valgrind on Windows-only targets	Valgrind 不支援 Windows-only target
+F	mysql_query("SELECT	PHP 7 已移除 mysql_query；current PHP injection example 應使用 PDO 或 mysqli
+F	TelemetryConfiguration.Active	Application Insights 的 global active configuration 已淘汰；ASP.NET Core 應從 DI 取得 TelemetryConfiguration
+E	Serilog\.Sinks\.Elasticsearch|^[[:space:]]*\[new Uri\("https://elastic\.example\.com"\)\],	community sink 已 archived；官方 sink 範例須同時相容本 skill 支援的 .NET 6 / C# 10
 TRIPWIRES
 
 if [ "$bad" -eq 0 ]; then

@@ -1,3 +1,4 @@
+<!-- last-verified: 2026-07-26 -->
 # Configuration and Hosting Patterns
 
 Reference for .NET 8/10 configuration providers, environment handling, Kestrel tuning, health checks, background services, and hosting models. Read this when setting up a new project, debugging configuration override order, or adding production-readiness features.
@@ -586,16 +587,23 @@ For solutions with many projects, centralise versions in `Directory.Packages.pro
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Serilog.AspNetCore" Version="8.0.2" />
-    <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
   </ItemGroup>
 </Project>
 
 <!-- Project .csproj references without Version -->
 <ItemGroup>
-  <PackageReference Include="Serilog.AspNetCore" />
+  <PackageReference Include="FluentValidation" />
 </ItemGroup>
 ```
+
+FluentValidation 12 targets .NET 8+. For new ASP.NET Core applications, inject
+`IValidator<T>` and call `ValidateAsync`; the legacy
+`FluentValidation.AspNetCore` MVC pipeline is no longer recommended and cannot
+run asynchronous rules. Verify the current package version with
+`dotnet package search` before copying the CPM example.
+
+Reference: https://docs.fluentvalidation.net/en/latest/aspnet.html
 
 ### Supply-chain hygiene
 
