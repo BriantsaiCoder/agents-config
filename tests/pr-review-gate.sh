@@ -47,7 +47,7 @@ fail=0
 probe() {
   local name="$1" want_rc="$2" want_state="$3" want_requests="$4"
   local review="$5" requested="$6" unresolved="$7" ci="$8"
-  local draft="${9:-false}" has_next="${10:-false}" output rc request_count
+  local draft="${9:-false}" has_next="${10:-false}" output rc request_count payload_ok=true
 
   : > "$REQUEST_LOG"
   output=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
@@ -57,9 +57,13 @@ probe() {
     FAKE_HAS_NEXT="$has_next" "$GATE" 42 2>&1)
   rc=$?
   request_count=$(wc -l < "$REQUEST_LOG" | tr -d ' ')
+  if [[ "$want_requests" -gt 0 ]] &&
+     ! grep -Fq 'reviewers[]=copilot-pull-request-reviewer[bot]' "$REQUEST_LOG"; then
+    payload_ok=false
+  fi
 
   if [[ "$rc" -eq "$want_rc" && "$output" == STATE="$want_state"* &&
-        "$request_count" -eq "$want_requests" ]]; then
+        "$request_count" -eq "$want_requests" && "$payload_ok" == true ]]; then
     ((pass += 1))
     printf 'PASS %s\n' "$name"
   else
