@@ -68,8 +68,8 @@ probe() {
     printf 'PASS %s\n' "$name"
   else
     ((fail += 1))
-    printf 'FAIL %s: rc=%s state=%s requests=%s output=%s\n' \
-      "$name" "$rc" "$want_state" "$request_count" "$output"
+    printf 'FAIL %s: want_rc=%s want_state=%s want_requests=%s got_rc=%s got_requests=%s output=%s\n' \
+      "$name" "$want_rc" "$want_state" "$want_requests" "$rc" "$request_count" "$output"
   fi
 }
 
