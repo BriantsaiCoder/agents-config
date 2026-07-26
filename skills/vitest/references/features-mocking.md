@@ -211,7 +211,7 @@ fn()
 
 fn.mockClear()       // Clear call history
 fn.mockReset()       // Clear history + reset to initial implementation
-fn.mockRestore()     // Same reset; also restore spy descriptors
+fn.mockRestore()     // Reset vi.fn(); remove vi.spyOn wrapper
 
 // Global
 vi.clearAllMocks()
@@ -222,7 +222,8 @@ vi.restoreAllMocks()
 `mockReset()` resets to the mock's initial state: `vi.fn()` becomes an empty
 function returning `undefined`, `vi.fn(impl)` returns to `impl`, and a spy
 returns to the original method behavior while remaining a spy. For spies,
-`mockRestore()` additionally restores the original property descriptor.
+`mockRestore()` restores the original property descriptor and removes the spy
+wrapper. For `vi.fn()`, `mockRestore()` behaves like `mockReset()`.
 
 Reference: https://vitest.dev/api/mock#mockreset
 

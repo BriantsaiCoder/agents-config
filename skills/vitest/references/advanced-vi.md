@@ -33,11 +33,13 @@ fn.mockImplementationOnce(() => 'once')
 // Clear/reset
 fn.mockClear()    // Clear call history
 fn.mockReset()    // Clear history + reset to initial implementation
-fn.mockRestore()  // Same reset; also restore spy descriptors
+fn.mockRestore()  // Reset vi.fn(); remove vi.spyOn wrapper
 ```
 
 The initial implementation depends on how the mock was created: `vi.fn()`
 resets to an empty function, while `vi.fn(impl)` resets to `impl`.
+For `vi.fn()`, `mockRestore()` behaves like `mockReset()`; for `vi.spyOn()`,
+it restores the original property descriptor and removes the spy wrapper.
 
 ## Spying
 

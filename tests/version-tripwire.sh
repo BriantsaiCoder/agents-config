@@ -94,14 +94,14 @@ E	claude-opus-4\.7|gpt-5\.5|claude-sonnet-4\.6	init-project-docs 原本在 Copil
 E	^FROM golang:1\.24	Go 安全政策只支援最近兩個 major release；2026-07 當下為 1.26 / 1.25，pin 1.24 的 builde
 F	Reference: OWASP A03:2021	OWASP Top 10:2025 已重排：Injection 由 A03:2021 變成 A05:2025
 F	windows-container-tools/releases/download/v2.1.1	dotnet-framework 容器範本以「The correct LogMonitor.exe URL is:」斷言 + Dockerf
-F	| Package | Vulnerable Versions | Issue | Safe Version |	靜態 safe-version 表會在新 advisory 發布後立刻過期；dependency review 必須查 live advisory source
+E	\| Package \| Vulnerable Versions \| Issue \| Safe Version \||curated watchlist	靜態 safe-version 表與 authoritative watchlist 會過期；dependency review 必須查 live advisory source
 F	Requires `experimental.mcpServer: true`	Next.js 16 才支援 next-devtools-mcp；舊版沒有 experimental.mcpServer 開關
 F	Turbopack is the default bundler in Next.js 15+	Turbopack 自 Next.js 16 才同時成為 next dev 與 next build 預設
 F	<script src="https://polyfill.io	已知不應使用的 CDN 不得留在可複製的裸 code example
 E	revalidateTag\('posts'\);	Next.js 16 的 revalidateTag 單參數形式已 deprecated 且會產生 TypeScript error
 F	version: '3.8'	Compose Specification 已不需要頂層 version；保留會產生 obsolete warning
 F	"@nuxt/ui": "^2.0.0"	Nuxt 4 reference 不得把 @nuxt/ui 釘在已淘汰的 v2 major
-E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)	Vitest 4 mockReset 依 mock 建立方式重設：vi.fn() 變空函式、vi.fn(impl) 回 initial impl、spy 回原方法行為
+E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)|mockRestore\(\).*Same reset; also restore spy descriptors	Vitest reset/restore 必須區分 vi.fn 與 vi.spyOn；restore 對 spy 會移除 wrapper
 F	<PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />	FluentValidation.AspNetCore 已 deprecated；新 ASP.NET Core 專案應用 core package + manual validation
 F	// Package: AutoFixture.Xunit2	xUnit v3 reference 不得繼續推薦 xUnit v2 integration package
 F	services.AddScoped<NpgsqlConnection>	Npgsql current DI pattern 是 singleton NpgsqlDataSource + per-operation open connection
@@ -156,14 +156,14 @@ E	claude-opus-4\.7|gpt-5\.5|claude-sonnet-4\.6	init-project-docs 原本在 Copil
 E	^FROM golang:1\.24	Go 安全政策只支援最近兩個 major release；2026-07 當下為 1.26 / 1.25，pin 1.24 的 builde
 F	Reference: OWASP A03:2021	OWASP Top 10:2025 已重排：Injection 由 A03:2021 變成 A05:2025
 F	windows-container-tools/releases/download/v2.1.1	dotnet-framework 容器範本以「The correct LogMonitor.exe URL is:」斷言 + Dockerf
-F	| Package | Vulnerable Versions | Issue | Safe Version |	靜態 safe-version 表會在新 advisory 發布後立刻過期；dependency review 必須查 live advisory source
+E	\| Package \| Vulnerable Versions \| Issue \| Safe Version \||curated watchlist	靜態 safe-version 表與 authoritative watchlist 會過期；dependency review 必須查 live advisory source
 F	Requires `experimental.mcpServer: true`	Next.js 16 才支援 next-devtools-mcp；舊版沒有 experimental.mcpServer 開關
 F	Turbopack is the default bundler in Next.js 15+	Turbopack 自 Next.js 16 才同時成為 next dev 與 next build 預設
 F	<script src="https://polyfill.io	已知不應使用的 CDN 不得留在可複製的裸 code example
 E	revalidateTag\('posts'\);	Next.js 16 的 revalidateTag 單參數形式已 deprecated 且會產生 TypeScript error
 F	version: '3.8'	Compose Specification 已不需要頂層 version；保留會產生 obsolete warning
 F	"@nuxt/ui": "^2.0.0"	Nuxt 4 reference 不得把 @nuxt/ui 釘在已淘汰的 v2 major
-E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)	Vitest 4 mockReset 依 mock 建立方式重設：vi.fn() 變空函式、vi.fn(impl) 回 initial impl、spy 回原方法行為
+E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)|mockRestore\(\).*Same reset; also restore spy descriptors	Vitest reset/restore 必須區分 vi.fn 與 vi.spyOn；restore 對 spy 會移除 wrapper
 F	<PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />	FluentValidation.AspNetCore 已 deprecated；新 ASP.NET Core 專案應用 core package + manual validation
 F	// Package: AutoFixture.Xunit2	xUnit v3 reference 不得繼續推薦 xUnit v2 integration package
 F	services.AddScoped<NpgsqlConnection>	Npgsql current DI pattern 是 singleton NpgsqlDataSource + per-operation open connection

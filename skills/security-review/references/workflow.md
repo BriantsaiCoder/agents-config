@@ -21,11 +21,11 @@ Audit dependencies first (fast wins):
 - **Rust** — `Cargo.toml`
 - **Go** — `go.sum`
 
-Flag packages with known CVEs, deprecated crypto libs, or suspiciously old pinned versions. Read `vulnerable-packages.md` for the curated watchlist.
+Flag packages with known CVEs, deprecated crypto libs, or suspiciously old pinned versions.
 
-**REQUIRED SUB-SKILL:** Use `dependency-security-scan` and a live advisory
-source. `vulnerable-packages.md` contains review signals and source routing; it
-is not an authoritative safe-version table.
+**REQUIRED SUB-SKILL:** Use `dependency-security-scan` with a live advisory
+source. Use `vulnerable-packages.md` only for review signals and source routing;
+it is not an authoritative safe-version table.
 
 ## Step 3 — Secrets & Exposure Scan
 
