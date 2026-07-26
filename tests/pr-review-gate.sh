@@ -18,9 +18,19 @@ elif [[ "$1 $2" == "pr view" ]]; then
     "$FAKE_STATE" "$FAKE_DRAFT" "$FAKE_MERGEABLE" "$FAKE_HEAD" "$FAKE_CI" \
     "https://github.com/owner/repo/pull/42"
 elif [[ "$1" == api && "$*" == *"/reviews"* ]]; then
-  printf '%s\n' "$FAKE_REVIEW"
+  filter=${!#}
+  jq -nc --arg latest "$FAKE_REVIEW" '
+    [
+      {user:{login:"copilot-pull-request-reviewer[bot]"},commit_id:$latest,submitted_at:"2026-01-03T00:00:00Z"},
+      {user:{login:"Copilot"},commit_id:"review-old",submitted_at:"2026-01-01T00:00:00Z"},
+      {user:{login:"human"},commit_id:"human-head",submitted_at:"2026-01-04T00:00:00Z"}
+    ]' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"/requested_reviewers"* && "$*" != *"--method POST"* ]]; then
-  printf '%s\n' "$FAKE_REQUESTED"
+  filter=${!#}
+  jq -nc --argjson requested "$FAKE_REQUESTED" '
+    {users:([{login:"human"}] +
+      if $requested > 0 then [{login:"Copilot"}] else [] end),teams:[]}' |
+    jq -r "$filter"
 elif [[ "$1 $2" == "api graphql" ]]; then
   filter=${!#}
   jq -nc --argjson count "$FAKE_UNRESOLVED" --argjson has_next "$FAKE_HAS_NEXT" '
