@@ -22,7 +22,15 @@ elif [[ "$1" == api && "$*" == *"/reviews"* ]]; then
 elif [[ "$1" == api && "$*" == *"/requested_reviewers"* && "$*" != *"--method POST"* ]]; then
   printf '%s\n' "$FAKE_REQUESTED"
 elif [[ "$1 $2" == "api graphql" ]]; then
-  printf '%s\t%s\n' "$FAKE_UNRESOLVED" "$FAKE_HAS_NEXT"
+  filter=${!#}
+  jq -nc --argjson count "$FAKE_UNRESOLVED" --argjson has_next "$FAKE_HAS_NEXT" '
+    {data:{repository:{pullRequest:{reviewThreads:{
+      nodes:[range(0; $count) | {
+        isResolved:false,
+        comments:{nodes:[{author:{login:"copilot-pull-request-reviewer[bot]"}}]}
+      }],
+      pageInfo:{hasNextPage:$has_next}
+    }}}}}' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"--method POST"* ]]; then
   printf '%s\n' "$*" >> "$REQUEST_LOG"
   printf '{}\n'

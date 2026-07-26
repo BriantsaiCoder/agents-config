@@ -75,11 +75,11 @@ thread_state=$(gh api graphql -F owner="$owner" -F name="$name" -F number="$pr" 
       }
     }
   }' --jq '[
-    [.data.repository.pullRequest.reviewThreads.nodes[]
+    ([.data.repository.pullRequest.reviewThreads.nodes[]
       | select(.isResolved == false)
       | select(any(.comments.nodes[]?;
           (.author.login // "" | ascii_downcase | contains("copilot"))))]
-      | length,
+      | length),
     .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage
   ] | @tsv') || unavailable thread_probe_failed
 IFS=$'\t' read -r unresolved has_next <<< "$thread_state"
