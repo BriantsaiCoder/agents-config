@@ -109,7 +109,7 @@ F	MSVC v17.9+ — adopt only	C23 feature matrix 不能宣稱 MSVC 17.9 完整支
 F	valgrind on Windows-only targets	Valgrind 不支援 Windows-only target
 F	mysql_query("SELECT	PHP 7 已移除 mysql_query；current PHP injection example 應使用 PDO 或 mysqli
 F	TelemetryConfiguration.Active	Application Insights 的 global active configuration 已淘汰；ASP.NET Core 應從 DI 取得 TelemetryConfiguration
-F	Serilog.Sinks.Elasticsearch	community Elasticsearch sink 已 archived；Elastic 8+ 新案應使用官方 Elastic.Serilog.Sinks
+E	Serilog\.Sinks\.Elasticsearch|^[[:space:]]*\[new Uri\("https://elastic\.example\.com"\)\],	community sink 已 archived；官方 sink 範例須同時相容本 skill 支援的 .NET 6 / C# 10
 TRIPWIRES
   printf '\nselftest: %d 條會觸發 / %d 條已失效\n' "$st_pass" "$st_fail"
   [ "$st_fail" -eq 0 ] || exit 1
@@ -171,7 +171,7 @@ F	MSVC v17.9+ — adopt only	C23 feature matrix 不能宣稱 MSVC 17.9 完整支
 F	valgrind on Windows-only targets	Valgrind 不支援 Windows-only target
 F	mysql_query("SELECT	PHP 7 已移除 mysql_query；current PHP injection example 應使用 PDO 或 mysqli
 F	TelemetryConfiguration.Active	Application Insights 的 global active configuration 已淘汰；ASP.NET Core 應從 DI 取得 TelemetryConfiguration
-F	Serilog.Sinks.Elasticsearch	community Elasticsearch sink 已 archived；Elastic 8+ 新案應使用官方 Elastic.Serilog.Sinks
+E	Serilog\.Sinks\.Elasticsearch|^[[:space:]]*\[new Uri\("https://elastic\.example\.com"\)\],	community sink 已 archived；官方 sink 範例須同時相容本 skill 支援的 .NET 6 / C# 10
 TRIPWIRES
 
 if [ "$bad" -eq 0 ]; then

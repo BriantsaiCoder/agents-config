@@ -86,7 +86,7 @@ Seq sink uses durable batching: events are written to a local buffer file, then 
 // Package: Elastic.Serilog.Sinks (Elasticsearch 8+)
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Elasticsearch(
-        [new Uri("https://elastic.example.com")],
+        new[] { new Uri("https://elastic.example.com") },
         options =>
         {
             options.DataStream = new DataStreamName("logs", "myapp", "production");
