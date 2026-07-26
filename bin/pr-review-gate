@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+set -u
+
+pr=${1:-}
+if [[ ! "$pr" =~ ^[0-9]+$ ]]; then
+  printf 'usage: %s <pr-number>\n' "${0##*/}" >&2
+  exit 64
+fi
+
+unavailable() {
+  printf 'STATE=UNAVAILABLE reason=%s\n' "$1"
+  exit 30
+}
+
+repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
+  unavailable repo_probe_failed
+owner=${repo%%/*}
+name=${repo#*/}
+
+pr_state=$(gh pr view "$pr" --repo "$repo" \
+  --json state,isDraft,mergeable,headRefOid,statusCheckRollup,url \
+  --jq '[.state, (.isDraft | tostring), .mergeable, .headRefOid,
+    (if (.statusCheckRollup | length) == 0 then "NONE"
+     else [.statusCheckRollup[] | (.conclusion // .state // "PENDING")] | join(",")
+     end), .url] | @tsv') || unavailable pr_probe_failed
+IFS=$'\t' read -r state draft mergeable head ci_states url <<< "$pr_state"
+
+[[ "$state" == OPEN ]] || unavailable pr_not_open
+if [[ "$draft" == true ]]; then
+  printf 'STATE=WAIT_READY pr=%s head=%s url=%s\n' "$pr" "$head" "$url"
+  exit 11
+fi
+if [[ "$mergeable" == CONFLICTING ]]; then
+  printf 'STATE=FAIL_MERGE pr=%s head=%s url=%s\n' "$pr" "$head" "$url"
+  exit 30
+fi
+
+ci=PASS
+if [[ "$ci_states" == NONE ]]; then
+  ci=WAIT
+else
+  IFS=',' read -r -a checks <<< "$ci_states"
+  for check in "${checks[@]}"; do
+    case "$check" in
+      SUCCESS|NEUTRAL|SKIPPED) ;;
+      PENDING|IN_PROGRESS|QUEUED|EXPECTED|WAITING|REQUESTED|"")
+        [[ "$ci" == FAIL ]] || ci=WAIT
+        ;;
+      FAILURE|ERROR|CANCELLED|TIMED_OUT|ACTION_REQUIRED|STARTUP_FAILURE|STALE)
+        ci=FAIL
+        ;;
+      *) [[ "$ci" == FAIL ]] || ci=WAIT ;;
+    esac
+  done
+fi
+
+latest_review=$(gh api "repos/$repo/pulls/$pr/reviews" \
+  --jq '[.[] | select(.user.login | ascii_downcase | contains("copilot"))]
+    | sort_by(.submitted_at) | last | .commit_id // ""') ||
+  unavailable review_probe_failed
+requested=$(gh api "repos/$repo/pulls/$pr/requested_reviewers" \
+  --jq '[.users[] | select(.login | ascii_downcase | contains("copilot"))] | length') ||
+  unavailable requested_reviewer_probe_failed
+thread_state=$(gh api graphql -F owner="$owner" -F name="$name" -F number="$pr" -f query='
+  query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100) {
+          nodes {
+            isResolved
+            comments(first: 1) { nodes { author { login } } }
+          }
+          pageInfo { hasNextPage }
+        }
+      }
+    }
+  }' --jq '[
+    [.data.repository.pullRequest.reviewThreads.nodes[]
+      | select(.isResolved == false)
+      | select(any(.comments.nodes[]?;
+          (.author.login // "" | ascii_downcase | contains("copilot"))))]
+      | length,
+    .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage
+  ] | @tsv') || unavailable thread_probe_failed
+IFS=$'\t' read -r unresolved has_next <<< "$thread_state"
+[[ "$has_next" == false ]] || unavailable review_thread_limit_exceeded
+
+review=CURRENT
+requested_now=false
+if [[ "$latest_review" != "$head" ]]; then
+  review=STALE
+  if [[ "$requested" -eq 0 ]]; then
+    gh api --method POST "repos/$repo/pulls/$pr/requested_reviewers" \
+      -f 'reviewers[]=copilot-pull-request-reviewer[bot]' >/dev/null ||
+      unavailable review_request_failed
+    requested_now=true
+  fi
+fi
+
+if [[ "$unresolved" -gt 0 ]]; then
+  printf 'STATE=FINDINGS pr=%s head=%s ci=%s review=%s unresolved=%s url=%s\n' \
+    "$pr" "$head" "$ci" "$review" "$unresolved" "$url"
+  exit 20
+fi
+if [[ "$ci" == FAIL ]]; then
+  printf 'STATE=FAIL_CI pr=%s head=%s review=%s unresolved=0 url=%s\n' \
+    "$pr" "$head" "$review" "$url"
+  exit 30
+fi
+if [[ "$ci" == WAIT || "$mergeable" == UNKNOWN ]]; then
+  printf 'STATE=WAIT_CI pr=%s head=%s ci=%s review=%s unresolved=0 url=%s\n' \
+    "$pr" "$head" "$ci" "$review" "$url"
+  exit 10
+fi
+if [[ "$requested_now" == true ]]; then
+  printf 'STATE=REQUESTED pr=%s head=%s ci=%s review=STALE unresolved=0 url=%s\n' \
+    "$pr" "$head" "$ci" "$url"
+  exit 11
+fi
+if [[ "$latest_review" != "$head" || "$requested" -gt 0 ]]; then
+  printf 'STATE=WAIT_REVIEW pr=%s head=%s ci=%s review=STALE unresolved=0 url=%s\n' \
+    "$pr" "$head" "$ci" "$url"
+  exit 11
+fi
+
+printf 'STATE=PASS pr=%s head=%s ci=%s review=CURRENT unresolved=0 url=%s\n' \
+  "$pr" "$head" "$ci" "$url"

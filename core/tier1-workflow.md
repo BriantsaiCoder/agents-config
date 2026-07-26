@@ -12,3 +12,4 @@
 [T1-7] 選型 MUST 依序為 repo 既有模組／模式 > 標準函式庫／原生平台 > 已安裝成熟第三方 > 新增成熟第三方 > 手寫。觸發：新增依賴或手寫 ≥50 行。驗證：記錄選型理由。
 [T1-8] 建立 PR MUST 預設為 Ready for review；只有用戶當下明示 Draft／WIP 才可建立 Draft PR。觸發：建立 PR。驗證：`isDraft=false`；例外時引用用戶 Draft／WIP 原句。
 [T1-9] HTML/CSS/Mermaid 視覺修復 MUST 自派 Chrome DevTools 查 DOM/SVG/style/尺寸/對比/console;禁只讀碼。觸發：上述修復。驗證：before/after 探針/截圖；受限標 `UNAVAILABLE` + 證據。
+[T1-10] Ready PR 建立後 task MUST 保持 active；任何 push 都使前次 CI／Copilot review gate 失效。觸發：建立 Ready PR 或其後 push。驗證：latest Copilot review commit_id 等於 PR head SHA、requested Copilot reviewer 已清除、unresolved review threads 為 0、CI 全綠，才可提示 Squash merge；非 PASS 只能標 WAITING／FAIL／UNAVAILABLE 並附證據。
