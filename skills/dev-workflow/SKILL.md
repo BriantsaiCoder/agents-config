@@ -102,13 +102,13 @@ description: 收到任何開發任務（feature、bug fix、refactor、接手陌
 - ENTER：S4 且 S5 兩者 EXIT 皆成立（[INT-1] 時機閘）。
 - ACTION：
   1. Preflight Ledger 8 rows 寫進 PR body（8 row 定義見 references/ledgers.md）。
-  2. Bot-review triage（合併規格見 references/review-triage.md）：等 Copilot review 異步 2–3 分鐘，勿誤判「無」；thread-aware 逐條讀、正確 actionable 自動修、已修 thread resolve、錯誤 / YAGNI 附 technical reason 不盲修；bot findings = 子集，改共用函式反模式時另跑 `deps-check` / grep 枚舉全 caller（why：PR #34 漏 8 條、PR #36 漏 2 caller）。
+  2. Bot-review triage（合併規格見 references/review-triage.md）：開 Ready PR 後 task 保持 active，每次 push 跑 `~/.agents/bin/pr-review-gate <PR>`；等 Copilot review 異步完成，勿誤判「無」；thread-aware 逐條讀、正確 actionable 自動修、已修 thread resolve、錯誤 / YAGNI 附 technical reason 不盲修；修後 push、re-request、重跑 gate，直到 current HEAD 為 PASS。bot findings = 子集，改共用函式反模式時另跑 `deps-check` / grep 枚舉全 caller（why：PR #34 漏 8 條、PR #36 漏 2 caller）。
   3. zh-TW Conventional Commit、squash merge 預設（[T0-9]；四態 PASS 前不得 merge，正本 references/review-triage.md）、合併後刪分支（remote + 已併入 local）。
   4. BUGFIX 鏈 MUST 跑 `bug-fix-settlement`（即使結論不沉澱也 MUST 輸出評估摘要）。
   5. 動到架構 → 同步 `docs/codebase/ARCHITECTURE.md` mermaid（HTML 一律 opt-in、勿手改衍生圖）。
   - 收尾 skill `finishing-a-development-branch` 只在此 invoke（[INT-1]）。
-- EXIT：PR body 含 8 rows 且每 row 有證據；非 PR 路徑下 Closeout Ledger 已輸出且每 row 標四態 + 證據。
-- FAILURE：缺 row 或缺證據 → 不得 push / 開 PR。
+- EXIT：PR body 含 8 rows 且每 row 有證據，且 `pr-review-gate` 對 current PR head 回 PASS；非 PR 路徑下 Closeout Ledger 已輸出且每 row 標四態 + 證據。
+- FAILURE：缺 row／缺證據 → 不得 push / 開 PR；gate 為 FINDINGS／FAIL → 回 S3，WAIT_* → heartbeat 後重查，UNAVAILABLE → 附 probe 證據且不得提示 merge。
 
 ### BUGFIX 鏈（同骨架映射）
 
