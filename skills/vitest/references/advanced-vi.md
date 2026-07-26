@@ -32,9 +32,12 @@ fn.mockImplementationOnce(() => 'once')
 
 // Clear/reset
 fn.mockClear()    // Clear call history
-fn.mockReset()    // Clear history + restore original implementation
-fn.mockRestore()  // Restore original (for spies)
+fn.mockReset()    // Clear history + reset to initial implementation
+fn.mockRestore()  // Same reset; also restore spy descriptors
 ```
+
+The initial implementation depends on how the mock was created: `vi.fn()`
+resets to an empty function, while `vi.fn(impl)` resets to `impl`.
 
 ## Spying
 

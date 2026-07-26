@@ -210,8 +210,8 @@ const fn = vi.fn()
 fn()
 
 fn.mockClear()       // Clear call history
-fn.mockReset()       // Clear history + restore original implementation
-fn.mockRestore()     // Restore original (for spies)
+fn.mockReset()       // Clear history + reset to initial implementation
+fn.mockRestore()     // Same reset; also restore spy descriptors
 
 // Global
 vi.clearAllMocks()
@@ -219,8 +219,10 @@ vi.resetAllMocks()
 vi.restoreAllMocks()
 ```
 
-Unlike Jest, Vitest restores the mock's original implementation on
-`mockReset()`. Verify this distinction when migrating Jest suites.
+`mockReset()` resets to the mock's initial state: `vi.fn()` becomes an empty
+function returning `undefined`, `vi.fn(impl)` returns to `impl`, and a spy
+returns to the original method behavior while remaining a spy. For spies,
+`mockRestore()` additionally restores the original property descriptor.
 
 Reference: https://vitest.dev/api/mock#mockreset
 

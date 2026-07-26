@@ -101,7 +101,7 @@ F	<script src="https://polyfill.io	已知不應使用的 CDN 不得留在可複�
 E	revalidateTag\('posts'\);	Next.js 16 的 revalidateTag 單參數形式已 deprecated 且會產生 TypeScript error
 F	version: '3.8'	Compose Specification 已不需要頂層 version；保留會產生 obsolete warning
 F	"@nuxt/ui": "^2.0.0"	Nuxt 4 reference 不得把 @nuxt/ui 釘在已淘汰的 v2 major
-E	mockReset\(\).*Clear history \+ implementation	Vitest 4 mockReset 會重設到 original implementation，不是清掉 implementation
+E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)	Vitest 4 mockReset 依 mock 建立方式重設：vi.fn() 變空函式、vi.fn(impl) 回 initial impl、spy 回原方法行為
 F	<PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />	FluentValidation.AspNetCore 已 deprecated；新 ASP.NET Core 專案應用 core package + manual validation
 F	// Package: AutoFixture.Xunit2	xUnit v3 reference 不得繼續推薦 xUnit v2 integration package
 F	services.AddScoped<NpgsqlConnection>	Npgsql current DI pattern 是 singleton NpgsqlDataSource + per-operation open connection
@@ -163,7 +163,7 @@ F	<script src="https://polyfill.io	已知不應使用的 CDN 不得留在可複�
 E	revalidateTag\('posts'\);	Next.js 16 的 revalidateTag 單參數形式已 deprecated 且會產生 TypeScript error
 F	version: '3.8'	Compose Specification 已不需要頂層 version；保留會產生 obsolete warning
 F	"@nuxt/ui": "^2.0.0"	Nuxt 4 reference 不得把 @nuxt/ui 釘在已淘汰的 v2 major
-E	mockReset\(\).*Clear history \+ implementation	Vitest 4 mockReset 會重設到 original implementation，不是清掉 implementation
+E	mockReset\(\).*(Clear history \+ implementation|restore original implementation)	Vitest 4 mockReset 依 mock 建立方式重設：vi.fn() 變空函式、vi.fn(impl) 回 initial impl、spy 回原方法行為
 F	<PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />	FluentValidation.AspNetCore 已 deprecated；新 ASP.NET Core 專案應用 core package + manual validation
 F	// Package: AutoFixture.Xunit2	xUnit v3 reference 不得繼續推薦 xUnit v2 integration package
 F	services.AddScoped<NpgsqlConnection>	Npgsql current DI pattern 是 singleton NpgsqlDataSource + per-operation open connection
