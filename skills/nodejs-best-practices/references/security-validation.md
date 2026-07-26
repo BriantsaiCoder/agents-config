@@ -19,12 +19,18 @@ Covers **Rule 3** (validate all inputs at the boundary) and **Rule 4** (environm
 Zod is the recommended validation library for TypeScript Node.js projects. It provides runtime validation
 with automatic TypeScript type inference — write the schema once, get both validation and types.
 
+> **本節以 Zod 4 為準**（`npm i zod`，撰寫時 4.4.x）。兩個 v3→v4 的差異會讓照抄的程式碼壞掉：
+> `AnyZodObject` 在 v4 主入口已不存在（`import` 它是 **TS2305 編譯錯誤**，用裸 `z.ZodObject`）；
+> string format 檢核已改為 top-level 函式（`z.email()` / `z.url()` / `z.uuid()`），method 形式
+> （`z.string().email()`）全部標記 `@deprecated`。`z.string().min()/.max()/.trim()` 等長度與轉換
+> 方法不受影響。v3 API 僅存在於 `zod/v3` 相容子路徑。
+
 ```typescript
 // src/users/users.schema.ts
 import { z } from 'zod';
 
 export const createUserSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  email: z.email('Invalid email format'),
   name: z.string().min(1, 'Name is required').max(100),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.enum(['user', 'admin']).default('user'),
@@ -33,7 +39,7 @@ export const createUserSchema = z.object({
 export const updateUserSchema = createUserSchema.partial().omit({ password: true });
 
 export const getUserParamsSchema = z.object({
-  id: z.string().uuid('Invalid user ID format'),
+  id: z.uuid('Invalid user ID format'),
 });
 
 export const listUsersQuerySchema = z.object({
@@ -90,12 +96,12 @@ export {};
 ```typescript
 // src/common/middleware/validate.ts
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 
 interface ValidationSchemas {
-  body?: AnyZodObject;
-  params?: AnyZodObject;
-  query?: AnyZodObject;
+  body?: z.ZodObject;
+  params?: z.ZodObject;
+  query?: z.ZodObject;
 }
 
 export const validate = (schemas: ValidationSchemas) => {
@@ -219,7 +225,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
 
   // Database
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
   DB_POOL_MIN: z.coerce.number().default(2),
   DB_POOL_MAX: z.coerce.number().default(10),
 
@@ -228,7 +234,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('1h'),
 
   // External services
-  REDIS_URL: z.string().url().optional(),
+  REDIS_URL: z.url().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),
 

@@ -147,7 +147,7 @@ Any settings that are not specified will be set to default values. The default v
        - The final stage MUST use a `mcr.microsoft.com/dotnet/framework/aspnet` base image unless a custom base image is specified in the settings file
        - Copy the `LogMonitorConfig.json` file to a directory in the container (e.g., C:\LogMonitor)
        - Download LogMonitor.exe from the Microsoft repository to the same directory
-           - The correct LogMonitor.exe URL is: https://github.com/microsoft/windows-container-tools/releases/download/v2.1.1/LogMonitor.exe
+           - The correct LogMonitor.exe URL is: https://github.com/microsoft/windows-container-tools/releases/download/v2.2.1/LogMonitor.exe
        - Set the working directory to C:\inetpub\wwwroot
        - Copy the published output from the build stage (in C:\publish) to the final image
        - Set the container's entry point to run LogMonitor.exe with ServiceMonitor.exe to monitor the IIS service
@@ -250,19 +250,18 @@ An example Dockerfile for an ASP.NET (.NET Framework) application using a Window
 # ============================================================
 
 # Base Image - Select the appropriate .NET Framework version and Windows Server Core version
-# Possible tags include:
+# Possible SDK tags (mcr.microsoft.com/dotnet/framework/sdk) include:
 # - 4.8.1-windowsservercore-ltsc2025 (Windows Server 2025)
 # - 4.8-windowsservercore-ltsc2022 (Windows Server 2022)
 # - 4.8-windowsservercore-ltsc2019 (Windows Server 2019)
 # - 4.8-windowsservercore-ltsc2016 (Windows Server 2016)
-# - 4.7.2-windowsservercore-ltsc2019 (Windows Server 2019)
-# - 4.7.2-windowsservercore-ltsc2016 (Windows Server 2016)
-# - 4.7.1-windowsservercore-ltsc2016 (Windows Server 2016)
-# - 4.7-windowsservercore-ltsc2016 (Windows Server 2016)
-# - 4.6.2-windowsservercore-ltsc2016 (Windows Server 2016)
-# - 3.5-windowsservercore-ltsc2025 (Windows Server 2025)
-# - 3.5-windowsservercore-ltsc2022 (Windows Server 2022)
-# - 3.5-windowsservercore-ltsc2019 (Windows Server 2019)
+# - 3.5-windowsservercore-ltsc2025 / -ltsc2022 / -ltsc2019
+#
+# 注意：sdk repo 沒有 4.7 與 4.6.2 的 tag（拉取會得到 manifest unknown），
+# 且其 4.7.1 / 4.7.2 tag 自 2019-10-08 起停止服役（同版本的 aspnet / runtime
+# tag 仍在更新）。一律用 4.8 / 4.8.1 建置；要編譯較舊的 4.x 目標請改設
+# <TargetFrameworkVersion>，不要把 SDK tag 降到 4.8 以下。
+# 下方 stage 2 的 aspnet runtime image 才可用 4.7.x / 4.6.2 tag。
 # Uses the .NET Framework SDK image for building the application
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022 AS build
 ARG BUILD_CONFIGURATION=Release
@@ -367,7 +366,7 @@ EXPOSE 80
 
 # Copy LogMonitor from the microsoft/windows-container-tools repository
 WORKDIR /LogMonitor
-RUN curl -fSLo LogMonitor.exe https://github.com/microsoft/windows-container-tools/releases/download/v2.1.1/LogMonitor.exe
+RUN curl -fSLo LogMonitor.exe https://github.com/microsoft/windows-container-tools/releases/download/v2.2.1/LogMonitor.exe
 
 # Copy LogMonitorConfig.json from local files
 COPY LogMonitorConfig.json .

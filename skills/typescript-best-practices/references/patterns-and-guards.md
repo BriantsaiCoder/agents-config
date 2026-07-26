@@ -326,9 +326,9 @@ function EmailAddress(value: string): EmailAddress {
 import { z } from 'zod';
 
 const UserSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string().min(1).max(100),
-  email: z.string().email(),
+  email: z.email(),
   role: z.enum(['admin', 'user', 'guest']),
   createdAt: z.coerce.date(),
 });
@@ -366,7 +366,7 @@ const UpdateUserSchema = CreateUserSchema.partial();
 
 // 環境變數驗證
 const EnvSchema = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });

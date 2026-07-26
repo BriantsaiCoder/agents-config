@@ -281,15 +281,14 @@ export default defineConfig({
 ### Mocking external HTTP calls
 
 ```typescript
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, afterEach } from 'vitest';
 
-// Mock the fetch call to an external API
-vi.mock('node-fetch', () => ({
-  default: vi.fn(),
-}));
-
-import fetch from 'node-fetch';
-const mockFetch = vi.mocked(fetch);
+// Node 18+ 內建 global fetch，不需要 node-fetch 依賴。
+// ⚠️ 受測程式若呼叫 global fetch，`vi.mock('node-fetch')` 完全不生效 ——
+// 測試會靜默打真網路然後通過（假綠）。一律 stub global。
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
+afterEach(() => { mockFetch.mockReset(); });
 
 describe('PaymentService', () => {
   it('handles payment gateway timeout', async () => {

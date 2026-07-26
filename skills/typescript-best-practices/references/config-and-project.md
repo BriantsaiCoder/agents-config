@@ -6,6 +6,20 @@ name: Config and Project Setup
 
 設定 tsconfig.json、ESLint、Declaration Files、Monorepo 時讀取此檔案。涵蓋 strict mode 各 flag 詳解、module/moduleResolution 策略、paths aliases、ESLint 整合、.d.ts 撰寫、monorepo project references。
 
+## TypeScript 版本現況（2026-07）
+
+| 版本線 | 狀態 | 取得方式 |
+|---|---|---|
+| **7.0**（npm `latest`） | 2026-07-08 出貨。Go 原生重寫，`typescript` 套件直接安裝 Go 二進位，指令仍是 `tsc` | `npm i -D typescript` |
+| **6.0** | 最後一版 JS 實作。7.0 的 breaking change 在此先以 deprecation 形式出現，建議先升 6.0 再升 7.0 | `npm i -D @typescript/typescript6`（指令 `tsc6`），可與 7.0 並存 |
+| 5.x | 舊線。本檔標註 `TS 5.x+` 的 flag 在 6/7 仍有效，除非另行標示 |  |
+
+新旗標：`--checkers`（type-checker worker 數）、`--builders`（project reference 平行建置）、`--singleThreaded`。
+
+> **升 TS 7 前先確認 lint 鏈**：`typescript-eslint@8.65.0` 的 peer 上限是 `typescript >=4.8.4 <6.1.0`，與 TS 7 同裝會 `ERESOLVE`（實測）。lint 鏈跟上之前，升 TS 7 必須同時規劃 linter 路徑，不能只換 `typescript`。
+>
+> **TS 7 已移除的選項**：`baseUrl`（改把前綴寫進 `paths`）。本檔範例已對齊。
+
 ## Table of Contents
 - [tsconfig.json: Strict Mode Breakdown](#tsconfigjson-strict-mode-breakdown)
 - [tsconfig.json: Module and Resolution](#tsconfigjson-module-and-resolution)
@@ -165,7 +179,7 @@ import { formatDate } from '@/utils/format';
 ```jsonc
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    // TS 7.0 已移除 baseUrl（TS 6.0 起 deprecated）——前綴直接寫進 paths，相對 tsconfig 所在目錄
     "paths": {
       "@/*": ["./src/*"],
       "@components/*": ["./src/components/*"],
@@ -274,7 +288,6 @@ node -r tsconfig-paths/register src/index.ts
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
-    "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] },
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

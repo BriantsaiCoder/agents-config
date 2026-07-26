@@ -250,7 +250,7 @@ Stores raw binary data (up to 1 GB). Use for small binary blobs (hashes, tokens,
 
 ## Generated Columns
 
-PostgreSQL supports `STORED` generated columns only (no `VIRTUAL`):
+PostgreSQL 18 起 generated column 有 `STORED` 與 `VIRTUAL` 兩種，**且未指定時預設為 `VIRTUAL`**（PG 17 及更早只支援 `STORED`，且該關鍵字為必填）。`VIRTUAL` 欄在讀取時才計算、不落盤，因此**不能直接建索引**。只要目的是「把表達式索引化」或做反正規化，就必須顯式寫出 `STORED`：
 
 ```sql
 CREATE TABLE products (
@@ -262,6 +262,8 @@ CREATE TABLE products (
 ```
 
 The value is computed on write and physically stored. Useful for indexed expressions and denormalization.
+
+> **撰寫規則：generated column 一律顯式標註 `STORED` 或 `VIRTUAL`，不要依賴預設值。** 同一段 DDL 在 PG 17 與 PG 18 上會產生語意不同的欄位（前者報錯要求關鍵字、後者靜默給 VIRTUAL），而 VIRTUAL 欄無法建索引——這是不會有任何錯誤訊息的失效。
 
 ## Declarative Partitioning
 

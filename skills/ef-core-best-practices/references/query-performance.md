@@ -303,7 +303,8 @@ await foreach (var order in OrdersByCustomer(_db, customerId, ct))
 ```
 
 Limitations:
-- No `Include` in some EF versions — verify with your target EF Core version.
+- `Include` / `ThenInclude` **are** supported — `EF.CompileQuery` / `EF.CompileAsyncQuery` expose dedicated `IIncludableQueryable<TResult, TProperty>` overloads (EF Core 5.0 through 10.0).
+- `EF.Constant()` / `EF.Parameter()` stopped working inside compiled queries in EF Core 9 (efcore#33674) — move those calls out of the compiled delegate.
 - Parameters must be scalar; you cannot pass a collection as a parameter.
 - The compiled query is tied to a specific `DbContext` type.
 - Use only for queries that appear in profiling as translation hot spots — not as a blanket optimization.

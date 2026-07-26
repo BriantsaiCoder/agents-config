@@ -6,6 +6,7 @@ Reference for rule 10 in SKILL.md. Read this when you need to check feature avai
 - [5.7 vs 8.0 feature matrix](#57-vs-80-feature-matrix)
 - [Beyond 8.0: 8.4 LTS and 9.x innovation](#beyond-80-84-lts-and-9x-innovation)
 - [MySQL 5.7 end of life](#mysql-57-end-of-life)
+- [MySQL 8.0 end of life](#mysql-80-end-of-life)
 - [my.cnf key settings](#mycnf-key-settings)
 - [Monitoring essentials](#monitoring-essentials)
 - [Replication overview](#replication-overview)
@@ -50,9 +51,9 @@ The matrix above compares 5.7 against 8.0 because that is the migration most leg
 
 | Track | Versions | What it means |
 |---|---|---|
-| **LTS** | 8.4 (current LTS) | Critical patch updates only; no new features mid-track. The default target for a new deployment or an upgrade. |
-| **Innovation** | 8.1, 8.2, 8.3, then 9.x (9.7 as of April 2026) | New features land here regularly; you must keep re-upgrading to stay supported. Pick only when you need a feature the LTS lacks. |
-| **GA (legacy)** | 8.0 | Predates the split. Treat as a stepping stone, not a destination. |
+| **LTS** | 8.4（2024-04 GA，Extended 到 2032-04）、**9.7（2026-04-21 GA，Extended 到 2034-04 — 現行最新 LTS）** | Critical patch updates only; no new features mid-track. The default target for a new deployment or an upgrade. |
+| **Innovation** | 8.1、8.2、8.3，以及 9.0–9.6 | New features land here regularly, but each release loses support as soon as the next one ships. Pick only when you need a feature the LTS lacks. |
+| **GA (legacy)** | 8.0 | Predates the split. **已於 2026-04-30 EOL** — 只能當中繼站，不可當終點（見下方 8.0 章節）。 |
 
 Practical reading of the matrix: everything marked "Yes (8.0.x)" is also present in 8.4 LTS and 9.x. Feature availability questions above 8.0 are about *innovation-only* features (e.g. `VECTOR`, see `schema-design.md`), not about the 8.0 rows.
 
@@ -62,16 +63,28 @@ Likewise in the my.cnf section below, settings annotated `# 8.0:` apply unchange
 
 ## MySQL 5.7 end of life
 
-- **Premier Support ended:** October 2023.
-- **Extended Support ended:** October 2023 (Oracle changed the support policy).
+- **Premier Support ended:** October 2020.
+- **Extended Support ended:** October 2023. 自此僅剩 Oracle Sustaining Support。
 - **Security patches:** No longer provided. Running 5.7 in production is a security risk.
 
-**Migration path:** Target MySQL 8.4 LTS — that is the current LTS and the default destination. 8.0 is a stepping stone, not an endpoint. Choose 9.x innovation only if you need a feature 8.4 lacks and can absorb frequent version bumps. Key breaking changes to watch:
+（5.7 走的是與 5.6 / 8.0 / 8.4 相同的標準 5 年 Premier + 3 年 Extended 節奏，並無政策例外。）
+
+**Migration path:** 目標選 LTS — **9.7**（最新 LTS，支援期最長）或 **8.4**（較保守、生態成熟度較高）。8.0 已於 2026-04-30 EOL，只能當中繼站不能當終點。Key breaking changes to watch:
 1. Default authentication changed to `caching_sha2_password`. On 8.0 you can create users with `mysql_native_password` as a temporary bridge; on 8.4 LTS that plugin ships **disabled by default**, and MySQL **9.0 removed it from the server entirely** (client-side only). Migrating straight to 8.4/9.x means fixing the client driver, not falling back to the old plugin.
 2. `utf8mb4` is the default charset; `utf8mb4_0900_ai_ci` is the default collation.
 3. Reserved words added: `RANK`, `ROW_NUMBER`, `GROUPS`, `LATERAL`, etc. Escape with backticks if used as column/table names.
 4. `GROUP BY` no longer implicitly sorts. Add explicit `ORDER BY` if you relied on sorted GROUP BY results.
 5. Query cache removed. Remove `query_cache_*` settings from my.cnf.
+
+---
+
+## MySQL 8.0 end of life
+
+- **Premier Support ended:** April 2025.
+- **Extended Support ended:** April 2026。自 2026-04-30 起 8.0 僅剩 Oracle Sustaining Support。
+- **Security patches:** 不再提供。8.0 現在與 5.7 同樣屬於「跑在 production 就是安全風險」的版本，只是退場時間晚了兩年半。
+
+**Migration path:** 8.0 → 8.4 LTS（Extended 到 2032-04）或直接到 9.7 LTS（Extended 到 2034-04）。8.0 → 8.4 的斷點只有 `mysql_native_password` 預設停用一項需要處理驅動端，其餘為原地小版本升級語意；跳到 9.x 則該外掛已從 server 完全移除，驅動端必須先改好。
 
 ---
 
