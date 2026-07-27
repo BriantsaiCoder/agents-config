@@ -14,17 +14,34 @@ frontmatter_disables_model_invocation() {
   ' "$1"
 }
 
+codex_disables_implicit_invocation() {
+  local policy_file="$1/agents/openai.yaml"
+  [ -f "$policy_file" ] || return 1
+  awk '
+    /^[^[:space:]#]/ { policy=($0 == "policy:") }
+    policy && $0 ~ /^[[:space:]]+allow_implicit_invocation:[[:space:]]*false[[:space:]]*$/ { found=1 }
+    END { exit(found ? 0 : 1) }
+  ' "$policy_file"
+}
+
 check_tree() {
-  local fail=0 legacy model manual replacement skill_file
+  local fail=0 legacy model manual replacement skill_dir skill_file
 
   while IFS='|' read -r legacy model manual; do
-    skill_file="$SKILLS_DIR/$legacy/SKILL.md"
+    skill_dir="$SKILLS_DIR/$legacy"
+    skill_file="$skill_dir/SKILL.md"
     if [ ! -f "$skill_file" ]; then
       printf 'FAIL  legacy wrapper missing: %s\n' "$legacy" >&2
       fail=$((fail + 1))
-    elif ! frontmatter_disables_model_invocation "$skill_file"; then
-      printf 'FAIL  legacy wrapper remains model-invocable: %s\n' "$legacy" >&2
-      fail=$((fail + 1))
+    else
+      if ! frontmatter_disables_model_invocation "$skill_file"; then
+        printf 'FAIL  legacy wrapper remains model-invocable: %s\n' "$legacy" >&2
+        fail=$((fail + 1))
+      fi
+      if ! codex_disables_implicit_invocation "$skill_dir"; then
+        printf 'FAIL  legacy wrapper lacks Codex invocation-off policy: %s\n' "$legacy" >&2
+        fail=$((fail + 1))
+      fi
     fi
 
     IFS=',' read -r -a replacements <<< "$model,$manual"
@@ -66,6 +83,13 @@ write_fixture_skill() {
   } > "$root/$name/SKILL.md"
 }
 
+write_fixture_codex_policy() {
+  local root="$1" name="$2" allow_implicit="${3:-false}"
+  mkdir -p "$root/$name/agents"
+  printf 'policy:\n  allow_implicit_invocation: %s\n' "$allow_implicit" \
+    > "$root/$name/agents/openai.yaml"
+}
+
 selftest() {
   local legacy replacement
   selftest_fixture=$(mktemp -d)
@@ -81,6 +105,7 @@ selftest() {
   for legacy in mp-diagnose mp-grill-with-docs \
                 mp-improve-codebase-architecture mp-tdd; do
     write_fixture_skill "$selftest_fixture" "$legacy" true
+    write_fixture_codex_policy "$selftest_fixture" "$legacy"
   done
 
   SKILLS_DIR="$selftest_fixture" check_tree >/dev/null
@@ -93,6 +118,16 @@ selftest() {
       return 1
     fi
     write_fixture_skill "$selftest_fixture" "$legacy" true
+  done
+
+  for legacy in mp-diagnose mp-grill-with-docs \
+                mp-improve-codebase-architecture mp-tdd; do
+    write_fixture_codex_policy "$selftest_fixture" "$legacy" true
+    if SKILLS_DIR="$selftest_fixture" check_tree >/dev/null 2>&1; then
+      printf 'FAIL  selftest missed Codex-invocable wrapper: %s\n' "$legacy" >&2
+      return 1
+    fi
+    write_fixture_codex_policy "$selftest_fixture" "$legacy"
   done
 
   for replacement in diagnosing-bugs grilling domain-modeling grill-with-docs \
