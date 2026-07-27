@@ -1,6 +1,6 @@
 ---
 name: bug-fix-settlement
-description: 修復任何技術問題（bug、測試失敗、build 失敗、非預期行為、效能問題）之後觸發的「知識沉澱」收尾流程。負責判斷這次修復的根因是否值得沉澱、沉澱到哪裡（cookbook / memory / workflow），並強制輸出評估摘要。此 skill 不負責 debug 本身——除錯紀律走 `diagnosing-bugs`，此 skill 接在它後面做收尾。**不可在修完 bug 後直接結束回覆**，即使結論是「不需要沉澱」，也必須明確輸出摘要讓使用者看見已執行評估。
+description: 修復任何技術問題（bug、測試失敗、build 失敗、非預期行為、效能問題）之後觸發的「知識沉澱」收尾流程。負責判斷這次修復的根因是否值得沉澱、沉澱到哪裡（cookbook / memory / workflow），並強制輸出評估摘要。此 skill 不負責 debug 本身——除錯紀律走 `superpowers:systematic-debugging`，此 skill 接在它後面做收尾。**不可在修完 bug 後直接結束回覆**，即使結論是「不需要沉澱」，也必須明確輸出摘要讓使用者看見已執行評估。
 ---
 
 # Bug Fix Settlement — 修復後的知識沉澱
@@ -9,10 +9,10 @@ description: 修復任何技術問題（bug、測試失敗、build 失敗、非�
 
 此 skill 是除錯流程的**收尾**，不是除錯本身。
 
-- **找根因、紀律化修復** → `diagnosing-bugs`（feedback loop → reproduce → root cause → fix → regression test）
+- **找根因、紀律化修復** → `superpowers:systematic-debugging`（reproduce → root cause → fix → regression test）
 - **修完之後** → 本 skill：判斷根因是否值得沉澱、寫入正確位置、輸出評估摘要
 
-`diagnosing-bugs` 結束時手上應有一份根因結論（是什麼錯了、為什麼錯、是否有通用性）。本 skill 拿這份結論做沉澱判斷。
+`systematic-debugging` 結束時手上應有一份根因結論（是什麼錯了、為什麼錯、是否有通用性）。本 skill 拿這份結論做沉澱判斷。
 
 ## 觸發時機
 

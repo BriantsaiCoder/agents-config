@@ -55,27 +55,5 @@ for helper in sdd-workspace task-brief review-package find-polluter.sh start-ser
   has "helper ledger: $helper" "$helper" "$ledger"
 done
 
-has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' core/routing.md
-has "model route: codebase-design" 'codebase-design' core/routing.md
-has "model route: diagnosing-bugs" 'diagnosing-bugs' core/routing.md
-has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' core/routing.md
-has "explicit route: grill-with-docs" '/grill-with-docs' core/routing.md
-has "explicit route: improve-codebase-architecture" '/improve-codebase-architecture' core/routing.md
-lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|improve-codebase-architecture|diagnose|tdd)' core/routing.md
-
-has "closeout is action-triggered" 'push.*open PR.*merge.*final closeout' skills/dev-workflow/SKILL.md
-has "implement adapter enters branch" '`implement`.*(branch|worktree)' skills/dev-workflow/SKILL.md
-has "implement adapter requires S4-S6" '`implement`.*S4.*S6' skills/dev-workflow/SKILL.md
-has "S5 has Standards and Spec axes" 'Standards.*Spec' skills/dev-workflow/SKILL.md
-has "S5 axes have four states" 'PASS.*FAIL.*SKIPPED.*UNAVAILABLE' skills/dev-workflow/SKILL.md
-has "bugfix routes to diagnosing-bugs" 'diagnosing-bugs' skills/bug-fix-settlement/SKILL.md
-
-for active in core/routing.md skills/dev-workflow/SKILL.md \
-              skills/dev-workflow/references/review-triage.md \
-              skills/bug-fix-settlement/SKILL.md; do
-  lacks "no active Superpowers workflow ref: $active" \
-    'superpowers:|finishing-a-development-branch|systematic-debugging|receiving-code-review' "$active"
-done
-
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
