@@ -43,12 +43,14 @@ if [ -f "$DEPLOY" ]; then
   tmpd=$(mktemp -d)
   RESTORE_SRC="$tmpd/AGENTS.md"; RESTORE_DST="$DEPLOY"
   mv "$DEPLOY" "$RESTORE_SRC"
-  if "$HOME/.agents/bin/agents-sync" --doctor >/dev/null 2>&1; then rc=0; else rc=1; fi
+  if env -u AGENTS_HOME -u AGENTS_DEPLOY_ROOT \
+    "$HOME/.agents/bin/agents-sync" --doctor >/dev/null 2>&1; then rc=0; else rc=1; fi
   mv "$RESTORE_SRC" "$RESTORE_DST"
   RESTORE_SRC=""; RESTORE_DST=""
   rmdir "$tmpd" 2>/dev/null
   [ "$rc" -ne 0 ] && ok "doctor 缺部署檔 rc≠0" || ng "doctor 缺部署檔仍回 rc=0（假綠）"
-  "$HOME/.agents/bin/agents-sync" --doctor >/dev/null 2>&1 \
+  env -u AGENTS_HOME -u AGENTS_DEPLOY_ROOT \
+    "$HOME/.agents/bin/agents-sync" --doctor >/dev/null 2>&1 \
     && ok "doctor 還原後 rc=0" || ng "doctor 還原後仍 rc≠0（還原不完整？）"
 else
   ng "部署檔 $DEPLOY 不存在，探針 4 無法執行"
@@ -94,7 +96,13 @@ else
   ng "共用 guard 雙格式回歸未通過"
 fi
 
-# ── 10. git hooks 已安裝且與版控來源同步 ──
+# ── 10. live ~/.agents 主 checkout 必須留在 main ──
+live_branch=$(git -C "$HOME/.agents" branch --show-current 2>/dev/null || echo '')
+[ "$live_branch" = main ] \
+  && ok "live ~/.agents checkout 在 main" \
+  || ng "live ~/.agents checkout 在 ${live_branch:-無法判定}，必須回 main"
+
+# ── 11. git hooks 已安裝且與版控來源同步 ──
 # 為什麼要驗「同步」而不只是「存在」：.git/hooks/ 是 install-hooks.sh 的**複製**不是
 # symlink，且 .git 不進版控。所以有三種靜默失效，只驗存在只抓到第一種：
 #   (a) 新機器 clone 後沒跑 install-hooks.sh → 完全無守護

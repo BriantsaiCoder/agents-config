@@ -6,10 +6,9 @@
 #   agents-branch --list            列出所有 worktree
 #   agents-branch --done <branch>   移除該 worktree（分支本身保留）
 #
-# 為什麼：~/.agents 是三家 host 實際讀的目錄，而 ~/.claude/skills/* 是指回它的
-# symlink——在這裡切分支，Claude 讀到的 skill 內容**當下就變了**，而 Codex/Copilot
-# 的部署檔要等 agents-sync 才動，三家因此互相矛盾。worktree 把分支工作搬到沒有任何
-# host 讀的路徑，結構上消除這個狀態，而不是靠記得跑對齊指令。
+# 為什麼：三家 host 都直接讀 ~/.agents/skills，Claude 另以 symlink 指回它；在這裡
+# 切分支會讓三家的 skill 內容當下改變，只有 Codex/Copilot instructions 組裝體要等
+# agents-sync 才動。worktree 把分支工作搬到沒有 host 讀的路徑，避免內容互相矛盾。
 #
 # 代價講清楚：worktree 裡的 skill 改動**不會**被 host 看到。要實測就得刻意切回
 # ~/.agents（那時你是有意識的），或在 worktree 內跑 agents-sync 部署（會把
