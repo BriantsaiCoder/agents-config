@@ -205,7 +205,7 @@ Review carrier ${role} output path: ${carrier_path}. Re-verify its findings agai
         --stream off
         --log-level none
         --log-dir "$logs"
-        --secret-env-vars=COPILOT_GITHUB_TOKEN,GH_TOKEN,GITHUB_TOKEN,CLAUDE_CODE_OAUTH_TOKEN
+        '--secret-env-vars=COPILOT_GITHUB_TOKEN,GH_TOKEN,GITHUB_TOKEN,CLAUDE_CODE_OAUTH_TOKEN'
       )
       if [ "$class" = missing-evidence ]; then
         command+=(--available-tools=)

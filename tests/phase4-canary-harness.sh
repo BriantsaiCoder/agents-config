@@ -14,7 +14,11 @@ ng() { printf '  FAIL  %s\n' "$1"; fail=$((fail + 1)); }
 accept() {
   local label=$1
   shift
-  "$@" >/dev/null 2>&1 && ok "$label" || ng "$label"
+  if "$@" >/dev/null 2>&1; then
+    ok "$label"
+  else
+    ng "$label"
+  fi
 }
 reject() {
   local label=$1

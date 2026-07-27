@@ -261,11 +261,15 @@ prepare_fixture() {
   [ ! -e "$output" ] || die "fixture target already exists: $output"
   mkdir -p "$output/scripts" "$output/src" "$output/tests"
   printf '%s\n' '# Phase 4 deterministic scratch fixture' > "$output/README.md"
+  # Keep fixture shell expressions literal until the generated scripts run.
+  # shellcheck disable=SC2016
   printf '%s\n' '#!/usr/bin/env bash' 'wc -l < "$1"' > "$output/scripts/count-lines.sh"
+  # shellcheck disable=SC2016
   printf '%s\n' '#!/usr/bin/env bash' \
     'ROOT=$(cd "$(dirname "$0")/.." && pwd)' \
     'actual=$("$ROOT/scripts/count-lines.sh" <(printf no-newline))' \
     '[ "$actual" = 1 ]' > "$output/tests/count-lines.sh"
+  # shellcheck disable=SC2016
   printf '%s\n' '#!/usr/bin/env bash' \
     'parse_port() {' \
     '  case ${1:-} in (*[!0-9]*) printf "invalid\\n";; (*) printf "%s\\n" "$1";; esac' \
