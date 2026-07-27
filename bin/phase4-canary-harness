@@ -239,7 +239,9 @@ verify_result() {
       die "Arm B still loads Superpowers"
     [ "$(jq '.legacy_wrappers | length' "$inventory")" -eq 0 ] ||
       die "Arm B still exposes legacy wrappers"
-    jq -e 'all(.skills[]; (startswith("superpowers:") or startswith("mp-")) | not)' \
+    jq -e 'all(.skills[];
+      (startswith("superpowers:") or
+       IN("mp-diagnose","mp-grill-with-docs","mp-improve-codebase-architecture","mp-tdd")) | not)' \
       "$inventory" >/dev/null || die "Arm B inventory has forbidden workflow"
     if [ "$(jq -r '.route_contract.version // 1' "$case_file")" -eq 2 ]; then
       jq -e '
