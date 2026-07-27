@@ -22,16 +22,6 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
-## Unmodified vendored sets (NOT forks)
-
-**`mattpocock/skills` stable 22 — active, pinned 2026-07-27.**
-
-- Source: `https://github.com/mattpocock/skills.git` at `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
-- Selection: `.claude-plugin/plugin.json` SHA-256 `e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba`.
-- Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
-- Payload is byte-for-byte upstream and immutable. Update by replacing the full pinned set after lock/hash verification; rollback by reverting the replacement commit.
-- These entries are not forks and must not appear between the fork-index markers. Any local payload edit requires a new fork decision in that index.
-
 ## Hybrid — house wrapper over vendored payload
 
 Outside the index table: nothing here is forked. The entry exists because the `VND` flag is
@@ -189,4 +179,4 @@ Both fixes landed in `vendored_flag()` **and** `vendored_owner()`. Fixing only t
 
 A third defect surfaced while writing this section: `fork_recorded()` matched `| \`name\` |` anywhere in this file, so the table above — documentation, not an index — promoted `agent-browser` to `VND*`, asserting an accepted fork decision that was never made. The fork index now sits between `<!-- fork-index:begin/end -->` markers and the lookup is confined to that block; a file with no markers fails closed.
 
-Regression coverage: `tests/vendored-detection.sh`, 33 cases — every provenance form, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.
+Regression coverage: `tests/vendored-detection.sh`, 30 cases — every provenance form, the false-positive defences (prose `upstream` with no colon; a README that merely exists), flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the fix itself was a baseline diff: exactly two skill rows changed, nothing else.
