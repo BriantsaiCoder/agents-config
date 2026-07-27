@@ -83,11 +83,15 @@ verify_result() {
 
   completed=$(jq -r '.completed == true' "$result")
   evidence=$(jq -r '.evidence | length' "$result")
-  if [ "$(jq -r '.requires_evidence' "$case_file")" = true ] &&
+  if [ "$(jq -r '.requires_evidence // true' "$case_file")" = true ] &&
      [ "$completed" = true ] && [ "$evidence" -eq 0 ]; then
     die "completion has no evidence"
   fi
+  if [ "$(jq -r '.class' "$case_file")" = missing-evidence ] && [ "$completed" = true ]; then
+    die "missing-evidence probe was incorrectly declared complete"
+  fi
 
+  local network_count subagent_count expected_subagents
   tool_count=$(jq -s '
     [.. | objects |
       select(((.type? // "") | test("tool_use|tool\\.execution|command_execution|function_call|computer_call"; "i")))]
@@ -96,6 +100,26 @@ verify_result() {
   if [ "$tool_count" -gt 0 ] && [ "$(jq '.allowed_tools | length' "$case_file")" -eq 0 ]; then
     die "tool call observed while no tools are allowed"
   fi
+  network_count=$(jq -s '
+    [.. | objects |
+      (.name? // .toolName? // .tool_name? // .item.name? // "") |
+      strings |
+      select(test("web|fetch|browser|github|http|mcp"; "i"))]
+    | length
+  ' "$events")
+  [ "$network_count" -eq 0 ] || die "network-capable tool observed"
+
+  subagent_count=$(jq -s '
+    [.. | objects |
+      select(
+        (((.type? // "") | test("subagent|agent\\.started"; "i"))) or
+        (((.name? // .toolName? // .tool_name? // .item.name? // "") | test("^(task|agent|spawn_agent)$"; "i")))
+      )]
+    | length
+  ' "$events")
+  expected_subagents=$(jq -r '.nested_saas_runs // 0' "$case_file")
+  [ "$subagent_count" -eq "$expected_subagents" ] ||
+    die "review carrier count differs from budget"
 
   retry_count=$(jq -s '
     [.. | objects |
@@ -114,7 +138,7 @@ verify_result() {
   trap 'rm -f "$changed" "$expected"' RETURN
   comm -3 "$before" "$after" | sed $'s/^[\t ]*//' | cut -f2- | LC_ALL=C sort -u > "$changed"
   jq -r '.expected_file_mutations[]' "$case_file" | LC_ALL=C sort -u > "$expected"
-  comm -23 "$changed" "$expected" | grep -q . && die "unexpected file mutation"
+  cmp -s "$changed" "$expected" || die "file mutation set differs from expectation"
 
   if [ "$(jq -r '.arm' "$case_file")" = B ]; then
     [ "$(jq -r '.superpowers_loaded' "$inventory")" = false ] ||

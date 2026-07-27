@@ -75,6 +75,9 @@ JSON
 cat > "$TMP/result-no-evidence.json" <<'JSON'
 {"completed":true,"actual_workflows":["tdd"],"evidence":[]}
 JSON
+cat > "$TMP/result-completed-with-evidence.json" <<'JSON'
+{"completed":true,"actual_workflows":["tdd"],"evidence":["claimed explanation"]}
+JSON
 cat > "$TMP/events-empty.jsonl" <<'JSON'
 {"type":"assistant.message","content":"done"}
 JSON
@@ -87,6 +90,12 @@ JSON
 cat > "$TMP/events-tool-copilot.jsonl" <<'JSON'
 {"type":"tool.execution","toolName":"shell","arguments":{"command":"git status"}}
 JSON
+cat > "$TMP/events-network.jsonl" <<'JSON'
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"WebFetch"}]}}
+JSON
+cat > "$TMP/events-subagent.jsonl" <<'JSON'
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Task"}]}}
+JSON
 cat > "$TMP/events-retry.jsonl" <<'JSON'
 {"type":"turn.retry","retry_count":1}
 JSON
@@ -96,6 +105,15 @@ printf 'fingerprint-drift\n' > "$TMP/fingerprint-bad"
 
 cat > "$TMP/case-good.json" <<JSON
 {"arm":"B","class":"bugfix","intended_workflows":["tdd"],"allowed_tools":[],"expected_file_mutations":[],"requires_evidence":true,"retry_budget":0}
+JSON
+cat > "$TMP/case-missing-mutation.json" <<JSON
+{"arm":"B","class":"bugfix","intended_workflows":["tdd"],"allowed_tools":["shell"],"expected_file_mutations":["scripts/count-lines.sh"],"requires_evidence":true,"retry_budget":0}
+JSON
+cat > "$TMP/case-missing-evidence.json" <<JSON
+{"arm":"B","class":"missing-evidence","intended_workflows":["tdd"],"allowed_tools":[],"expected_file_mutations":[],"requires_evidence":true,"retry_budget":0}
+JSON
+cat > "$TMP/case-local-tools.json" <<JSON
+{"arm":"B","class":"bugfix","intended_workflows":["tdd"],"allowed_tools":["read","shell"],"allow_subagent":false,"nested_saas_runs":0,"expected_file_mutations":[],"requires_evidence":true,"retry_budget":0}
 JSON
 
 if [ -f "$MATRIX" ]; then
@@ -121,6 +139,10 @@ reject "completed without evidence fails" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-no-evidence.json" "$TMP/events-empty.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "missing-evidence probe cannot complete even with prose evidence" "$HARNESS" verify-result \
+  "$TMP/case-missing-evidence.json" "$TMP/result-completed-with-evidence.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "Claude tool call is parsed and fails" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-good.json" "$TMP/events-tool-claude.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
@@ -133,6 +155,14 @@ reject "Copilot tool call is parsed and fails" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-good.json" "$TMP/events-tool-copilot.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "network tool fails even when local tools are allowed" "$HARNESS" verify-result \
+  "$TMP/case-local-tools.json" "$TMP/result-good.json" "$TMP/events-network.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "unbudgeted subagent fails" "$HARNESS" verify-result \
+  "$TMP/case-local-tools.json" "$TMP/result-good.json" "$TMP/events-subagent.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "retry event is parsed and fails" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-good.json" "$TMP/events-retry.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
@@ -143,6 +173,10 @@ printf 'changed\n' > "$TMP/good/README.md"
 reject "unexpected file mutation fails" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-good.json" "$TMP/events-empty.jsonl" \
   "$TMP/before.tsv" "$TMP/changed.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "missing expected file mutation fails" "$HARNESS" verify-result \
+  "$TMP/case-missing-mutation.json" "$TMP/result-good.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "Arm B superpowers or legacy inventory fails" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-good.json" "$TMP/events-empty.jsonl" \

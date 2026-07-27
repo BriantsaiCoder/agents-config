@@ -161,20 +161,31 @@ FAIL valid synthetic result passes
 FAIL fixture regression is red for the intended contract
 ```
 
+Final self-review 再用四個 trust-boundary fixture 取得 RED：
+
+```text
+14 PASS / 4 FAIL
+FAIL missing-evidence probe cannot complete even with prose evidence
+FAIL network tool fails even when local tools are allowed
+FAIL unbudgeted subagent fails
+FAIL missing expected file mutation fails
+```
+
 修正後 GREEN：
 
 ```text
-14 PASS / 0 FAIL
+18 PASS / 0 FAIL
 ```
 
 Synthetic false-green cases逐項會 FAIL：
 
 - actual route 不等於 intended route
 - legacy collision / double execution
-- completed=true 但 evidence 為空
+- completed=true 但 evidence 為空，或 missing-evidence probe 帶著散文 evidence 仍宣稱完成
 - Claude / Codex / Copilot raw event 中的 tool call
+- network-capable tool，或非 review case 的未編列 subagent
 - retry event 超出 0
-- unexpected file mutation
+- unexpected 或 missing expected file mutation
 - Arm B inventory 仍含 Superpowers 或 legacy wrapper
 - rollback fingerprint mismatch
 
@@ -184,7 +195,7 @@ Harness 不含任何 SaaS invocation command；因此 local selftest 不可能�
 
 | Gate | Result |
 |---|---|
-| Phase 4 harness | PASS — 14 / 0 |
+| Phase 4 harness | PASS — 18 / 0 |
 | Matt workflow contracts | PASS — 54 / 0 |
 | Legacy collision + selftest | PASS |
 | Vendored detection | PASS — 33 / 0 |
@@ -202,8 +213,8 @@ Harness 不含任何 SaaS invocation command；因此 local selftest 不可能�
 
 新增檔案 bytes：
 
-- harness：9,637B
-- selftest：7,392B
+- harness：10,612B
+- selftest：9,667B
 - matrix：44,856B
 - managed host body：0B 變更；budget 保持 Codex 8425B / Copilot 9165B。
 
