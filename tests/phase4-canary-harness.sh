@@ -78,6 +78,38 @@ JSON
 cat > "$TMP/result-completed-with-evidence.json" <<'JSON'
 {"completed":true,"actual_workflows":["tdd"],"evidence":["claimed explanation"]}
 JSON
+cat > "$TMP/result-v2-good.json" <<'JSON'
+{
+  "completed": true,
+  "route_telemetry": {
+    "version": 2,
+    "selected_workflows": ["bug-fix-settlement", "diagnosing-bugs", "tdd"],
+    "supporting_workflows": ["dev-workflow"],
+    "events": [
+      {"sequence": 1, "role": "supporting", "workflow": "dev-workflow", "source": "injected-policy"},
+      {"sequence": 2, "role": "selected", "workflow": "bug-fix-settlement", "source": "skill-file"},
+      {"sequence": 3, "role": "selected", "workflow": "diagnosing-bugs", "source": "skill-file"},
+      {"sequence": 4, "role": "selected", "workflow": "tdd", "source": "skill-file"}
+    ]
+  },
+  "evidence": ["test red", "test green"],
+  "summary": "fixed"
+}
+JSON
+jq '.route_telemetry.supporting_workflows=["code-review"]
+    | .route_telemetry.events[0].workflow="code-review"' \
+  "$TMP/result-v2-good.json" > "$TMP/result-v2-unallowed-support.json"
+jq '.route_telemetry.selected_workflows -= ["tdd"]
+    | .route_telemetry.events = [.route_telemetry.events[] | select(.workflow != "tdd")]' \
+  "$TMP/result-v2-good.json" > "$TMP/result-v2-missing-selected.json"
+jq '.route_telemetry.events += [
+      {"sequence":5,"role":"selected","workflow":"tdd","source":"skill-file"}
+    ]' "$TMP/result-v2-good.json" > "$TMP/result-v2-duplicate-event.json"
+jq '.route_telemetry.events = [.route_telemetry.events[] | select(.workflow != "tdd")]' \
+  "$TMP/result-v2-good.json" > "$TMP/result-v2-event-mismatch.json"
+jq '.route_telemetry.supporting_workflows=["superpowers:using-superpowers"]
+    | .route_telemetry.events[0].workflow="superpowers:using-superpowers"' \
+  "$TMP/result-v2-good.json" > "$TMP/result-v2-forbidden.json"
 cat > "$TMP/events-empty.jsonl" <<'JSON'
 {"type":"assistant.message","content":"done"}
 JSON
@@ -99,6 +131,10 @@ JSON
 cat > "$TMP/events-retry.jsonl" <<'JSON'
 {"type":"turn.retry","retry_count":1}
 JSON
+cat > "$TMP/events-external-carriers.jsonl" <<'JSON'
+{"type":"phase4.external_carrier","role":"standards"}
+{"type":"phase4.external_carrier","role":"spec"}
+JSON
 printf 'fingerprint-v4\n' > "$TMP/fingerprint-expected"
 cp "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 printf 'fingerprint-drift\n' > "$TMP/fingerprint-bad"
@@ -115,6 +151,60 @@ JSON
 cat > "$TMP/case-local-tools.json" <<JSON
 {"arm":"B","class":"bugfix","intended_workflows":["tdd"],"allowed_tools":["read","shell"],"allow_subagent":false,"nested_saas_runs":0,"expected_file_mutations":[],"requires_evidence":true,"retry_budget":0}
 JSON
+cat > "$TMP/case-v2.json" <<'JSON'
+{
+  "arm": "B",
+  "class": "bugfix",
+  "route_contract": {
+    "version": 2,
+    "selected_workflows": ["bug-fix-settlement", "diagnosing-bugs", "tdd"],
+    "allowed_supporting_workflows": ["dev-workflow", "deps-check"],
+    "forbidden_workflow_prefixes": ["superpowers:", "mp-"]
+  },
+  "allowed_tools": [],
+  "allow_subagent": false,
+  "nested_saas_runs": 0,
+  "expected_file_mutations": [],
+  "requires_evidence": true,
+  "retry_budget": 0
+}
+JSON
+jq '.route_contract.allowed_supporting_workflows += ["superpowers:using-superpowers"]' \
+  "$TMP/case-v2.json" > "$TMP/case-v2-forbidden.json"
+cat > "$TMP/case-v2-review.json" <<'JSON'
+{
+  "arm": "B",
+  "class": "review",
+  "route_contract": {
+    "version": 2,
+    "selected_workflows": ["code-review"],
+    "allowed_supporting_workflows": ["dev-workflow", "deps-check"],
+    "forbidden_workflow_prefixes": ["superpowers:", "mp-"]
+  },
+  "allowed_tools": ["read", "subagent"],
+  "allow_subagent": true,
+  "nested_saas_runs": 2,
+  "expected_file_mutations": [],
+  "requires_evidence": true,
+  "retry_budget": 0
+}
+JSON
+cat > "$TMP/result-v2-review.json" <<'JSON'
+{
+  "completed": true,
+  "route_telemetry": {
+    "version": 2,
+    "selected_workflows": ["code-review"],
+    "supporting_workflows": ["dev-workflow"],
+    "events": [
+      {"sequence": 1, "role": "supporting", "workflow": "dev-workflow", "source": "injected-policy"},
+      {"sequence": 2, "role": "selected", "workflow": "code-review", "source": "skill-file"}
+    ]
+  },
+  "evidence": ["standards checked", "spec checked"],
+  "summary": "reviewed"
+}
+JSON
 
 if [ -f "$MATRIX" ]; then
   accept "real 42-row matrix is complete" "$HARNESS" validate-matrix "$MATRIX"
@@ -125,6 +215,34 @@ accept "fixture regression is red for the intended contract" fixture_is_determin
 accept "scratch Arm A/B carriers are physically isolated" arms_are_isolated
 accept "valid synthetic result passes" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-good.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+accept "v2 selected and allowed supporting routes pass" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-good.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 unallowed supporting route fails" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-unallowed-support.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 missing selected route fails" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-missing-selected.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 duplicate invocation event fails" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-duplicate-event.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 telemetry event mismatch fails" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-event-mismatch.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 Arm B forbidden route fails even when supporting allowlisted" "$HARNESS" verify-result \
+  "$TMP/case-v2-forbidden.json" "$TMP/result-v2-forbidden.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+accept "v2 external Codex review carriers count against the nested budget" "$HARNESS" verify-result \
+  "$TMP/case-v2-review.json" "$TMP/result-v2-review.json" "$TMP/events-external-carriers.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "wrong route fails" "$HARNESS" verify-result \

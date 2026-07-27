@@ -67,7 +67,91 @@ validate_matrix() {
     ([.[].top_level_saas_runs] | add) == 42 and
     ([.[].nested_saas_runs] | add) == 9
   ' "$matrix" >/dev/null || die "matrix contract failed"
+  if jq -e -s 'any(.[]; has("route_contract"))' "$matrix" >/dev/null; then
+    jq -e -s '
+      all(.[];
+        .route_contract.version == 2 and
+        (.route_contract.selected_workflows | type == "array" and length > 0) and
+        (.route_contract.allowed_supporting_workflows | type == "array") and
+        (.route_contract.forbidden_workflow_prefixes | type == "array") and
+        ((.route_contract.selected_workflows | sort) == (.intended_workflows | sort)) and
+        ((.route_contract.selected_workflows + .route_contract.allowed_supporting_workflows)
+          | length == (unique | length)) and
+        (.stage | IN(1,2)) and
+        (.fixture | startswith("/private/tmp/phase4-canary-v2/runs/")) and
+        (. as $row | $row.prompt | contains($row.fixture)) and
+        (.prompt | contains("/private/tmp/phase4-canary/runs/") | not) and
+        (.carrier_mode ==
+          (if .host == "claude" then "builtin-agent"
+           elif .host == "codex" then "external-exec"
+           else "builtin-task" end)) and
+        (.carrier_roles | type == "array") and
+        ((.carrier_roles | length) == .nested_saas_runs) and
+        (if .class == "review" then
+           .carrier_roles == (if .arm == "A" then ["review"] else ["standards","spec"] end) and
+           (if .host == "codex" then
+              (.allowed_tools | index("subagent") == null) and
+              (.prompt | contains("external exec"))
+            else .allowed_tools | index("subagent") != null end)
+         else .carrier_roles == [] end)
+      ) and
+      ([.[] | select(.stage == 1)] | length) == 6 and
+      all(.[] | select(.stage == 1); .class == "architecture" and .nested_saas_runs == 0) and
+      ([.[] | select(.stage == 1) | .top_level_saas_runs] | add) == 6 and
+      ([.[] | select(.stage == 2) | .top_level_saas_runs] | add) == 36 and
+      ([.[] | select(.stage == 2) | .nested_saas_runs] | add) == 9 and
+      ([.[] | select(.stage == 1) | .host] | group_by(.) | map(length) | sort) == [2,2,2] and
+      ([sort_by(.host) | group_by(.host)[] |
+        (map(.top_level_saas_runs + .nested_saas_runs) | add)] | sort) == [17,17,17]
+    ' "$matrix" >/dev/null || die "v2 matrix contract failed"
+  fi
   printf 'PASS: 42 top-level + 9 review-carrier = 51 SaaS runs\n'
+}
+
+verify_route() {
+  local case_file=$1 result=$2 version
+  version=$(jq -r '.route_contract.version // 1' "$case_file")
+  case "$version" in
+    1)
+      local intended actual
+      intended=$(jq -c '.intended_workflows | sort' "$case_file")
+      actual=$(jq -c '.actual_workflows | sort' "$result")
+      [ "$intended" = "$actual" ] || die "actual route differs from intended route"
+      ;;
+    2)
+      jq -e --slurpfile case "$case_file" '
+        $case[0].route_contract as $contract |
+        .route_telemetry as $telemetry |
+        ($telemetry.selected_workflows + $telemetry.supporting_workflows) as $all |
+        ($contract.forbidden_workflow_prefixes // []) as $forbidden |
+        $telemetry.version == 2 and
+        ($telemetry.selected_workflows | type == "array") and
+        ($telemetry.supporting_workflows | type == "array") and
+        ($telemetry.events | type == "array") and
+        (($telemetry.selected_workflows | sort) == ($contract.selected_workflows | sort)) and
+        all($telemetry.supporting_workflows[];
+          . as $workflow | $contract.allowed_supporting_workflows | index($workflow) != null) and
+        (($all | length) == ($all | unique | length)) and
+        all($all[];
+          . as $workflow |
+          all($forbidden[]; . as $prefix | $workflow | startswith($prefix) | not)) and
+        ($telemetry.events | map(.sequence)) == [range(1; ($telemetry.events | length) + 1)] and
+        all($telemetry.events[];
+          (.role | IN("selected","supporting")) and
+          (.source | IN("skill-tool","skill-file","injected-policy")) and
+          (.workflow | type == "string" and length > 0)) and
+        ([ $telemetry.events[] | select(.role == "selected") | .workflow ] | sort)
+          == ($telemetry.selected_workflows | sort) and
+        ([ $telemetry.events[] | select(.role == "supporting") | .workflow ] | sort)
+          == ($telemetry.supporting_workflows | sort) and
+        (($telemetry.events | map([.role,.workflow]) | unique | length)
+          == ($telemetry.events | length))
+      ' "$result" >/dev/null || die "v2 route telemetry contract failed"
+      ;;
+    *)
+      die "unsupported route contract version: $version"
+      ;;
+  esac
 }
 
 verify_result() {
@@ -76,10 +160,8 @@ verify_result() {
     require_file "$file"
   done
 
-  local intended actual completed evidence retry_count tool_count
-  intended=$(jq -c '.intended_workflows | sort' "$case_file")
-  actual=$(jq -c '.actual_workflows | sort' "$result")
-  [ "$intended" = "$actual" ] || die "actual route differs from intended route"
+  local completed evidence retry_count tool_count
+  verify_route "$case_file" "$result"
 
   completed=$(jq -r '.completed == true' "$result")
   evidence=$(jq -r '.evidence | length' "$result")
@@ -112,7 +194,7 @@ verify_result() {
   subagent_count=$(jq -s '
     [.. | objects |
       select(
-        (((.type? // "") | test("subagent|agent\\.started"; "i"))) or
+        (((.type? // "") | test("subagent|agent\\.started|phase4\\.external_carrier"; "i"))) or
         (((.name? // .toolName? // .tool_name? // .item.name? // "") | test("^(task|agent|spawn_agent)$"; "i")))
       )]
     | length
@@ -147,8 +229,15 @@ verify_result() {
       die "Arm B still exposes legacy wrappers"
     jq -e 'all(.skills[]; (startswith("superpowers:") or startswith("mp-")) | not)' \
       "$inventory" >/dev/null || die "Arm B inventory has forbidden workflow"
-    jq -e '.actual_workflows | all(.[]; (startswith("superpowers:") or startswith("mp-")) | not)' \
-      "$result" >/dev/null || die "Arm B executed a forbidden workflow"
+    if [ "$(jq -r '.route_contract.version // 1' "$case_file")" -eq 2 ]; then
+      jq -e '
+        [.route_telemetry.selected_workflows[], .route_telemetry.supporting_workflows[]] |
+        all(.[]; (startswith("superpowers:") or startswith("mp-")) | not)
+      ' "$result" >/dev/null || die "Arm B executed a forbidden workflow"
+    else
+      jq -e '.actual_workflows | all(.[]; (startswith("superpowers:") or startswith("mp-")) | not)' \
+        "$result" >/dev/null || die "Arm B executed a forbidden workflow"
+    fi
   fi
 
   cmp -s "$expected_fp" "$actual_fp" || die "rollback fingerprint mismatch"
