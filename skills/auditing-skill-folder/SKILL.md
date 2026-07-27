@@ -9,7 +9,7 @@ description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skil
 
 **Core principle:** Structural checks first, content relevance last. Jumping to "do I still need this" produces all-keep or vibes-delete results that miss real defects.
 
-**Not for:** writing a new skill (use `superpowers:writing-skills`); debugging one skill's single trigger.
+**Not for:** writing a new skill (ask the user to explicitly invoke `writing-great-skills`); debugging one skill's single trigger.
 
 ## Step 0 — Vendored gate (run FIRST; it decides which verdicts are legal)
 
@@ -55,4 +55,4 @@ Run in order after Step 0. Steps 1–2 mechanical, 3–5 read, 6 is the call you
 
 **Step 0 is a gate, not a scored step:** an in-place structural verdict on a `VND` skill is void however well steps 1–6 argue it. Record Keep plus a reported defect. Treat `ERR` as `VND` until proven otherwise.
 
-**REQUIRED BACKGROUND:** `superpowers:writing-skills` (authoritative source for the six standards).
+**REQUIRED BACKGROUND:** Read [references/skill-standards.md](references/skill-standards.md), the automatically loadable house authority.
