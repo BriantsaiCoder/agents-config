@@ -74,6 +74,8 @@ validate_matrix() {
         (.route_contract.selected_workflows | type == "array" and length > 0) and
         (.route_contract.allowed_supporting_workflows | type == "array") and
         (.route_contract.forbidden_workflow_prefixes | type == "array") and
+        (.forbidden_read_prefixes | type == "array" and length > 0) and
+        all(.forbidden_read_prefixes[]; startswith("/Users/pochientsai/")) and
         ((.route_contract.selected_workflows | sort) == (.intended_workflows | sort)) and
         ((.route_contract.selected_workflows + .route_contract.allowed_supporting_workflows)
           | length == (unique | length)) and
@@ -173,7 +175,7 @@ verify_result() {
     die "missing-evidence probe was incorrectly declared complete"
   fi
 
-  local network_count subagent_count expected_subagents
+  local network_count forbidden_read_count subagent_count expected_subagents
   tool_count=$(jq -s '
     [.. | objects |
       select(((.type? // "") | test("tool_use|tool\\.execution|command_execution|function_call|computer_call"; "i")))]
@@ -190,6 +192,16 @@ verify_result() {
     | length
   ' "$events")
   [ "$network_count" -eq 0 ] || die "network-capable tool observed"
+  forbidden_read_count=$(jq -s --slurpfile case "$case_file" '
+    ($case[0].forbidden_read_prefixes // []) as $prefixes |
+    [.. | objects |
+      select(((.type? // "") |
+        test("tool_use|tool\\.execution|command_execution|function_call|computer_call"; "i"))) |
+      tostring as $event |
+      select(any($prefixes[]; . as $prefix | $event | contains($prefix)))]
+    | length
+  ' "$events")
+  [ "$forbidden_read_count" -eq 0 ] || die "tool call referenced a forbidden live path"
 
   subagent_count=$(jq -s '
     [.. | objects |

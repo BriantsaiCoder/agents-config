@@ -31,6 +31,7 @@ plan() {
     .route_contract.version == 2 and
     (.host | IN("claude","codex","copilot")) and
     (.arm | IN("A","B")) and
+    (.forbidden_read_prefixes | type == "array" and length > 0) and
     (.carrier_roles | type == "array") and
     ((.carrier_roles | length) == .nested_saas_runs) and
     .retry_budget == 0
@@ -38,7 +39,7 @@ plan() {
 
   local id host arm class fixture model effort prompt route_contract effective_prompt
   local runtime home tmp artifacts carrier_mode schema_json command_json carrier_json path_json event_json
-  local environment_json credentials_json requires_outer_unsandboxed=false sandbox
+  local environment_json credentials_json isolation_prefixes_json requires_outer_unsandboxed=false sandbox
   id=$(jq -r '.id' "$case_file")
   host=$(jq -r '.host' "$case_file")
   arm=$(jq -r '.arm' "$case_file")
@@ -49,6 +50,7 @@ plan() {
   prompt=$(jq -r '.prompt' "$case_file")
   route_contract=$(jq -c '.route_contract' "$case_file")
   carrier_mode=$(jq -r '.carrier_mode' "$case_file")
+  isolation_prefixes_json=$(jq -c '.forbidden_read_prefixes' "$case_file")
   schema_json=$(jq -c 'del(."$schema")' "$SCHEMA")
   runtime="$RUNTIME_ROOT/runtime/$host/$arm"
   home="$runtime/home"
@@ -234,6 +236,7 @@ Review carrier ${role} output path: ${carrier_path}. Re-verify its findings agai
     --arg schema_path "$SCHEMA" \
     --argjson environment "$environment_json" \
     --argjson credential_env "$credentials_json" \
+    --argjson forbidden_read_prefixes "$isolation_prefixes_json" \
     --argjson command "$command_json" \
     --argjson carrier_commands "$carrier_json" \
     --argjson carrier_result_paths "$path_json" \
@@ -253,12 +256,7 @@ Review carrier ${role} output path: ${carrier_path}. Re-verify its findings agai
       isolation:{
         network:false,
         live_config_mutation:false,
-        deny_read_prefixes:[
-          "/Users/pochientsai/.agents",
-          "/Users/pochientsai/.claude",
-          "/Users/pochientsai/.codex",
-          "/Users/pochientsai/.copilot"
-        ]
+        deny_read_prefixes:$forbidden_read_prefixes
       },
       schema_path:$schema_path,
       command:$command,

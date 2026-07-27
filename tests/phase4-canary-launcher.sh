@@ -94,7 +94,9 @@ all_plans_are_bounded() {
     plan_file="$plans/$id.json"
     printf '%s\n' "$row" > "$case_file"
     "$LAUNCHER" plan "$case_file" "$plan_file" || return 1
-    jq -e --arg fixture "$(jq -r '.fixture' "$case_file")" '
+    jq -e \
+      --arg fixture "$(jq -r '.fixture' "$case_file")" \
+      --argjson forbidden_read_prefixes "$(jq '.forbidden_read_prefixes' "$case_file")" '
       .version == 2 and
       (.command | type == "array" and length > 5) and
       (.command | join("\n") | contains($fixture)) and
@@ -109,7 +111,8 @@ all_plans_are_bounded() {
       (.budget.timeout_seconds | type == "number" and . > 0) and
       (.environment.HOME | startswith("/private/tmp/phase4-canary-v2/runtime/")) and
       .isolation.network == false and
-      .isolation.live_config_mutation == false
+      .isolation.live_config_mutation == false and
+      .isolation.deny_read_prefixes == $forbidden_read_prefixes
     ' "$plan_file" >/dev/null || return 1
   done < "$MATRIX"
 }

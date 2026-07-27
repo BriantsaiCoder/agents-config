@@ -135,6 +135,9 @@ cat > "$TMP/events-external-carriers.jsonl" <<'JSON'
 {"type":"phase4.external_carrier","role":"standards"}
 {"type":"phase4.external_carrier","role":"spec"}
 JSON
+cat > "$TMP/events-live-read.jsonl" <<'JSON'
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"/Users/pochientsai/.agents/skills/dev-workflow/SKILL.md"}}]}}
+JSON
 printf 'fingerprint-v4\n' > "$TMP/fingerprint-expected"
 cp "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 printf 'fingerprint-drift\n' > "$TMP/fingerprint-bad"
@@ -162,6 +165,7 @@ cat > "$TMP/case-v2.json" <<'JSON'
     "forbidden_workflow_prefixes": ["superpowers:", "mp-"]
   },
   "allowed_tools": [],
+  "forbidden_read_prefixes": ["/Users/pochientsai/.agents"],
   "allow_subagent": false,
   "nested_saas_runs": 0,
   "expected_file_mutations": [],
@@ -171,6 +175,7 @@ cat > "$TMP/case-v2.json" <<'JSON'
 JSON
 jq '.route_contract.allowed_supporting_workflows += ["superpowers:using-superpowers"]' \
   "$TMP/case-v2.json" > "$TMP/case-v2-forbidden.json"
+jq '.allowed_tools=["read"]' "$TMP/case-v2.json" > "$TMP/case-v2-local-read.json"
 cat > "$TMP/case-v2-review.json" <<'JSON'
 {
   "arm": "B",
@@ -243,6 +248,10 @@ reject "v2 Arm B forbidden route fails even when supporting allowlisted" "$HARNE
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 accept "v2 external Codex review carriers count against the nested budget" "$HARNESS" verify-result \
   "$TMP/case-v2-review.json" "$TMP/result-v2-review.json" "$TMP/events-external-carriers.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 tool event cannot read a live config prefix" "$HARNESS" verify-result \
+  "$TMP/case-v2-local-read.json" "$TMP/result-v2-good.json" "$TMP/events-live-read.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "wrong route fails" "$HARNESS" verify-result \
