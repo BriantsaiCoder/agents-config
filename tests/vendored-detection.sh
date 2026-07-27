@@ -78,6 +78,15 @@ d=$(mkskill frontmatter-source)
 printf -- '---\nname: x\nsource: https://example.invalid/x\n---\n\n# x\n' > "$d/SKILL.md"
 check "frontmatter 內 source: -> vnd?" "vnd?" "$(vendored_flag "$d")"
 
+d=$(mkskill lock-listed)
+LOCK="$TMP/mattpocock-skills.lock"
+printf 'source_url=https://github.com/example/skills.git\nskill=lock-listed\n' > "$LOCK"
+MATTPOCOCK_SKILLS_LOCK="$LOCK"
+export MATTPOCOCK_SKILLS_LOCK
+check "root lock 列出的 skill -> VND" "VND" "$(vendored_flag "$d")"
+check "root lock 的 source_url -> owner" "https://github.com/example/skills.git" "$(vendored_owner "$d")"
+unset MATTPOCOCK_SKILLS_LOCK
+
 check "目錄不存在 -> ERR" "ERR" "$(vendored_flag "$TMP/does-not-exist")"
 
 d="$TMP/no-skill-md"; mkdir -p "$d"
@@ -169,6 +178,11 @@ if [ -d "$AGENTS/skills" ]; then
   # 回來更新它。那正是要的行為——「悄悄多了一個 vendored skill」本來就該被攔下來人工確認。
   # 與 CI 的「skill-index 與 skills/ 一致」不同:那條比對兩個生成產物,這條釘死已知事實。
   expect_vnd="agent-browser native-feel-cross-platform-desktop playwright-best-practices security-audit tailwind-v4-shadcn vueuse-functions"
+  if [ -r "$AGENTS/mattpocock-skills.lock" ]; then
+    locked=$(sed -n 's/^skill=//p' "$AGENTS/mattpocock-skills.lock")
+    check "Matt lock 的 skill 數量" "22" "$(printf '%s\n' "$locked" | grep -c .)"
+    expect_vnd="$expect_vnd $(printf '%s\n' "$locked" | tr '\n' ' ' | sed 's/ $//')"
+  fi
   actual=""
   for sd in "$AGENTS"/skills/*/; do
     [ -f "$sd/SKILL.md" ] || continue
