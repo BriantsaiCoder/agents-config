@@ -80,6 +80,7 @@ Launcher沒有 execute subcommand；這是本輪 budget gate 的機械防線。�
 | v2 route accounting | harness `23 PASS / 1 FAIL`：合法 selected + allowed supporting 被 v1 exact route拒絕 | harness v2 route cases全綠 |
 | host launcher / staged matrix | launcher `1 PASS / 3 FAIL`：Claude、Codex、Stage budget均未實作 | launcher `5 PASS / 0 FAIL` |
 | live absolute path guard | harness `25 PASS / 1 FAIL`：允許 Read 時 live `.agents` tool event未被拒絕 | harness final `26 PASS / 0 FAIL` |
+| ShellCheck | ShellCheck 0.11.0：SC2016 × 5、SC2054 × 1、SC2015 × 2，exit 1 | 同一 4-file scan 0 findings，exit 0；behavior suites仍為 26 / 0、5 / 0 |
 
 False-green coverage包括：wrong selected route、unallowed supporting route、missing selected、duplicate invocation、event/summary mismatch、Arm B forbidden route、external carrier count、live absolute path、missing evidence、raw tool call、network、retry、mutation與rollback fingerprint。
 
@@ -121,7 +122,7 @@ Stage 1任一 host FAIL / UNAVAILABLE 即停止，不自動進 Stage 2，不挪�
 | `bash -n` / JSON parse / `git diff --check` | PASS |
 | gitleaks candidate range | PASS — no leaks |
 | targeted secret assignment scan | PASS — 0 hit |
-| `shellcheck` | UNAVAILABLE — binary未安裝 |
+| `shellcheck` | PASS — ShellCheck 0.11.0，4 scripts，0 findings |
 | DCT build / E2E | SKIPPED — 本輪不改 DCT runtime |
 
 Scratch conformance首輪為 16 / 1，原因是 scratch HOME 未帶入 Codex `default.rules`，exec-policy probe回報 missing file；補齊同一 read-only fixture後重跑 17 / 0。這不是 candidate code重試，也沒有 SaaS或 live mutation。
@@ -139,14 +140,15 @@ Code commits：
 - `45b1501 fix(workflow): 修正 Phase 4 路由計帳`
 - `b6c8a13 fix(workflow): 修正 Phase 4 host launcher`
 - `593b6ae fix(workflow): 阻擋 canary 讀取 live path`
-- 本檔的 doc-only evidence commit
+- `469c483 docs(workflow): 記錄 Phase 4 remediation gate`
+- `4d3d565 fix(workflow): 清除 Phase 4 ShellCheck findings`
 
 主要檔案 bytes（final doc commit前量測）：
 
-- `bin/phase4-canary-harness`：15,878B
-- `bin/phase4-canary-launcher`：10,136B
-- `tests/phase4-canary-harness.sh`：15,795B
-- `tests/phase4-canary-launcher.sh`：5,588B
+- `bin/phase4-canary-harness`：16,044B
+- `bin/phase4-canary-launcher`：10,138B
+- `tests/phase4-canary-harness.sh`：15,818B
+- `tests/phase4-canary-launcher.sh`：5,611B
 - `26-phase4-v2-result-schema.json`：1,943B
 - `27-phase4-v2-canary-matrix.jsonl`：64,810B
 
@@ -154,7 +156,7 @@ Managed host body為 0B diff；Codex / Copilot常駐預算不變。
 
 ## 8. Live postflight and rollback
 
-2026-07-28 03:01:43 CST read-only postflight：
+2026-07-28 05:28:25 CST read-only postflight：
 
 - live `~/.agents`：`main` / `36f8ff1dc208be531f52216dd33f2f32aec62e0f`
 - 既有 6 個 untracked proposal paths原樣存在
@@ -178,14 +180,13 @@ Rollback：
 3. Codex plan要求 outer parent不再加第二層 sandbox；若執行面無法滿足，Codex標 UNAVAILABLE，不以 bypass flag繞過。
 4. route telemetry是新的 cross-host result contract；Stage 1若有 malformed或不可觀測 event即 FAIL，不修改 contract追結果。
 5. 既有 conformance 的 tdd-agent Rails probe在兩個檔案都不存在時會 vacuous PASS；屬 pre-existing scope 外 finding，本輪未修。
-6. `shellcheck` UNAVAILABLE；以 `bash -n` + runnable behavior tests補位。
 
 錯誤學習評估：
 
-- Cookbook：不寫；根因已由 harness regression與 matrix contract機械守護。
+- Cookbook：不寫；ShellCheck與既有 behavior tests已能機械守護。
 - Memory：不寫；使用者未要求修改 memory，且這是本 candidate特定契約。
 - Workflow：不另寫；本輪本身就是 workflow harness / launcher修復。
-- 替代動作：保留 RED→GREEN cases、Stage 1 fail-fast與 exact budget gate。
+- 替代動作：保留 ShellCheck、RED→GREEN cases、Stage 1 fail-fast與 exact budget gate。
 
 ## 10. Master Roadmap status
 
@@ -214,8 +215,8 @@ retry budget 維持 0。
 ## Closeout Ledger
 
 - Self-simplification — PASS：沿用既有 harness + jq / Bash；無新 dependency、factory、config framework或未使用抽象。
-- Diff self-review — PASS：逐行檢查 route / launcher / matrix；self-review抓到 prompt舊 root與 live-path guard缺口，均已補 regression。
-- Relevant verification — PASS：本檔第 6 節 gates；Phase 4 26 / 0、launcher 5 / 0、conformance 17 / 0。
+- Diff self-review — PASS：逐行檢查 route / launcher / matrix與 ShellCheck修補；intentional generated literals只做精準 suppression。
+- Relevant verification — PASS：本檔第 6 節 gates；ShellCheck 0 findings、Phase 4 26 / 0、launcher 5 / 0、conformance 17 / 0。
 - Review gate — UNAVAILABLE：使用者明示不執行 SaaS，未啟動 model reviewer；primary context完成 self-review，0 未處理 in-scope finding。
 - PR / CI / review status — SKIPPED：明示不 push、不開 PR、不 merge；local branch only。
 - Residual risks — 本檔第 9 節；rollback為 revert isolated commits，Stage 1任一 host失敗即停止。
