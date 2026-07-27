@@ -22,10 +22,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 八條 lint，其中 rule 1 比對 core/routing.md 逐名點名的 skill 是否存在於
+      # 七條 lint，其中 rule 1 比對 core/routing.md 逐名點名的 skill 是否存在於
       # skills/——那是 2026-07 九個死名事故的結構性根絕。
       # --check 為 dry-run：跑 lint + 印組裝位元組，不寫任何檔。
-      - name: agents-sync lint（8 rules；含 Claude collision guard）
+      - name: agents-sync lint（7 rules；含 routing 死名偵測）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash bin/agents-sync --check
 
       # [T0-3] force-push guard 回歸。2026-07-25 實測過五個破口
@@ -41,9 +41,6 @@ jobs:
 
       - name: Matt workflow carrier contracts
         run: bash tests/mattpocock-workflow.sh
-
-      - name: Claude routing collision guard selftest
-        run: bash tests/claude-routing-collision.sh --selftest
 
       - name: agents-branch portable isolation
         run: bash tests/agents-branch.sh

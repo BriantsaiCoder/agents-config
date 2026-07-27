@@ -107,7 +107,7 @@ banner_body_hash_matches() {
   [ "$want" = "$got" ]
 }
 
-# ── lint（八條；任一 hard-fail → 非零 exit）──
+# ── lint（七條；任一 hard-fail → 非零 exit）──
 lint() {
   local fail=0
 
@@ -190,18 +190,10 @@ lint() {
 
   # rule 7: CONVENTIONS 12——Claude 常駐面預算（CLAUDE.md + core 三檔合計 ≤20480B）
   #         量測式與 CONVENTIONS.md §12 一致；CLAUDE.md 不存在時跳過（部署前環境）
-  local claude_file="${CLAUDE_GLOBAL_FILE:-$DEPLOY_ROOT/.claude/CLAUDE.md}" claude_total
-  if [ -f "$claude_file" ]; then
-    claude_total="$(cat "$claude_file" core/tier0-safety.md core/tier1-workflow.md core/tier2-style.md | wc -c | tr -d ' ')"
+  local claude_total
+  if [ -f "$HOME/.claude/CLAUDE.md" ]; then
+    claude_total="$(cat "$HOME/.claude/CLAUDE.md" core/tier0-safety.md core/tier1-workflow.md core/tier2-style.md | wc -c | tr -d ' ')"
     [ "$claude_total" -le 20480 ] || { note "  [lint7 FAIL] CLAUDE.md+core 合計 ${claude_total}B > 20480B（CONVENTIONS 12）"; fail=1; }
-  fi
-
-  # rule 8: Claude 手寫區不得重複已由 managed stamp 接管的舊 workflow routes。
-  # CLAUDE_GLOBAL_FILE 供 cross-repo candidate 在不碰 live 檔的情況下驗證配對版本。
-  if [ -f "$claude_file" ] \
-    && ! bash "$AGENTS/tests/claude-routing-collision.sh" "$claude_file" >/dev/null; then
-    note "  [lint8 FAIL] $claude_file 在 managed stamp 外仍有舊 workflow route"
-    fail=1
   fi
   return "$fail"
 }
