@@ -153,5 +153,12 @@ else
   ng "Claude managed stamp 外仍有舊 workflow route"
 fi
 
+# ── 13. legacy mp wrappers 保留手動相容性但不得再參與 model invocation ──
+if "$AG/tests/legacy-mp-collision.sh" >/dev/null 2>&1; then
+  ok "legacy mp collision guard: 4 wrappers / 4 mappings"
+else
+  ng "legacy mp wrapper 仍可被 model invoke，或 replacement mapping 不完整"
+fi
+
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

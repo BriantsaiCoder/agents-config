@@ -107,7 +107,7 @@ banner_body_hash_matches() {
   [ "$want" = "$got" ]
 }
 
-# ── lint（八條；任一 hard-fail → 非零 exit）──
+# ── lint（九條；任一 hard-fail → 非零 exit）──
 lint() {
   local fail=0
 
@@ -201,6 +201,12 @@ lint() {
   if [ -f "$claude_file" ] \
     && ! bash "$AGENTS/tests/claude-routing-collision.sh" "$claude_file" >/dev/null; then
     note "  [lint8 FAIL] $claude_file 在 managed stamp 外仍有舊 workflow route"
+    fail=1
+  fi
+
+  # rule 9: 保留手動相容性的 legacy mp wrappers 不得再參與 model invocation。
+  if ! bash "$AGENTS/tests/legacy-mp-collision.sh" >/dev/null; then
+    note "  [lint9 FAIL] legacy mp wrapper 仍可被 model invoke，或 replacement mapping 不完整"
     fail=1
   fi
   return "$fail"
