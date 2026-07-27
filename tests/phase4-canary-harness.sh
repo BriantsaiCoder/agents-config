@@ -41,6 +41,13 @@ arms_are_isolated() {
   while IFS='=' read -r key skill; do
     [ "$key" != skill ] || [ -d "$arms/arm-b/home/.agents/skills/$skill" ] || return 1
   done < "$ROOT/mattpocock-skills.lock"
+  local host
+  for host in claude codex copilot; do
+    [ -L "$arms/arm-a/plugin-payloads/$host-superpowers" ] || return 1
+    [ "$(find -L "$arms/arm-a/plugin-payloads/$host-superpowers/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" -eq 14 ] ||
+      return 1
+  done
+  [ ! -e "$arms/arm-b/plugin-payloads" ] || return 1
   [ "$(jq -r '.superpowers_loaded' "$arms/arm-a/inventory-contract.json")" = true ] &&
     [ "$(jq -r '.superpowers_loaded' "$arms/arm-b/inventory-contract.json")" = false ]
 }

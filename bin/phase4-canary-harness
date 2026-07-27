@@ -5,6 +5,9 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
 BASE_A=678ab6d
 BACKUP_A=/Users/pochientsai/.agents-deployment-backups/20260727-193338-matt-v2
 BACKUP_B=/Users/pochientsai/.agents-deployment-backups/20260727-205915-matt-v4
+CLAUDE_SUPERPOWERS=/Users/pochientsai/.claude/plugins/cache/superpowers-marketplace/superpowers/6.2.0
+CODEX_SUPERPOWERS=/Users/pochientsai/.codex/plugins/cache/superpowers-dev/superpowers/6.2.0
+COPILOT_SUPERPOWERS=/Users/pochientsai/.copilot/installed-plugins/superpowers-marketplace/superpowers
 
 die() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -159,6 +162,9 @@ prepare_arms() {
     require_file "$backup/CLAUDE.md"
     require_file "$backup/copilot-instructions.md"
   done
+  for plugin in "$CLAUDE_SUPERPOWERS" "$CODEX_SUPERPOWERS" "$COPILOT_SUPERPOWERS"; do
+    [ -d "$plugin/skills" ] || die "Superpowers payload missing: $plugin"
+  done
 
   mkdir -p "$output/arm-a/home/.agents" "$output/arm-b/home/.agents"
   git -C "$ROOT" archive "$BASE_A" | tar -x -C "$output/arm-a/home/.agents"
@@ -172,6 +178,10 @@ prepare_arms() {
   cp "$BACKUP_B/AGENTS.md" "$output/arm-b/home/.codex/AGENTS.md"
   cp "$BACKUP_B/CLAUDE.md" "$output/arm-b/home/.claude/CLAUDE.md"
   cp "$BACKUP_B/copilot-instructions.md" "$output/arm-b/home/.copilot/copilot-instructions.md"
+  mkdir -p "$output/arm-a/plugin-payloads"
+  ln -s "$CLAUDE_SUPERPOWERS" "$output/arm-a/plugin-payloads/claude-superpowers"
+  ln -s "$CODEX_SUPERPOWERS" "$output/arm-a/plugin-payloads/codex-superpowers"
+  ln -s "$COPILOT_SUPERPOWERS" "$output/arm-a/plugin-payloads/copilot-superpowers"
 
   mkdir -p "$output/arm-b/home/.agents/attic/phase4-legacy"
   for skill in mp-diagnose mp-grill-with-docs mp-improve-codebase-architecture mp-tdd; do
