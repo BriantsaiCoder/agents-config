@@ -95,6 +95,22 @@ Per-host：
   - Copilot instructions：`9d8dd2bae8674f9d03bbe22f372e36612fbf54ed65f003f5276479312fe0ea3c`
 - 不需fixture或live rollback。
 
+Postflight另發現live `~/.agents` HEAD雖保持 `36f8ff1`，但相較上一個closeout只存在6個untracked proposal paths的baseline，新增11個untracked skill directories：
+
+- `aspnet-api-architect`
+- `clean-code-dotnet`
+- `csharp-developer`
+- `dotnet-core-expert`
+- `dotnet-find-bugs`
+- `dotnet-test`
+- `microsoft-code-reference`
+- `microsoft-docs`
+- `nuget-manager`
+- `web-design-reviewer`
+- `webapp-testing`
+
+這些目錄的filesystem ctime均為 `2026-07-28 06:22:20 CST`。Claude fresh row的raw `system/init.skills`沒有列出這11個名稱；目前沒有足夠evidence把來源歸因於canary或外部並行流程。本輪不刪除、不修改、不自動rollback，將此live skill-tree drift列為獨立scope外 blocker。
+
 ## 6. Roadmap status and next gate
 
 - M0 — COMPLETE
@@ -104,7 +120,7 @@ Per-host：
 - M4 — PENDING
 - M5 — PENDING
 
-唯一 next gate：**M1 Claude authentication remediation decision gate**。未取得新授權前，不執行 `/login`、不調整scratch credential、不重跑、不續跑其餘5列、不進Stage 2。
+唯一 next gate：**M1 Claude authentication + live skill-tree drift remediation decision gate**。未取得新授權前，不執行 `/login`、不調整scratch credential、不清除live untracked skills、不重跑、不續跑其餘5列、不進Stage 2。
 
 ## Closeout Ledger
 
@@ -113,4 +129,4 @@ Per-host：
 - Relevant verification — PASS：preflight local gates、process metadata、0 mutation、rollback與live fingerprints均有機械證據。
 - Review gate — UNAVAILABLE：授權為0 review carriers；fail-fast後未啟動額外reviewer。
 - PR / CI / review status — SKIPPED：未push、未開PR、未merge。
-- Residual risks — fresh scratch Claude auth context不可用；rollback不需動live，後續須獨立授權remediation。
+- Residual risks — fresh scratch Claude auth context不可用；live `~/.agents`新增11個來源未確認的untracked skill directories，未清除；後續須獨立授權remediation。
