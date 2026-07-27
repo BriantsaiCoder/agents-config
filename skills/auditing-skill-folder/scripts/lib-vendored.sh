@@ -13,25 +13,13 @@
 # Resolved once at source time — fork_recorded() uses it to find the repo-root vendored-forks.md.
 LIB_SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd) || LIB_SELF_DIR=""
 
-mattpocock_lock() {
-  local f
-  for f in "${MATTPOCOCK_SKILLS_LOCK:-}" \
-           "${LIB_SELF_DIR:+$LIB_SELF_DIR/../../../mattpocock-skills.lock}"; do
-    [ -n "$f" ] && [ -r "$f" ] || continue
-    printf '%s' "$f"
-    return 0
-  done
-  return 1
-}
-
 # vendored_flag <skill-dir> -> VND | vnd? | ERR | -
-#   VND   root-lock entry, LICENSE file, or an upstream-provenance marker.
-#   vnd?  frontmatter homepage/source only. Probable upstream, confirm by hand.
+#   VND   LICENSE file, or an upstream-provenance marker in README.md / SKILL.md.
+#   vnd?  frontmatter homepage/source/upstream only. Probable upstream, confirm by hand.
 #   ERR   directory or SKILL.md unreadable — UNKNOWN, must not be read as self-owned.
 #   -     self-owned.
 #
-# Detection is the UNION of four signals because none alone is sufficient:
-#   - A root lock records immutable vendored sets without changing upstream payload.
+# Detection is the UNION of three signals because none alone is sufficient:
 #   - LICENSE alone missed `design-doc-mermaid` (Skilz Marketplace, no LICENSE file). That skill
 #     has since been retired to attic/, but it is the reason this is a union and not a single test.
 #   - A marketplace/upstream marker alone misses `playwright-best-practices` / `vueuse-functions`
@@ -45,13 +33,8 @@ mattpocock_lock() {
 # 0-false-positive here — but it would be a second kind of test, and reading the file's content
 # already catches it with the pattern that was there. Content-only stays the single rule.)
 vendored_flag() {
-  local dir="$1" f lock
+  local dir="$1" f
   [ -d "$dir" ] && [ -r "$dir" ] || { printf 'ERR'; return; }
-
-  lock=$(mattpocock_lock 2>/dev/null) || lock=""
-  if [ -n "$lock" ] && grep -Fxq "skill=$(basename "$dir")" "$lock" 2>/dev/null; then
-    printf 'VND'; return
-  fi
 
   for f in LICENSE LICENSE.md LICENSE.txt COPYING; do
     [ -f "$dir/$f" ] && { printf 'VND'; return; }
@@ -161,13 +144,7 @@ fork_recorded() {
 # exactly that — the same two blind spots lived in both functions, and fixing only the flag would
 # have produced two blank OWNER cells.
 vendored_owner() {
-  local dir="$1" lic out lock
-  lock=$(mattpocock_lock 2>/dev/null) || lock=""
-  if [ -n "$lock" ] && grep -Fxq "skill=$(basename "$dir")" "$lock" 2>/dev/null; then
-    sed -n 's/^source_url=//p' "$lock" | head -1
-    return
-  fi
-
+  local dir="$1" lic out
   for lic in "$dir/LICENSE" "$dir/LICENSE.md" "$dir/LICENSE.txt" "$dir/COPYING"; do
     [ -f "$lic" ] && [ -r "$lic" ] || continue
     out=$(grep -i -m1 'copyright' "$lic" 2>/dev/null \

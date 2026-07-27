@@ -6,7 +6,7 @@
 
 | Flag | Signal | Meaning |
 |---|---|---|
-| `VND` | a LICENSE variant (`LICENSE`/`.md`/`.txt`/`COPYING`), an upstream-provenance marker in `README.md` / `SKILL.md` / `.claude-plugin/plugin.json`, an `upstream:` declaration anywhere in `SKILL.md`, **or** an exact `skill=<basename>` entry in repo-root `mattpocock-skills.lock` | Vendored |
+| `VND` | a LICENSE variant (`LICENSE`/`.md`/`.txt`/`COPYING`), **or** an upstream-provenance marker in `README.md` / `SKILL.md` / `.claude-plugin/plugin.json`, **or** an `upstream:` declaration anywhere in `SKILL.md` | Vendored |
 | `VND*` | `VND`, and listed in the fork-index block of `vendored-forks.md` | Vendored, **already forked by a recorded decision** — read the record before judging it |
 | `vnd?` | frontmatter `homepage:` / `source:` only | Probable — confirm by hand |
 | `ERR` | directory or `SKILL.md` unreadable | **Unknown. Treat as vendored** until proven otherwise |
@@ -16,14 +16,13 @@
 
 The record lives at the repo root (`vendored-forks.md`), never inside the vendored skill — writing the record into the skill would itself be the in-place edit the gate forbids. It must sit **between the `<!-- fork-index:begin/end -->` markers**; the lookup is confined to that block, so a table row of the same shape elsewhere in that file is inert (it was not always — a documentation table once promoted `agent-browser` to `VND*` by accident). A file with no markers fails closed. Lookup order: `$VENDORED_FORKS`, then `<audited-folder>/../vendored-forks.md`, then the repo root above this skill.
 
-Detection is the **union** of four signals because none alone is sufficient — every one of them was learned from a miss or an immutable vendored-set requirement:
+Detection is the **union** of three signals because none alone is sufficient — every one of them was learned from a miss:
 
 - LICENSE alone missed `design-doc-mermaid`: no LICENSE file at all, upstream was a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README. That skill has since been retired to `attic/`, but it remains the reason this is a union and not a single test.
 - The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker.
 - Both together still missed two skills (2026-07-25, caught by hand, fixed 2026-07-26): `tailwind-v4-shadcn` declares provenance only in `.claude-plugin/plugin.json`, which was not in the scanned file set; `agent-browser` puts its `upstream:` marker in an HTML comment **after** the closing `---`, where the frontmatter-bounded scan had already stopped. Both are now covered — the marker scan reads the whole `SKILL.md`, anchored on `^` / `<!--` / `|`.
-- A pinned upstream set may intentionally keep provenance outside the payload to preserve byte identity. `mattpocock-skills.lock` is the central source/hash/inventory record for that case; an exact basename entry is vendored without adding wrappers or LICENSE copies to each skill.
 
-The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (33 cases, in CI) pins that: every provenance form, both false-positive defences, lock-set detection, and the exact `VND` set of `skills/`.
+The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (30 cases, in CI) pins that: every provenance form, both false-positive defences, and the exact `VND` set of `skills/`.
 
 **File existence is never the signal — provenance content is.** Plenty of self-owned skills have a `README.md`; `.claude-plugin/plugin.json` is read for its `repository` / `author`, not counted for being there. (The existence test would also have been 0-false-positive on this corpus — exactly 1 of 50 skills has that directory — and was rejected anyway, because content-only keeps this one rule rather than two.)
 

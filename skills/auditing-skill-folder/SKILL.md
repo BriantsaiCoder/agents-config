@@ -13,7 +13,7 @@ description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skil
 
 ## Step 0 — Vendored gate (run FIRST; it decides which verdicts are legal)
 
-`scripts/check-vendored.sh <folder>` → `VND` / `VND*` (fork already recorded in `vendored-forks.md`) / `vnd?` / `ERR` / `-`. A directory listed by `skill=` in the repo-root `mattpocock-skills.lock` is `VND`. Steps 1–2 repeat the flag as a column.
+`scripts/check-vendored.sh <folder>` → `VND` / `VND*` (fork already recorded in `vendored-forks.md`) / `vnd?` / `ERR` / `-`. Steps 1–2 repeat the flag as a column.
 
 **Vendored skills take no IN-PLACE structural edit** — no Trim, no Split, no rewriting their files. Editing upstream in place is a fork; report the defect instead. Removing or replacing the whole skill stays legal. Details: `step0-vendored-gate.md`.
 
