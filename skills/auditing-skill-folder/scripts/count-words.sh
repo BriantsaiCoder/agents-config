@@ -31,7 +31,7 @@ while IFS= read -r -d '' f; do
   total=$((total + 1))
   case "$name" in
     using-*|getting-started*) limit=150 ;;
-    *-core|*-rules) limit=200 ;;
+    superpowers*|*-core|*-rules) limit=200 ;;
     *) limit=500 ;;
   esac
   # A single unreadable file must not truncate the table (it used to abort the loop under set -e).

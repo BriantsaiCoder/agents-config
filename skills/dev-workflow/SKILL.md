@@ -19,8 +19,8 @@ description: 收到任何開發任務（feature、bug fix、refactor、接手陌
 |------|------|---------|
 | 領域詞彙 glossary | `CONTEXT.md` | S2 核准後（HEAVY） |
 | 架構決策紀錄 | `docs/adr/` | S2 核准後（HEAVY，lazily 建立） |
-| 設計 spec | `docs/agents/specs/` | S2 核准後（HEAVY） |
-| 實作計畫 doc | `docs/agents/plans/` | S2 核准後（HEAVY） |
+| 設計 spec | `docs/superpowers/specs/` | S2 核准後（HEAVY） |
+| 實作計畫 doc | `docs/superpowers/plans/` | S2 核准後（HEAVY） |
 | 輕量提案 | `sdd/<slug>/proposal.md` | S2 核准後（LIGHT） |
 | 輕量任務清單 | `sdd/<slug>/tasks.md` | S2 核准後（LIGHT） |
 | 整庫測繪 + 架構 mermaid | `docs/codebase/`（含 `ARCHITECTURE.md`） | S0 接手時 `acquire-codebase-knowledge`；S6 動架構時同步 |
@@ -42,8 +42,6 @@ description: 收到任何開發任務（feature、bug fix、refactor、接手陌
 - [INT-1] MUST 收尾類 skill（`finishing-a-development-branch` 等）只在 S4 且 S5 兩者皆 PASS 後 invoke。觸發：任務進入 S6，或偵測收尾 skill 被 routing 選中。例外：無。驗證：S4/S5 gate 四態皆 PASS 且有證據。
 - [INT-2] MUST 在 fix 之前先有 failing regression test（紅→綠）。觸發：任務為 BUGFIX 或修改既有行為。例外：無可測 seam 時允許以「記錄架構問題」替代，但 MUST 明確標記例外並於 fix 落地後交接 `mp-improve-codebase-architecture`。驗證：commit 序中紅測早於 fix。
 - [INT-3] 命中 [T0-8] 時，MUST NOT 在 auto / autopilot 模式豁免 S2 ⏸ plan gate；未命中時可引用用戶明確的 change／build／fix 原句將 S2 標為 SKIPPED。觸發：任務將改檔。例外：無。驗證：S2 EXIT 含計畫核准原句，或 SKIPPED 理由 + 用戶實作原句。
-- [INT-4] Delegated subtasks MUST 可獨立驗證；寫入 ownership、唯讀 evidence scope 不得重疊；skill 內建固定 fan-out 隨該 skill 授權成立；其餘 delegation 須由 user／repo／更高層 instructions 明確允許，不符即標 SKIPPED，禁止 smoke spawn。Subagent 回報不是完成證據，主 context MUST 重驗。觸發：S1–S5 選擇 delegation。例外：無。驗證：任務清單含 ownership／evidence scope，且主 context probe exit 0。
-- [INT-5] `setup-matt-pocock-skills` MUST NOT 自動執行；repo 的 `docs/agents/issue-tracker.md` 優先，不存在時讀 `~/.agents/docs/agents/issue-tracker.md`。只有使用者明示 `setup-matt-pocock-skills` 才可執行；其他 skill 不得因 contract 缺失而 fallback 到 setup 或 `.scratch/`。觸發：Matt skill 需要 issue-tracker contract。例外：無。驗證：contract 路徑存在，或 setup invocation 引用使用者原句。
 
 ## Canonical 骨架（S0–S6）
 
@@ -55,7 +53,7 @@ description: 收到任何開發任務（feature、bug fix、refactor、接手陌
 | 2 | 描述含錯誤行為 / 測試失敗 / regression 關鍵字 | BUGFIX 鏈 |
 | 3 | 接手且 `docs/codebase/` 不存在 | 先提議 `acquire-codebase-knowledge`，完成後回 S0 |
 | 4 | 用戶明說走小需求 / sdd / 輕量；或列出的 target file = 1、actionable tasks ≤3，且未命中 [T0-6] / [T1-1] / public API / schema / deploy pipeline | LIGHT tier（session plan；核准後可按需持久化到 `sdd/<slug>/`） |
-| 5 | 以上皆非 | HEAVY tier（機械預設；核准後可按需持久化到 `docs/agents/plans/`） |
+| 5 | 以上皆非 | HEAVY tier（機械預設；核准後可按需持久化到 `docs/superpowers/plans/`） |
 
 - ENTER：session 收到開發任務訊息（用戶送出的請求文字存在）。
 - ACTION：由上而下逐列比對本表，第一命中即定 tier。先列 target files 與 actionable tasks 再計數；不以「≤1 天」等主觀工時估計定路。LIGHT 條件不完整即機械預設 HEAVY，不必為 tier 選擇中斷工作。
@@ -65,21 +63,21 @@ description: 收到任何開發任務（feature、bug fix、refactor、接手陌
 ### S1 NEEDS
 
 - ENTER：S0 tier 已定。
-- ACTION：HEAVY → `mp-grill-with-docs` 拷問需求；LIGHT → 回答 3 問（為什麼做 / 要改什麼 / 影響範圍）。先把結果留在 session artifact；X1 產物只依表頭規則按需持久化；需 delegation 時依 [INT-4]。
+- ACTION：HEAVY → `mp-grill-with-docs` 拷問需求；LIGHT → 回答 3 問（為什麼做 / 要改什麼 / 影響範圍）。先把結果留在 session artifact；X1 產物只依表頭規則按需持久化。
 - EXIT：session 內需求摘要 artifact 存在，且含目標、範圍、驗收條件；若已持久化則對應 X1 檔案存在亦可作證。
 - FAILURE：關鍵模糊未決 → 停下發問（攤開假設 X、影響範圍 Y），禁止靜默推進（[T0-5]）。
 
 ### S2 PLAN ⏸（依 [T0-8] 判定）
 
 - ENTER：S1 EXIT 的 session 或 file artifact 存在。
-- ACTION：先依 [T0-8] 判定。命中時，進 plan 模式或取得用戶明確確認前不得改檔（plan 工具名的 host 映射見文末 `## Host adapters` 各 host 段）；LIGHT plan 每條 task ≤1h、≤3 條、含驗收情境與測試名（紅→綠），超過即升 HEAVY；HEAVY 先提出 design spec 並簽核，再提出 implementation plan。未命中時，以用戶明確的 change／build／fix 原句作為授權，將本 gate 標為 SKIPPED。取得核准後才依 X1 規則按需寫 repo plan file。executor enhancement：`superpowers:writing-plans`；缺 plugin 時直接在 session 產完整 plan artifact；需 delegation 時依 [INT-4]。
+- ACTION：先依 [T0-8] 判定。命中時，進 plan 模式或取得用戶明確確認前不得改檔（plan 工具名的 host 映射見文末 `## Host adapters` 各 host 段）；LIGHT plan 每條 task ≤1h、≤3 條、含驗收情境與測試名（紅→綠），超過即升 HEAVY；HEAVY 先提出 design spec 並簽核，再提出 implementation plan。未命中時，以用戶明確的 change／build／fix 原句作為授權，將本 gate 標為 SKIPPED。取得核准後才依 X1 規則按需寫 repo plan file。executor enhancement：`superpowers:writing-plans`；缺 plugin 時直接在 session 產完整 plan artifact。
 - EXIT：命中 [T0-8] 時，session plan artifact（或已持久化的 X1 plan file）存在且引用用戶明確說開始實作的原句；HEAVY 另需引用用戶簽核 design spec 的原句。未命中時，S2 = SKIPPED，附理由 + 用戶實作原句。
 - FAILURE：命中 [T0-8] 但無確認原句 → 停在 S2 ⏸；禁以「合理推定同意」代替引用（[INT-3]）。
 
 ### S3 IMPLEMENT（TDD 內嵌）
 
 - ENTER：S2 EXIT 成立（plan artifact + 用戶確認原句，或 SKIPPED 理由 + 用戶實作原句）。
-- ACTION：依 [T1-10] 開 `feat/`／`fix/` branch 或 isolated worktree；用 host todo 或已持久化的 tasks file 逐 task 追蹤紅→綠，紅燈輸出即證據；動高扇入共用檔前 MUST 跑 `deps-check`；stack `*-best-practices` skill MUST 套；delegation 依 [INT-4]。
+- ACTION：先開分支（`feat/` 或 `fix/`）；用 host todo 或已持久化的 tasks file 逐 task 追蹤紅→綠，紅燈輸出即證據；動高扇入共用檔前 MUST 跑 `deps-check`；stack `*-best-practices` skill MUST 套。subagent 回報 ≠ 完成證據，主 context MUST 親自驗（why：收自 Codex 反向統一，2026-07-07）。
 - EXIT：host todo 全完成（或 tasks file checkbox 全勾）且全套測試指令 exit 0。
 - FAILURE：同一 bug 連 3 次修復失敗 → 停手，用戶確認後交接 `mp-improve-codebase-architecture`；flaky / 效能找不到根因 → `mp-diagnose`。
 
@@ -95,7 +93,7 @@ description: 收到任何開發任務（feature、bug fix、refactor、接手陌
 ### S5 REVIEW
 
 - ENTER：S4 EXIT 成立（各 gate PASS 有證據）。
-- ACTION：記錄 reviewer 型別 + 結論；回饋逐條技術評估（採納或有據 pushback，不表演式同意）；UNAVAILABLE 只能在附 probe 失敗證據後標記，禁默默降級成自審；review delegation 依 [INT-4]。
+- ACTION：記錄 reviewer 型別 + 結論；回饋逐條技術評估（採納或有據 pushback，不表演式同意）；UNAVAILABLE 只能在附 probe 失敗證據後標記，禁默默降級成自審。
 - EXIT：0 條未處理 actionable findings（findings 清單為空或全標 resolved）。
 - FAILURE：findings 是 bug → 回 S3 且先寫紅測（[INT-2]）。
 
@@ -128,14 +126,14 @@ description: 收到任何開發任務（feature、bug fix、refactor、接手陌
 
 ### Codex
 - 映射：plan = Plan Mode（`<proposed_plan>` 收斂）；todo = update_plan；子代理 = spawn_agent / wait_agent。
-- enhancement：delegation 依 [INT-4]；S4 codex-security 疊加；S6 heartbeat PR 監控。
+- enhancement：S3 / S5 僅在至少兩個可獨立驗證、file ownership 不重疊的 subtasks，且用戶／repo instructions 明確允許 delegation 時 multi_agent spawn；否則標 SKIPPED（附理由），不做 smoke spawn。S4 codex-security 疊加；S6 heartbeat PR 監控。
 - 守護：`~/.codex/hooks.json` 的 PreToolUse(Bash) Git guard + `~/.codex/rules/default.rules` forbidden rules 共同攔截已知危險 force push；PreToolUse 對 unified_exec 覆蓋不完整且 prefix rule 僅涵蓋明列型態，仍須 tier0 prose + repo pre-commit/CI 疊加；architecture-html-doc 退役為 mermaid→HTML 衍生器（勿手改衍生圖，見 X1 表 S6）。
 
 ### Copilot
-- 映射：plan = --mode plan（requestExitPlanMode）；todo = update_todo；子代理 = `task` 工具；`--agent` 只在 session 啟動時選 custom agent，不是 fan-out primitive。
+- 映射：plan = --mode plan（requestExitPlanMode）；todo = update_todo；子代理 = task 工具 / --agent。
 - S2 強制令：命中 [T0-8] 時，非 plan 模式改檔前 MUST 先輸出計畫並取得用戶明確確認（補償 autopilot alias 風險）。
-- S5：同一 response 以兩個內建 `task` 執行 Standards／Spec 軸，各標四態；禁用 plugin-contributed reviewer。無 spec 時 Spec 軸 SKIPPED。
-- 守護：Copilot user-level hooks 已配置 `~/.copilot/hooks/guard-git-push.{json,sh}`；該路徑不在 `~/.copilot` git allowlist，變更須另備 rollback carrier。
+- S5：內建 code-review agent 或泛用 subagent + references/reviewer-template.md；.NET 深審降級為已知取捨（實測不足再轉寫 `.agent.md`，延後決策避免預養第三格式）。
+- 守護：Copilot 已支援 user-level hooks（`~/.copilot/hooks/` + config.json inline），現況未配置；機械守護目前依賴 repo 層 `.github/hooks/` + pre-commit + CI。
 - MCP：chrome-devtools（已更名，見 B0.5）；codegraph 視需要補。
 
 ## References（以路徑引用，不 inline 完整內容）
