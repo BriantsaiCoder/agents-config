@@ -1,6 +1,7 @@
 ---
 name: mp-improve-codebase-architecture
 description: Use when improving codebase architecture, finding refactoring opportunities, consolidating tightly-coupled modules, or making code more testable / AI-navigable. Informed by CONTEXT.md domain language and docs/adr/ decisions.
+disable-model-invocation: true
 ---
 
 # Improve Codebase Architecture

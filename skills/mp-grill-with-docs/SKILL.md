@@ -1,6 +1,7 @@
 ---
 name: mp-grill-with-docs
 description: Use when clarifying requirements or stress-testing a feature's design before implementation — grills the user relentlessly to sharpen domain terminology and resolve design decisions one branch at a time. Produces and updates CONTEXT.md (domain glossary) and ADRs inline as decisions crystallise; these docs are outputs created lazily, not preconditions — applies whether or not they already exist.
+disable-model-invocation: true
 ---
 
 Interview the user relentlessly about every aspect of this plan until you reach shared understanding. Walk each branch of the design tree, resolving dependencies one-by-one. For each question, provide your recommended answer. Ask one question at a time, wait for feedback before continuing. If codebase exploration would answer it, explore instead of asking.

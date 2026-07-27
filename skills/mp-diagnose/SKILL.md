@@ -1,6 +1,7 @@
 ---
 name: mp-diagnose
 description: Use when reproducing hard bugs and performance regressions where root cause is non-obvious — flaky tests, intermittent failures, perf drift, "broken/throwing/failing" symptoms. Apply when user says "diagnose this", "debug this", or describes a symptom whose root cause requires reproduce-minimise-instrument loop.
+disable-model-invocation: true
 ---
 
 # Diagnose

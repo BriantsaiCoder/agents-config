@@ -1,6 +1,7 @@
 ---
 name: mp-tdd
 description: 'Use when user explicitly wants vertical-slice tracer-bullet TDD — one-test-one-impl loop instead of writing all tests up front. For general red-green-refactor philosophy use superpowers:test-driven-development.'
+disable-model-invocation: true
 ---
 
 # mp-tdd — Vertical-Slice Tracer Bullet
