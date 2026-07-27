@@ -266,8 +266,16 @@ deploy() {
     printf '%s\n' "$new" > "$tmp" && chmod 0644 "$tmp" && mv -f "$tmp" "$target"
     printf '  + %s（已寫入）\n' "$out"
   done <<< "$TARGETS"
-  refresh_claude_stamp
+  # manifest 先於 stamp：dist/* 與 manifest.tsv 是三家共用層的產物，不該被 Claude 端的
+  # 檔案權限問題連坐（同 bootstrap 的 ln 失敗處理）。實證 2026-07-27：沙箱擋掉 stamp 的
+  # mv，`set -e` 讓 write_manifest 永遠沒跑——live 檔已是新版而 dist/* 與 manifest 靜默
+  # 停在舊版，doctor 的 manifest 比對於是拿舊 hash 對新檔。先寫 manifest 才不會裂解。
   write_manifest
+  refresh_claude_stamp || {
+    note 'deploy: CLAUDE.md routing stamp 刷新失敗（~/.claude 端寫入被拒？）——三家部署與 manifest 已完成，僅 Claude 常駐面的 routing 區塊未同步。'
+    note '  修法：手動把 agents-routing:begin/end 之間的內容（含 marker 與內文的 last-verified 日期）同步為 core/routing.md，再跑 --doctor 確認。'
+    return 1
+  }
 }
 
 # ~/.claude/CLAUDE.md 末尾 routing stamp（agents-routing:begin/end 區塊）機械刷新。
@@ -276,7 +284,9 @@ refresh_claude_stamp() {
   local cf="$DEPLOY_ROOT/.claude/CLAUDE.md" routing="$AGENTS/core/routing.md"
   [ -f "$cf" ] && [ -f "$routing" ] || return 0
   grep -q '<!-- agents-routing:begin' "$cf" || return 0
-  local tmp; tmp="$(mktemp "$(dirname "$cf")/.agents-stamp.XXXXXX")"
+  # mktemp 自身也可能被拒（沙箱把 ~/.claude 列唯讀時先死在這）；不接 `|| return 1` 的話
+  # $tmp 為空字串仍往下跑，cmp/chmod 會噴 "No such file or directory" 噪音才失敗。
+  local tmp; tmp="$(mktemp "$(dirname "$cf")/.agents-stamp.XXXXXX")" || return 1
   awk -v routing="$routing" -v today="$(date +%Y-%m-%d)" '
     /<!-- agents-routing:begin/ {
       print "<!-- agents-routing:begin | generated-from: ~/.agents/core/routing.md | last-verified: " today " -->"
@@ -288,7 +298,11 @@ refresh_claude_stamp() {
     !skip { print }
   ' "$cf" > "$tmp"
   if cmp -s "$tmp" "$cf"; then rm -f "$tmp"; printf '  = .claude/CLAUDE.md routing stamp（未變）\n'
-  else chmod 0644 "$tmp" && mv -f "$tmp" "$cf"; printf '  + .claude/CLAUDE.md routing stamp（已刷新）\n'; fi
+  # 寫入放進 if 條件（條件語境，`set -e` 不觸發）才能把失敗轉成 return 1 交給呼叫端處理；
+  # 直接 `chmod && mv` 會在沙箱拒寫時當場中止整個 deploy，且把 tmp 檔留在 ~/.claude/。
+  elif chmod 0644 "$tmp" && mv -f "$tmp" "$cf"; then printf '  + .claude/CLAUDE.md routing stamp（已刷新）\n'
+  else rm -f "$tmp"; return 1
+  fi
 }
 
 check() {
@@ -443,7 +457,7 @@ doctor() {
   note '── skill 可見度探針（skill 本體 vs 各 host 發現機制）──'
   note "  claude : ls -L ~/.claude/skills/dev-workflow/SKILL.md（symlink 解析）"
   note "  copilot: copilot -p '列出 available_skills 中含 dev-workflow 者' --available-tools=（已驗證原生載入 ~/.agents/skills）"
-  note "  codex  : UNVERIFIED——無 skill 載入設定，取用靠 routing 點名後直讀檔；探針=問模型「dev-workflow SKILL.md 路徑」應答 ~/.agents/skills/..."
+  note "  codex  : codex debug prompt-input | grep 'agents/skills'（skills_instructions 的 skill roots 表應含 r1=~/.agents/skills，description 全文注入；實證 2026-07-27）"
   return "$rc"
 }
 
