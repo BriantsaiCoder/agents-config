@@ -64,6 +64,9 @@ cp "$TMP/before.tsv" "$TMP/after.tsv"
 cat > "$TMP/inventory-good.json" <<'JSON'
 {"skills":["code-review","diagnosing-bugs","tdd"],"superpowers_loaded":false,"legacy_wrappers":[]}
 JSON
+cat > "$TMP/inventory-arm-b-nonlegacy-mp.json" <<'JSON'
+{"skills":["code-review","diagnosing-bugs","mp-zoom-out","tdd"],"superpowers_loaded":false,"legacy_wrappers":[]}
+JSON
 cat > "$TMP/inventory-bad.json" <<'JSON'
 {"skills":["superpowers:test-driven-development","mp-tdd"],"superpowers_loaded":true,"legacy_wrappers":["mp-tdd"]}
 JSON
@@ -229,6 +232,10 @@ accept "valid synthetic result passes" "$HARNESS" verify-result \
 accept "v2 selected and allowed supporting routes pass" "$HARNESS" verify-result \
   "$TMP/case-v2.json" "$TMP/result-v2-good.json" "$TMP/events-empty.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+accept "Arm B unrelated mp skill inventory passes when route is clean" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-good.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-arm-b-nonlegacy-mp.json" \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "v2 unallowed supporting route fails" "$HARNESS" verify-result \
   "$TMP/case-v2.json" "$TMP/result-v2-unallowed-support.json" "$TMP/events-empty.jsonl" \
