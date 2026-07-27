@@ -228,7 +228,9 @@ Harness 不含任何 SaaS invocation command；因此 local selftest 不可能�
   - `63e43b5 test(workflow): 新增 Phase 4 canary harness`
   - `66d439d docs(workflow): 定義 Phase 4 A/B canary corpus`
   - `c097322 fix(workflow): 補齊 Arm A plugin payload carrier`
-  - 本 evidence commit
+  - `29a4f7b docs(workflow): 記錄 Phase 4 isolated evidence`
+  - `2909633 fix(workflow): 阻擋 canary harness 假綠`
+  - 本檔的 final doc-only closeout commit
 - push / PR：未執行。
 
 ### `~/.claude`
