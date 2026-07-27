@@ -145,5 +145,13 @@ else
   done
 fi
 
+# ── 12. Claude 手寫區不得與 managed routing stamp 形成平行正本 ──
+CLAUDE_FILE="${CLAUDE_GLOBAL_FILE:-$HOME/.claude/CLAUDE.md}"
+if "$AG/tests/claude-routing-collision.sh" "$CLAUDE_FILE" >/dev/null 2>&1; then
+  ok "Claude unmanaged routing collision = 0"
+else
+  ng "Claude managed stamp 外仍有舊 workflow route"
+fi
+
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
