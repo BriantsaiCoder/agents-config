@@ -1,22 +1,17 @@
-<!-- agents-skill-index:begin (機械生成 · 72 個 · 勿手改) -->
+<!-- agents-skill-index:begin (機械生成 · 50 個 · 勿手改) -->
 acquire-codebase-knowledge
 agent-browser
-ask-matt
 auditing-skill-folder
 auth-implementation-patterns
 backend-release-verification
 bug-fix-settlement
 c-cpp-best-practices
-code-review
-codebase-design
 containerization
 css-ui-best-practices
 dapper-best-practices
 dependency-security-scan
 deps-check
 dev-workflow
-diagnosing-bugs
-domain-modeling
 dotnet-core-best-practices
 dotnet-framework-best-practices
 dotnet-logging-best-practices
@@ -25,12 +20,6 @@ dotnet-winforms-best-practices
 ef-core-best-practices
 ef6-best-practices
 frontend-release-verification
-grill-me
-grill-with-docs
-grilling
-handoff
-implement
-improve-codebase-architecture
 init-project-docs
 jest-best-practices
 mp-diagnose
@@ -47,28 +36,17 @@ pinia
 playwright-best-practices
 postgresql-best-practices
 postgresql-optimization
-prototype
 react-best-practices
 react-router-framework-mode
-research
-resolving-merge-conflicts
 sdd
 security-audit
 security-review
-setup-matt-pocock-skills
 tailwind-v4-shadcn
-tdd
-teach
 testing-library-react-best-practices
-to-spec
-to-tickets
-triage
 typescript-best-practices
 vite
 vitest
 vue-best-practices
 vue-debug-guides
 vueuse-functions
-wayfinder
-writing-great-skills
 <!-- agents-skill-index:end -->
