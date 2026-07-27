@@ -28,7 +28,7 @@
    - 逐個 review thread / comment 讀，**不跳讀、不抽樣**。每條標一結論：
      - **actionable 且技術正確** → 自動修 → 驗證（build / test / lint exit 0）→ push → 重新監控（推後 review 可能再產新 findings）→ resolve 該 thread。
      - **錯誤 / YAGNI / 不適用** → 附**技術理由**於 thread 回覆，不盲從。禁表演式同意、禁盲修。
-   - 回饋處理紀律接 `superpowers:receiving-code-review`（採納或有據 pushback）。
+   - 回饋依 S5 技術 triage：逐條採納或附 evidence pushback，不表演式同意。
 
 3. **子集自核（改共用 / 高扇入函式時 MUST）**
    - 把 bot findings 當**起點子集**，不當完整清單。
