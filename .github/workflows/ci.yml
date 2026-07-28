@@ -22,11 +22,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 八條 lint，其中 rule 1 比對 core/routing.md 逐名點名的 skill 是否存在於
-      # skills/——那是 2026-07 九個死名事故的結構性根絕。
-      # --check 為 dry-run：跑 lint + 印組裝位元組，不寫任何檔。
-      - name: agents-sync lint（9 rules；含 routing collision guards）
-        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash bin/agents-sync --check
+      # 驗證 shared skills source、Claude link scratch bootstrap／doctor、
+      # retired deployment interfaces fail-loud、shell syntax 與 collision guard。
+      # CI runner 沒有 live ~/.agents；該 host-local check 會明確標為 SKIP。
+      - name: shared-skills conformance
+        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/conformance.sh
 
       # [T0-3] force-push guard 回歸。2026-07-25 實測過五個破口
       # （--all / --mirror / 多 refspec / -fu 捆綁 / 完整路徑），全部在此覆蓋。
@@ -72,36 +72,6 @@ jobs:
       - name: 版本絆線自我驗證（28 條須全部仍會觸發）
         run: bash tests/version-tripwire.sh --selftest
 
-      # 2026-07-25 踩過：新增 skill 未跑 agents-sync，dist/skill-index.md 停在 52
-      # 而 skills/ 已 53，該 skill 對三家 host 都不可見。這條把它變成機械攔截。
-      # LC_ALL=C 與 emit_skill_index 對齊：index 在 macOS 生成、此處於 Linux 比對，
-      # 裸 ls 的 collation 依 locale 而定，跨機會偶發失敗。
-      - name: skill-index 與 skills/ 一致
-        run: |
-          LC_ALL=C ls -1 skills > "$RUNNER_TEMP/dirs.txt"
-          grep -v '^<!-- agents-skill-index' dist/skill-index.md > "$RUNNER_TEMP/idx.txt"
-          if ! diff -u "$RUNNER_TEMP/dirs.txt" "$RUNNER_TEMP/idx.txt"; then
-            echo "::error::dist/skill-index.md 與 skills/ 不一致——請跑 bin/agents-sync 重生後提交"
-            exit 1
-          fi
-
-      # 部署產物須與 source 同步。只比 body：banner 內嵌 HEAD sha，每個 commit
-      # 都會變，整檔比對會永遠紅（第一版就是這樣寫錯的）。
-      - name: dist/ 產物與 source 同步（僅比 body，忽略 banner sha）
-        run: |
-          AGENTS_HOME="$GITHUB_WORKSPACE" AGENTS_DEPLOY_ROOT="$RUNNER_TEMP/deploy" \
-            bash bin/agents-sync > /dev/null
-          rc=0
-          for f in dist/AGENTS.md dist/copilot-instructions.md; do
-            sed '1d' "$f" > "$RUNNER_TEMP/new.txt"
-            git show "HEAD:$f" | sed '1d' > "$RUNNER_TEMP/old.txt"
-            if ! diff -u "$RUNNER_TEMP/old.txt" "$RUNNER_TEMP/new.txt"; then
-              echo "::error file=$f::產物與 source 不同步——請跑 bin/agents-sync 後提交"
-              rc=1
-            fi
-          done
-          exit $rc
-
       # install-hooks.sh 自身可用性。CI **無法**斷言「hooks 已安裝」——那是每台開發機
       # 的屬性，runner 是全新 checkout 必然沒裝。但可以斷言**安裝器本身沒壞**：跑它，
       # 然後驗結果與版控來源逐位元組相同。
@@ -125,8 +95,3 @@ jobs:
           cmp -s hooks/post-checkout-agents.sh "$d/post-checkout" \
             || { echo "::error::從 repo 外呼叫後產物不一致（cwd 解析 bug 回歸）"; rc=1; }
           exit $rc
-
-  # conformance.sh 不納入 CI：它斷言的是 ~/.claude、~/.codex 的實際部署結果
-  # （settings.json 的 $defaults、audit log 權限、部署後 AGENTS.md、codex
-  # execpolicy 等），runner 上不存在這些。它仍是本機動 guard / hook / settings
-  # / core 後的必跑項——見 tests/conformance.sh 標頭。
