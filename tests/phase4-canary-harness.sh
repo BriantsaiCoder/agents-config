@@ -4,6 +4,7 @@ set -u
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
 HARNESS="$ROOT/bin/phase4-canary-harness"
 MATRIX="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/23-phase4-canary-matrix.jsonl"
+SCHEMA="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/26-phase4-v2-result-schema.json"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -54,6 +55,9 @@ arms_are_isolated() {
   [ ! -e "$arms/arm-b/plugin-payloads" ] || return 1
   [ "$(jq -r '.superpowers_loaded' "$arms/arm-a/inventory-contract.json")" = true ] &&
     [ "$(jq -r '.superpowers_loaded' "$arms/arm-b/inventory-contract.json")" = false ]
+}
+schema_omits_codex_rejected_unique_items() {
+  jq -e '[.. | objects | select(has("uniqueItems"))] | length == 0' "$SCHEMA" >/dev/null
 }
 
 mkdir -p "$TMP/good"
@@ -112,6 +116,10 @@ jq '.route_telemetry.selected_workflows -= ["tdd"]
 jq '.route_telemetry.events += [
       {"sequence":5,"role":"selected","workflow":"tdd","source":"skill-file"}
     ]' "$TMP/result-v2-good.json" > "$TMP/result-v2-duplicate-event.json"
+jq '.route_telemetry.selected_workflows += ["tdd"]' \
+  "$TMP/result-v2-good.json" > "$TMP/result-v2-duplicate-selected.json"
+jq '.route_telemetry.supporting_workflows += ["dev-workflow"]' \
+  "$TMP/result-v2-good.json" > "$TMP/result-v2-duplicate-supporting.json"
 jq '.route_telemetry.events = [.route_telemetry.events[] | select(.workflow != "tdd")]' \
   "$TMP/result-v2-good.json" > "$TMP/result-v2-event-mismatch.json"
 jq '.route_telemetry.supporting_workflows=["superpowers:using-superpowers"]
@@ -223,6 +231,7 @@ if [ -f "$MATRIX" ]; then
 else
   ok "real matrix validation SKIPPED until corpus commit"
 fi
+accept "Codex result schema omits rejected uniqueItems" schema_omits_codex_rejected_unique_items
 accept "fixture regression is red for the intended contract" fixture_is_deterministic_red
 accept "scratch Arm A/B carriers are physically isolated" arms_are_isolated
 accept "valid synthetic result passes" "$HARNESS" verify-result \
@@ -243,6 +252,14 @@ reject "v2 unallowed supporting route fails" "$HARNESS" verify-result \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "v2 missing selected route fails" "$HARNESS" verify-result \
   "$TMP/case-v2.json" "$TMP/result-v2-missing-selected.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 duplicate selected workflow fails" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-duplicate-selected.json" "$TMP/events-empty.jsonl" \
+  "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
+  "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
+reject "v2 duplicate supporting workflow fails" "$HARNESS" verify-result \
+  "$TMP/case-v2.json" "$TMP/result-v2-duplicate-supporting.json" "$TMP/events-empty.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
   "$TMP/fingerprint-expected" "$TMP/fingerprint-actual"
 reject "v2 duplicate invocation event fails" "$HARNESS" verify-result \

@@ -19,15 +19,13 @@
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "uniqueItems": true
+          }
         },
         "supporting_workflows": {
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "uniqueItems": true
+          }
         },
         "events": {
           "type": "array",
