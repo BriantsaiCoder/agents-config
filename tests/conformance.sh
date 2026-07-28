@@ -5,9 +5,11 @@ set -uo pipefail
 AGENTS="${AGENTS_HOME:-$HOME/.agents}"
 pass=0
 fail=0
+skipped=0
 
 ok() { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng() { printf '  FAIL  %s\n' "$1"; fail=$((fail + 1)); }
+skip_check() { printf '  SKIP  %s\n' "$1"; skipped=$((skipped + 1)); }
 
 if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
   ok "shared skills source"
@@ -70,10 +72,22 @@ actual="$(grep -c '^## [0-9]' "$AGENTS/CONVENTIONS.md")"
   ok "CONVENTIONS count $claimed" ||
   ng "CONVENTIONS claimed ${claimed:-none}, actual $actual"
 
-live_branch="$(git -C "$HOME/.agents" branch --show-current 2>/dev/null || true)"
-[ "$live_branch" = main ] &&
-  ok "live ~/.agents checkout is main" ||
-  ng "live ~/.agents checkout is ${live_branch:-unknown}"
+if git -C "$HOME/.agents" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  live_branch="$(git -C "$HOME/.agents" branch --show-current 2>/dev/null || true)"
+  [ "$live_branch" = main ] &&
+    ok "live ~/.agents checkout is main" ||
+    ng "live ~/.agents checkout is ${live_branch:-unknown}"
+else
+  skip_check "live ~/.agents checkout unavailable"
+fi
+
+ci_workflow="$AGENTS/.github/workflows/ci.yml"
+if [ -f "$ci_workflow" ] &&
+  ! grep -Eq 'AGENTS_DEPLOY_ROOT|dist/(skill-index\.md|AGENTS\.md|copilot-instructions\.md)|bin/agents-sync[[:space:]]+(--deploy|--only)' "$ci_workflow"; then
+  ok "CI uses shared-skills contract"
+else
+  ng "CI still consumes retired agents-sync deployment"
+fi
 
 if bash -n "$AGENTS"/bin/* "$AGENTS"/hooks/*.sh "$AGENTS"/tests/*.sh; then
   ok "shared shell syntax"
@@ -87,5 +101,5 @@ else
   ng "legacy mp collision guard"
 fi
 
-printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
+printf '\n%d PASS / %d FAIL / %d SKIP\n' "$pass" "$fail" "$skipped"
 [ "$fail" -eq 0 ]
