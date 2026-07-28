@@ -1,7 +1,7 @@
 # Phase 4 v2 two-host Stage 2 — Claude closeout route fail-fast evidence
 
-> 日期：2026-07-28 Asia/Taipei  
-> 範圍：Master Roadmap M1 / Phase 4 v2 / Claude + Codex Stage 2。  
+> 日期：2026-07-28 Asia/Taipei
+> 範圍：Master Roadmap M1 / Phase 4 v2 / Claude + Codex Stage 2。
 > 結論：**Stage 2 為 FAIL。Claude 在 `claude-a-closeout` 的第 12 個 SaaS attempt 違反 v2 route telemetry contract，依 canonical fail-fast 停止；Codex 完全未執行。Budget consumed 12 / 30，remaining 18，retry 0。**
 
 ## 1. Authorization and immutable scope
@@ -12,7 +12,7 @@
 
 後續 scope 修正：
 
-> 改以 canonical 24 top-level + 6 review carriers 執行；  
+> 改以 canonical 24 top-level + 6 review carriers 執行；
 > 撤回 zero review carriers 條款。
 
 Credential carrier 最終授權只允許 Stage 2 使用，且本次 fail-fast 後保留：
