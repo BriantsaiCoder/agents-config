@@ -4,6 +4,7 @@ set -u
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
 LAUNCHER="$ROOT/bin/phase4-canary-launcher"
 MATRIX="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/27-phase4-v2-canary-matrix.jsonl"
+SCHEMA="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/26-phase4-v2-result-schema.json"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -74,6 +75,22 @@ codex_review_uses_external_carriers() {
   ' "$TMP/codex-plan.json" >/dev/null
 }
 
+copilot_plan_embeds_exact_result_schema() {
+  case_from_matrix copilot-a-architecture "$TMP/copilot-case.json" || return 1
+  "$LAUNCHER" plan "$TMP/copilot-case.json" "$TMP/copilot-plan.json" || return 1
+  local schema
+  schema=$(jq -c 'del(."$schema")' "$SCHEMA") || return 1
+  jq -e --arg schema "$schema" '
+    .command as $command |
+    ($command[($command | index("-p")) + 1]) as $prompt |
+    .host == "copilot" and
+    .credential_env == ["COPILOT_GITHUB_TOKEN"] and
+    ($prompt | contains("Phase 4 v2 result schema: " + $schema)) and
+    ($prompt | contains("Return exactly one JSON object matching this schema.")) and
+    ($prompt | contains("Do not wrap it in Markdown fences or add prose."))
+  ' "$TMP/copilot-plan.json" >/dev/null
+}
+
 v2_budget_is_staged() {
   jq -e -s '
     length == 42 and
@@ -124,6 +141,7 @@ all_plans_are_bounded() {
 reject "launcher refuses an unknown command" "$LAUNCHER" execute "$TMP/no-case.json"
 accept "Claude missing-evidence plan is scratch-only and tool-free" claude_plan_is_isolated
 accept "Codex review plan uses external carriers without nested sandbox bypass" codex_review_uses_external_carriers
+accept "Copilot plan embeds the exact result schema without Markdown fences" copilot_plan_embeds_exact_result_schema
 accept "v2 budget is split into 6-run Stage 1 and 45-run Stage 2" v2_budget_is_staged
 accept "all 42 launch plans stay inside the v2 budget and scratch boundary" all_plans_are_bounded
 

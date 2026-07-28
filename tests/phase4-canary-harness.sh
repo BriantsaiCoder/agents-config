@@ -5,6 +5,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
 HARNESS="$ROOT/bin/phase4-canary-harness"
 MATRIX="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/23-phase4-canary-matrix.jsonl"
 SCHEMA="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/26-phase4-v2-result-schema.json"
+GITLEAKS_CONFIG="$ROOT/.gitleaks.toml"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -58,6 +59,52 @@ arms_are_isolated() {
 }
 schema_omits_codex_rejected_unique_items() {
   jq -e '[.. | objects | select(has("uniqueItems"))] | length == 0' "$SCHEMA" >/dev/null
+}
+copilot_result_extraction_is_deterministic() {
+  local content
+  content=$(jq -c . "$TMP/result-v2-good.json") || return 1
+  {
+    jq -cn --arg content "working" \
+      '{type:"assistant.message",data:{content:$content,toolRequests:[{toolCallId:"synthetic"}]}}'
+    jq -cn --arg content "$content" \
+      '{type:"assistant.message",data:{content:$content,toolRequests:[]}}'
+    jq -cn '{type:"result",exitCode:0}'
+  } > "$TMP/events-copilot-result.jsonl"
+  "$HARNESS" extract-copilot-result \
+    "$TMP/events-copilot-result.jsonl" "$TMP/result-copilot-extracted.json" || return 1
+  jq -S . "$TMP/result-v2-good.json" > "$TMP/result-copilot-expected.json"
+  jq -S . "$TMP/result-copilot-extracted.json" > "$TMP/result-copilot-actual.json"
+  cmp -s "$TMP/result-copilot-expected.json" "$TMP/result-copilot-actual.json"
+}
+copilot_fenced_result_fails_metadata_only() {
+  local marker=synthetic_raw_payload_must_not_escape output rc
+  jq -cn --arg content "prologue" \
+    '{type:"assistant.message",data:{content:$content,toolRequests:[{toolCallId:"synthetic"}]}}' \
+    > "$TMP/events-copilot-fenced.jsonl"
+  jq -cn --arg content "\`\`\`json
+{\"summary\":\"$marker\"}
+\`\`\`" \
+    '{type:"assistant.message",data:{content:$content,toolRequests:[]}}' \
+    >> "$TMP/events-copilot-fenced.jsonl"
+  output=$("$HARNESS" extract-copilot-result \
+    "$TMP/events-copilot-fenced.jsonl" "$TMP/result-copilot-fenced.json" 2>&1)
+  rc=$?
+  [ "$rc" -ne 0 ] &&
+    [ ! -e "$TMP/result-copilot-fenced.json" ] &&
+    [ "$output" = "FAIL: Copilot terminal result is not a JSON object" ] &&
+    ! grep -Fq "$marker" <<<"$output"
+}
+copilot_api_call_id_allowlist_is_rule_scoped() {
+  command -v gitleaks >/dev/null 2>&1 || return 1
+  local allowed="$TMP/gitleaks-api-call-id" blocked="$TMP/gitleaks-api-key" synthetic
+  mkdir -p "$allowed" "$blocked"
+  synthetic=$(printf '%s%s%s%s' aB3dE5fG hJ7kL9mN pQ2rS4tV wX6yZ8cD)
+  printf '{"apiCallId":"%s"}\n' "$synthetic" > "$allowed/events.raw.jsonl"
+  printf '{"apiKey":"%s"}\n' "$synthetic" > "$blocked/events.raw.jsonl"
+  gitleaks dir "$allowed" --config "$GITLEAKS_CONFIG" --no-banner --redact=100 \
+    --report-format json --report-path "$TMP/gitleaks-api-call-id.json" >/dev/null 2>&1 &&
+    ! gitleaks dir "$blocked" --config "$GITLEAKS_CONFIG" --no-banner --redact=100 \
+      --report-format json --report-path "$TMP/gitleaks-api-key.json" >/dev/null 2>&1
 }
 
 mkdir -p "$TMP/good"
@@ -234,6 +281,9 @@ fi
 accept "Codex result schema omits rejected uniqueItems" schema_omits_codex_rejected_unique_items
 accept "fixture regression is red for the intended contract" fixture_is_deterministic_red
 accept "scratch Arm A/B carriers are physically isolated" arms_are_isolated
+accept "Copilot result extraction selects one terminal JSON object" copilot_result_extraction_is_deterministic
+accept "Copilot fenced result fails without raw payload output" copilot_fenced_result_fails_metadata_only
+accept "Copilot apiCallId allowlist stays scoped to generic-api-key metadata" copilot_api_call_id_allowlist_is_rule_scoped
 accept "valid synthetic result passes" "$HARNESS" verify-result \
   "$TMP/case-good.json" "$TMP/result-good.json" "$TMP/events-empty.jsonl" \
   "$TMP/before.tsv" "$TMP/after.tsv" "$TMP/inventory-good.json" \
