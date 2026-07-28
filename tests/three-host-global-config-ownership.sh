@@ -58,13 +58,25 @@ for mode in --check --doctor --bootstrap; do
 done
 for mode in default --deploy --only; do
   case "$mode" in
-    default) args=() ;;
-    --only) args=(--only codex) ;;
-    *) args=("$mode") ;;
+    default)
+      if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
+        "$AGENTS/bin/agents-sync" >/dev/null 2>&1; then
+        fail "retired interface did not fail loud: $mode"
+      fi
+      ;;
+    --only)
+      if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
+        "$AGENTS/bin/agents-sync" --only codex >/dev/null 2>&1; then
+        fail "retired interface did not fail loud: $mode"
+      fi
+      ;;
+    *)
+      if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
+        "$AGENTS/bin/agents-sync" "$mode" >/dev/null 2>&1; then
+        fail "retired interface did not fail loud: $mode"
+      fi
+      ;;
   esac
-  if HOME="$scratch/home" AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" "${args[@]}" >/dev/null 2>&1; then
-    fail "retired interface did not fail loud: $mode"
-  fi
 done
 
 for sentinel in \
