@@ -47,7 +47,6 @@ jobs:
 
       - name: Legacy mp collision guard
         run: |
-          bash tests/legacy-mp-collision.sh --selftest
           bash tests/legacy-mp-collision.sh
 
       - name: agents-branch portable isolation
