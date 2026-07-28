@@ -110,6 +110,41 @@ validate_matrix() {
   printf 'PASS: 42 top-level + 9 review-carrier = 51 SaaS runs\n'
 }
 
+extract_copilot_result() (
+  local events=$1 output=$2 tmp candidates candidate parsed count
+  require_file "$events"
+  [ ! -e "$output" ] || die "refusing to overwrite result: $output"
+  umask 077
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  candidates="$tmp/candidates.json"
+  candidate="$tmp/candidate.txt"
+  parsed="$tmp/result.json"
+
+  jq -s '
+    [
+      .[] |
+      select(
+        .type == "assistant.message" and
+        (.data.content | type == "string" and length > 0) and
+        ((.data.toolRequests // []) | type == "array" and length == 0)
+      ) |
+      .data.content
+    ]
+  ' "$events" > "$candidates" 2>/dev/null ||
+    die "Copilot event stream is not valid JSONL"
+  count=$(jq -r 'length' "$candidates")
+  [ "$count" -eq 1 ] ||
+    die "Copilot terminal result candidate count differs from 1"
+  jq -r '.[0]' "$candidates" > "$candidate" 2>/dev/null ||
+    die "Copilot terminal result extraction failed"
+  jq -e 'if type == "object" then . else error("not an object") end' \
+    "$candidate" > "$parsed" 2>/dev/null ||
+    die "Copilot terminal result is not a JSON object"
+  mv "$parsed" "$output"
+  printf 'PASS: Copilot result extracted\n'
+)
+
 verify_route() {
   local case_file=$1 result=$2 version
   version=$(jq -r '.route_contract.version // 1' "$case_file")
@@ -338,13 +373,14 @@ prepare_arms() {
 }
 
 usage() {
-  printf 'usage: %s snapshot DIR OUT | validate-matrix FILE | verify-result CASE RESULT EVENTS BEFORE AFTER INVENTORY EXPECTED_FP ACTUAL_FP | prepare-fixture OUT | prepare-arms OUT\n' "$0" >&2
+  printf 'usage: %s snapshot DIR OUT | validate-matrix FILE | extract-copilot-result EVENTS OUT | verify-result CASE RESULT EVENTS BEFORE AFTER INVENTORY EXPECTED_FP ACTUAL_FP | prepare-fixture OUT | prepare-arms OUT\n' "$0" >&2
   exit 2
 }
 
 case ${1:-} in
   snapshot) [ "$#" -eq 3 ] || usage; snapshot "$2" "$3" ;;
   validate-matrix) [ "$#" -eq 2 ] || usage; validate_matrix "$2" ;;
+  extract-copilot-result) [ "$#" -eq 3 ] || usage; extract_copilot_result "$2" "$3" ;;
   verify-result) [ "$#" -eq 9 ] || usage; verify_result "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" ;;
   prepare-fixture) [ "$#" -eq 2 ] || usage; prepare_fixture "$2" ;;
   prepare-arms) [ "$#" -eq 2 ] || usage; prepare_arms "$2" ;;

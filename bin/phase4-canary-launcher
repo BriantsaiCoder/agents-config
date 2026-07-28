@@ -179,6 +179,10 @@ Review carrier ${role} output path: ${carrier_path}. Re-verify its findings agai
     copilot)
       [ -x "$COPILOT" ] || die "Copilot executable unavailable: $COPILOT"
       local logs="$runtime/logs"
+      effective_prompt="${effective_prompt}
+
+Phase 4 v2 result schema: ${schema_json}
+Return exactly one JSON object matching this schema. Do not wrap it in Markdown fences or add prose."
       local -a command=(
         "$COPILOT"
         -C "$fixture"
