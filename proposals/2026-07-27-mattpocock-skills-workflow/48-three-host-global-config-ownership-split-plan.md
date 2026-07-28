@@ -1,56 +1,61 @@
-# Three-host global-config ownership split — candidate implementation plan
+# Three-host global-config ownership split + Matt thin workflow — candidate implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:executing-plans` inline and execute this plan task-by-task. Steps use checkbox syntax for tracking. Subagent-driven execution is prohibited unless the user separately authorizes it.
+> **For agentic workers:** use Matt `implement` under `dev-workflow` `[INT-6]`, execute this plan task-by-task, and return to kernel S4–S6 before any closeout. Steps use checkbox syntax for tracking. Subagent-driven execution is prohibited unless the user separately authorizes it.
 
-**Goal:** 將 Claude、Codex、Copilot global config 分別收回各自 repo ownership，同時讓 `~/.agents/skills/**` 保持唯一且 byte-for-byte immutable 的 shared skills data plane。
+**Goal:** 將 Claude、Codex、Copilot global config 分別收回各自 repo ownership；三家 live cutover 後只保留 host-local thin routing／governance kernel，並共同使用 `~/.agents/skills/**` 的 Matt Pocock skills 作為主要 workflow。
 
-**Architecture:** 把現行 effective bytes materialize 到各 host，移除 `.agents` global-config paths／generator coupling；`.agents` 只保留 skills visibility與 Claude skill-symlink bootstrap。舊 control-plane assets先作 rollback／compatibility carriers，待三家 local verification與fresh canary全綠後再進另一個 retirement gate。
+**Architecture:** 在 isolated candidates 內先做 behavior-preserving ownership split，再依序完成 legacy `mp-*` retirement、Superpowers capability re-home／per-host retirement candidate與 thin-kernel trim；全部驗證完成後才允許一次 coordinated live cutover。`.agents` 最終只保留 shared skills data plane、必要 compatibility carriers與 Claude skill-symlink bootstrap。
 
 **Tech Stack:** Bash、Git worktree、JSON／`jq`、SHA-256、`cmp`／`diff`、gitleaks；不新增 dependency。
 
 ## Global Constraints
 
-- `~/.agents/skills/**` 的 byte、path、mode、symlink target與Git history完全不變。
-- 只允許 ownership／provenance、host-local paths與symlink materialization差異。
+- ownership stage 的 `~/.agents/skills/**` byte、path、mode與symlink target完全不變。
+- workflow stage 只允許 §7 allowlist 內的本機 kernel／legacy wrapper變更；Matt upstream files完全不變。
+- ownership stage只允許 ownership／provenance、host-local paths與symlink materialization差異；workflow stage另以capability parity與thin-kernel contract驗收。
 - 三個 pre-existing modified live files不得被Git restore或舊commit覆蓋。
 - Secrets／credentials只回報`set`／`unset`，不得輸出值或diff body。
-- Candidate implementation、live cutover、SaaS/context probe與M2–M5分開授權。
+- Candidate implementation包含 ownership split與原M2／M3／M5的isolated candidate工作；live cutover、plugin實際卸載與SaaS/context probe仍分開授權。
 - 四個 live repos保持原branch／HEAD／porcelain直到live cutover gate。
 - 不使用subagent；不push、PR、merge或remote mutation。
 
 > 日期：2026-07-29 Asia/Taipei
-> 狀態：candidate planning evidence；本文件不授權 implementation、live cutover、SaaS/context probe、push、PR、merge 或任何 remote mutation。
+> 修訂：2026-07-29；依使用者「好依照建議修改plan」納入 staged-candidate／single-final-cutover 架構。
+> 狀態：revised candidate planning evidence；本文件不授權 implementation、live cutover、plugin實際卸載、SaaS/context probe、push、PR、merge 或任何 remote mutation。
 > 唯一共享 data plane：`~/.agents/skills/**`。
 > Risk：**HIGH**。
 
 ## 0. 可行性結論與授權邊界
 
-此 migration 可行。採用 **behavior-preserving ownership split**：
+此 migration 可行。採用 **staged candidate、single final cutover**：
 
 - Claude Code 的 global config 只由 `~/.claude/**` 擁有。
 - Codex 的 global config 只由 `~/.codex/**` 擁有。
 - Copilot 的 global config 只由 `~/.copilot/**` 擁有。
 - `~/.agents/**` 不再是任何 host 的 global-config control plane。
 - `~/.agents/skills/**` 保持三家唯一共享 skill source。
+- 三家 host-local global config只保留 Tier 0、routing／authorization、plan gate、S4–S6 evidence／review／closeout與host adapter。
+- Matt Pocock skills負責需求釐清、spec／tickets、implementation、TDD、diagnosis、review與architecture方法。
+- 四支已取代的legacy `mp-*`退休；`mp-zoom-out`因無一對一replacement而保留。
+- Superpowers active references先歸零、capability先re-home，之後才逐host退休；live不經過「ownership已拆但仍使用舊workflow」的中間狀態。
 - Claude 現有 `~/.claude/skills/*` symlink 保持原 target。
 - Codex 與 Copilot 保持原生 discovery，不新增第二個 registry、manifest、sync daemon 或 dependency。
 
 本 session 只允許：
 
 1. read-only 稽核與 planning baseline；
-2. 從精確 candidate HEAD 建 isolated planning branch/worktree；
-3. 新增並 commit 本文件；
-4. candidate-only planning validation。
+2. 在既有 isolated planning worktree修訂並commit本文件；
+3. candidate-only planning validation。
 
 本 session 明確不允許：
 
 - 修改 live `~/.agents`、`~/.claude`、`~/.codex`、`~/.copilot`；
 - 修改 `~/.agents/skills/**` 的 byte、path、mode、symlink target 或 Git history；
-- candidate implementation、live cutover、SaaS/context probe；
+- candidate implementation、live cutover、plugin實際卸載、SaaS/context probe；
 - 讀取 Stage 2 Keychain credential carrier；
 - 重用 Phase 4 budget；
 - push、PR、merge、remote mutation；
-- M1.5、M2 或後續 milestone execution；
+- 原M2／M3／M5 implementation execution；
 - subagent 或額外 research delegation；
 - broad `git restore`、`reset --hard`、force push 或處置 user-owned dirty/untracked files。
 
@@ -58,11 +63,12 @@ Secrets／credentials 只回報 `set`／`unset`；不得輸出值、diff body、
 
 ### Non-goals
 
-- 不重寫、精簡或重新排序現有安全規則、routing、workflow與host personality。
+- 不刪減 Tier 0、安全紅線、plan-first、RED→GREEN、S4–S6、PR／CI與rollback gates。
+- 不修改 Matt upstream files；本機 adapter／kernel不得混入 upstream body。
 - 不修 Phase 4 Stage 2 failure、不重跑任何 Phase 4 row、不修改 historical verdict。
 - 不整理pre-existing backups、cache、runtime state、dirty files或untracked proposals。
 - 不建立跨repo generator、new config framework、shared hooks registry或第二份skills registry。
-- 不在本split決定M2–M5的feature內容。
+- 不在 candidate implementation內實際卸載任何 live host plugin；candidate只建立zero-reference與plugin-disabled驗證條件。
 
 ## 1. Planning preflight evidence
 
@@ -71,8 +77,8 @@ Secrets／credentials 只回報 `set`／`unset`；不得輸出值、diff body、
 | Gate | Result | Evidence |
 |---|---|---|
 | S0 ROUTE | PASS — HEAVY | architecture／migration、四個 repo、多個 global-control surfaces、risk HIGH |
-| S1 NEEDS | PASS | handoff 已明定 goal、scope、non-goals、acceptance、rollback 與唯一下一 gate |
-| S2 PLAN | PASS | 使用者明示只新增 candidate implementation plan 與 planning evidence，且禁止 implementation |
+| S1 NEEDS | PASS | 使用者確認終態為「三AI各自薄routing／governance + shared Matt Pocock workflow + Superpowers退出」 |
+| S2 PLAN | PASS | 使用者原句：「好依照建議修改plan」；本輪只修訂planning artifact，不執行implementation |
 | Delegation | SKIPPED | 使用者明示禁止 subagent／額外 research delegation |
 
 ### 1.2 Existing Phase 4 candidate
@@ -183,37 +189,50 @@ Verified rollback carriers：
 3. attic 是歷史 carrier；舊 Codex override 曾遮蔽完整 AGENTS，舊 Copilot 文件仍可見互相矛盾的 CLAUDE inheritance／fallback 語意。
 4. broad restore 會覆蓋目前三個 modified live files，違反 dirty-file preservation。
 
-因此只以 **current live effective content** 為 baseline，允許的變化只有：
+Ownership stage只以 **current live effective content** 為baseline，允許的變化只有：
 
 - ownership／provenance banner；
 - `.agents` global-config path 改為 host-local path；
 - symlink materialization；
 - generator coupling 移除。
 
-安全規則、routing 行為、workflow 行為與有效 body 不得趁機修改。
+該stage的安全規則、routing行為、workflow行為與有效body不得趁機修改。Workflow stage才可依§7.2 allowlist改成Matt thin architecture；Tier 0與所有機械gate須保持capability parity。
 
 ## 3. Target ownership matrix
 
 | Surface | Claude owner | Codex owner | Copilot owner | Shared |
 |---|---|---|---|---|
 | Global instruction body | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/copilot-instructions.md` | none |
-| Core safety／workflow／style | materialized under `~/.claude/core/**` | materialized in `AGENTS.md` | materialized in `copilot-instructions.md` | none |
+| Thin safety／workflow kernel | Claude-local files／section | `AGENTS.md` local section | `copilot-instructions.md` local section | `skills/dev-workflow`只承載shared kernel contract，不擁有host config |
 | Routing | Claude-local section／file | Codex-local section | Copilot-local section | none |
 | Stack rules | `~/.claude/rules/**` | `~/.codex/rules/**` | `~/.copilot/rules/**` | compatibility copies only under `.agents/rules` |
 | Hooks | `~/.claude/hooks/**` | `~/.codex/hooks/**` | `~/.copilot/hooks/**` | none |
 | Settings | `~/.claude/settings.json` | `~/.codex/config.toml` and app-local state | `~/.copilot/settings.json`／`config.json` | none |
 | MCP／permissions | Claude-local files | Codex-local config | `mcp-config.json`／`permissions-config.json` | none |
-| Plugins／cache／login | host-local runtime state | host-local runtime state | host-local runtime state | none |
-| Tests | `~/.claude/tests/**` | `~/.codex/tests/**` | `~/.copilot/tests/**` | `.agents` only tests skills visibility／immutability |
+| Plugins／cache／login | host-local；Superpowers absent | host-local；Superpowers absent | host-local；Superpowers absent | none |
+| Tests | `~/.claude/tests/**` | `~/.codex/tests/**` | `~/.copilot/tests/**` | `.agents` tests skills visibility、Matt upstream immutability與thin-workflow parity |
 | Skills | consumer via existing symlinks | native consumer | native consumer | `~/.agents/skills/**` only |
+
+Target runtime flow：
+
+```text
+host-local thin routing／governance
+  → shared Matt skill（needs／spec／implement／TDD／diagnosis／review）
+  → shared thin kernel S4–S6
+  → host-local hooks／permissions／PR-CI adapter
+```
+
+任何Matt orchestration都不能繞過最後一段；任何host也不得另存一份Matt skills或完整workflow copy。
 
 Hard contracts：
 
 1. 任何 active host global config 中，`.agents/` reference 只允許 `~/.agents/skills/**`。
-2. `~/.agents/rules/**` 與 `~/.agents/docs/agents/issue-tracker.md` 可作 immutable-skill 的 read-only compatibility carrier，但不得是 host global-config source。
+2. `~/.agents/rules/**` 與 `~/.agents/docs/agents/issue-tracker.md` 可作 Matt／保留 skill 的 read-only compatibility carrier，但不得是 host global-config source。
 3. `agents-sync` 不得讀、寫、生成、validate、hash、no-clobber-check 或 deploy 任何 host global config。
 4. `.agents` global-config drift 不得讓任何 host session 失敗；host-local tests 各自負責。
 5. 三家 rollback carrier 分開保存，但 partial failure 必須協調回滾，禁止留下 mixed ownership。
+6. Active routing不得引用 `superpowers:*`或四支retired `mp-*`；`mp-zoom-out`是唯一保留的`mp-*`。
+7. Matt `implement`完成後必須回到host-local kernel的S4–S6，不得自行commit或跳過verification／review／closeout。
 
 ## 4. Current dependency map
 
@@ -265,10 +284,13 @@ Verified current coupling：
 
 | Surface | Candidate implementation disposition | Live cutover disposition | Later retirement gate |
 |---|---|---|---|
-| `skills/**` | **PRESERVE immutable** | 三家唯一共享 source | 永不搬移／複製／重建 |
+| Matt upstream skill files | **PRESERVE immutable** | 三家主要workflow source | 永不本機魔改；更新另走upstream-detection gate |
+| `skills/dev-workflow/**` | ownership stage不變；workflow stage **THIN** | 只保留routing／authorization／S4–S6與host adapters | preserve as local kernel |
+| `skills/mp-diagnose`、`mp-grill-with-docs`、`mp-improve-codebase-architecture`、`mp-tdd` | ownership stage不變；workflow stage逐支parity後 **RETIRE** | no active consumer | evidence保留舊hash，不保留active wrapper |
+| `skills/mp-zoom-out` | **PRESERVE** | 無一對一replacement的本機skill | preserve |
 | `core/**` | freeze；只作 before-body／rollback carrier | 不再被 host 讀取 | 三家 canary 全綠後才可提案移入 attic |
-| `rules/**` | freeze；copy 到各 host；保留 compatibility paths | 不再是 host global-config source | 因兩個 immutable skills 仍引用，保持 read-only carrier |
-| `docs/agents/issue-tracker.md` | freeze | immutable `dev-workflow` 的 fallback carrier | skill bytes 不可改時保持 |
+| `rules/**` | freeze；copy 到各 host；保留 compatibility paths | 不再是 host global-config source | 因保留skills仍引用，保持 read-only carrier |
+| `docs/agents/issue-tracker.md` | freeze | Matt issue-tracker fallback carrier | preserve；禁止自動執行setup skill |
 | `hosts/**` | freeze；不得再被 generator consume | no active consumer | 三家 canary 全綠後才可提案 `git mv` attic |
 | `dist/**` | stop generating；manifest 不再 active | no active host contract | 三家 canary 全綠後才可提案 `git mv` attic |
 | `hooks/guard-*.sh`、MCP patch hooks | copy exact behavior into host repos | no active host caller under `.agents` | 後續確認無 caller 才可 retire |
@@ -280,7 +302,7 @@ Verified current coupling：
 | `bootstrap` | only rebuild Claude active skill symlinks | no core／rules symlink、no host deploy | preserve |
 | `--deploy`／`--only` | fail-loud as retired interfaces | no writes | later remove under compatibility gate |
 | `tests/conformance.sh` | remove live host mutation probes；delegate host config to host-local tests | `.agents` tests only shared skills | preserve |
-| Phase 4 scripts／tests | immutable historical artifacts | no ownership role | no change |
+| Phase 4 scripts／tests | immutable historical artifacts | no ownership role | no change；新combined canary另建，不改舊verdict |
 | `README.md`／`CONVENTIONS.md` | document one skills plane + three control planes | source of current ownership rules | preserve |
 | `bin/agents-branch`／branch hook docs | warn only about shared-skills branch visibility | live `.agents` stays main | preserve |
 
@@ -292,7 +314,7 @@ Verified current coupling：
 
 | Path／group | Action | Rule |
 |---|---|---|
-| `CLAUDE.md` | **LOCALIZE + RETIRE generator coupling** | preserve effective body；移除 `.agents/core|rules` provenance／paths；`.agents/skills` refs可保留 |
+| `CLAUDE.md` | **LOCALIZE + THIN** | ownership stage preserve effective body；workflow stage只留安全／routing／authorization／S4–S6／Claude adapter，移除已由Matt承接的method prose |
 | `core/tier{0,1,2}-*.md` | **MATERIALIZE + RETIRE non-skill symlinks** | symlink → regular file；bytes 等於 split 前 symlink target，僅 metadata path可改 |
 | `rules/*.md` | **MATERIALIZE + RETIRE non-skill symlinks** | 8 symlinks → regular files；bytes 等於 split 前 targets |
 | `skills/*` | **PRESERVE** | 72 symlinks、mode、target exact unchanged |
@@ -300,6 +322,7 @@ Verified current coupling：
 | `hooks/guard-git-push.sh` | **LOCALIZE** | remove `.agents` wrapper call；materialize current guard behavior locally |
 | `hooks/drift-check.sh` | **CREATE** | Claude-local config／symlink static check；不得呼叫 agents-sync host validation |
 | `settings.json` | **LOCALIZE** | only SessionStart hook path changes；all other JSON paths／values exact |
+| Superpowers plugin registration／runtime | **PLAN RETIREMENT** | candidate驗zero active refs與plugin-disabled shadow session；live removal另需明示授權，不假設未驗證config key |
 | `tests/repo-integrity.sh` | **LOCALIZE** | assert local core/rules/hooks ownership and exact skill symlinks |
 | agents、commands、templates、statusline、Playwright config | **PRESERVE** | no ownership-coupling change |
 | `settings.local.json`、logs、cache、plugin runtime | **IGNORE AS RUNTIME/SECRET STATE** | keep ignored；never copy into Git/evidence |
@@ -308,7 +331,7 @@ Verified current coupling：
 
 | Path／group | Action | Rule |
 |---|---|---|
-| `AGENTS.md` | **LOCALIZE + RETIRE generated ownership** | remove generated banner；preserve effective body；`.agents/rules` → `.codex/rules`；skills refs remain |
+| `AGENTS.md` | **LOCALIZE + THIN** | ownership stage remove generated banner／localize paths；workflow stage只留安全／routing／authorization／S4–S6／Codex adapter |
 | `hooks.json` | **LOCALIZE** | only command paths change to `.codex/hooks/**` |
 | `hooks/guard-codex-git-push.sh` | **MATERIALIZE** | copy current effective guard into Codex repo |
 | `hooks/drift-check.sh` | **CREATE** | Codex-local AGENTS／hooks／rules check；no `.agents` global-config read |
@@ -318,6 +341,7 @@ Verified current coupling：
 | `tests/global-config-ownership.sh` | **CREATE** | local banner／path／hook／rules assertions |
 | `.gitignore` | **LOCALIZE** | allow safe `rules/` and `tests/` only；keep runtime/secret denylist |
 | `config.toml` | **IGNORE AS LOCAL CONFIG/STATE** | remains untracked；credential presence only set/unset |
+| Superpowers plugin registration／runtime | **PLAN RETIREMENT** | candidate驗zero active refs與plugin-disabled shadow session；live removal另需明示授權，不改未追蹤credential／runtime state |
 | auth、state、SQLite、history、sessions、cache、logs、plugins | **IGNORE AS RUNTIME/SECRET STATE** | never add、hash body、or print |
 | agents、prompts、CI | **PRESERVE** | no unrelated change |
 
@@ -325,7 +349,7 @@ Verified current coupling：
 
 | Path／group | Action | Rule |
 |---|---|---|
-| `copilot-instructions.md` | **LOCALIZE + RETIRE generated ownership** | remove generated banner；preserve effective body；routing stays embedded；stack refs become `.copilot/rules` |
+| `copilot-instructions.md` | **LOCALIZE + THIN** | ownership stage remove generated banner／localize paths；workflow stage只留安全／routing／authorization／S4–S6／Copilot adapter |
 | `rules/*.md` | **MATERIALIZE** | local stack fallback copies from current `.agents/rules` |
 | `hooks/guard-git-push.{json,sh}` | **PRESERVE + VERSION** | already Copilot-local；add to allowlist after secret scan |
 | `tests/global-config-ownership.sh` | **CREATE** | local banner／path／rules／hooks assertions |
@@ -334,14 +358,17 @@ Verified current coupling：
 | `.gitignore` | **LOCALIZE** | allow safe `rules/`、`hooks/`、`tests/`；keep app/runtime state ignored |
 | `settings.json`、`config.json` | **IGNORE AS APP-LOCAL STATE** | already Copilot-owned by location；do not version without separate audit |
 | installed plugins、plugin-data、marketplace cache | **IGNORE AS HOST RUNTIME STATE** | no duplicate registry；no move／copy |
+| Superpowers plugin registration／runtime | **PLAN RETIREMENT** | candidate驗zero active refs與plugin-disabled shadow session；live removal另需明示授權 |
 | login、DB、chats、sessions、run tokens、cache | **IGNORE AS RUNTIME/SECRET STATE** | never add、hash body、or print |
 | agents、prompts、empty instructions dir | **PRESERVE** | no unrelated change |
 
 Planned new paths are explicitly marked CREATE／MATERIALIZE above；existence validation must require CREATE paths absent before implementation and present only in the correct isolated candidate after implementation.
 
-## 7. Immutable skills contract
+## 7. Stage-scoped skills contract
 
-`~/.agents/skills/**` is byte-for-byte immutable：
+### 7.1 Ownership stage — immutable
+
+在 ownership commits A–E 完成前，`~/.agents/skills/**` 維持 byte-for-byte immutable：
 
 - no edit；
 - no move／rename；
@@ -357,29 +384,53 @@ Planning before manifest：
 - rows：662 including header
 - SHA-256：`f7a3595ed6cbe8ff691fc094438aaed48e0cb8fdaa04b3a87a4c1a1ba37da12b`
 
-Implementation and live cutover must regenerate the same sorted manifest independently and require:
+Ownership stage重新產生sorted manifest並要求：
 
 ```bash
-diff -u "$SKILLS_BEFORE" "$SKILLS_AFTER"
+diff -u "$SKILLS_BEFORE" "$OWNERSHIP_SKILLS_AFTER"
 ```
 
 Expected：empty diff。
 
-Known immutable skill references：
+### 7.2 Workflow stage — exact allowlist
+
+只有下列本機-owned paths可變：
+
+| Path | Allowed change |
+|---|---|
+| `skills/dev-workflow/**` | 瘦成S0 routing、S2 authorization、S4–S6 evidence／review／closeout、BUGFIX red→green與三家host adapters |
+| `skills/mp-diagnose/**` | parity evidence後retire |
+| `skills/mp-grill-with-docs/**` | parity evidence後retire |
+| `skills/mp-improve-codebase-architecture/**` | parity evidence後retire |
+| `skills/mp-tdd/**` | parity evidence後retire；micro-refactor規則移入kernel |
+| active local skill cross-references found by preflight `rg` | 只把retired `mp-*`／`superpowers:*`引用改到已驗證的新capability；逐path列入implementation evidence |
+| tests／routing metadata directly asserting上述contract | RED→GREEN所需最小變更 |
+
+以下保持 immutable：
+
+- Matt upstream skill files與其references／scripts／templates；
+- `skills/mp-zoom-out/**`；
+- 其他未列入implementation evidence的skill；
+- Phase 4 historical artifacts；
+- Git history不得rewrite。
+
+Workflow stage必須建立 allowlist manifest，並要求 non-allowlisted diff empty；不能再用全skills empty diff假綠。
+
+### 7.3 Compatibility carriers
 
 | Skill file | Required compatibility carrier |
 |---|---|
-| `skills/dev-workflow/SKILL.md` | `~/.agents/docs/agents/issue-tracker.md` |
+| Matt issue-tracker consumers | `~/.agents/docs/agents/issue-tracker.md` |
 | `skills/typescript-best-practices/references/config-and-project.md` | `~/.agents/rules/typescript.md` |
 | `skills/vue-best-practices/references/styling-and-ui.md` | `~/.agents/rules/frontend-spa.md` |
 
-這三個 carrier 保持 current path、bytes、mode，且標記為 read-only compatibility。Host global config 不得引用它們；只有 immutable skill 在 on-demand 執行時可讀。
+這三個 carrier 保持 current path、bytes、mode，且標記為 read-only compatibility。Host global config不得引用；只有shared skill在on-demand執行時可讀。`setup-matt-pocock-skills`仍禁止自動執行。
 
-## 8. Behavior-preserving equivalence
+## 8. Ownership equivalence + workflow capability parity
 
 ### 8.1 General normalization
 
-對每個 host 建 private before／after body：
+Ownership stage對每個 host建private before／after body：
 
 1. before 取 **live effective bytes**，不是舊 commit。
 2. after 取 isolated host candidate。
@@ -393,9 +444,18 @@ Known immutable skill references：
 
 不得把 full diff body寫入 evidence；只記 command、exit code、hash、path 與 allowed-difference class。
 
+Workflow stage不再要求全文等價；改要求：
+
+1. Tier 0、plan-first、RED→GREEN、S4–S6、PR／CI與rollback rule逐項存在。
+2. Matt capability mapping逐項有active route與callable skill。
+3. `implement`明文回到kernel S4–S6。
+4. active refs中的`superpowers:*`與四支retired `mp-*`為零。
+5. host-local instruction body只含thin kernel／adapter；method prose不重複。
+6. 每個刪除的legacy capability都有parity evidence或明確rollback carrier。
+
 ### 8.2 Claude
 
-- `CLAUDE.md` normalized body exact。
+- ownership stage的`CLAUDE.md` normalized body exact；workflow stage另做thin-kernel contract diff。
 - 3 core targets：materialized file SHA 等於 split 前 symlink target SHA。
 - 8 rules targets：materialized file SHA 等於 split 前 symlink target SHA。
 - 2 MCP patch hooks：materialized SHA／mode 等於 split 前 target。
@@ -404,14 +464,14 @@ Known immutable skill references：
 
 ### 8.3 Codex
 
-- `AGENTS.md` 去除 line 1 generated banner後，normalize allowed local paths，body exact。
+- ownership stage的`AGENTS.md`去除line 1 generated banner後，normalize allowed local paths，body exact；workflow stage另做thin-kernel contract diff。
 - `hooks.json`：只允許兩個 command path由 `.agents/hooks` 改為 `.codex/hooks`。
 - guard behavior跑 current shared test vectors與 Codex-local tests，結果 exact。
 - native `default.rules` bytes先保存，candidate不得順手改 approval policy。
 
 ### 8.4 Copilot
 
-- `copilot-instructions.md` 去除 generated banner後，normalize stack/routing local paths，body exact。
+- ownership stage的`copilot-instructions.md`去除generated banner後，normalize stack/routing local paths，body exact；workflow stage另做thin-kernel contract diff。
 - `mcp-config.json`、`permissions-config.json` SHA exact。
 - existing local guard files SHA exact，除非另有 RED test證明必要修正；本 split不包含 guard refactor。
 - runtime settings／plugins只驗 path ownership與 Git ignore，不讀 secret values。
@@ -439,7 +499,7 @@ Rules：
 
 ## 10. RED regression specification
 
-先在 isolated `.agents` implementation candidate 新增一個最小 contract test：
+先在 isolated `.agents` implementation candidate新增ownership contract test：
 
 `tests/three-host-global-config-ownership.sh`
 
@@ -452,7 +512,7 @@ RED 順序：
    ```
 
 2. commit RED test only；feature branch可用 `[wip]`，不得 push／merge。
-3. 再實作 GREEN，不得同一 commit藏掉 RED。
+3. ownership GREEN後再新增workflow RED；不得把兩個stage藏在同一commit。
 
 Minimum assertions：
 
@@ -464,7 +524,7 @@ Minimum assertions：
 6. Codex／Copilot generated banner不存在。
 7. Codex／Copilot local stack fallback存在且不指向 `.agents/rules`。
 8. `.agents` active manifest沒有 host global-config row。
-9. skills before／after manifest empty diff。
+9. ownership stage skills before／after manifest empty diff。
 10. 三個 compatibility carriers仍存在且 metadata exact。
 11. Phase 4 historical hashes exact。
 12. live four-repo fingerprints與porcelain exact unchanged during candidate implementation。
@@ -474,6 +534,23 @@ Host-local RED tests：
 - Claude `tests/repo-integrity.sh` 先證 current core/rules/hooks ownership FAIL。
 - Codex `tests/global-config-ownership.sh` 先證 current banner／hook paths FAIL。
 - Copilot `tests/global-config-ownership.sh` 先證 current banner／fallback paths FAIL。
+
+Workflow-stage RED test：
+
+`tests/matt-thin-workflow.sh`
+
+Minimum assertions：
+
+1. thin kernel只保留routing／authorization／risk、RED→GREEN、S4–S6與host adapters。
+2. `grilling`、`domain-modeling`、`to-spec`、`to-tickets`、`implement`、`tdd`、`diagnosing-bugs`、`code-review`、`codebase-design`、`wayfinder`均可由active routing到達。
+3. `implement` route明文返回S4–S6，且禁止直接commit current／main branch。
+4. active config與active skills中的`superpowers:*`引用為零。
+5. `mp-diagnose`、`mp-grill-with-docs`、`mp-improve-codebase-architecture`、`mp-tdd`不存在於active inventory或routing。
+6. `mp-zoom-out`仍存在且只在其明確scope觸發。
+7. Matt upstream manifest exact unchanged。
+8. non-allowlisted shared-skills diff empty。
+9. 三家plugin-disabled shadow inventory不載入Superpowers；若host無safe shadow seam則標`UNAVAILABLE`並阻擋live cutover，不得假綠。
+10. Phase 4 historical evidence與live four-repo fingerprints仍exact unchanged。
 
 ## 11. Minimal GREEN tasks and commit boundaries
 
@@ -501,7 +578,7 @@ Repo：isolated `.agents` implementation branch。
 
 - [ ] **Step A2: Add the remaining scratch-only assertions**
 
-  Encode all twelve assertions from §10; use `mktemp -d`, a cleanup trap, unreadable host-config sentinels, metadata-only comparisons and the immutable skills manifest.
+  Encode all twelve assertions from §10; use `mktemp -d`, a cleanup trap, unreadable host-config sentinels, metadata-only comparisons and the ownership-stage immutable skills manifest.
 
 - [ ] **Step A3: Run RED**
 
@@ -574,7 +651,7 @@ Repo：isolated `~/.claude` worktree。
   git diff --check
   ```
 
-  Expected: all exit 0; normalized body and materialized target comparisons are exact; skills manifest diff is empty.
+  Expected: all exit 0; normalized body and materialized target comparisons are exact; ownership-stage skills manifest diff is empty.
 
 - [ ] **Step B6: Commit Claude candidate**
 
@@ -757,17 +834,130 @@ Commit：
 refactor(workflow): 收斂為共享 skills data plane
 ```
 
-### Commit F — candidate evidence
+### Commit F — workflow RED contract
 
-Only after A–E final HEADs全部綠，新增一份 implementation evidence，記錄：
+Repo：same isolated `.agents` implementation branch。
+
+**Files:**
+
+- Create: `tests/matt-thin-workflow.sh`
+- Verify unchanged: Matt upstream files、Phase 4 artifacts、live repos
+
+- [ ] **Step F1: Inventory exact active dependencies**
+
+  用`rg`列出active `superpowers:*`、四支retired `mp-*`與kernel prose consumers；排除proposals／attic／backups／historical tests。把exact path allowlist寫入private evidence，不猜測未驗證path。
+
+- [ ] **Step F2: Write workflow RED**
+
+  Encode §10 workflow-stage assertions。第一個root failure必須對應目前仍存在的legacy wrapper或non-thin kernel，且在任何GREEN edit前non-zero。
+
+- [ ] **Step F3: Run and commit RED**
+
+  ```bash
+  bash tests/matt-thin-workflow.sh
+  git diff --check
+  ```
+
+  Expected：test non-zero、diff check exit 0。
+
+Commit：
+
+```text
+test(workflow): [wip] 鎖定 Matt 薄型流程
+```
+
+### Commit G — shared Matt workflow GREEN
+
+Repo：same isolated `.agents` implementation branch。
+
+**Files:**
+
+- Modify: `skills/dev-workflow/**`
+- Retire after parity evidence: `skills/mp-diagnose/**`、`skills/mp-grill-with-docs/**`、`skills/mp-improve-codebase-architecture/**`、`skills/mp-tdd/**`
+- Preserve: `skills/mp-zoom-out/**`
+- Modify only preflight-listed active local cross-references and directly affected tests／routing metadata
+- Preserve: all Matt upstream files
+
+- [ ] **Step G1: Capture per-wrapper parity**
+
+  逐支比較local-only references／scripts與replacement；任何獨有capability未有新載體就停止，不刪該wrapper。Canary常見路徑等價不能取代此static diff。
+
+- [ ] **Step G2: Re-home Superpowers capabilities**
+
+  將verification／branch finishing／delegation／worktree isolation／skill-writing依賴放入thin kernel、host adapter或已存在Matt skill；不得新增第三套workflow framework。
+
+- [ ] **Step G3: Thin the kernel**
+
+  `dev-workflow`只保留S0 routing、S2 authorization、BUGFIX red→green、S4–S6 evidence／review／closeout與host adapters；需求、spec、implementation、TDD、diagnosis、review方法route到Matt skills。
+
+- [ ] **Step G4: Retire legacy wrappers**
+
+  只在G1每支PASS後退休四支wrapper；`mp-zoom-out`保持exact。更新active references，不改historical evidence。
+
+- [ ] **Step G5: Run GREEN**
+
+  ```bash
+  bash tests/matt-thin-workflow.sh
+  bash tests/legacy-mp-collision.sh
+  bash tests/mattpocock-workflow.sh
+  bash tests/vendored-detection.sh
+  bash tests/version-tripwire.sh
+  git diff --check
+  ```
+
+  Expected：all exit 0；Matt upstream manifest與non-allowlisted skills diff empty。
+
+- [ ] **Step G6: Commit shared workflow**
+
+Commit：
+
+```text
+refactor(workflow): 切換 Matt 薄型流程
+```
+
+### Commits H1–H3 — per-host thin adapters
+
+Repos：isolated Claude、Codex、Copilot candidates；每host獨立commit與verdict。
+
+- [ ] **Step H1: Thin host instruction body**
+
+  在ownership-localized file上只保留Tier 0、routing／authorization、plan gate、S4–S6與host adapter；不複製Matt method prose。
+
+- [ ] **Step H2: Remove active legacy references**
+
+  Active config不得再引用`superpowers:*`或四支retired `mp-*`；shared skill root仍指向`~/.agents/skills`。
+
+- [ ] **Step H3: Build plugin-disabled shadow probe**
+
+  Implementation preflight先以host-native read-only inventory解析實際plugin source／supported isolation seam。只在temporary HOME／candidate overlay測試，不改live registration、runtime、cache或credential；找不到safe seam即`UNAVAILABLE`並停止。
+
+- [ ] **Step H4: Verify per host**
+
+  跑host-local ownership test、thin-kernel test、config parser、shell syntax、secret scan與plugin-disabled shadow inventory。三家各自PASS，不合併推論。
+
+- [ ] **Step H5: Commit per host**
+
+Commits：
+
+```text
+refactor(claude): 切換 Matt 薄型流程
+refactor(codex): 切換 Matt 薄型流程
+refactor(copilot): 切換 Matt 薄型流程
+```
+
+### Commit I — candidate evidence
+
+Only after A–H final HEADs全部綠，新增一份 implementation evidence，記錄：
 
 - four candidate HEADs；
 - RED→GREEN；
 - equivalence hashes；
-- immutable manifests；
+- ownership immutable manifest、workflow allowlist manifest與Matt upstream immutable manifest；
+- legacy wrapper per-item parity／retirement verdict；
+- three-host plugin-disabled shadow verdicts；
 - per-repo validation；
 - live fingerprints unchanged；
-- live cutover仍未授權。
+- live cutover與plugin實際卸載仍未授權。
 
 **Files:**
 
@@ -776,21 +966,21 @@ Only after A–E final HEADs全部綠，新增一份 implementation evidence，�
 **Interfaces:**
 
 - Consumes: final four candidate HEADs and all local verification outputs.
-- Produces: immutable candidate implementation handoff; no live state change.
+- Produces: final-architecture candidate implementation handoff; no live state change.
 
-- [ ] **Step F1: Re-run full verification on final HEADs**
+- [ ] **Step I1: Re-run full verification on final HEADs**
 
   Do not reuse pre-commit outputs.
 
-- [ ] **Step F2: Write metadata-only evidence**
+- [ ] **Step I2: Write metadata-only evidence**
 
   Include commands、exit codes、hashes、per-host verdicts、rollback carriers and the one live-cutover authorization gate；exclude config bodies and secrets.
 
-- [ ] **Step F3: Run closeout checks**
+- [ ] **Step I3: Run closeout checks**
 
   Run Markdown structure、placeholder、path、commit、gitleaks、diff and clean-status gates.
 
-- [ ] **Step F4: Commit evidence**
+- [ ] **Step I4: Commit evidence**
 
 Commit：
 
@@ -838,6 +1028,7 @@ jq empty "$COPILOT_CANDIDATE/permissions-config.json"
 
 ```bash
 bash tests/three-host-global-config-ownership.sh
+bash tests/matt-thin-workflow.sh
 bash "$CLAUDE_CANDIDATE/tests/repo-integrity.sh"
 bash "$CODEX_CANDIDATE/tests/global-config-ownership.sh"
 bash "$COPILOT_CANDIDATE/tests/global-config-ownership.sh"
@@ -862,13 +1053,15 @@ bash tests/version-tripwire.sh
 ### 12.4 Equivalence and immutability
 
 ```bash
-cmp -s "$NORMALIZED_BEFORE" "$NORMALIZED_AFTER"
-diff -u "$SKILLS_BEFORE" "$SKILLS_AFTER"
+cmp -s "$OWNERSHIP_NORMALIZED_BEFORE" "$OWNERSHIP_NORMALIZED_AFTER"
+diff -u "$SKILLS_BEFORE" "$OWNERSHIP_SKILLS_AFTER"
+diff -u "$MATT_UPSTREAM_BEFORE" "$MATT_UPSTREAM_AFTER"
+diff -u "$NON_ALLOWLIST_SKILLS_BEFORE" "$NON_ALLOWLIST_SKILLS_AFTER"
 diff -u "$HISTORICAL_BEFORE" "$HISTORICAL_AFTER"
 diff -u "$LIVE_BEFORE" "$LIVE_AFTER"
 ```
 
-Expected：all exit 0 and empty diff。
+Expected：all exit 0 and empty diff；workflow allowlist diff另逐path對照§7.2與implementation evidence。
 
 ### 12.5 Security and repository state
 
@@ -889,17 +1082,18 @@ ShellCheck若未安裝標 `UNAVAILABLE`並附 `command -v shellcheck`結果；�
 
 1. revalidate four live repos exact HEAD／porcelain／critical hashes；
 2. 建四 repo private byte-for-byte backup與Git/fingerprint baseline；
-3. verify four isolated candidates and exact implementation evidence；
-4. 先停用 `.agents` 對任何 host global config 的 write／validation；
-5. Claude 接管 current effective content，立即跑 Claude-local static／guard／config verification；
-6. Codex 接管 current effective content，立即跑 Codex-local static／guard／config verification；
-7. Copilot 接管 current effective content，立即跑 Copilot-local static／guard／config verification；
-8. verify active host config中的 `.agents/`只剩 skills refs；
-9. 執行 separately authorized context／skill canaries；
-10. 三家全綠前保留 `.agents/core|rules|hooks|hosts|dist` rollback carriers；
-11. 三家全綠後才提出 old control-plane retirement gate。
+3. verify four final-architecture isolated candidates、Matt upstream manifest與exact implementation evidence；
+4. 進入maintenance window：禁止啟動三家新session，直到step 10完成或coordinated rollback結束；
+5. 先停用 `.agents` 對任何 host global config 的 write／validation；
+6. 以候選commits部署shared Matt workflow與三家thin config；transaction內不得啟動host session；
+7. 依Claude → Codex → Copilot順序，用已驗證的host-native機制退休Superpowers registration；每家立即跑local static／guard／config verification，但尚不做SaaS/context probe；
+8. verify active host config中的 `.agents/`只剩skills refs，active routing中的`superpowers:*`與四支retired `mp-*`為零，`mp-zoom-out`保留；
+9. verify plugin inventory：Claude、Codex、Copilot各自Superpowers absent；任一FAIL／UNAVAILABLE立即整體rollback；
+10. 結束maintenance window，依§15 fixed order執行separately authorized fresh context／skill canaries；
+11. 三家全綠前保留 `.agents/core|rules|hooks|hosts|dist`與三家plugin restore rollback carriers；
+12. 三家全綠後才提出old control-plane carrier retirement gate。
 
-不得先移除 generated banner再讓舊 `agents-sync`繼續 no-clobber；步驟 4 必須先於 5–7。
+不得先移除 generated banner再讓舊 `agents-sync`繼續 no-clobber；步驟 5 必須先於 6–7。
 
 ## 14. Rollback
 
@@ -910,7 +1104,8 @@ ShellCheck若未安裝標 `UNAVAILABLE`並附 `command -v shellcheck`結果；�
 - Claude：CLAUDE、settings、core、rules、hooks、skill symlink manifest。
 - Codex：AGENTS、hooks.json、hooks、rules、native approval rule。
 - Copilot：instructions、rules、hooks、MCP、permissions。
-- `.agents`：agents-sync、manifest、core、rules、hosts、dist、hooks、tests、docs。
+- 每host另保存可驗證的Superpowers registration／version restore carrier；只記metadata，credential只報set／unset。
+- `.agents`：agents-sync、manifest、core、rules、hosts、dist、hooks、tests、docs、pre-migration shared-skills tree manifest與Git commit。
 
 ### 14.2 Coordinated rollback rule
 
@@ -919,11 +1114,12 @@ ShellCheck若未安裝標 `UNAVAILABLE`並附 `command -v shellcheck`結果；�
 1. stop all further writes and probes；
 2. mark overall cutover FAIL；
 3. rollback every already-activated host and `.agents` to pre-cutover ownership；
-4. use `git revert` for committed control-plane changes；
+4. use `git revert` for committed control-plane／shared-workflow changes；
 5. use private exact-byte carriers for the three pre-existing dirty files；
 6. atomic restore path、hash、size、mode；
 7. rerun old local verification；
-8. require all four repos return exact pre-cutover Git/fingerprint baseline。
+8. restore each host Superpowers registration only from its own verified carrier；
+9. require all four repos、three plugin inventories與shared skills return exact pre-cutover baseline。
 
 禁止只回滾失敗 host而留下其他 host在新 ownership，亦禁止只回滾 `.agents`或只回滾單側 host。Rollback是 coordinated transaction；per-host carrier只是縮小還原範圍，不代表允許 mixed ownership。
 
@@ -935,16 +1131,16 @@ Planning rollback：`git revert`本 planning commit。Candidate implementation r
 
 | Order | Host | Canary | Runs |
 |---:|---|---|---:|
-| 1 | Claude | global context fingerprint／routing | 1 |
-| 2 | Claude | shared `dev-workflow` discovery／invocation | 1 |
-| 3 | Codex | global context fingerprint／routing | 1 |
-| 4 | Codex | shared `dev-workflow` discovery／invocation | 1 |
-| 5 | Copilot | global context fingerprint／routing | 1 |
-| 6 | Copilot | shared `dev-workflow` discovery／invocation | 1 |
+| 1 | Claude | thin global context／Superpowers absent | 1 |
+| 2 | Claude | shared Matt route + kernel S4–S6 return | 1 |
+| 3 | Codex | thin global context／Superpowers absent | 1 |
+| 4 | Codex | shared Matt route + kernel S4–S6 return | 1 |
+| 5 | Copilot | thin global context／Superpowers absent | 1 |
+| 6 | Copilot | shared Matt route + kernel S4–S6 return | 1 |
 
 Total：6；Claude 2、Codex 2、Copilot 2；retry 0；review carrier 0；fixed serial order；first FAIL／UNAVAILABLE立即停止。
 
-每 host獨立 verdict；global-config canary不得推論 skill canary，skill canary不得推論 global-config health。這是全新 ownership-split budget，不得使用 Phase 4剩餘 budget或歷史 attempt。
+每host獨立verdict；thin-global canary不得推論shared-workflow canary，shared-workflow canary不得推論global config／plugin absence。這是全新final-architecture budget，不得使用Phase 4剩餘budget或歷史attempt。
 
 ## 16. Historical immutability
 
@@ -973,20 +1169,20 @@ Planning before manifest：
 | Milestone | Status／impact |
 |---|---|
 | M0 | COMPLETE；legacy routing-collision結果不變 |
-| M1 | Phase 4 Stage 2仍 FAIL；Codex UNEXECUTED；evidence frozen；本 split不改寫 verdict或重用budget |
-| Ownership split amendment | 本文件 supersedes Plan 45 ownership design；candidate implementation可在另行授權後執行，但不等於live cutover |
-| M2 | PENDING；legacy `mp-*` parity／retirement不得由本 planning授權 |
-| M3 | PENDING；未來 per-host Superpowers retirement改由各 host repo獨立承擔global config，skills仍共用 |
+| M1 | Phase 4 Stage 2仍FAIL；Codex UNEXECUTED；evidence frozen；不重用budget。舊Arm A/B不是final ownership architecture的release gate |
+| Ownership split amendment | 本文件supersedes Plan 45 ownership design；candidate implementation另行授權，live cutover仍獨立 |
+| M2 | **FOLDED INTO CANDIDATE**；逐支parity後退休四支legacy `mp-*`，保留`mp-zoom-out` |
+| M3 | **FOLDED INTO CANDIDATE + LIVE GATE**；candidate完成zero-reference／plugin-disabled驗證，實際逐host卸載只在live cutover明示授權後 |
 | M4 | PENDING；upstream detection只看 shared skills lock，與host global config分離 |
-| M5 | PENDING；thin-kernel驗收分成三家host-local global config verdict + 三家shared skills verdict |
+| M5 | **FOLDED INTO CANDIDATE**；thin-kernel驗收分成三家host-local verdict、shared Matt workflow verdict與三家plugin-disabled verdict |
 
-Candidate implementation完成不會自動關閉M1、授權live cutover、授權SaaS、或推進M2–M5。
+Candidate implementation完成不會改寫M1歷史verdict，也不會自動授權live cutover、plugin實際卸載或SaaS；它必須產出M2／M3-candidate／M5 final-architecture evidence，live只部署該final state。
 
 ## 18. Planning validation and closeout
 
 Planning artifact acceptance：
 
-- only this file added；
+- only this file modified；
 - `git diff --check` PASS；
 - Markdown heading structure PASS；
 - placeholder scan PASS；
@@ -994,17 +1190,18 @@ Planning artifact acceptance：
 - all planned paths marked CREATE／MATERIALIZE；
 - all named commits resolve；
 - ownership matrix與per-file tables一致；
-- skills before／after manifest empty diff；
+- planning前後skills manifest empty diff；
+- stage-scoped skills allowlist、M2／M3／M5 tasks與single-final-cutover順序一致；
 - live before／after fingerprint empty diff；
 - gitleaks PASS；
 - candidate clean after commit；
 - no DCT build／test／MySQL E2E；
 - no live config write、SaaS、Keychain read、remote mutation或subagent。
 
-Planning commit：
+Revised planning commit：
 
 ```text
-docs(workflow): 規劃三家全域設定分離
+docs(workflow): 修訂三家 Matt 薄型流程計畫
 ```
 
 Commit hash與本文件SHA-256由post-commit external evidence回報；不可把commit hash寫進其自身內容造成self-reference。
@@ -1013,6 +1210,6 @@ Commit hash與本文件SHA-256由post-commit external evidence回報；不可把
 
 完成本 planning commit後立即停止。唯一下一 gate是：
 
-> **使用者明示授權執行三 host global-config ownership split的 candidate implementation；不含live cutover或SaaS probe。**
+> **使用者明示授權執行三 host ownership split + Matt thin workflow的 staged candidate implementation；包含原M2／M3 candidate／M5，不含live cutover、plugin實際卸載或SaaS probe。**
 
-Planning authorization不得解讀為implementation、live handoff、SaaS或後續milestone授權。
+Planning authorization不得解讀為implementation、live handoff、plugin mutation、SaaS或remote mutation授權。
