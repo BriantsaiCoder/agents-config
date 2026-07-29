@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+die() {
+  printf 'copilot-plugin-simulation-config: %s\n' "$*" >&2
+  exit 1
+}
+
+[ "$#" -eq 3 ] ||
+  die 'usage: copilot-plugin-simulation-config <simulation-config> <simulation-home> <live-home>'
+command -v jq >/dev/null 2>&1 || die 'jq is required'
+
+config=$1
+[ -f "$config" ] || die "simulation config missing: $config"
+[ -d "$2" ] || die "simulation home missing: $2"
+[ -d "$3" ] || die "live home missing: $3"
+
+simulation_home=$(cd "$2" && pwd -P)
+live_home=$(cd "$3" && pwd -P)
+config_dir=$(cd "$(dirname "$config")" && pwd -P)
+
+[ "$config_dir" = "$simulation_home" ] && [ "$(basename "$config")" = config.json ] ||
+  die 'simulation config must be <simulation-home>/config.json'
+[ "$simulation_home" != "$live_home" ] || die 'simulation home equals live home'
+case "$simulation_home/" in
+  "$live_home/"*) die 'simulation home is nested under live home' ;;
+esac
+case "$live_home/" in
+  "$simulation_home/"*) die 'live home is nested under simulation home' ;;
+esac
+
+live_prefix="$live_home/"
+simulation_prefix="$simulation_home/"
+
+normalized_config=$(mktemp "$simulation_home/.config.normalized.json.XXXXXX")
+tmp_config=
+cleanup() {
+  [ ! -e "$normalized_config" ] || rm -f -- "$normalized_config"
+  [ -z "$tmp_config" ] || [ ! -e "$tmp_config" ] || rm -f -- "$tmp_config"
+}
+trap cleanup EXIT
+
+sed '/^[[:space:]]*\/\//d' "$config" > "$normalized_config"
+jq -e --arg live_prefix "$live_prefix" '
+  (.installedPlugins | type) == "array" and
+  (.installedPlugins | length) > 0 and
+  all(.installedPlugins[];
+    (.cache_path | type) == "string" and
+    (.cache_path | startswith($live_prefix))
+  )
+' "$normalized_config" >/dev/null ||
+  die 'every installedPlugins[*].cache_path must begin with the exact live home'
+
+tmp_config=$(mktemp "$simulation_home/.config.json.XXXXXX")
+
+jq --arg live_prefix "$live_prefix" --arg simulation_prefix "$simulation_prefix" '
+  .installedPlugins |= map(
+    .cache_path = (
+      $simulation_prefix + (.cache_path | ltrimstr($live_prefix))
+    )
+  )
+' "$normalized_config" > "$tmp_config"
+chmod 600 "$tmp_config"
+
+jq -e --arg live_prefix "$live_prefix" --arg simulation_prefix "$simulation_prefix" '
+  all(.installedPlugins[];
+    (.cache_path | startswith($simulation_prefix)) and
+    ((.cache_path | startswith($live_prefix)) | not)
+  )
+' "$tmp_config" >/dev/null ||
+  die 'rewritten cache_path escaped the simulation home'
+
+while IFS= read -r cache_path; do
+  [ -d "$cache_path" ] ||
+    die "rewritten cache_path is not an extracted simulation directory: $cache_path"
+  physical_cache_path=$(cd "$cache_path" && pwd -P)
+  case "$physical_cache_path/" in
+    "$simulation_prefix"*) ;;
+    *) die "rewritten cache_path resolves outside the simulation home: $cache_path" ;;
+  esac
+done < <(jq -er '.installedPlugins[].cache_path' "$tmp_config")
+
+count=$(jq -er '.installedPlugins | length' "$tmp_config")
+mv -f -- "$tmp_config" "$simulation_home/config.json"
+rm -f -- "$normalized_config"
+trap - EXIT
+printf 'COPILOT_SIMULATION_CACHE_PATHS_REWRITTEN=%s\n' "$count"

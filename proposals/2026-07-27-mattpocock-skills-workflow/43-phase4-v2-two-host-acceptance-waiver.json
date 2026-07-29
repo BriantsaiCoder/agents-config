@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "scope": "m1-phase4-v2-two-host-acceptance-waiver",
+  "decision_type": "explicit-user-risk-acceptance",
+  "issued_from_candidate_head": "c9c72eb1937ee44fef3b1d59c9af115ca6600f65",
+  "user_decision": [
+    "確認Copilot從M1 acceptance與Stage 2 scope排除；",
+    "Stage 2只驗證Claude與Codex。"
+  ],
+  "historical_evidence": {
+    "path": "proposals/2026-07-27-mattpocock-skills-workflow/42-phase4-v2-stage1-reauthorized-copilot-network-metadata-fail-fast-evidence.md",
+    "commit": "c9c72eb1937ee44fef3b1d59c9af115ca6600f65",
+    "sha256": "5e8a5012ea02102b4b2fcb7c0a6b7c1f81644f0d56e4f90768ab4c01e8cf9fe3",
+    "original_three_host_stage1_status": "FAIL",
+    "preserve_without_relabeling": true
+  },
+  "stage1_acceptance": {
+    "required_hosts": [
+      "claude",
+      "codex"
+    ],
+    "required_rows": [
+      "claude-a-architecture",
+      "claude-b-architecture",
+      "codex-a-architecture",
+      "codex-b-architecture"
+    ],
+    "required_rows_observed_verdict": "PASS",
+    "excluded_host": {
+      "host": "copilot",
+      "observed_row": "copilot-a-architecture",
+      "observed_verdict": "FAIL",
+      "unexecuted_row": "copilot-b-architecture",
+      "treatment": "accepted-risk-excluded",
+      "relabel_as_pass": false
+    },
+    "two_host_gate_status": "PASS_WITH_USER_WAIVER",
+    "three_host_gate_status": "FAIL"
+  },
+  "stage2_scope": {
+    "matrix_version": 2,
+    "matrix_path": "proposals/2026-07-27-mattpocock-skills-workflow/27-phase4-v2-canary-matrix.jsonl",
+    "matrix_sha256": "93015a2b5b15aa495d98dbc9a1228a1c1b7c848469a3185dde4827c92135d8b7",
+    "selection_policy": "exact-ordered-row-ids",
+    "ordered_scope_sha256": "9bf77683f99428adc126a88599ebcc1d71869b4a69a707161a4335f17207a65e",
+    "required_hosts": [
+      "claude",
+      "codex"
+    ],
+    "excluded_hosts": [
+      "copilot"
+    ],
+    "ordered_top_level_rows": [
+      "claude-a-feature",
+      "claude-b-feature",
+      "claude-a-bugfix",
+      "claude-b-bugfix",
+      "claude-a-diagnosis",
+      "claude-b-diagnosis",
+      "claude-a-review",
+      "claude-b-review",
+      "claude-a-closeout",
+      "claude-b-closeout",
+      "claude-a-missing-evidence",
+      "claude-b-missing-evidence",
+      "codex-b-feature",
+      "codex-a-feature",
+      "codex-b-bugfix",
+      "codex-a-bugfix",
+      "codex-b-diagnosis",
+      "codex-a-diagnosis",
+      "codex-b-review",
+      "codex-a-review",
+      "codex-b-closeout",
+      "codex-a-closeout",
+      "codex-b-missing-evidence",
+      "codex-a-missing-evidence"
+    ],
+    "budget": {
+      "top_level_saas_runs": 24,
+      "nested_review_carriers": 6,
+      "total_saas_runs": 30,
+      "per_host": {
+        "claude": {
+          "top_level_saas_runs": 12,
+          "nested_review_carriers": 3,
+          "total_saas_runs": 15
+        },
+        "codex": {
+          "top_level_saas_runs": 12,
+          "nested_review_carriers": 3,
+          "total_saas_runs": 15
+        },
+        "copilot": {
+          "top_level_saas_runs": 0,
+          "nested_review_carriers": 0,
+          "total_saas_runs": 0
+        }
+      }
+    },
+    "retry_budget_per_row": 0,
+    "fail_fast": {
+      "required_host_fail_or_unavailable": "stop-all-subsequent-rows",
+      "unused_budget": "do-not-reallocate"
+    }
+  },
+  "current_gate": {
+    "stage2_budget_granted": false,
+    "authorized_saas_runs": 0,
+    "stage2_execution_authorized": false,
+    "stage2_scratch_created": false,
+    "stage2_live_exception_created": false,
+    "prior_stage1_live_exception_reusable": false,
+    "next_gate": "fresh-stage2-two-host-budget-30-authorization"
+  },
+  "claims": {
+    "allowed": [
+      "Claude-and-Codex Stage 1 acceptance passed with explicit Copilot exclusion",
+      "Stage 2 scope is Claude and Codex only"
+    ],
+    "forbidden": [
+      "Copilot PASS",
+      "three-host migration-safety PASS",
+      "retroactive modification of historical Stage 1 evidence",
+      "Stage 2 execution without a fresh exact budget grant",
+      "reuse of a Stage-1-only live exception"
+    ]
+  },
+  "rollback": {
+    "strategy": "revert-this-waiver-commit",
+    "live_changes_required": false
+  }
+}

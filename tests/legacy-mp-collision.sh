@@ -1,157 +1,49 @@
 #!/usr/bin/env bash
-# 退役 mp wrapper 保留手動相容性，但不得再參與 model invocation。
+# Retired mp workflow wrappers must stay absent; replacements remain callable.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
 SKILLS_DIR="${SKILLS_ROOT:-$ROOT/skills}"
 
-frontmatter_disables_model_invocation() {
-  awk '
-    NR == 1 && $0 == "---" { frontmatter=1; next }
-    frontmatter && $0 == "---" { exit }
-    frontmatter && $0 ~ /^disable-model-invocation:[[:space:]]*true[[:space:]]*$/ { found=1 }
-    END { exit(found ? 0 : 1) }
-  ' "$1"
+[ "$#" -eq 0 ] || {
+  printf 'usage: %s\n' "$0" >&2
+  exit 2
 }
 
-codex_disables_implicit_invocation() {
-  local policy_file="$1/agents/openai.yaml"
-  [ -f "$policy_file" ] || return 1
-  awk '
-    /^[^[:space:]#]/ { policy=($0 == "policy:") }
-    policy && $0 ~ /^[[:space:]]+allow_implicit_invocation:[[:space:]]*false[[:space:]]*$/ { found=1 }
-    END { exit(found ? 0 : 1) }
-  ' "$policy_file"
+fail=0
+for legacy in mp-diagnose mp-grill-with-docs mp-improve-codebase-architecture mp-tdd; do
+  if [ -e "$SKILLS_DIR/$legacy" ]; then
+    printf 'FAIL  retired wrapper exists: %s\n' "$legacy" >&2
+    fail=$((fail + 1))
+  fi
+done
+
+for replacement in diagnosing-bugs grilling domain-modeling codebase-design tdd; do
+  skill_file="$SKILLS_DIR/$replacement/SKILL.md"
+  if [ ! -f "$skill_file" ]; then
+    printf 'FAIL  replacement missing: %s\n' "$replacement" >&2
+    fail=$((fail + 1))
+  elif awk '
+    NR == 1 && $0 == "---" {frontmatter=1; next}
+    frontmatter && $0 == "---" {exit}
+    frontmatter && /^disable-model-invocation:[[:space:]]*true/ {disabled=1}
+    END {exit(disabled ? 0 : 1)}
+  ' "$skill_file"; then
+    printf 'FAIL  replacement is model-invocation-disabled: %s\n' "$replacement" >&2
+    fail=$((fail + 1))
+  fi
+done
+
+[ -f "$SKILLS_DIR/mp-zoom-out/SKILL.md" ] || {
+  printf 'FAIL  retained local skill missing: mp-zoom-out\n' >&2
+  fail=$((fail + 1))
 }
 
-check_tree() {
-  local fail=0 legacy model manual replacement skill_dir skill_file
+if rg -q 'mp-(diagnose|grill-with-docs|improve-codebase-architecture|tdd)' \
+  "$ROOT/core/routing.md" "$SKILLS_DIR"; then
+  printf 'FAIL  active routing or shared skills reference a retired wrapper\n' >&2
+  fail=$((fail + 1))
+fi
 
-  while IFS='|' read -r legacy model manual; do
-    skill_dir="$SKILLS_DIR/$legacy"
-    skill_file="$skill_dir/SKILL.md"
-    if [ ! -f "$skill_file" ]; then
-      printf 'FAIL  legacy wrapper missing: %s\n' "$legacy" >&2
-      fail=$((fail + 1))
-    else
-      if ! frontmatter_disables_model_invocation "$skill_file"; then
-        printf 'FAIL  legacy wrapper remains model-invocable: %s\n' "$legacy" >&2
-        fail=$((fail + 1))
-      fi
-      if ! codex_disables_implicit_invocation "$skill_dir"; then
-        printf 'FAIL  legacy wrapper lacks Codex invocation-off policy: %s\n' "$legacy" >&2
-        fail=$((fail + 1))
-      fi
-    fi
-
-    IFS=',' read -r -a replacements <<< "$model,$manual"
-    for replacement in "${replacements[@]}"; do
-      [ -n "$replacement" ] || continue
-      skill_file="$SKILLS_DIR/$replacement/SKILL.md"
-      if [ ! -f "$skill_file" ]; then
-        printf 'FAIL  replacement missing: %s -> %s\n' "$legacy" "$replacement" >&2
-        fail=$((fail + 1))
-      fi
-    done
-
-    IFS=',' read -r -a replacements <<< "$model"
-    for replacement in "${replacements[@]}"; do
-      skill_file="$SKILLS_DIR/$replacement/SKILL.md"
-      if [ -f "$skill_file" ] && frontmatter_disables_model_invocation "$skill_file"; then
-        printf 'FAIL  model replacement is invocation-off: %s -> %s\n' "$legacy" "$replacement" >&2
-        fail=$((fail + 1))
-      fi
-    done
-  done <<'EOF'
-mp-diagnose|diagnosing-bugs|diagnosing-bugs
-mp-grill-with-docs|grilling,domain-modeling|grill-with-docs
-mp-improve-codebase-architecture|codebase-design|improve-codebase-architecture
-mp-tdd|tdd|tdd
-EOF
-
-  [ "$fail" -eq 0 ] || return 1
-  printf 'PASS  legacy mp collision guard: 4 wrappers / 4 mappings\n'
-}
-
-write_fixture_skill() {
-  local root="$1" name="$2" disabled="${3:-false}"
-  mkdir -p "$root/$name"
-  {
-    printf '%s\n' '---' "name: $name" "description: fixture $name"
-    [ "$disabled" = true ] && printf '%s\n' 'disable-model-invocation: true'
-    printf '%s\n' '---'
-  } > "$root/$name/SKILL.md"
-}
-
-write_fixture_codex_policy() {
-  local root="$1" name="$2" allow_implicit="${3:-false}"
-  mkdir -p "$root/$name/agents"
-  printf 'policy:\n  allow_implicit_invocation: %s\n' "$allow_implicit" \
-    > "$root/$name/agents/openai.yaml"
-}
-
-selftest() {
-  local legacy replacement
-  selftest_fixture=$(mktemp -d)
-  trap 'rm -rf "$selftest_fixture"' EXIT
-
-  for replacement in diagnosing-bugs grilling domain-modeling grill-with-docs \
-                     codebase-design improve-codebase-architecture tdd; do
-    write_fixture_skill "$selftest_fixture" "$replacement"
-  done
-  write_fixture_skill "$selftest_fixture" grill-with-docs true
-  write_fixture_skill "$selftest_fixture" improve-codebase-architecture true
-
-  for legacy in mp-diagnose mp-grill-with-docs \
-                mp-improve-codebase-architecture mp-tdd; do
-    write_fixture_skill "$selftest_fixture" "$legacy" true
-    write_fixture_codex_policy "$selftest_fixture" "$legacy"
-  done
-
-  SKILLS_DIR="$selftest_fixture" check_tree >/dev/null
-
-  for legacy in mp-diagnose mp-grill-with-docs \
-                mp-improve-codebase-architecture mp-tdd; do
-    write_fixture_skill "$selftest_fixture" "$legacy"
-    if SKILLS_DIR="$selftest_fixture" check_tree >/dev/null 2>&1; then
-      printf 'FAIL  selftest missed model-invocable wrapper: %s\n' "$legacy" >&2
-      return 1
-    fi
-    write_fixture_skill "$selftest_fixture" "$legacy" true
-  done
-
-  for legacy in mp-diagnose mp-grill-with-docs \
-                mp-improve-codebase-architecture mp-tdd; do
-    write_fixture_codex_policy "$selftest_fixture" "$legacy" true
-    if SKILLS_DIR="$selftest_fixture" check_tree >/dev/null 2>&1; then
-      printf 'FAIL  selftest missed Codex-invocable wrapper: %s\n' "$legacy" >&2
-      return 1
-    fi
-    write_fixture_codex_policy "$selftest_fixture" "$legacy"
-  done
-
-  for replacement in diagnosing-bugs grilling domain-modeling grill-with-docs \
-                     codebase-design improve-codebase-architecture tdd; do
-    rm "$selftest_fixture/$replacement/SKILL.md"
-    if SKILLS_DIR="$selftest_fixture" check_tree >/dev/null 2>&1; then
-      printf 'FAIL  selftest missed replacement: %s\n' "$replacement" >&2
-      return 1
-    fi
-    case "$replacement" in
-      grill-with-docs|improve-codebase-architecture)
-        write_fixture_skill "$selftest_fixture" "$replacement" true
-        ;;
-      *)
-        write_fixture_skill "$selftest_fixture" "$replacement"
-        ;;
-    esac
-  done
-
-  printf 'PASS  legacy mp collision selftest\n'
-}
-
-case "${1:-}" in
-  --selftest) selftest ;;
-  '') check_tree ;;
-  *) printf 'usage: %s [--selftest]\n' "$0" >&2; exit 2 ;;
-esac
+[ "$fail" -eq 0 ] || exit 1
+printf 'PASS  legacy mp retirement guard: 4 retired / 5 replacements / mp-zoom-out retained\n'

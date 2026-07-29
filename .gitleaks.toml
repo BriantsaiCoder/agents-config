@@ -15,6 +15,12 @@ title = "agents-config gitleaks"
 [extend]
 useDefault = true
 
-[allowlist]
+[[allowlists]]
 description = "vendored 第三方 skill 文件（ECPay 公開 sandbox 測試向量 + AWS AKIAIOSFODNN7EXAMPLE 範例）"
 paths = ['''skills/.*''']
+
+[[allowlists]]
+description = "Copilot vendor event metadata 的 exact apiCallId 欄位"
+targetRules = ["generic-api-key"]
+regexTarget = "match"
+regexes = ['''(^|[^A-Za-z0-9_])apiCallId([^A-Za-z0-9_]|$)''']
