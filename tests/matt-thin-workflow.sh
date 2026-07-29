@@ -36,8 +36,10 @@ for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6; do
 done
 
 for skill in \
+  triage \
   grilling \
   domain-modeling \
+  grill-with-docs \
   to-spec \
   to-tickets \
   implement \
@@ -45,7 +47,8 @@ for skill in \
   diagnosing-bugs \
   code-review \
   codebase-design \
-  wayfinder; do
+  wayfinder \
+  handoff; do
   rg -q "\`$skill\`" "$KERNEL" || fail "active route missing: $skill"
   [ -f "$AGENTS/skills/$skill/SKILL.md" ] || fail "routed skill missing: $skill"
 done

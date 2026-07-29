@@ -31,11 +31,14 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 
 | Need | Route |
 |---|---|
+| 外部 issue／PR 的初始評估 | `triage` |
 | 需求壓測／決策澄清 | `grilling`；領域詞彙與 ADR 另加 `domain-modeling` |
+| 使用者明示邊討論邊產生 glossary／ADR | `grill-with-docs`（內含 `grilling` + `domain-modeling`） |
 | 把已決內容整理成 spec | `to-spec` |
 | 拆 tracer-bullet tickets | `to-tickets` |
 | 超過單一 session 的決策地圖 | `wayfinder` |
-| 實作已核准 spec／tickets | kernel 的 `implement` adapter；每個 slice 用 `tdd` |
+| session 中斷且重要 context 尚未進 canonical artifact | `handoff` |
+| 需求已清楚且單一 session 可完成（含已核准 spec／ticket） | kernel 的 `implement` adapter；每個 slice 用 `tdd` |
 | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
 | code review | `code-review` |
 | 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
@@ -44,6 +47,14 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | skill 建立／修改／稽核 | `writing-great-skills`／`auditing-skill-folder` |
 
 Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
+
+### Routing continuations
+
+- `triage`、`grilling` 或 `wayfinder` 釐清需求後，單一 session 可完成的 coherent vertical slice 進 `implement`。
+- 多個可獨立驗收的 implementation slices：無 canonical spec 時依序跑 `to-spec` → `to-tickets`；已有完整 spec／agent-ready issue 時略過 `to-spec`，直接跑 `to-tickets`。
+- 每張 ticket 以 fresh session 開始，先進 isolated branch／worktree，再依 `implement` adapter 執行；fresh session 不豁免 S2。
+- `wayfinder` 只處理跨 session 的決策迷霧；決策已清楚但實作量大時走 spec／tickets 分流。
+- `handoff` 只橋接中斷時仍未進入 spec、ticket 或 wayfinder map 的重要 context；已有 canonical artifact 時只引用，不重複內容。
 
 ## S2 AUTHORIZE
 
