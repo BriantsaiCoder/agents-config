@@ -27,7 +27,10 @@ lacks() {
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
 refs=$(grep -o '\[INT-4\]' "$ROOT/skills/dev-workflow/SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
 [ "$refs" -ge 5 ] && ok "[INT-4] referenced across workflow" || ng "[INT-4] referenced across workflow"
-has "[T1-10] points to agents-branch" '^\[T1-10\].*bin/agents-branch' core/tier1-workflow.md
+# 2026-07-30：原本驗 core/tier1-workflow.md 的 [T1-10] 條文，但 core/ 三家不讀且已退役。
+# tier1 條文的 active 正本在各 host 自己的 core/ 底下，~/.agents 的 test 不該跨進 host
+# 擁有的檔案（ownership 邊界）。改驗 dev-workflow 的 Codex adapter 有指向該工具。
+has "[T1-10] tooling points to agents-branch" 'bin/agents-branch' skills/dev-workflow/SKILL.md
 
 has "house skill standards exists" '^# Skill standards' skills/auditing-skill-folder/references/skill-standards.md
 lacks "audit no longer depends on superpowers:writing-skills" 'superpowers:writing-skills' skills/auditing-skill-folder
@@ -55,13 +58,19 @@ for helper in sdd-workspace task-brief review-package find-polluter.sh start-ser
   has "helper ledger: $helper" "$helper" "$ledger"
 done
 
-has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' core/routing.md
-has "model route: codebase-design" 'codebase-design' core/routing.md
-has "model route: diagnosing-bugs" 'diagnosing-bugs' core/routing.md
-has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' core/routing.md
-has "explicit route: grill-with-docs" '/grill-with-docs' core/routing.md
-has "explicit route: improve-codebase-architecture" '/improve-codebase-architecture' core/routing.md
-lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|improve-codebase-architecture|diagnose|tdd)' core/routing.md
+# 2026-07-30：routing 斷言的掃描目標從 core/routing.md 改為 dev-workflow 的 S0 ROUTE 表。
+# 理由：core/routing.md 三家 runtime 都不讀（Claude 只 @import ~/.claude/core/*，Codex 與
+# Copilot 的 config 對 .agents/ 只引用 skills/），而本檔第 83 行的 for-active 迴圈卻把它
+# 當 active——test 說 active、CONVENTIONS 規則 1 說歷史 evidence、runtime 不讀，三種互斥。
+# 驗真正被讀的那份檔才是斷言的本意。core/ 已退役至 attic/core-2026-07-30/。
+has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' skills/dev-workflow/SKILL.md
+has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.md
+has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md
+has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
+# explicit route: grill-with-docs 由第 67 行的「明示.*`grill-with-docs`」涵蓋（措辭更精確），
+# 不再重複斷言 —— S0 表用反引號而非斜線前綴，原本的 '/grill-with-docs' 在此不成立。
+has "explicit route: improve-codebase-architecture" 'improve-codebase-architecture.*explicit-only' skills/dev-workflow/SKILL.md
+lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|improve-codebase-architecture|diagnose|tdd)' skills/dev-workflow/SKILL.md
 
 has "external issue or PR routes to triage" '外部.*issue.*PR.*`triage`' skills/dev-workflow/SKILL.md
 has "grill-with-docs stays explicit" '明示.*`grill-with-docs`' skills/dev-workflow/SKILL.md
@@ -80,7 +89,7 @@ has "S5 has Standards and Spec axes" 'Standards.*Spec' skills/dev-workflow/SKILL
 has "S5 axes have four states" 'PASS.*FAIL.*SKIPPED.*UNAVAILABLE' skills/dev-workflow/SKILL.md
 has "bugfix routes to diagnosing-bugs" 'diagnosing-bugs' skills/bug-fix-settlement/SKILL.md
 
-for active in core/routing.md skills/dev-workflow/SKILL.md \
+for active in skills/dev-workflow/SKILL.md \
               skills/dev-workflow/references/review-triage.md \
               skills/bug-fix-settlement/SKILL.md; do
   lacks "no active Superpowers workflow ref: $active" \

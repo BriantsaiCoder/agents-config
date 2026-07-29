@@ -87,8 +87,11 @@ rg -q 'GREEN.*micro-refactor|micro-refactor.*GREEN' "$KERNEL" ||
 if rg -n 'superpowers:' "$AGENTS/skills" >/dev/null; then
   fail 'active shared skills still reference Superpowers'
 fi
+# 2026-07-30：掃描目標從 $AGENTS/core/routing.md 改為 $KERNEL（dev-workflow SKILL.md）。
+# core/ 三家 runtime 都不讀，已退役至 attic/core-2026-07-30/；active routing 的真正本是
+# kernel 的 S0 ROUTE 表。
 if rg -n 'mp-(diagnose|grill-with-docs|improve-codebase-architecture|tdd)' \
-  "$AGENTS/core/routing.md" "$AGENTS/skills" >/dev/null; then
+  "$KERNEL" "$AGENTS/skills" >/dev/null; then
   fail 'active routing or shared skills still reference retired wrappers'
 fi
 
@@ -108,6 +111,10 @@ while IFS='=' read -r key skill; do
   fi
 done < "$AGENTS/mattpocock-skills.lock"
 
+# 最後兩個 pattern 是 2026-07-30 rules/ 退役加入的：那兩處只移除指向 ~/.agents/rules/
+# 的死路徑，改成不帶路徑的「家規」措辭（規則內容本來就內聯在同一段）。兩者都是 house
+# skill，不在 mattpocock-skills.lock 的 22 個內，所以上面第 106-112 行的 vendored gate
+# 不適用。註解不能插在 case pattern 的 `\` 續行之間——那是語法錯誤。
 while IFS= read -r changed; do
   case "$changed" in
     skills/dev-workflow/* | \
@@ -115,7 +122,9 @@ while IFS= read -r changed; do
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
-    skills/mp-tdd/*) ;;
+    skills/mp-tdd/* | \
+    skills/typescript-best-practices/references/config-and-project.md | \
+    skills/vue-best-practices/references/styling-and-ui.md) ;;
     *) fail "non-allowlisted shared skill changed: $changed" ;;
   esac
 done < <(git -C "$AGENTS" diff --name-only "$WORKFLOW_BASE" -- skills)

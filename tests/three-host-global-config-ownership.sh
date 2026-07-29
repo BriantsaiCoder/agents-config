@@ -92,11 +92,12 @@ for active_config in \
     fail "host candidate drops preserved T2-6 response policy: $active_config"
 done
 
+# 2026-07-30：移除對 $AGENTS/core/tier2-style.md 的 SHA 比對。core/ 三家 runtime 都不讀
+# （本檔第 200 行的反向斷言已禁止 host config 引用 .agents control plane），已退役至
+# attic/core-2026-07-30/。T2-6 的 active 正本只在三家 host-local config，由下面 claude
+# candidate 那條與第 88-92 行的逐字 preserved_response_policy 檢查把關。
 expected_tier2_sha='677f78d81cfe358760584b27bd7a8e0e7e08fd1197842f08ceabb7f725aeba5e'
-shared_tier2_sha="$(shasum -a 256 "$AGENTS/core/tier2-style.md" | awk '{ print $1 }')"
 claude_tier2_sha="$(shasum -a 256 "$CLAUDE_CANDIDATE/core/tier2-style.md" | awk '{ print $1 }')"
-[ "$shared_tier2_sha" = "$expected_tier2_sha" ] ||
-  fail 'shared candidate does not preserve exact current T2-6 source bytes'
 [ "$claude_tier2_sha" = "$expected_tier2_sha" ] ||
   fail 'Claude candidate does not materialize exact current T2-6 source bytes'
 rg -Fq 'current T2-6只保留到三家host-local active config；不得恢復 `.agents` control-plane ownership' "$PLAN" ||
@@ -282,12 +283,13 @@ if skills_manifests_match "$fixture_before" "$fixture_drift" "$accepted_metadata
   fail 'semantic skills drift was accepted'
 fi
 
-for carrier in \
-  "$AGENTS/docs/agents/issue-tracker.md" \
-  "$AGENTS/rules/typescript.md" \
-  "$AGENTS/rules/frontend-spa.md"; do
-  [ -f "$carrier" ] || fail "compatibility carrier missing: $carrier"
-done
+# 2026-07-30：rules/ 退役至 attic/ 後，typescript.md 與 frontend-spa.md 從此清單移除。
+# 它們原本被列為 carrier 是因為兩個 skill 內文引用了那兩條路徑；那兩處引用已改成不帶
+# 路徑的「家規」措辭（規則內容本來就內聯在 skill 裡），carrier 不再有消費者。
+# issue-tracker.md 保留——它是 [INT-5] fallback 的真消費者：Matt skill 先讀 repo 的
+# docs/agents/issue-tracker.md，不存在才落到這裡。
+carrier="$AGENTS/docs/agents/issue-tracker.md"
+[ -f "$carrier" ] || fail "compatibility carrier missing: $carrier"
 
 historical_before="${HISTORICAL_BEFORE:-/private/tmp/three-host-global-config-split-historical-before.tsv}"
 historical_after="${HISTORICAL_AFTER:-/private/tmp/three-host-global-config-split-historical-after.tsv}"

@@ -45,6 +45,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | 陌生 repo | `acquire-codebase-knowledge` |
 | 單檔且 ≤3 tasks 的低風險 change | `sdd` |
 | skill 建立／修改／稽核 | `writing-great-skills`／`auditing-skill-folder` |
+| 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
 Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
 
