@@ -21,6 +21,7 @@
 
 > 日期：2026-07-29 Asia/Taipei
 > 修訂：2026-07-29；依使用者「好依照建議修改plan」納入 staged-candidate／single-final-cutover 架構。
+> 修訂：2026-07-29；依使用者「核准 Plan 48 amendment，執行 candidate-only 修改與驗證」調和 shared-skills `.DS_Store` 與 runtime no-load blockers。
 > 狀態：revised candidate planning evidence；本文件不授權 implementation、live cutover、plugin實際卸載、SaaS/context probe、push、PR、merge 或任何 remote mutation。
 > 唯一共享 data plane：`~/.agents/skills/**`。
 > Risk：**HIGH**。
@@ -384,13 +385,23 @@ Planning before manifest：
 - rows：662 including header
 - SHA-256：`f7a3595ed6cbe8ff691fc094438aaed48e0cb8fdaa04b3a87a4c1a1ba37da12b`
 
-Ownership stage重新產生sorted manifest並要求：
+原始662-row manifest保持歷史audit evidence，不覆寫或擴大baseline。Blocker reconciliation只將 exact relative path `.DS_Store` 從 semantic skills payload gate 分離：
 
 ```bash
-diff -u "$SKILLS_BEFORE" "$OWNERSHIP_SKILLS_AFTER"
+awk -F '\t' 'NR == 1 || $1 != ".DS_Store"' "$SKILLS_BEFORE" > "$SEMANTIC_SKILLS_BEFORE"
+awk -F '\t' 'NR == 1 || $1 != ".DS_Store"' "$OWNERSHIP_SKILLS_AFTER" > "$SEMANTIC_SKILLS_AFTER"
+diff -u "$SEMANTIC_SKILLS_BEFORE" "$SEMANTIC_SKILLS_AFTER"
 ```
 
-Expected：empty diff。
+Expected：semantic diff empty。禁止 `*.DS_Store`、hidden-file wildcard與directory-wide exclusion；nested `.DS_Store`與所有其他hidden files仍是semantic payload。
+
+Exact `.DS_Store`另以單一metadata row監看，不讀body、不改live file：
+
+```text
+.DS_Store	file	abac08d6445bcc8848a10a5e0e2a406629d2dea627e500c8e6006f720a647606	57348	644	-
+```
+
+驗證必須要求relative path exact、row count = 1、type／SHA-256／size／mode／symlink target exact。metadata再次變動、row缺失／重複或任何其他skills drift均FAIL；不得自行rebaseline。
 
 ### 7.2 Workflow stage — exact allowlist
 
@@ -524,7 +535,7 @@ Minimum assertions：
 6. Codex／Copilot generated banner不存在。
 7. Codex／Copilot local stack fallback存在且不指向 `.agents/rules`。
 8. `.agents` active manifest沒有 host global-config row。
-9. ownership stage skills before／after manifest empty diff。
+9. ownership stage semantic skills before／after manifest empty diff；只允許exact `.DS_Store`使用獨立pinned metadata row。
 10. 三個 compatibility carriers仍存在且 metadata exact。
 11. Phase 4 historical hashes exact。
 12. live four-repo fingerprints與porcelain exact unchanged during candidate implementation。
@@ -549,8 +560,15 @@ Minimum assertions：
 6. `mp-zoom-out`仍存在且只在其明確scope觸發。
 7. Matt upstream manifest exact unchanged。
 8. non-allowlisted shared-skills diff empty。
-9. 三家plugin-disabled shadow inventory不載入Superpowers；若host無safe shadow seam則標`UNAVAILABLE`並阻擋live cutover，不得假綠。
+9. 三家candidate active refs為零；offline runtime no-load無safe shadow seam時保留per-host `UNAVAILABLE`，不得假綠或改寫成歷史`PASS`。runtime no-load只在cutover transaction內逐host驗證。
 10. Phase 4 historical evidence與live four-repo fingerprints仍exact unchanged。
+
+Blocker-reconciliation amendment使用同一個`tests/three-host-global-config-ownership.sh` seam：
+
+1. RED：current full-manifest comparator因known `.DS_Store` drift失敗；未修訂Plan時new contract assertions亦失敗。
+2. GREEN：synthetic manifests證明known exact row reconciliation PASS，而metadata drift、nested `.DS_Store`與其他semantic drift各自FAIL。
+3. GREEN：Plan contract要求Claude → Codex → Copilot逐hostabsence PASS才前進，任一FAIL／UNAVAILABLE進coordinated rollback，6-run canary仍獨立授權。
+4. Candidate-only GREEN只證明manifest與transaction contract；不得宣稱fresh plugin absence、live cutover或SaaS PASS。
 
 ## 11. Minimal GREEN tasks and commit boundaries
 
@@ -818,13 +836,14 @@ Repo：same isolated `.agents` implementation branch。
 - [ ] **Step E5: Verify immutable and historical diffs**
 
   ```bash
-  diff -u "$SKILLS_BEFORE" "$SKILLS_AFTER"
+  diff -u "$SEMANTIC_SKILLS_BEFORE" "$SEMANTIC_SKILLS_AFTER"
+  cmp -s "$DS_STORE_METADATA_BASELINE" "$DS_STORE_METADATA_AFTER"
   diff -u "$HISTORICAL_BEFORE" "$HISTORICAL_AFTER"
   diff -u "$LIVE_BEFORE" "$LIVE_AFTER"
   git diff --check
   ```
 
-  Expected: all exit 0 and empty diff.
+  Expected: all exit 0；semantic、historical、live diff empty，exact `.DS_Store` metadata row unchanged。
 
 - [ ] **Step E6: Commit `.agents` GREEN**
 
@@ -929,7 +948,9 @@ Repos：isolated Claude、Codex、Copilot candidates；每host獨立commit與ver
 
 - [ ] **Step H3: Build plugin-disabled shadow probe**
 
-  Implementation preflight先以host-native read-only inventory解析實際plugin source／supported isolation seam。只在temporary HOME／candidate overlay測試，不改live registration、runtime、cache或credential；找不到safe seam即`UNAVAILABLE`並停止。
+  Implementation preflight先以host-native read-only inventory解析實際plugin source／supported isolation seam。只在temporary HOME／candidate overlay測試，不改live registration、runtime、cache或credential；找不到safe offline seam即保留該host `UNAVAILABLE`，不得改寫成`PASS`。
+
+  Pre-cutover gate改驗每host active refs = 0、verified removal interface、exact restore carrier與maintenance quiescence。不得把 pre-cutover `UNAVAILABLE` 改寫成 `PASS`；它只是不再要求用不存在的offline seam證明runtime no-load。
 
 - [ ] **Step H4: Verify per host**
 
@@ -1054,7 +1075,8 @@ bash tests/version-tripwire.sh
 
 ```bash
 cmp -s "$OWNERSHIP_NORMALIZED_BEFORE" "$OWNERSHIP_NORMALIZED_AFTER"
-diff -u "$SKILLS_BEFORE" "$OWNERSHIP_SKILLS_AFTER"
+diff -u "$SEMANTIC_SKILLS_BEFORE" "$SEMANTIC_SKILLS_AFTER"
+cmp -s "$DS_STORE_METADATA_BASELINE" "$DS_STORE_METADATA_AFTER"
 diff -u "$MATT_UPSTREAM_BEFORE" "$MATT_UPSTREAM_AFTER"
 diff -u "$NON_ALLOWLIST_SKILLS_BEFORE" "$NON_ALLOWLIST_SKILLS_AFTER"
 diff -u "$HISTORICAL_BEFORE" "$HISTORICAL_AFTER"
@@ -1078,6 +1100,8 @@ ShellCheck若未安裝標 `UNAVAILABLE`並附 `command -v shellcheck`結果；�
 
 本節是 future runbook，不是本 session授權。
 
+Pre-cutover仍須逐host保持active refs = 0、verified removal interface、exact restore carrier與maintenance quiescence。三host offline runtime no-load verdict仍是`UNAVAILABLE`，不得改寫成歷史`PASS`；實際plugin absence只在另行授權的transaction內取得。
+
 固定順序：
 
 1. revalidate four live repos exact HEAD／porcelain／critical hashes；
@@ -1086,9 +1110,9 @@ ShellCheck若未安裝標 `UNAVAILABLE`並附 `command -v shellcheck`結果；�
 4. 進入maintenance window：禁止啟動三家新session，直到step 10完成或coordinated rollback結束；
 5. 先停用 `.agents` 對任何 host global config 的 write／validation；
 6. 以候選commits部署shared Matt workflow與三家thin config；transaction內不得啟動host session；
-7. 依Claude → Codex → Copilot順序，用已驗證的host-native機制退休Superpowers registration；每家立即跑local static／guard／config verification，但尚不做SaaS/context probe；
+7. 依Claude → Codex → Copilot固定順序，用已驗證的host-native機制退休Superpowers registration；每家立即跑local static／guard／config verification與該host plugin inventory，確認Superpowers absent為PASS後才可進下一host；尚不做SaaS/context probe；
 8. verify active host config中的 `.agents/`只剩skills refs，active routing中的`superpowers:*`與四支retired `mp-*`為零，`mp-zoom-out`保留；
-9. verify plugin inventory：Claude、Codex、Copilot各自Superpowers absent；任一FAIL／UNAVAILABLE立即整體rollback；
+9. verify Claude、Codex、Copilot各自保有獨立plugin-absence evidence；任一host FAIL／UNAVAILABLE立即停止後續writes／probes並執行coordinated rollback，禁止用某host結果推論其他host；
 10. 結束maintenance window，依§15 fixed order執行separately authorized fresh context／skill canaries；
 11. 三家全綠前保留 `.agents/core|rules|hooks|hosts|dist`與三家plugin restore rollback carriers；
 12. 三家全綠後才提出old control-plane carrier retirement gate。
@@ -1182,7 +1206,7 @@ Candidate implementation完成不會改寫M1歷史verdict，也不會自動授�
 
 Planning artifact acceptance：
 
-- only this file modified；
+- only this file與既有`tests/three-host-global-config-ownership.sh` modified；
 - `git diff --check` PASS；
 - Markdown heading structure PASS；
 - placeholder scan PASS；
@@ -1190,7 +1214,7 @@ Planning artifact acceptance：
 - all planned paths marked CREATE／MATERIALIZE；
 - all named commits resolve；
 - ownership matrix與per-file tables一致；
-- planning前後skills manifest empty diff；
+- planning前後semantic skills manifest empty diff，exact `.DS_Store` metadata row另驗；
 - stage-scoped skills allowlist、M2／M3／M5 tasks與single-final-cutover順序一致；
 - live before／after fingerprint empty diff；
 - gitleaks PASS；
@@ -1201,15 +1225,15 @@ Planning artifact acceptance：
 Revised planning commit：
 
 ```text
-docs(workflow): 修訂三家 Matt 薄型流程計畫
+docs(workflow): 調和三家切換阻塞條件
 ```
 
 Commit hash與本文件SHA-256由post-commit external evidence回報；不可把commit hash寫進其自身內容造成self-reference。
 
 ## 19. Unique next gate
 
-完成本 planning commit後立即停止。唯一下一 gate是：
+完成本 amendment candidate RED→GREEN、S4–S6與fresh evidence後立即停止。唯一下一 gate是：
 
-> **使用者明示授權執行三 host ownership split + Matt thin workflow的 staged candidate implementation；包含原M2／M3 candidate／M5，不含live cutover、plugin實際卸載或SaaS probe。**
+> **使用者另行明示授權 coordinated live cutover與三家 Superpowers實際退休；maintenance window後的fixed 6-run canary仍需獨立明示授權。**
 
-Planning authorization不得解讀為implementation、live handoff、plugin mutation、SaaS或remote mutation授權。
+本 amendment authorization不得解讀為live handoff、plugin mutation、SaaS或remote mutation授權。

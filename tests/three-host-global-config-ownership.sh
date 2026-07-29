@@ -9,6 +9,29 @@ fail() {
   exit 1
 }
 
+skills_manifests_match() {
+  local before="$1" after="$2" expected_metadata="$3" label="$4"
+  local semantic_before="$scratch/$label-before.tsv"
+  local semantic_after="$scratch/$label-after.tsv"
+  local before_metadata after_metadata before_count after_count
+
+  awk -F '	' 'NR == 1 || $1 != ".DS_Store"' "$before" > "$semantic_before"
+  awk -F '	' 'NR == 1 || $1 != ".DS_Store"' "$after" > "$semantic_after"
+  cmp -s "$semantic_before" "$semantic_after" || return 1
+
+  before_metadata="$(awk -F '	' '$1 == ".DS_Store"' "$before")"
+  after_metadata="$(awk -F '	' '$1 == ".DS_Store"' "$after")"
+  before_count="$(awk -F '	' '$1 == ".DS_Store" { count++ } END { print count + 0 }' "$before")"
+  after_count="$(awk -F '	' '$1 == ".DS_Store" { count++ } END { print count + 0 }' "$after")"
+  if [ -n "$expected_metadata" ]; then
+    [ "$before_count" -eq 1 ] && [ "$after_count" -eq 1 ] &&
+      [ "$after_metadata" = "$expected_metadata" ] || return 1
+  else
+    [ "$before_count" -eq 0 ] && [ "$after_count" -eq 0 ] &&
+      [ -z "$before_metadata" ] && [ -z "$after_metadata" ] || return 1
+  fi
+}
+
 [ -f "$PLAN" ] || fail "ownership plan missing: $PLAN"
 rg -Fq '只將 exact relative path `.DS_Store` 從 semantic skills payload gate 分離' "$PLAN" ||
   fail 'Plan 48 does not separate only exact .DS_Store from semantic skills payload'
@@ -18,6 +41,14 @@ rg -Fq '不得把 pre-cutover `UNAVAILABLE` 改寫成 `PASS`' "$PLAN" ||
   fail 'Plan 48 rewrites unavailable runtime evidence'
 rg -Fq 'runtime no-load只在cutover transaction內逐host驗證' "$PLAN" ||
   fail 'Plan 48 does not defer runtime no-load to the cutover transaction'
+rg -Fq '依Claude → Codex → Copilot固定順序' "$PLAN" ||
+  fail 'Plan 48 does not preserve the fixed host order'
+rg -Fq '確認Superpowers absent為PASS後才可進下一host' "$PLAN" ||
+  fail 'Plan 48 advances before per-host plugin absence passes'
+rg -Fq '任一host FAIL／UNAVAILABLE立即停止後續writes／probes並執行coordinated rollback' "$PLAN" ||
+  fail 'Plan 48 does not fail fast into coordinated rollback'
+rg -Fq 'fixed 6-run canary仍需獨立明示授權' "$PLAN" ||
+  fail 'Plan 48 does not keep SaaS canaries separately authorized'
 
 if rg -q \
   'TARGETS=|\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md|refresh_claude_stamp|assemble_body|render_target' \
@@ -137,9 +168,41 @@ fi
 
 skills_before="${OWNERSHIP_SKILLS_BEFORE:-/private/tmp/three-host-global-config-split-impl-skills-before.tsv}"
 skills_after="${OWNERSHIP_SKILLS_AFTER:-/private/tmp/three-host-global-config-split-ownership-after.tsv}"
+skills_metadata="${OWNERSHIP_DS_STORE_METADATA:-}"
 [ -f "$skills_before" ] || fail "ownership skills baseline missing: $skills_before"
 [ -f "$skills_after" ] || fail "ownership skills after manifest missing: $skills_after"
-diff -u "$skills_before" "$skills_after" >/dev/null || fail 'ownership skills manifest changed'
+skills_manifests_match "$skills_before" "$skills_after" "$skills_metadata" candidate ||
+  fail 'ownership semantic skills manifest changed'
+
+accepted_metadata=$'.DS_Store\tfile\tabac08d6445bcc8848a10a5e0e2a406629d2dea627e500c8e6006f720a647606\t57348\t644\t-'
+fixture_before="$scratch/skills-before.tsv"
+fixture_after="$scratch/skills-after.tsv"
+fixture_drift="$scratch/skills-drift.tsv"
+printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tstable\t1\t644\t-\n' \
+  $'.DS_Store\tfile\tfe6954846fbf416c1071b408009723b4c65773d4a2ebed156e42ec05a7f293c0\t57348\t644\t-' \
+  > "$fixture_before"
+printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tstable\t1\t644\t-\n' \
+  "$accepted_metadata" > "$fixture_after"
+skills_manifests_match "$fixture_before" "$fixture_after" "$accepted_metadata" accepted ||
+  fail 'exact .DS_Store reconciliation did not pass'
+
+printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tstable\t1\t644\t-\n' \
+  $'.DS_Store\tfile\tchanged\t57348\t644\t-' > "$fixture_drift"
+if skills_manifests_match "$fixture_before" "$fixture_drift" "$accepted_metadata" metadata-drift; then
+  fail 'changed .DS_Store metadata was accepted'
+fi
+
+printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tstable\t1\t644\t-\nnested/.DS_Store\tfile\tchanged\t1\t644\t-\n' \
+  "$accepted_metadata" > "$fixture_drift"
+if skills_manifests_match "$fixture_before" "$fixture_drift" "$accepted_metadata" nested-drift; then
+  fail 'nested .DS_Store was excluded as a wildcard'
+fi
+
+printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tchanged\t1\t644\t-\n' \
+  "$accepted_metadata" > "$fixture_drift"
+if skills_manifests_match "$fixture_before" "$fixture_drift" "$accepted_metadata" semantic-drift; then
+  fail 'semantic skills drift was accepted'
+fi
 
 for carrier in \
   "$AGENTS/docs/agents/issue-tracker.md" \
