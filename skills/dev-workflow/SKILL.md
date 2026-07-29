@@ -37,6 +37,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | 把已決內容整理成 spec | `to-spec` |
 | 拆 tracer-bullet tickets | `to-tickets` |
 | 超過單一 session 的決策地圖 | `wayfinder` |
+| session 中斷且重要 context 尚未進 canonical artifact | `handoff` |
 | 需求已清楚且單一 session 可完成（含已核准 spec／ticket） | kernel 的 `implement` adapter；每個 slice 用 `tdd` |
 | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
 | code review | `code-review` |
