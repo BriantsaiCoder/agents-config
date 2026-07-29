@@ -79,7 +79,7 @@ Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
 ## S6 CLOSEOUT
 
 - 只有 [INT-1] 成立才 commit／push／open PR／merge／final closeout；commit／PR 用 zh-TW Conventional Commits。
-- PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger，依 `references/review-triage.md` 等待並處理 bot review；merge 前 CI 綠。
+- PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger，依 `references/review-triage.md` 等待並處理 bot review；Ready PR 後每次 push 跑 `bin/pr-review-gate <PR>` 對 current HEAD 重查至 PASS（[T1-11]）；merge 前 CI 綠。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更同步 current architecture docs。
 - 合併後依 repo policy 清理已合併 branch；不得 force-push main／master。
 

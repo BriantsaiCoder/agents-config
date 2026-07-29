@@ -2,7 +2,7 @@
 
 # review-triage — bot-review triage 合併規格
 
-> S6 CLOSEOUT 第 3 步引用本檔。合併兩條實戰教訓：異步等待（勿把延遲誤判為「無」）＋ thread-aware 逐條處理。
+> S6 CLOSEOUT 的 Bot-review triage 引用本檔。合併兩條實戰教訓：異步等待（勿把延遲誤判為「無」）＋ thread-aware 逐條處理。
 > 讀者是 AI 模型。squash merge 前 MUST 走完本檔全流程，四態皆 PASS 才允許 merge。
 
 ## 為何存在（不讀就會踩的雷）
@@ -20,9 +20,9 @@
 
 1. **等待異步 review**
    - 優先以 reviewer slug `copilot-pull-request-reviewer` 判定 Copilot review 是否已提交。
-   - 查法：`gh pr view <n> --json reviews` 或 `gh api repos/{owner}/{repo}/pulls/<n>/comments`。
+   - 開 Ready PR 後保持 task active；每次 push 都使前次結果失效，跑 `~/.agents/bin/pr-review-gate <n>` 對 current HEAD 重查。repo ruleset 無法啟用 Review new pushes 時，helper 會用 REST 自動 request / re-request。
    - 首查為空 → **等 2–3 分鐘重查**，勿立即斷言「無 review」。重查仍空且已逾合理視窗才記為真無。
-   - slug 不可用（權限 / API 差異）時，MUST 記錄 fallback 判定依據（改以 REST comments 端點或人工核對），不得靜默降級。
+   - slug／API 不可用時 MUST 標 UNAVAILABLE 並附 probe 證據；不得把「無 review」或人工目視降級成 PASS。
 
 2. **thread-aware 逐條讀**
    - 逐個 review thread / comment 讀，**不跳讀、不抽樣**。每條標一結論：
@@ -36,8 +36,8 @@
    - 例：改 `ReadBig5File` 的 deref-before-null 時，枚舉 6 個消費端全查，不止 bot 點名的 4 個。
 
 ### EXIT
-- Copilot review 已提交並逐條處理（或已逾等待視窗且以 fallback 依據記為真無）。
-- 0 條未處理 actionable findings：actionable 者全 resolved，pushback 者全附技術理由回覆。
+- `pr-review-gate` 對 current PR head 回 PASS：latest Copilot review `commit_id == head.sha`、requested Copilot reviewer 已清除、unresolved Copilot review threads 為 0、CI 全綠、PR 為 open / ready / mergeable。
+- 0 條未處理 actionable findings：actionable 者全 resolved，pushback 者全附技術理由回覆並 resolve。
 - 改共用函式時，`deps-check` / grep 全 caller 核對完成且無殘留反模式。
 
 ### FAILURE
@@ -47,7 +47,7 @@
 ## 常用查詢
 
 ```bash
+~/.agents/bin/pr-review-gate <n>                   # current HEAD 終態；必要時自動 request / re-request
 gh pr checks <n>                                   # CI 綠燈（必要非充分）
-gh pr view <n> --json reviews                      # bot review state（COMMENTED 不計入 checks）
-gh api repos/{owner}/{repo}/pulls/<n>/comments     # 逐條 review comment（thread 級）
+gh api repos/{owner}/{repo}/pulls/<n>/comments     # 逐條 review comment
 ```
