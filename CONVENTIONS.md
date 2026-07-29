@@ -4,7 +4,7 @@
 
 ## 1. 檔頭 metadata（HTML comment，不佔注入 token 預算）
 
-`skills/**` 的 metadata 依各 skill contract；host global config 的 metadata 由 `~/.claude`、`~/.codex`、`~/.copilot` 各自管理。`core/`、`hosts/`、`dist/` 的舊 generated metadata 只作 historical／rollback evidence，不代表 active ownership。
+`skills/**` 的 metadata 依各 skill contract；host global config 的 metadata 由 `~/.claude`、`~/.codex`、`~/.copilot` 各自管理。`core/` 與已退役的 `attic/hosts/`、`attic/dist/` 的舊 generated metadata 只作 historical／rollback evidence，不代表 active ownership。
 
 ## 2. 規則五要素格式
 
