@@ -1,0 +1,277 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
+SCHEMA="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/26-phase4-v2-result-schema.json"
+RUNTIME_ROOT=/private/tmp/phase4-canary-v2
+CLAUDE=/Users/pochientsai/.local/bin/claude
+CODEX=/Users/pochientsai/.nvm/versions/node/v24.15.0/bin/codex
+COPILOT=/Users/pochientsai/.local/bin/copilot
+
+die() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+json_array() {
+  jq -cn --args '$ARGS.positional' -- "$@"
+}
+
+usage() {
+  printf 'usage: %s plan CASE_FILE OUTPUT_FILE\n' "$0" >&2
+  exit 2
+}
+
+plan() {
+  local case_file=$1 output=$2
+  [ -f "$case_file" ] || die "missing case: $case_file"
+  [ ! -e "$output" ] || die "refusing to overwrite plan: $output"
+  [ -f "$SCHEMA" ] || die "missing result schema: $SCHEMA"
+  jq -e '
+    .route_contract.version == 2 and
+    (.host | IN("claude","codex","copilot")) and
+    (.arm | IN("A","B")) and
+    (.forbidden_read_prefixes | type == "array" and length > 0) and
+    (.carrier_roles | type == "array") and
+    ((.carrier_roles | length) == .nested_saas_runs) and
+    .retry_budget == 0
+  ' "$case_file" >/dev/null || die "invalid v2 case"
+
+  local id host arm class fixture model effort prompt route_contract effective_prompt
+  local runtime home tmp artifacts carrier_mode schema_json command_json carrier_json path_json event_json
+  local environment_json credentials_json isolation_prefixes_json requires_outer_unsandboxed=false sandbox
+  id=$(jq -r '.id' "$case_file")
+  host=$(jq -r '.host' "$case_file")
+  arm=$(jq -r '.arm' "$case_file")
+  class=$(jq -r '.class' "$case_file")
+  fixture=$(jq -r '.fixture' "$case_file")
+  model=$(jq -r '.model' "$case_file")
+  effort=$(jq -r '.effort' "$case_file")
+  prompt=$(jq -r '.prompt' "$case_file")
+  route_contract=$(jq -c '.route_contract' "$case_file")
+  carrier_mode=$(jq -r '.carrier_mode' "$case_file")
+  isolation_prefixes_json=$(jq -c '.forbidden_read_prefixes' "$case_file")
+  schema_json=$(jq -c 'del(."$schema")' "$SCHEMA")
+  runtime="$RUNTIME_ROOT/runtime/$host/$arm"
+  home="$runtime/home"
+  tmp="$runtime/tmp"
+  artifacts="$RUNTIME_ROOT/runs/$id/artifacts"
+  carrier_json='[]'
+  path_json='[]'
+  event_json='[]'
+
+  effective_prompt="${prompt}
+
+Phase 4 v2 route accounting contract: ${route_contract}
+Return only the JSON result contract. Record substantive task routes in selected_workflows. Record only allowlisted router, bootstrap, dependency, or verification helpers in supporting_workflows. Emit exactly one ordered event for every selected or supporting workflow actually invoked; do not infer or invent an invocation."
+
+  case "$host" in
+    claude)
+      [ -x "$CLAUDE" ] || die "Claude executable unavailable: $CLAUDE"
+      local config tools disallowed
+      config="$runtime/config"
+      tools='Bash,Edit,Read,Write,Glob,Grep,Skill'
+      if [ "$class" = missing-evidence ]; then
+        tools=''
+      elif [ "$class" = review ]; then
+        tools="$tools,Agent"
+      fi
+      disallowed='Read(/Users/pochientsai/.agents/**),Glob(/Users/pochientsai/.agents/**),Grep(/Users/pochientsai/.agents/**),Edit(/Users/pochientsai/.agents/**),Write(/Users/pochientsai/.agents/**),Read(/Users/pochientsai/.claude/**),Read(/Users/pochientsai/.codex/**),Read(/Users/pochientsai/.copilot/**),Bash(* /Users/pochientsai/.agents/*),Bash(* /Users/pochientsai/.claude/*),Bash(* /Users/pochientsai/.codex/*),Bash(* /Users/pochientsai/.copilot/*),WebFetch,WebSearch,Bash(curl *),Bash(wget *),Bash(gh *),Bash(git push *)'
+      local -a command=(
+        "$CLAUDE" -p "$effective_prompt"
+        --model "$model"
+        --effort "$effort"
+        --permission-mode auto
+        --output-format stream-json
+        --verbose
+        --json-schema "$schema_json"
+        --tools "$tools"
+      )
+      if [ -n "$tools" ]; then
+        command+=(--allowed-tools "$tools")
+      fi
+      command+=(
+        --disallowed-tools "$disallowed"
+        --strict-mcp-config
+        --mcp-config '{"mcpServers":{}}'
+        --settings "$config/settings.json"
+        --setting-sources user
+        --no-chrome
+        --no-session-persistence
+        --prompt-suggestions false
+        --include-hook-events
+      )
+      if [ "$class" = review ]; then
+        command+=(--forward-subagent-text)
+      fi
+      command_json=$(json_array "${command[@]}")
+      environment_json=$(jq -cn \
+        --arg HOME "$home" \
+        --arg CLAUDE_CONFIG_DIR "$config" \
+        --arg TMPDIR "$tmp" \
+        '{HOME:$HOME,CLAUDE_CONFIG_DIR:$CLAUDE_CONFIG_DIR,TMPDIR:$TMPDIR}')
+      credentials_json='["CLAUDE_CODE_OAUTH_TOKEN"]'
+      ;;
+    codex)
+      [ -x "$CODEX" ] || die "Codex executable unavailable: $CODEX"
+      requires_outer_unsandboxed=true
+      sandbox=$(jq -r 'if (.expected_file_mutations | length) > 0 then "workspace-write" else "read-only" end' "$case_file")
+      local role index=0 carrier_path carrier_prompt carrier_command_json
+      while IFS= read -r role; do
+        index=$((index + 1))
+        carrier_path="$artifacts/carrier-$index-$role.txt"
+        carrier_prompt="Read-only ${role} review carrier for ${fixture}. Do not modify files, use network, delegate, or claim CI evidence. Return findings with file and line evidence; return NO_FINDINGS when none."
+        local -a carrier_command=(
+          "$CODEX" exec
+          --json
+          --ephemeral
+          --strict-config
+          -C "$fixture"
+          -m "$model"
+          -s read-only
+          -c 'approval_policy="never"'
+          --disable multi_agent
+          -o "$carrier_path"
+          "$carrier_prompt"
+        )
+        carrier_command_json=$(json_array "${carrier_command[@]}")
+        carrier_json=$(jq -cn \
+          --argjson commands "$carrier_json" \
+          --argjson command "$carrier_command_json" \
+          '$commands + [$command]')
+        path_json=$(jq -cn \
+          --argjson paths "$path_json" \
+          --arg path "$carrier_path" \
+          '$paths + [$path]')
+        event_json=$(jq -cn \
+          --argjson events "$event_json" \
+          --arg role "$role" \
+          '$events + [{
+            type:"phase4.external_carrier",
+            role:$role,
+            emit_after:"successful_carrier_exit"
+          }]')
+        effective_prompt="${effective_prompt}
+Review carrier ${role} output path: ${carrier_path}. Re-verify its findings against the fixture before the final result."
+      done < <(jq -r '.carrier_roles[]' "$case_file")
+      local -a command=(
+        "$CODEX" exec
+        --json
+        --ephemeral
+        --strict-config
+        -C "$fixture"
+        -m "$model"
+        -s "$sandbox"
+        -c 'approval_policy="never"'
+        --output-schema "$SCHEMA"
+        --disable multi_agent
+        -o "$artifacts/last-message.json"
+        "$effective_prompt"
+      )
+      command_json=$(json_array "${command[@]}")
+      environment_json=$(jq -cn \
+        --arg HOME "$home" \
+        --arg CODEX_HOME "$home/.codex" \
+        --arg TMPDIR "$tmp" \
+        '{HOME:$HOME,CODEX_HOME:$CODEX_HOME,TMPDIR:$TMPDIR}')
+      credentials_json='[]'
+      ;;
+    copilot)
+      [ -x "$COPILOT" ] || die "Copilot executable unavailable: $COPILOT"
+      local logs="$runtime/logs"
+      effective_prompt="${effective_prompt}
+
+Phase 4 v2 result schema: ${schema_json}
+Return exactly one JSON object matching this schema. Do not wrap it in Markdown fences or add prose."
+      local -a command=(
+        "$COPILOT"
+        -C "$fixture"
+        -p "$effective_prompt"
+        --output-format json
+        --model "$model"
+        --effort "$effort"
+        --mode interactive
+        --deny-tool=url
+        --deny-tool='shell(curl)'
+        --deny-tool='shell(wget)'
+        --deny-tool='shell(gh)'
+        --deny-tool='shell(git push)'
+        --deny-tool='shell(git fetch)'
+        --deny-tool='shell(git pull)'
+        --deny-tool='shell(git clone)'
+        --excluded-tools=web_fetch
+        --disable-builtin-mcps
+        --no-remote
+        --no-remote-export
+        --no-auto-update
+        --no-ask-user
+        --no-bash-env
+        --stream off
+        --log-level none
+        --log-dir "$logs"
+        '--secret-env-vars=COPILOT_GITHUB_TOKEN,GH_TOKEN,GITHUB_TOKEN,CLAUDE_CODE_OAUTH_TOKEN'
+      )
+      if [ "$class" = missing-evidence ]; then
+        command+=(--available-tools=)
+      else
+        command+=(--allow-all-tools)
+        if [ "$class" != review ]; then
+          command+=(--excluded-tools=task --excluded-tools=agent --excluded-tools=spawn_agent)
+        fi
+      fi
+      command_json=$(json_array "${command[@]}")
+      environment_json=$(jq -cn \
+        --arg HOME "$home" \
+        --arg TMPDIR "$tmp" \
+        '{HOME:$HOME,TMPDIR:$TMPDIR}')
+      credentials_json='["COPILOT_GITHUB_TOKEN"]'
+      ;;
+  esac
+
+  jq -n \
+    --argjson version 2 \
+    --arg id "$id" \
+    --arg host "$host" \
+    --arg arm "$arm" \
+    --arg class "$class" \
+    --argjson stage "$(jq '.stage' "$case_file")" \
+    --arg carrier_mode "$carrier_mode" \
+    --argjson requires_outer_unsandboxed "$requires_outer_unsandboxed" \
+    --arg schema_path "$SCHEMA" \
+    --argjson environment "$environment_json" \
+    --argjson credential_env "$credentials_json" \
+    --argjson forbidden_read_prefixes "$isolation_prefixes_json" \
+    --argjson command "$command_json" \
+    --argjson carrier_commands "$carrier_json" \
+    --argjson carrier_result_paths "$path_json" \
+    --argjson carrier_event_templates "$event_json" \
+    --argjson budget "$(jq '{top_level_saas_runs,nested_saas_runs,retry_budget,timeout_seconds}' "$case_file")" \
+    '{
+      version:$version,
+      id:$id,
+      host:$host,
+      arm:$arm,
+      class:$class,
+      stage:$stage,
+      carrier_mode:$carrier_mode,
+      requires_outer_unsandboxed:$requires_outer_unsandboxed,
+      environment:$environment,
+      credential_env:$credential_env,
+      isolation:{
+        network:false,
+        live_config_mutation:false,
+        deny_read_prefixes:$forbidden_read_prefixes
+      },
+      schema_path:$schema_path,
+      command:$command,
+      carrier_commands:$carrier_commands,
+      carrier_result_paths:$carrier_result_paths,
+      carrier_event_templates:$carrier_event_templates,
+      budget:$budget
+    }' > "$output"
+}
+
+case ${1:-} in
+  plan) [ "$#" -eq 3 ] || usage; plan "$2" "$3" ;;
+  *) usage ;;
+esac

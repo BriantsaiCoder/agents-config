@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "scope": "phase4-v2-stage1-reauthorized-fresh-rerun",
+  "temporary": true,
+  "issued_from_candidate_head": "f39d8f7c407a6fc8d15815293947e8ac806c601c",
+  "expires_after": "phase4-v2-stage1-reauthorized-fresh-rerun-closeout",
+  "exceptions": [
+    {
+      "relative_path": "proposals/2026-07-28-skill-writing-audit/_population.md",
+      "absolute_path": "/Users/pochientsai/.agents/proposals/2026-07-28-skill-writing-audit/_population.md",
+      "git_status_prefix": "??",
+      "sha256": "db3dc99b88e6ffc44ba931458cae5a51e3eb6fa47122cd2ab34814263dedff17",
+      "size_bytes": 2348,
+      "match_policy": "present-and-exact"
+    }
+  ],
+  "on_mismatch": "fail-before-saas",
+  "on_additional_drift": "fail-before-saas",
+  "prohibitions": [
+    "do-not-modify-or-move-target",
+    "no-wildcards",
+    "no-directory-wide-exclusion",
+    "no-stage2-use"
+  ]
+}

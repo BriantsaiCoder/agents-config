@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
+BASE_A=678ab6d
+BACKUP_A=/Users/pochientsai/.agents-deployment-backups/20260727-193338-matt-v2
+BACKUP_B=/Users/pochientsai/.agents-deployment-backups/20260727-205915-matt-v4
+CLAUDE_SUPERPOWERS=/Users/pochientsai/.claude/plugins/cache/superpowers-marketplace/superpowers/6.2.0
+CODEX_SUPERPOWERS=/Users/pochientsai/.codex/plugins/cache/superpowers-dev/superpowers/6.2.0
+COPILOT_SUPERPOWERS=/Users/pochientsai/.copilot/installed-plugins/superpowers-marketplace/superpowers
+
+die() {
+  printf 'FAIL: %s\n' "$*" >&2
+  exit 1
+}
+
+require_file() {
+  [ -f "$1" ] || die "missing file: $1"
+}
+
+snapshot() {
+  local source=$1 output=$2
+  [ -d "$source" ] || die "snapshot source is not a directory: $source"
+  (
+    cd "$source"
+    find . -type f -not -path './.git/*' -print0 |
+      while IFS= read -r -d '' file; do
+        printf '%s\t%s\n' "$(shasum -a 256 "$file" | awk '{print $1}')" "${file#./}"
+      done |
+      LC_ALL=C sort
+  ) > "$output"
+}
+
+validate_matrix() {
+  local matrix=$1
+  require_file "$matrix"
+  jq -e -s '
+    length == 42 and
+    ([.[].id] | unique | length) == 42 and
+    ([.[].run_order] | sort) == [range(1;43)] and
+    ([.[] | .host] | group_by(.) | map(length) | sort) == [14,14,14] and
+    ([.[] | [.host,.arm,.class] | @tsv] | unique | length) == 42 and
+    all(.[];
+      (.host | IN("claude","codex","copilot")) and
+      (.arm | IN("A","B")) and
+      (.class | IN("feature","bugfix","diagnosis","review","architecture","closeout","missing-evidence")) and
+      (.prompt | type == "string" and length > 80) and
+      (.intended_workflows | type == "array" and length > 0) and
+      (.expected_behavior | type == "string" and length > 0) and
+      (.allowed_tools | type == "array") and
+      (.allow_subagent | type == "boolean") and
+      (.nested_saas_runs | type == "number" and . >= 0) and
+      (.expected_file_mutations | type == "array") and
+      (.acceptance_criteria | type == "array" and length > 0) and
+      (.fixture | type == "string" and startswith("/private/tmp/")) and
+      (.model | type == "string" and length > 0) and
+      (.effort | type == "string" and length > 0) and
+      (.permission | type == "string" and length > 0) and
+      (.timeout_seconds | type == "number" and . > 0) and
+      .retry_budget == 0 and
+      .top_level_saas_runs == 1 and
+      ((.class == "review") == .allow_subagent) and
+      (if .class == "review" then
+         (.nested_saas_runs == (if .arm == "A" then 1 else 2 end))
+       else .nested_saas_runs == 0 end)
+    ) and
+    ([.[].top_level_saas_runs] | add) == 42 and
+    ([.[].nested_saas_runs] | add) == 9
+  ' "$matrix" >/dev/null || die "matrix contract failed"
+  if jq -e -s 'any(.[]; has("route_contract"))' "$matrix" >/dev/null; then
+    jq -e -s '
+      all(.[];
+        .route_contract.version == 2 and
+        (.route_contract.selected_workflows | type == "array" and length > 0) and
+        (.route_contract.allowed_supporting_workflows | type == "array") and
+        (.route_contract.forbidden_workflow_prefixes | type == "array") and
+        (.forbidden_read_prefixes | type == "array" and length > 0) and
+        all(.forbidden_read_prefixes[]; startswith("/Users/pochientsai/")) and
+        ((.route_contract.selected_workflows | sort) == (.intended_workflows | sort)) and
+        ((.route_contract.selected_workflows + .route_contract.allowed_supporting_workflows)
+          | length == (unique | length)) and
+        (.stage | IN(1,2)) and
+        (.fixture | startswith("/private/tmp/phase4-canary-v2/runs/")) and
+        (. as $row | $row.prompt | contains($row.fixture)) and
+        (.prompt | contains("/private/tmp/phase4-canary/runs/") | not) and
+        (.carrier_mode ==
+          (if .host == "claude" then "builtin-agent"
+           elif .host == "codex" then "external-exec"
+           else "builtin-task" end)) and
+        (.carrier_roles | type == "array") and
+        ((.carrier_roles | length) == .nested_saas_runs) and
+        (if .class == "review" then
+           .carrier_roles == (if .arm == "A" then ["review"] else ["standards","spec"] end) and
+           (if .host == "codex" then
+              (.allowed_tools | index("subagent") == null) and
+              (.prompt | contains("external exec"))
+            else .allowed_tools | index("subagent") != null end)
+         else .carrier_roles == [] end)
+      ) and
+      ([.[] | select(.stage == 1)] | length) == 6 and
+      all(.[] | select(.stage == 1); .class == "architecture" and .nested_saas_runs == 0) and
+      ([.[] | select(.stage == 1) | .top_level_saas_runs] | add) == 6 and
+      ([.[] | select(.stage == 2) | .top_level_saas_runs] | add) == 36 and
+      ([.[] | select(.stage == 2) | .nested_saas_runs] | add) == 9 and
+      ([.[] | select(.stage == 1) | .host] | group_by(.) | map(length) | sort) == [2,2,2] and
+      ([sort_by(.host) | group_by(.host)[] |
+        (map(.top_level_saas_runs + .nested_saas_runs) | add)] | sort) == [17,17,17]
+    ' "$matrix" >/dev/null || die "v2 matrix contract failed"
+  fi
+  printf 'PASS: 42 top-level + 9 review-carrier = 51 SaaS runs\n'
+}
+
+extract_copilot_result() (
+  local events=$1 output=$2 tmp candidates candidate parsed count
+  require_file "$events"
+  [ ! -e "$output" ] || die "refusing to overwrite result: $output"
+  umask 077
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  candidates="$tmp/candidates.json"
+  candidate="$tmp/candidate.txt"
+  parsed="$tmp/result.json"
+
+  jq -s '
+    [
+      .[] |
+      select(
+        .type == "assistant.message" and
+        (.data.content | type == "string" and length > 0) and
+        ((.data.toolRequests // []) | type == "array" and length == 0)
+      ) |
+      .data.content
+    ]
+  ' "$events" > "$candidates" 2>/dev/null ||
+    die "Copilot event stream is not valid JSONL"
+  count=$(jq -r 'length' "$candidates")
+  [ "$count" -eq 1 ] ||
+    die "Copilot terminal result candidate count differs from 1"
+  jq -r '.[0]' "$candidates" > "$candidate" 2>/dev/null ||
+    die "Copilot terminal result extraction failed"
+  jq -e 'if type == "object" then . else error("not an object") end' \
+    "$candidate" > "$parsed" 2>/dev/null ||
+    die "Copilot terminal result is not a JSON object"
+  mv "$parsed" "$output"
+  printf 'PASS: Copilot result extracted\n'
+)
+
+verify_route() {
+  local case_file=$1 result=$2 version
+  version=$(jq -r '.route_contract.version // 1' "$case_file")
+  case "$version" in
+    1)
+      local intended actual
+      intended=$(jq -c '.intended_workflows | sort' "$case_file")
+      actual=$(jq -c '.actual_workflows | sort' "$result")
+      [ "$intended" = "$actual" ] || die "actual route differs from intended route"
+      ;;
+    2)
+      jq -e --slurpfile case "$case_file" '
+        $case[0].route_contract as $contract |
+        .route_telemetry as $telemetry |
+        ($telemetry.selected_workflows + $telemetry.supporting_workflows) as $all |
+        ($contract.forbidden_workflow_prefixes // []) as $forbidden |
+        $telemetry.version == 2 and
+        ($telemetry.selected_workflows | type == "array") and
+        ($telemetry.supporting_workflows | type == "array") and
+        ($telemetry.events | type == "array") and
+        (($telemetry.selected_workflows | sort) == ($contract.selected_workflows | sort)) and
+        all($telemetry.supporting_workflows[];
+          . as $workflow | $contract.allowed_supporting_workflows | index($workflow) != null) and
+        (($all | length) == ($all | unique | length)) and
+        all($all[];
+          . as $workflow |
+          all($forbidden[]; . as $prefix | $workflow | startswith($prefix) | not)) and
+        ($telemetry.events | map(.sequence)) == [range(1; ($telemetry.events | length) + 1)] and
+        all($telemetry.events[];
+          (.role | IN("selected","supporting")) and
+          (.source | IN("skill-tool","skill-file","injected-policy")) and
+          (.workflow | type == "string" and length > 0)) and
+        ([ $telemetry.events[] | select(.role == "selected") | .workflow ] | sort)
+          == ($telemetry.selected_workflows | sort) and
+        ([ $telemetry.events[] | select(.role == "supporting") | .workflow ] | sort)
+          == ($telemetry.supporting_workflows | sort) and
+        (($telemetry.events | map([.role,.workflow]) | unique | length)
+          == ($telemetry.events | length))
+      ' "$result" >/dev/null || die "v2 route telemetry contract failed"
+      ;;
+    *)
+      die "unsupported route contract version: $version"
+      ;;
+  esac
+}
+
+verify_result() {
+  local case_file=$1 result=$2 events=$3 before=$4 after=$5 inventory=$6 expected_fp=$7 actual_fp=$8
+  for file in "$case_file" "$result" "$events" "$before" "$after" "$inventory" "$expected_fp" "$actual_fp"; do
+    require_file "$file"
+  done
+
+  local completed evidence retry_count tool_count
+  verify_route "$case_file" "$result"
+
+  completed=$(jq -r '.completed == true' "$result")
+  evidence=$(jq -r '.evidence | length' "$result")
+  if [ "$(jq -r '.requires_evidence // true' "$case_file")" = true ] &&
+     [ "$completed" = true ] && [ "$evidence" -eq 0 ]; then
+    die "completion has no evidence"
+  fi
+  if [ "$(jq -r '.class' "$case_file")" = missing-evidence ] && [ "$completed" = true ]; then
+    die "missing-evidence probe was incorrectly declared complete"
+  fi
+
+  local network_count forbidden_read_count subagent_count expected_subagents
+  tool_count=$(jq -s '
+    [.. | objects |
+      select(((.type? // "") | test("tool_use|tool\\.execution|command_execution|function_call|computer_call"; "i")))]
+    | length
+  ' "$events")
+  if [ "$tool_count" -gt 0 ] && [ "$(jq '.allowed_tools | length' "$case_file")" -eq 0 ]; then
+    die "tool call observed while no tools are allowed"
+  fi
+  network_count=$(jq -s '
+    [.. | objects |
+      (.name? // .toolName? // .tool_name? // .item.name? // "") |
+      strings |
+      select(test("web|fetch|browser|github|http|mcp"; "i"))]
+    | length
+  ' "$events")
+  [ "$network_count" -eq 0 ] || die "network-capable tool observed"
+  forbidden_read_count=$(jq -s --slurpfile case "$case_file" '
+    ($case[0].forbidden_read_prefixes // []) as $prefixes |
+    [.. | objects |
+      select(((.type? // "") |
+        test("tool_use|tool\\.execution|command_execution|function_call|computer_call"; "i"))) |
+      tostring as $event |
+      select(any($prefixes[]; . as $prefix | $event | contains($prefix)))]
+    | length
+  ' "$events")
+  [ "$forbidden_read_count" -eq 0 ] || die "tool call referenced a forbidden live path"
+
+  subagent_count=$(jq -s '
+    [.. | objects |
+      select(
+        (((.type? // "") | test("subagent|agent\\.started|phase4\\.external_carrier"; "i"))) or
+        (((.name? // .toolName? // .tool_name? // .item.name? // "") | test("^(task|agent|spawn_agent)$"; "i")))
+      )]
+    | length
+  ' "$events")
+  expected_subagents=$(jq -r '.nested_saas_runs // 0' "$case_file")
+  [ "$subagent_count" -eq "$expected_subagents" ] ||
+    die "review carrier count differs from budget"
+
+  retry_count=$(jq -s '
+    [.. | objects |
+      select(
+        (((.type? // "") | test("retry"; "i"))) or
+        ((.retry_count? // 0) > 0) or
+        ((.retryCount? // 0) > 0)
+      )]
+    | length
+  ' "$events")
+  [ "$retry_count" -le "$(jq -r '.retry_budget' "$case_file")" ] || die "retry budget exceeded"
+
+  local changed expected
+  changed=$(mktemp)
+  expected=$(mktemp)
+  trap 'rm -f "$changed" "$expected"' RETURN
+  comm -3 "$before" "$after" | sed $'s/^[\t ]*//' | cut -f2- | LC_ALL=C sort -u > "$changed"
+  jq -r '.expected_file_mutations[]' "$case_file" | LC_ALL=C sort -u > "$expected"
+  cmp -s "$changed" "$expected" || die "file mutation set differs from expectation"
+
+  if [ "$(jq -r '.arm' "$case_file")" = B ]; then
+    [ "$(jq -r '.superpowers_loaded' "$inventory")" = false ] ||
+      die "Arm B still loads Superpowers"
+    [ "$(jq '.legacy_wrappers | length' "$inventory")" -eq 0 ] ||
+      die "Arm B still exposes legacy wrappers"
+    jq -e 'all(.skills[];
+      (startswith("superpowers:") or
+       IN("mp-diagnose","mp-grill-with-docs","mp-improve-codebase-architecture","mp-tdd")) | not)' \
+      "$inventory" >/dev/null || die "Arm B inventory has forbidden workflow"
+    if [ "$(jq -r '.route_contract.version // 1' "$case_file")" -eq 2 ]; then
+      jq -e '
+        [.route_telemetry.selected_workflows[], .route_telemetry.supporting_workflows[]] |
+        all(.[]; (startswith("superpowers:") or startswith("mp-")) | not)
+      ' "$result" >/dev/null || die "Arm B executed a forbidden workflow"
+    else
+      jq -e '.actual_workflows | all(.[]; (startswith("superpowers:") or startswith("mp-")) | not)' \
+        "$result" >/dev/null || die "Arm B executed a forbidden workflow"
+    fi
+  fi
+
+  cmp -s "$expected_fp" "$actual_fp" || die "rollback fingerprint mismatch"
+  printf 'PASS: result contract\n'
+}
+
+prepare_fixture() {
+  local output=$1
+  [ ! -e "$output" ] || die "fixture target already exists: $output"
+  mkdir -p "$output/scripts" "$output/src" "$output/tests"
+  printf '%s\n' '# Phase 4 deterministic scratch fixture' > "$output/README.md"
+  # Keep fixture shell expressions literal until the generated scripts run.
+  # shellcheck disable=SC2016
+  printf '%s\n' '#!/usr/bin/env bash' 'wc -l < "$1"' > "$output/scripts/count-lines.sh"
+  # shellcheck disable=SC2016
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'ROOT=$(cd "$(dirname "$0")/.." && pwd)' \
+    'actual=$("$ROOT/scripts/count-lines.sh" <(printf no-newline))' \
+    '[ "$actual" = 1 ]' > "$output/tests/count-lines.sh"
+  # shellcheck disable=SC2016
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'parse_port() {' \
+    '  case ${1:-} in (*[!0-9]*) printf "invalid\\n";; (*) printf "%s\\n" "$1";; esac' \
+    '}' > "$output/src/import.sh"
+  chmod +x "$output/scripts/count-lines.sh" "$output/tests/count-lines.sh"
+  git -C "$output" init -q -b main
+  git -C "$output" add README.md scripts src tests
+  GIT_AUTHOR_DATE=2026-07-27T12:00:00Z GIT_COMMITTER_DATE=2026-07-27T12:00:00Z \
+    git -C "$output" -c user.name='Phase 4 Canary' -c user.email='canary@example.invalid' \
+      commit -q -m 'test: 建立固定 canary fixture'
+  git -C "$output" rev-parse HEAD
+}
+
+prepare_arms() {
+  local output=$1
+  [ ! -e "$output" ] || die "arm target already exists: $output"
+  for backup in "$BACKUP_A" "$BACKUP_B"; do
+    require_file "$backup/AGENTS.md"
+    require_file "$backup/CLAUDE.md"
+    require_file "$backup/copilot-instructions.md"
+  done
+  for plugin in "$CLAUDE_SUPERPOWERS" "$CODEX_SUPERPOWERS" "$COPILOT_SUPERPOWERS"; do
+    [ -d "$plugin/skills" ] || die "Superpowers payload missing: $plugin"
+  done
+
+  mkdir -p "$output/arm-a/home/.agents" "$output/arm-b/home/.agents"
+  git -C "$ROOT" archive "$BASE_A" | tar -x -C "$output/arm-a/home/.agents"
+  git -C "$ROOT" archive HEAD | tar -x -C "$output/arm-b/home/.agents"
+  for arm in a b; do
+    mkdir -p "$output/arm-$arm/home/.codex" "$output/arm-$arm/home/.claude" "$output/arm-$arm/home/.copilot"
+  done
+  cp "$BACKUP_A/AGENTS.md" "$output/arm-a/home/.codex/AGENTS.md"
+  cp "$BACKUP_A/CLAUDE.md" "$output/arm-a/home/.claude/CLAUDE.md"
+  cp "$BACKUP_A/copilot-instructions.md" "$output/arm-a/home/.copilot/copilot-instructions.md"
+  cp "$BACKUP_B/AGENTS.md" "$output/arm-b/home/.codex/AGENTS.md"
+  cp "$BACKUP_B/CLAUDE.md" "$output/arm-b/home/.claude/CLAUDE.md"
+  cp "$BACKUP_B/copilot-instructions.md" "$output/arm-b/home/.copilot/copilot-instructions.md"
+  mkdir -p "$output/arm-a/plugin-payloads"
+  ln -s "$CLAUDE_SUPERPOWERS" "$output/arm-a/plugin-payloads/claude-superpowers"
+  ln -s "$CODEX_SUPERPOWERS" "$output/arm-a/plugin-payloads/codex-superpowers"
+  ln -s "$COPILOT_SUPERPOWERS" "$output/arm-a/plugin-payloads/copilot-superpowers"
+
+  mkdir -p "$output/arm-b/home/.agents/attic/phase4-legacy"
+  for skill in mp-diagnose mp-grill-with-docs mp-improve-codebase-architecture mp-tdd; do
+    [ ! -e "$output/arm-b/home/.agents/skills/$skill" ] ||
+      mv "$output/arm-b/home/.agents/skills/$skill" "$output/arm-b/home/.agents/attic/phase4-legacy/"
+  done
+
+  printf '%s\n' \
+    '{"superpowers_loaded":true,"legacy_wrappers":["mp-diagnose","mp-grill-with-docs","mp-improve-codebase-architecture","mp-tdd"]}' \
+    > "$output/arm-a/inventory-contract.json"
+  printf '%s\n' \
+    '{"superpowers_loaded":false,"legacy_wrappers":[]}' \
+    > "$output/arm-b/inventory-contract.json"
+  (
+    cd "$output"
+    find arm-a arm-b -type f -not -path '*/.git/*' -print0 |
+      while IFS= read -r -d '' file; do
+        printf '%s\t%s\n' "$(shasum -a 256 "$file" | awk '{print $1}')" "$file"
+      done |
+      LC_ALL=C sort
+  ) > "$output/fingerprints.tsv"
+  printf 'PASS: isolated arms prepared at %s\n' "$output"
+}
+
+usage() {
+  printf 'usage: %s snapshot DIR OUT | validate-matrix FILE | extract-copilot-result EVENTS OUT | verify-result CASE RESULT EVENTS BEFORE AFTER INVENTORY EXPECTED_FP ACTUAL_FP | prepare-fixture OUT | prepare-arms OUT\n' "$0" >&2
+  exit 2
+}
+
+case ${1:-} in
+  snapshot) [ "$#" -eq 3 ] || usage; snapshot "$2" "$3" ;;
+  validate-matrix) [ "$#" -eq 2 ] || usage; validate_matrix "$2" ;;
+  extract-copilot-result) [ "$#" -eq 3 ] || usage; extract_copilot_result "$2" "$3" ;;
+  verify-result) [ "$#" -eq 9 ] || usage; verify_result "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" ;;
+  prepare-fixture) [ "$#" -eq 2 ] || usage; prepare_fixture "$2" ;;
+  prepare-arms) [ "$#" -eq 2 ] || usage; prepare_arms "$2" ;;
+  *) usage ;;
+esac
