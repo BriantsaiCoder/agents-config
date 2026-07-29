@@ -228,9 +228,20 @@ for candidate in "$CODEX_CANDIDATE" "$COPILOT_CANDIDATE"; do
   done
 done
 
-if [ -s "$AGENTS/dist/manifest.tsv" ] &&
-  rg -q '\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md' "$AGENTS/dist/manifest.tsv"; then
-  fail 'active manifest still contains host global config'
+for retired in dist hosts; do
+  if [ -e "$AGENTS/$retired" ]; then
+    fail "retired generated surface reappeared: $AGENTS/$retired"
+  fi
+done
+
+# manifest 的目標狀態是「存在且中性」：deploy 路徑退休後它本來就該是空的
+# （分離時刻意清空）。因此存在性是硬要求，非空不是——內容檢查只在它被重新
+# 填入時才有意義。
+[ -f "$AGENTS/attic/dist/manifest.tsv" ] ||
+  fail 'retired manifest missing: attic/dist/manifest.tsv'
+if [ -s "$AGENTS/attic/dist/manifest.tsv" ] &&
+  rg -q '\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md' "$AGENTS/attic/dist/manifest.tsv"; then
+  fail 'retired manifest still contains host global config'
 fi
 
 skills_before="${OWNERSHIP_SKILLS_BEFORE:-/private/tmp/three-host-global-config-split-impl-skills-before.tsv}"
