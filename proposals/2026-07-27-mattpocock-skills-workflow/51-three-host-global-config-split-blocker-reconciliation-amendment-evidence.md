@@ -1,7 +1,7 @@
 # Three-host global-config split — blocker reconciliation amendment evidence
 
-> 日期：2026-07-29 Asia/Taipei  
-> Scope：Plan 48 candidate-only amendment；不含live cutover、plugin mutation、SaaS、remote、push、PR或merge。  
+> 日期：2026-07-29 Asia/Taipei
+> Scope：Plan 48 candidate-only amendment；不含live cutover、plugin mutation、SaaS、remote、push、PR或merge。
 > Risk：HIGH。
 
 ## 1. Authorization and fixed point
