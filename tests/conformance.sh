@@ -1,105 +1,164 @@
 #!/usr/bin/env bash
-# Shared-skills conformance. Host global config belongs to host-local tests.
-set -uo pipefail
+# conformance.sh — 三主機安全修復的綠態探針集（正本：proposals/2026-07-10-gpt56-review-verification/02-fix-plan.md Batch 9）
+# 用途：驗證各批次修復的守護仍在。手動跑；改 guard / hook / settings / core 後必跑。
+# 不掛 SessionStart（避免每 session 開銷）。任一 FAIL = 對應批次退綠，不得宣稱 done（[T0-2]）。
+# 紅線：本腳本 MUST NOT 印出 audit-bash.log 內容或任何憑證樣式原值，只回報 PASS/FAIL。
+set -u
 
-AGENTS="${AGENTS_HOME:-$HOME/.agents}"
-pass=0
-fail=0
-skipped=0
-
+pass=0; fail=0
 ok() { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng() { printf '  FAIL  %s\n' "$1"; fail=$((fail + 1)); }
-skip_check() { printf '  SKIP  %s\n' "$1"; skipped=$((skipped + 1)); }
 
-if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
-  ok "shared skills source"
+# 探針 4 若中途被殺，確保部署檔已還原
+RESTORE_SRC=""; RESTORE_DST=""
+trap '[ -n "$RESTORE_SRC" ] && [ -f "$RESTORE_SRC" ] && mv "$RESTORE_SRC" "$RESTORE_DST"' EXIT
+
+# ── 1. Batch 1：autoMode 三陣列保留 "$defaults"（內建防線未被覆寫）──
+n=$(grep -c '"\$defaults"' "$HOME/.claude/settings.json" 2>/dev/null || echo 0)
+[ "$n" -ge 3 ] && ok "settings.json \$defaults x$n (≥3)" || ng "settings.json \$defaults x$n (<3)"
+
+# ── 2. Batch 2：audit-bash 遮罩 + log 權限 600 ──
+LOG="$HOME/.claude/audit-bash.log"
+dummy="probe_${$}_$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')"
+printf '{"tool_input":{"command":"export API_KEY=%s"},"cwd":"/tmp"}' "$dummy" \
+  | bash "$HOME/.claude/hooks/audit-bash.sh" >/dev/null 2>&1
+perm=$(stat -f%Lp "$LOG" 2>/dev/null || stat -c%a "$LOG" 2>/dev/null || echo 0)
+[ "$perm" = "600" ] && ok "audit-bash.log 權限 600" || ng "audit-bash.log 權限 $perm ≠ 600"
+if tail -1 "$LOG" 2>/dev/null | grep -q '\*\*\*' && ! grep -q -- "$dummy" "$LOG" 2>/dev/null; then
+  ok "audit-bash 遮罩生效（synthetic 值未落盤）"
 else
-  ng "shared skills source"
+  ng "audit-bash 遮罩失效（synthetic 值落盤或無 *** 標記）"
 fi
 
-scratch="$(mktemp -d "${TMPDIR:-/tmp}/agents-conformance.XXXXXX")"
-trap 'chmod -R u+rwX "$scratch" 2>/dev/null || true; rm -rf "$scratch"' EXIT
-mkdir -p "$scratch/home/.claude/skills"
-
-if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
-  "$AGENTS/bin/agents-sync" --bootstrap >/dev/null 2>&1 &&
-  HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
-  "$AGENTS/bin/agents-sync" --doctor >/dev/null 2>&1; then
-  source_count="$(find "$AGENTS/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
-  link_count="$(find "$scratch/home/.claude/skills" -mindepth 1 -maxdepth 1 -type l | wc -l | tr -d ' ')"
-  [ "$source_count" = "$link_count" ] &&
-    ok "Claude skill-link bootstrap: $link_count" ||
-    ng "Claude skill-link count $link_count != source $source_count"
-else
-  ng "Claude skill-link bootstrap／doctor"
-fi
-
-retired_fail=0
-for mode in default --deploy --only; do
-  case "$mode" in
-    default)
-      HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
-        "$AGENTS/bin/agents-sync" >/dev/null 2>&1 &&
-        retired_fail=1
-      ;;
-    --only)
-      HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
-        "$AGENTS/bin/agents-sync" --only codex >/dev/null 2>&1 &&
-        retired_fail=1
-      ;;
-    *)
-      HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
-        "$AGENTS/bin/agents-sync" "$mode" >/dev/null 2>&1 &&
-        retired_fail=1
-      ;;
-  esac
-done
-[ "$retired_fail" -eq 0 ] &&
-  ok "retired host-deploy interfaces fail-loud" ||
-  ng "retired host-deploy interface still succeeds"
-
-protect_files="$AGENTS/skills/init-project-docs/references/hooks/protect-files.sh"
-printf '%s' '{"tool_name":"apply_patch","tool_input":{"patch":"*** Begin Patch\\n*** Update File: .env\\n@@\\n-A\\n+B\\n*** End Patch"}}' |
-  env CLAUDECODE=1 bash "$protect_files" >/dev/null 2>&1
+# ── 3. Batch 3a/6：protect-files apply_patch fail-closed（.env 目標 → 拒絕）──
+PF="$HOME/.agents/skills/init-project-docs/references/hooks/protect-files.sh"
+printf '{"tool_name":"apply_patch","tool_input":{"patch":"*** Begin Patch\\n*** Update File: .env\\n@@\\n-A\\n+B\\n*** End Patch"}}' \
+  | env CLAUDECODE=1 bash "$PF" >/dev/null 2>&1
 rc=$?
-[ "$rc" -ne 0 ] &&
-  ok "protect-files apply_patch(.env) fail-closed" ||
-  ng "protect-files apply_patch(.env) allowed"
+[ "$rc" -ne 0 ] && ok "protect-files apply_patch(.env) 拒絕 rc=$rc" || ng "protect-files apply_patch(.env) 放行 rc=0"
 
-claimed="$(sed -n '1p' "$AGENTS/CONVENTIONS.md" | grep -oE '[0-9]+ 條' | grep -oE '[0-9]+' | head -1)"
-actual="$(grep -c '^## [0-9]' "$AGENTS/CONVENTIONS.md")"
-[ -n "$claimed" ] && [ "$claimed" = "$actual" ] &&
-  ok "CONVENTIONS count $claimed" ||
-  ng "CONVENTIONS claimed ${claimed:-none}, actual $actual"
-
-if git -C "$HOME/.agents" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  live_branch="$(git -C "$HOME/.agents" branch --show-current 2>/dev/null || true)"
-  [ "$live_branch" = main ] &&
-    ok "live ~/.agents checkout is main" ||
-    ng "live ~/.agents checkout is ${live_branch:-unknown}"
+# ── 4. Batch 5：agents-sync --doctor 缺部署檔 → rc≠0（測畢還原）──
+DEPLOY="$HOME/.codex/AGENTS.md"
+if [ -f "$DEPLOY" ]; then
+  tmpd=$(mktemp -d)
+  RESTORE_SRC="$tmpd/AGENTS.md"; RESTORE_DST="$DEPLOY"
+  mv "$DEPLOY" "$RESTORE_SRC"
+  if env -u AGENTS_HOME -u AGENTS_DEPLOY_ROOT \
+    "$HOME/.agents/bin/agents-sync" --doctor >/dev/null 2>&1; then rc=0; else rc=1; fi
+  mv "$RESTORE_SRC" "$RESTORE_DST"
+  RESTORE_SRC=""; RESTORE_DST=""
+  rmdir "$tmpd" 2>/dev/null
+  [ "$rc" -ne 0 ] && ok "doctor 缺部署檔 rc≠0" || ng "doctor 缺部署檔仍回 rc=0（假綠）"
+  env -u AGENTS_HOME -u AGENTS_DEPLOY_ROOT \
+    "$HOME/.agents/bin/agents-sync" --doctor >/dev/null 2>&1 \
+    && ok "doctor 還原後 rc=0" || ng "doctor 還原後仍 rc≠0（還原不完整？）"
 else
-  skip_check "live ~/.agents checkout unavailable"
+  ng "部署檔 $DEPLOY 不存在，探針 4 無法執行"
 fi
 
-ci_workflow="$AGENTS/.github/workflows/ci.yml"
-if [ -f "$ci_workflow" ] &&
-  ! grep -Eq 'AGENTS_DEPLOY_ROOT|dist/(skill-index\.md|AGENTS\.md|copilot-instructions\.md)|bin/agents-sync[[:space:]]+(--deploy|--only)' "$ci_workflow"; then
-  ok "CI uses shared-skills contract"
+# ── 5. Batch 7：CONVENTIONS 標題宣稱條數 == 實際 '## N' 節數 ──
+CONV="$HOME/.agents/CONVENTIONS.md"
+claimed=$(sed -n '1p' "$CONV" | grep -oE '[0-9]+ 條' | grep -oE '[0-9]+' | head -1)
+actual=$(grep -c '^## [0-9]' "$CONV")
+[ -n "$claimed" ] && [ "$claimed" = "$actual" ] \
+  && ok "CONVENTIONS 條數宣稱 $claimed == 實際 $actual" \
+  || ng "CONVENTIONS 條數宣稱 ${claimed:-無} ≠ 實際 $actual"
+
+# ── 6. Batch 7：tdd agent 無 Rails dangling refs ──
+if grep -qi rails "$HOME/.claude/agents/tdd.md" "$HOME/.codex/agents/tdd.toml" 2>/dev/null; then
+  ng "tdd agent 仍含 Rails 殘留"
 else
-  ng "CI still consumes retired agents-sync deployment"
+  ok "tdd agent Rails refs = 0"
 fi
 
-if bash -n "$AGENTS"/bin/* "$AGENTS"/hooks/*.sh "$AGENTS"/tests/*.sh; then
-  ok "shared shell syntax"
+# ── 7. Batch 4b：guard-git-push 攔截 force-push master；放行非保護分支 lease ──
+GUARD="$HOME/.claude/hooks/guard-git-push.sh"
+printf '{"tool_input":{"command":"git push --force origin master"},"cwd":"%s"}' "$HOME" \
+  | bash "$GUARD" >/dev/null 2>&1
+rc=$?
+[ "$rc" -eq 2 ] && ok "guard 攔截 force-push master rc=2" || ng "guard 未攔截 force-push master rc=$rc"
+printf '{"tool_input":{"command":"git push --force-with-lease origin feat/x"},"cwd":"%s"}' "$HOME" \
+  | bash "$GUARD" >/dev/null 2>&1
+rc=$?
+[ "$rc" -eq 0 ] && ok "guard 放行 lease 非保護分支 rc=0" || ng "guard 誤攔 lease 非保護分支 rc=$rc"
+
+# ── 8. Codex-native PreToolUse guard：allow / deny contract canary ──
+if "$HOME/.agents/tests/codex-git-push-guard.sh" >/dev/null 2>&1; then
+  ok "Codex hook + exec policy allow/deny canary 12 cases"
 else
-  ng "shared shell syntax"
+  ng "Codex hook + exec policy allow/deny canary 未通過"
 fi
 
-if "$AGENTS/tests/legacy-mp-collision.sh" >/dev/null 2>&1; then
-  ok "legacy mp collision guard"
+# ── 9. 共用 guard 雙格式回歸（2026-07-25 四破口：--all / --mirror / 多 refspec / -fu 捆綁）──
+if "$HOME/.agents/tests/git-push-guard.sh" >/dev/null 2>&1; then
+  ok "共用 guard 雙格式 50 cases（四破口回歸）"
 else
-  ng "legacy mp collision guard"
+  ng "共用 guard 雙格式回歸未通過"
 fi
 
-printf '\n%d PASS / %d FAIL / %d SKIP\n' "$pass" "$fail" "$skipped"
+# ── 10. live ~/.agents 主 checkout 必須留在 main ──
+live_branch=$(git -C "$HOME/.agents" branch --show-current 2>/dev/null || echo '')
+[ "$live_branch" = main ] \
+  && ok "live ~/.agents checkout 在 main" \
+  || ng "live ~/.agents checkout 在 ${live_branch:-無法判定}，必須回 main"
+
+# ── 11. git hooks 已安裝且與版控來源同步 ──
+# 為什麼要驗「同步」而不只是「存在」：.git/hooks/ 是 install-hooks.sh 的**複製**不是
+# symlink，且 .git 不進版控。所以有三種靜默失效，只驗存在只抓到第一種：
+#   (a) 新機器 clone 後沒跑 install-hooks.sh → 完全無守護
+#   (b) 跑過但之後改了 hooks/*.sh 沒重裝 → 執行的是舊版邏輯
+#   (c) 有人直接改 .git/hooks/ 而非改版控來源 → 正本與實際分岔
+# 三者都不會報錯。cmp 逐位元組比對同時覆蓋三種。
+# hooks 目錄問 git 而非自己拼：linked worktree 內 .git 是檔案不是目錄，且 --git-path
+# 在一般 repo 回相對路徑、在 worktree 回絕對路徑，故需補上 repo root。
+# AGENTS_HOME override 沿用 agents-sync 的既有慣例——本探針的三條失敗路徑（未安裝／
+# 來源已改未重裝／.git/hooks 被直接改）都必須對隔離 clone 驗證，否則就得動 live hooks。
+AG="${AGENTS_HOME:-$HOME/.agents}"
+hp=$(cd "$AG" && git rev-parse --git-path hooks 2>/dev/null || echo '')
+case "$hp" in
+  '')  HOOKS_DIR='' ;;
+  /*)  HOOKS_DIR="$hp" ;;
+  *)   HOOKS_DIR="$AG/$hp" ;;
+esac
+if [ -z "$HOOKS_DIR" ]; then
+  ng "無法解析 git hooks 目錄（$AG 不是 git repo？）"
+else
+  for pair in pre-commit-agents.sh:pre-commit post-checkout-agents.sh:post-checkout; do
+    src="$AG/hooks/${pair%%:*}"; name="${pair##*:}"; dst="$HOOKS_DIR/$name"
+    # -f 必須先於 -x：`[ -x dir ]` 對可進入的目錄為 **TRUE**，會讓同名目錄通過可執行
+    # 檢查，接著 cmp 把 "Is a directory" 洩到 stderr（違反本檔「只回報 PASS/FAIL」的
+    # 紅線），而且 FAIL 訊息會錯——叫人重裝，但重裝修不了「那裡是目錄」。實測確認。
+    # cmp 一律 2>/dev/null：不可讀等其它情形同樣不該讓雜訊混進輸出。
+    if [ ! -f "$src" ]; then
+      ng "hook 來源缺失 hooks/${pair%%:*}"
+    elif [ ! -e "$dst" ]; then
+      ng "hook $name 未安裝（跑 bash hooks/install-hooks.sh）"
+    elif [ ! -f "$dst" ]; then
+      ng "hook $name 不是一般檔案（目錄或特殊檔？手動移除後跑 install-hooks.sh）"
+    elif [ ! -x "$dst" ]; then
+      ng "hook $name 不可執行（跑 bash hooks/install-hooks.sh 重裝）"
+    elif ! cmp -s "$src" "$dst" 2>/dev/null; then
+      ng "hook $name 與版控來源不同步（來源已改？跑 bash hooks/install-hooks.sh 重裝）"
+    else
+      ok "hook $name 已安裝且與來源同步"
+    fi
+  done
+fi
+
+# ── 12. Claude 手寫區不得與 managed routing stamp 形成平行正本 ──
+CLAUDE_FILE="${CLAUDE_GLOBAL_FILE:-$HOME/.claude/CLAUDE.md}"
+if "$AG/tests/claude-routing-collision.sh" "$CLAUDE_FILE" >/dev/null 2>&1; then
+  ok "Claude unmanaged routing collision = 0"
+else
+  ng "Claude managed stamp 外仍有舊 workflow route"
+fi
+
+# ── 13. legacy mp wrappers 保留手動相容性但不得再參與 model invocation ──
+if "$AG/tests/legacy-mp-collision.sh" >/dev/null 2>&1; then
+  ok "legacy mp collision guard: 4 wrappers / 4 mappings"
+else
+  ng "legacy mp wrapper 仍可被 model invoke，或 replacement mapping 不完整"
+fi
+
+printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
