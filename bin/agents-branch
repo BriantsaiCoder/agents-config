@@ -6,12 +6,13 @@
 #   agents-branch --list            列出所有 worktree
 #   agents-branch --done <branch>   移除該 worktree（分支本身保留）
 #
-# 為什麼：三家 host 都讀 ~/.agents/skills，Claude 以 symlink 指回它；在這裡
-# 切分支會讓三家的 shared skill 內容當下改變。worktree 把分支工作搬到沒有
-# host 讀取的路徑，避免未驗證的 workflow 直接進入 live session。
+# 為什麼：三家 host 都直接讀 ~/.agents/skills，Claude 另以 symlink 指回它；在這裡
+# 切分支會讓三家的 skill 內容當下改變，只有 Codex/Copilot instructions 組裝體要等
+# agents-sync 才動。worktree 把分支工作搬到沒有 host 讀的路徑，避免內容互相矛盾。
 #
-# 代價講清楚：worktree 裡的 skill 改動**不會**被 host 看到。要做 live canary
-# 必須另走明示 cutover gate；agents-sync 不會部署 worktree 內容。
+# 代價講清楚：worktree 裡的 skill 改動**不會**被 host 看到。要實測就得刻意切回
+# ~/.agents（那時你是有意識的），或在 worktree 內跑 agents-sync 部署（會把
+# Codex/Copilot 指向該分支，Claude 端仍讀 main 的 symlink，別忘了切回來）。
 set -euo pipefail
 
 AGENTS="${AGENTS_HOME:-$HOME/.agents}"
@@ -71,6 +72,6 @@ worktree: $wt
 
   cd $wt
 
-~/.agents 仍在 $(git rev-parse --abbrev-ref HEAD)，三家 shared skills 讀取來源未變。
+~/.agents 仍在 $(git rev-parse --abbrev-ref HEAD)，三家 host 的讀取來源未變。
 完成後：agents-branch --done $br
 EOF
