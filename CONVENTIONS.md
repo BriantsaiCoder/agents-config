@@ -44,7 +44,7 @@ zh-TW；術語照附錄 A 用詞對照表（建立／物件／佇列；禁「創
 
 ## 11. 版控取代 .bak（`~/.agents` git 化後生效）
 
-三家設定目錄（`~/.claude`、`~/.codex`、`~/.copilot`）的手工 `.bak` 慣例廢止：設定變更一律走 git commit；MUST NOT 再產生 `*.bak*`。既有 .bak 掃 secret 後刪除或歸檔 `attic/`。（實證 2026-07-07：`~/.codex` 累積 .bak，其中 3 份 `config.toml.bak` 額外複製了同一明文 API key——備份檔是 secrets 殘留的最大死角。）驗證：`ls ~/.claude/*.bak* ~/.codex/*.bak* ~/.copilot/*.bak* 2>/dev/null | wc -l` = 0。例外：app 自動生成的 runtime state 備份（如 `.codex-global-state.json.bak`，dotfile 開頭、app 自管生命週期）不算違規，不得手動刪除。
+三家設定目錄（`~/.claude`、`~/.codex`、`~/.copilot`）的手工 `.bak` 慣例廢止：設定變更一律走 git commit；MUST NOT 再產生 `*.bak*`。既有 .bak 掃 secret 後刪除或歸檔 `attic/`。（實證 2026-07-07：`~/.codex` 累積 .bak，其中 3 份 `config.toml.bak` 額外複製了同一明文 API key——備份檔是 secrets 殘留的最大死角。）驗證（兩式都要 0）：`find ~/.claude ~/.codex ~/.copilot -maxdepth 1 -name '*.bak*' -not -name '.*' 2>/dev/null | wc -l` 與 `find ~/.agents -name '*.bak*' -not -path '*/.git/*' -not -name '.*' 2>/dev/null | wc -l`。例外：app 自動生成的 runtime state 備份（如 `.codex-global-state.json.bak`，dotfile 開頭、app 自管生命週期）不算違規，不得手動刪除——`-not -name '.*'` 就是該例外的機械化。（2026-07-30 修：原式用 `ls` + glob，zsh 下任一目錄無匹配即 nomatch 中止並回 0＝假合規，實測同一條指令 zsh 回 0、bash 回 4；且只掃 host 根目錄 maxdepth 1，`~/.agents/core` 與 `~/.agents/rules` 的兩個 .bak 因此隱形 12 天。驗證式自身會假陰性時，規則等於不存在。）
 
 **`attic/` 與 `backups/` 各有其一，不可互換**（2026-07-26 定義；此前兩者並存無成文分工，每次歸檔都要重猜一次）：
 

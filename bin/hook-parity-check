@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# hook-parity-check — 警告 [T0-3] guard 的 host 副本已與正本漂移。
+#
+# 為什麼需要這支：2026-07-29 三家 global config 分離後，guard-git-push.sh 不再是
+# 指向 ~/.agents 的 wrapper，而是三份實體副本（~/.agents/hooks、~/.claude/hooks、
+# ~/.codex/hooks）。各 host 執行的是自己那份——~/.codex/hooks.json 指向
+# guard-codex-git-push.sh，後者 exec 的是 $(dirname $0)/guard-git-push.sh，即
+# Codex 本地副本，不是 ~/.agents 那份。沒有任何部署腳本會同步三者
+# （bin/agents-sync 明文退休了 host deployment），CI 也比不了（runner 上沒有
+# ~/.agents，見 ~/.claude/tests/repo-integrity.sh 第 17-20 行的註解）。
+# 一致性只剩本機這一條路。
+#
+# 為什麼放 bin/ 而不是 hooks/：~/.agents/hooks/ 裡的檔沒有任何 host 會執行
+# （三家都跑自己目錄下的副本），把邏輯放那裡等於沒生效。bin/ 是三家實際會呼叫
+# 的唯一共用目錄（bin/agents-branch、bin/pr-review-gate 皆由三家 config 引用）。
+#
+# Copilot 刻意排除：~/.copilot/hooks/guard-git-push.sh 是獨立實作（不同 payload
+# 契約——toolName／toolArgs 對 tool_input），比 hash 會永遠回報漂移。
+#
+# 用法：hook-parity-check          不一致時印警告到 stderr，一律 exit 0（非阻擋）
+#       hook-parity-check --strict 不一致時 exit 1（供 test 使用）
+set -uo pipefail
+
+CANONICAL="${AGENTS_HOME:-$HOME/.agents}/hooks/guard-git-push.sh"
+COPIES="$HOME/.claude/hooks/guard-git-push.sh $HOME/.codex/hooks/guard-git-push.sh"
+
+strict=0
+[ "${1:-}" = '--strict' ] && strict=1
+
+sha_of() { shasum -a 256 "$1" 2>/dev/null | awk '{ print $1 }'; }
+
+[ -f "$CANONICAL" ] || exit 0
+
+want="$(sha_of "$CANONICAL")"
+[ -n "$want" ] || exit 0
+
+drift=0
+for copy in $COPIES; do
+  [ -f "$copy" ] || continue
+  got="$(sha_of "$copy")"
+  [ "$got" = "$want" ] && continue
+  drift=1
+  printf '%s\n' \
+    "[T0-3] guard 副本已漂移：$copy" \
+    "  期望 ${want:0:12}…（正本 $CANONICAL）" \
+    "  實際 ${got:0:12}…" \
+    '  判定邏輯要同步三處；只改一處會讓該 host 的 force-push 防線與其他兩家不同。' >&2
+done
+
+[ "$strict" = 1 ] && exit "$drift"
+exit 0

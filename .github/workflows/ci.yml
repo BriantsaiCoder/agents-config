@@ -58,7 +58,7 @@ jobs:
       # guard 是承載安全判定的 shell；-S error 只抓確定性 bug 不抓風格。
       # skills/auditing-skill-folder/scripts/*.sh 不在此列——上面那條測試是它的守護。
       - name: shellcheck（hooks / tests / bin）
-        run: shellcheck -S error hooks/*.sh tests/*.sh bin/agents-sync bin/pr-review-gate
+        run: shellcheck -S error hooks/*.sh tests/*.sh bin/agents-sync bin/pr-review-gate bin/hook-parity-check
 
       # 2026-07-26 版本時效稽核（約 4.6M subagent token）修掉 30 個 skill 的死寫法：
       # 教已移除的 API、不存在的 image tag、已 EOL 的 runtime。這 28 條把那批缺陷的
