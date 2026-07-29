@@ -228,9 +228,15 @@ for candidate in "$CODEX_CANDIDATE" "$COPILOT_CANDIDATE"; do
   done
 done
 
-if [ -s "$AGENTS/dist/manifest.tsv" ] &&
-  rg -q '\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md' "$AGENTS/dist/manifest.tsv"; then
-  fail 'active manifest still contains host global config'
+for retired in dist hosts; do
+  if [ -e "$AGENTS/$retired" ]; then
+    fail "retired generated surface reappeared: $AGENTS/$retired"
+  fi
+done
+
+if [ -s "$AGENTS/attic/dist/manifest.tsv" ] &&
+  rg -q '\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md' "$AGENTS/attic/dist/manifest.tsv"; then
+  fail 'retired manifest still contains host global config'
 fi
 
 skills_before="${OWNERSHIP_SKILLS_BEFORE:-/private/tmp/three-host-global-config-split-impl-skills-before.tsv}"

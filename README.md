@@ -11,7 +11,7 @@
 | `~/.codex/AGENTS.md`、`rules/`、`hooks/` | `~/.codex` | Codex routing、governance 與 host adapter |
 | `~/.copilot/copilot-instructions.md`、`rules/`、`hooks/` | `~/.copilot` | Copilot routing、governance 與 host adapter |
 
-`core/`、`hosts/`、`rules/`、`hooks/`、`dist/` 在本 repo 只保留作 rollback、historical evidence 或 skill compatibility carrier；它們不是 host global-config source，`agents-sync` 也不再生成或部署 host config。
+`core/`、`rules/`、`hooks/` 在本 repo 只保留作 rollback、historical evidence 或 skill compatibility carrier；它們不是 host global-config source，`agents-sync` 也不再生成或部署 host config。舊 generated 產物 `hosts/`、`dist/` 已於 2026-07-29 退役至 `attic/hosts/`、`attic/dist/`（`git log --follow` 可追）；active 面不得再出現這兩個目錄，由 `tests/three-host-global-config-ownership.sh` 把關。
 
 ## Shared skills visibility
 
