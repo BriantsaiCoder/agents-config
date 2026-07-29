@@ -16,21 +16,23 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
+| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
-## Unmodified vendored sets (NOT forks)
+## Pinned Matt set — 21 unmodified + 1 recorded fork
 
 **`mattpocock/skills` stable 22 — active, pinned 2026-07-27.**
 
 - Source: `https://github.com/mattpocock/skills.git` at `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
 - Selection: `.claude-plugin/plugin.json` SHA-256 `e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba`.
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
-- Payload is byte-for-byte upstream and immutable. Update by replacing the full pinned set after lock/hash verification; rollback by reverting the replacement commit.
-- These entries are not forks and must not appear between the fork-index markers. Any local payload edit requires a new fork decision in that index.
+- The 21 entries other than `grilling` are byte-for-byte upstream and immutable.
+- `grilling` is the one recorded fork; its exact payload fingerprint and re-merge procedure are recorded below.
+- Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
 ## Hybrid — house wrapper over vendored payload
 
@@ -68,6 +70,26 @@ Deliberately outside the index table above: these were never edited, so they are
 - Removed on user instruction while trimming the resident skill listing. Wholesale removal is legal under the vendored gate — what is forbidden is editing in place.
 - Cost it was carrying: 319 chars of name+description in every session's skill listing (2.9MB / 295 files on disk, which cost nothing resident).
 - **Restore when**: a project actually integrates ECPay 金流 / 電子發票 / 物流. The knowledge is 綠界-specific and not model-stable — 12-language CheckMacValue / AES vectors, ECPG vs ecpayment dual-domain traps, per-service test MerchantIDs. Nothing else in `skills/` covers it.
+
+---
+
+## grilling
+
+**Decision (2026-07-29): accept the fork.**
+
+The user may explicitly authorize all remaining low-risk, reversible recommendations once instead
+of confirming each one. That authorization remains HITL feedback: the agent records each adopted
+default, pauses for high-risk, irreversible, scope-expanding, or low-confidence decisions, then
+summarizes every decision and waits for final confirmation before acting.
+
+### Re-merge procedure (when upstream moves)
+
+1. Diff the new upstream `grilling/SKILL.md` against pinned commit
+   `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
+2. Replace the pinned Matt set normally, then reapply this opt-in default paragraph only if upstream
+   still lacks equivalent behavior.
+3. Run `tests/matt-thin-workflow.sh`, `tests/vendored-detection.sh`, and the skill validator.
+4. Update the fork index's upstream commit; remove this record if upstream fully absorbs the behavior.
 
 ---
 

@@ -4,6 +4,11 @@ set -euo pipefail
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
 WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
+GRILLING="$AGENTS/skills/grilling/SKILL.md"
+VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
+
+# shellcheck source=../skills/auditing-skill-folder/scripts/lib-vendored.sh
+. "$VENDORED_LIB"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -45,6 +50,28 @@ for skill in \
   [ -f "$AGENTS/skills/$skill/SKILL.md" ] || fail "routed skill missing: $skill"
 done
 
+rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
+  fail 'grilling does not offer compact options with the recommendation first'
+rg -q 'explicitly authorizes.*low-risk.*reversible' "$GRILLING" ||
+  fail 'grilling lacks opt-in defaults for low-risk reversible decisions'
+rg -q 'high-risk.*irreversible.*scope.*low-confidence' "$GRILLING" ||
+  fail 'grilling lacks mandatory pause conditions'
+rg -q 'summarize.*explicit confirmation' "$GRILLING" ||
+  fail 'grilling lacks final decision summary and confirmation'
+fork_recorded grilling ||
+  fail 'grilling fork is not recorded inside the fork index'
+expected_grilling_sha="$(
+  sed -n 's/.*payload SHA-256 `\([a-f0-9]\{64\}\)`.*/\1/p' "$AGENTS/vendored-forks.md" |
+    head -1
+)"
+[ -n "$expected_grilling_sha" ] ||
+  fail 'grilling fork record lacks an approved payload SHA-256'
+actual_grilling_sha="$(shasum -a 256 "$GRILLING" | awk '{ print $1 }')"
+[ "$actual_grilling_sha" = "$expected_grilling_sha" ] ||
+  fail 'grilling payload differs from the recorded fork fingerprint'
+rg -q '21 unmodified.*1 recorded fork' "$AGENTS/vendored-forks.md" ||
+  fail 'Matt set summary does not distinguish the grilling fork'
+
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
   fail 'implement route does not return to S4-S6'
 rg -q 'implement.*(isolated worktree|branch)' "$KERNEL" ||
@@ -72,13 +99,16 @@ git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- skills/mp-zoom-out ||
 
 while IFS='=' read -r key skill; do
   [ "$key" = skill ] || continue
-  git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- "skills/$skill" ||
-    fail "Matt upstream skill changed: $skill"
+  if ! git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- "skills/$skill"; then
+    [ "$skill" = grilling ] && fork_recorded grilling ||
+      fail "unrecorded Matt upstream skill change: $skill"
+  fi
 done < "$AGENTS/mattpocock-skills.lock"
 
 while IFS= read -r changed; do
   case "$changed" in
     skills/dev-workflow/* | \
+    skills/grilling/SKILL.md | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
