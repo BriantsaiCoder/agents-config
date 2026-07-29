@@ -2,11 +2,22 @@
 set -euo pipefail
 
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
+PLAN="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow/48-three-host-global-config-ownership-split-plan.md"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
   exit 1
 }
+
+[ -f "$PLAN" ] || fail "ownership plan missing: $PLAN"
+rg -Fq '只將 exact relative path `.DS_Store` 從 semantic skills payload gate 分離' "$PLAN" ||
+  fail 'Plan 48 does not separate only exact .DS_Store from semantic skills payload'
+rg -Fq '禁止 `*.DS_Store`、hidden-file wildcard與directory-wide exclusion' "$PLAN" ||
+  fail 'Plan 48 does not prohibit wildcard skills exclusions'
+rg -Fq '不得把 pre-cutover `UNAVAILABLE` 改寫成 `PASS`' "$PLAN" ||
+  fail 'Plan 48 rewrites unavailable runtime evidence'
+rg -Fq 'runtime no-load只在cutover transaction內逐host驗證' "$PLAN" ||
+  fail 'Plan 48 does not defer runtime no-load to the cutover transaction'
 
 if rg -q \
   'TARGETS=|\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md|refresh_claude_stamp|assemble_body|render_target' \
