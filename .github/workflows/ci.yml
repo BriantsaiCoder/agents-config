@@ -58,7 +58,7 @@ jobs:
       # parity 本身只能在本機比（runner 沒有 ~/.claude / ~/.codex），但 parity 檢查器的
       # 邏輯可以在 CI 驗——含「exec bit 存在」這條：呼叫端用 [ -x ] 判斷，非 executable
       # 等於防線靜默失效（2026-07-30 實測過的缺陷）。
-      - name: guard parity 檢查器回歸（14 cases）
+      - name: guard parity 檢查器回歸（11 cases）
         run: bash tests/hook-parity.sh
 
       # guard 是承載安全判定的 shell；-S error 只抓確定性 bug 不抓風格。

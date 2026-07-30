@@ -16,9 +16,11 @@
 #   3. CI 比不了：~/.claude/tests/repo-integrity.sh:43-45 記載 CI 環境沒有 ~/.agents。
 #
 # 為什麼放 bin/ 而不是 hooks/：由事實 2，把邏輯放 ~/.agents/hooks/ 等於沒生效。bin/ 是
-# 三家實際會呼叫的唯一共用目錄（bin/agents-branch、bin/pr-review-gate 皆由三家 config
-# 引用）。探針：grep -rn 'bin/agents-branch\|bin/pr-review-gate' ~/.claude/core \
-#   ~/.codex/AGENTS.md ~/.copilot/copilot-instructions.md
+# 三家實際會呼叫的唯一共用目錄。探針：
+#   grep -rln 'bin/agents-branch\|bin/pr-review-gate' ~/.claude/core ~/.codex/AGENTS.md \
+#     ~/.copilot/copilot-instructions.md
+#   # 期望三個路徑各至少一行命中（Claude 在 core/tier1-workflow.md 的 [T1-10]／[T1-11]，
+#   # Codex 與 Copilot 在各自的 kernel 檔）
 #
 # Copilot 刻意排除：~/.copilot/hooks/guard-git-push.sh 是獨立實作（payload 契約不同——
 # toolName／toolArgs 對 tool_input），比 hash 會永遠回報漂移。探針：

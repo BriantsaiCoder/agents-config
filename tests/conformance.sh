@@ -105,14 +105,23 @@ else
 fi
 
 # CONVENTIONS 規則 11 的 ~/.agents 一側，下沉自 prose（規則 9）。必須用 find 不得用
-# ls + glob：後者在 zsh 下 nomatch 中止即回 0＝假合規。dotfile 排除＝規則 11 的
-# 「app 自管 runtime state 備份」例外。
-bak_count="$(find "$AGENTS" -name '*.bak*' -not -path '*/.git/*' -not -name '.*' 2>/dev/null | wc -l | tr -d ' ')"
+# ls + glob：後者在 zsh 下 nomatch 中止即回 0＝假合規。
+# 三個排除都對應規則 11 的明文例外，不是便宜行事：
+#   -not -name '.*'        app 自管的 runtime state 備份（如 .codex-global-state.json.bak）
+#   -not -path '*/attic/*' 規則 11 允許既有 .bak「掃 secret 後刪除或歸檔 attic/」
+#   -not -path '*/backups/*' backups/ 就是規則 11 明訂的操作前快照區
+bak_count="$(find "$AGENTS" -name '*.bak*' \
+  -not -path '*/.git/*' -not -path '*/attic/*' -not -path '*/backups/*' \
+  -not -name '.*' 2>/dev/null | wc -l | tr -d ' ')"
 [ "$bak_count" = 0 ] &&
   ok "no manual .bak under ~/.agents" ||
   ng "manual .bak found under ~/.agents: $bak_count"
 
-if "$AGENTS/tests/hook-parity.sh" >/dev/null 2>&1; then
+# 缺檔時 SKIP 不 FAIL：$AGENTS 可能是還沒有這支 test 的舊 checkout（本分支 merge 前的
+# live ~/.agents 就是），那不是合規缺陷。存在則必須通過。
+if [ ! -x "$AGENTS/tests/hook-parity.sh" ]; then
+  skip_check "[T0-3] guard parity checker 不在 $AGENTS/tests/"
+elif "$AGENTS/tests/hook-parity.sh" >/dev/null 2>&1; then
   ok "[T0-3] guard parity checker"
 else
   ng "[T0-3] guard parity checker"

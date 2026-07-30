@@ -56,22 +56,11 @@ absent="$tmp/hostA/hooks/guard-git-push.sh $tmp/absent/nothere/guard-git-push.sh
 run "$tmp/absent" "$both" | grep -q '正本不存在' && ok '正本缺失被偵測' || ng '正本缺失被偵測'
 [ "$(rc "$tmp/absent" "$both" --strict)" = 1 ] && ok '正本缺失時 strict 回 1' || ng '正本缺失時 strict 回 1'
 
-# 6. 真正呼叫這支 helper 的 drift-check.sh 都必須先以 [ -x ] 守護，否則 helper 缺檔時
-#    SessionStart 會噴錯。判斷「是否呼叫」要看 `bash "$HOME/…"` 這個實際呼叫式，不能用
-#    「檔案是否提及 hook-parity-check」當代理——~/.agents/hooks/drift-check.sh 的檔頭
-#    註解就提到它卻刻意不呼叫（那份沒有任何 host 會執行）。
-invoke_pat='bash "\$HOME/\.agents/bin/hook-parity-check"'
-guard_pat='\[ -x "\$HOME/\.agents/bin/hook-parity-check" \]'
-for caller in "$ROOT/hooks/drift-check.sh" "$HOME/.claude/hooks/drift-check.sh" "$HOME/.codex/hooks/drift-check.sh"; do
-  label="caller 以 [ -x ] 守護: ${caller/#$HOME/~}"
-  if [ ! -f "$caller" ]; then
-    printf '  SKIP  %s（不存在，CI 環境預期）\n' "$label"
-  elif grep -q "$invoke_pat" "$caller"; then
-    grep -q "$guard_pat" "$caller" && ok "$label" || ng "$label"
-  else
-    printf '  SKIP  %s（不呼叫 parity check）\n' "$label"
-  fi
-done
+# 刻意不在此斷言呼叫端（~/.claude、~/.codex 的 drift-check.sh）是否以 [ -x ] 守護：
+# 那是 host 擁有的檔案，~/.agents 的 test 不跨進去——與 tests/mattpocock-workflow.sh
+# 移除 core/tier1-workflow.md 斷言的同一條 ownership 邊界。該斷言已下沉到各 host repo
+# 自己的 test（~/.claude/tests/repo-integrity.sh、~/.codex 與 ~/.copilot 的
+# tests/global-config-ownership.sh），CI 環境本來也讀不到那些檔。
 
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
