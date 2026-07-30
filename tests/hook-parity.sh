@@ -47,12 +47,17 @@ rm -f "$tmp/hostB/hooks/guard-git-push.sh"
 run "$tmp/agents" "$both" | grep -q '副本缺失' && ok 'guard 缺失被偵測' || ng 'guard 缺失被偵測'
 [ "$(rc "$tmp/agents" "$both" --strict)" = 1 ] && ok 'guard 缺失時 strict 回 1' || ng 'guard 缺失時 strict 回 1'
 
-# 4. host 目錄不存在 → 該 host 未安裝，合法跳過
-absent="$tmp/hostA/hooks/guard-git-push.sh $tmp/absent/nothere/guard-git-push.sh"
+# 4. host root 存在但 hooks/ 整個消失 → 仍算 drift
+rmdir "$tmp/hostB/hooks"
+run "$tmp/agents" "$both" | grep -q '副本缺失' && ok 'hooks 目錄缺失被偵測' || ng 'hooks 目錄缺失被偵測'
+[ "$(rc "$tmp/agents" "$both" --strict)" = 1 ] && ok 'hooks 目錄缺失時 strict 回 1' || ng 'hooks 目錄缺失時 strict 回 1'
+
+# 5. host 目錄不存在 → 該 host 未安裝，合法跳過
+absent="$tmp/hostA/hooks/guard-git-push.sh $tmp/uninstalled/hooks/guard-git-push.sh"
 [ "$(rc "$tmp/agents" "$absent" --strict)" = 0 ] &&
   ok '未安裝的 host 不算漂移' || ng '未安裝的 host 不算漂移'
 
-# 5. 正本不存在 → 必須報，不得靜默通過
+# 6. 正本不存在 → 必須報，不得靜默通過
 run "$tmp/absent" "$both" | grep -q '正本不存在' && ok '正本缺失被偵測' || ng '正本缺失被偵測'
 [ "$(rc "$tmp/absent" "$both" --strict)" = 1 ] && ok '正本缺失時 strict 回 1' || ng '正本缺失時 strict 回 1'
 

@@ -405,7 +405,7 @@ const faqs = [
 ### 何時選用完整元件庫
 
 - **PrimeVue**：企業應用首選，80+ 元件，內建多種主題（Material、Bootstrap 風格），支援 Tailwind 主題（`@primevue/themes`）。適合需要大量 DataTable、表單元件的後台管理系統。
-- **Element Plus**：⛔ **家規禁用**（frontend-spa 家規：「禁用：Vuetify、Element Plus、Bootstrap、CSS-in-JS」）。中文生態雖完整，但不在本專案選型內——僅在既有專案已採用時維護，不用於新專案。
+- **Element Plus**：⛔ 新專案禁用。中文生態雖完整；僅維護既有採用專案。
 
 ```vue
 <!-- PrimeVue DataTable 範例 -->

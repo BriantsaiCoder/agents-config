@@ -57,19 +57,20 @@ fi
 
 want="$(sha_of "$CANONICAL")"
 if [ -z "$want" ]; then
-  warn "[T0-3] guard 正本無法計算 hash：$CANONICAL（shasum 不可用？）"
+  warn "[T0-3] guard 正本無法計算 hash：${CANONICAL}（shasum 不可用？）"
   [ "$strict" = 1 ] && exit 1
   exit 0
 fi
 
 for copy in $COPIES; do
   if [ ! -f "$copy" ]; then
-    # host 目錄不存在＝未安裝該 host，跳過；存在卻沒 guard＝防線消失，要報。
-    [ -d "$(dirname "$copy")" ] || continue
+    # host root 不存在＝未安裝該 host，跳過；存在卻沒 guard＝防線消失，要報。
+    host_root="$(dirname "$(dirname "$copy")")"
+    [ -d "$host_root" ] || continue
     drift=1
     warn "[T0-3] guard 副本缺失：$copy" \
-         "  該 host 的 hooks 目錄存在但 guard 不見了——force-push 前置攔截對它已無效。" \
-         "  正本在 $CANONICAL，複製過去即可恢復。"
+         "  該 host 已安裝但 guard 路徑不存在——force-push 前置攔截對它已無效。" \
+         "  正本在 ${CANONICAL}，複製過去即可恢復。"
     continue
   fi
 
@@ -77,7 +78,7 @@ for copy in $COPIES; do
   [ "$got" = "$want" ] && continue
   drift=1
   warn "[T0-3] guard 副本已漂移：$copy" \
-       "  期望 ${want:0:12}…（正本 $CANONICAL）" \
+       "  期望 ${want:0:12}…（正本 ${CANONICAL}）" \
        "  實際 ${got:0:12}…" \
        '  判定邏輯要同步三處；只改一處會讓該 host 的 force-push 防線與其他兩家不同。'
 done
