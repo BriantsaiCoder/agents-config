@@ -4,6 +4,7 @@ set -euo pipefail
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
 WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
 B2_SKILLS_BASE="${B2_SKILLS_BASE:-7080450715c0e5f264e19ab60a48da9c4437c0af}"
+B2_SKILLS_LOCK="$AGENTS/stage-b2-skills.lock"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
 WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
@@ -177,8 +178,7 @@ done < "$AGENTS/mattpocock-skills.lock"
 # 的死路徑，改成不帶路徑的「家規」措辭（規則內容本來就內聯在同一段）。兩者都是 house
 # skill，不在 mattpocock-skills.lock 的 22 個內，所以上面第 106-112 行的 vendored gate
 # 不適用。註解不能插在 case pattern 的 `\` 續行之間——那是語法錯誤。
-# Stage B2 的 commit 同時是 exact directory allowlist 與 payload checkpoint。這會允許
-# 該 commit 新增的 26 個目錄存在，但拒絕它們在 checkpoint 後被新增、刪除或改寫。
+# Stage B2 commit 定義目錄集合；lock 定義經審核後的完整 tree（含 mode 與 symlink）。
 b2_skills="$(
   git -C "$AGENTS" diff-tree --no-commit-id --name-only -r \
     "$B2_SKILLS_BASE" -- skills |
@@ -187,49 +187,25 @@ b2_skills="$(
 )"
 [ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 26 ] ||
   fail 'Stage B2 skill checkpoint does not contain exactly 26 directories'
-while IFS= read -r skill; do
-  if [ "$skill" = dotnet-core-expert ]; then
-    fork_recorded "$skill" ||
-      fail 'dotnet-core-expert Stage B2 fork is not recorded'
-    expected_tree_sha="$(
-      vendored_lock_record "$skill" |
-        awk -F '\t' '{ print $5 }'
-    )"
-    actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
-    [ -n "$expected_tree_sha" ] && [ "$actual_tree_sha" = "$expected_tree_sha" ] ||
-      fail 'dotnet-core-expert tree differs from its recorded fork fingerprint'
-    continue
-  fi
-  if [ "$skill" = video-downloader ]; then
-    [ ! -e "$AGENTS/skills/video-downloader" ] &&
-      [ ! -L "$AGENTS/skills/video-downloader" ] ||
-      fail 'retired video-downloader directory still exists'
-    expected_payload_sha="$(
-      vendored_lock_record youtube-downloader |
-        awk -F '\t' '{ print $4 }'
-    )"
-    actual_payload_sha="$(
-      cd "$AGENTS/skills/youtube-downloader" &&
-        find . -type f -print0 |
-        LC_ALL=C sort -z |
-        xargs -0 shasum -a 256 |
-        shasum -a 256 |
-        awk '{ print $1 }'
-    )"
-    [ "$actual_payload_sha" = "$expected_payload_sha" ] ||
-      fail 'youtube-downloader payload differs from the Stage B2 checkpoint'
-    expected_tree_sha="$(
-      vendored_lock_record youtube-downloader |
-        awk -F '\t' '{ print $5 }'
-    )"
-    actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/youtube-downloader")"
-    [ -n "$expected_tree_sha" ] && [ "$actual_tree_sha" = "$expected_tree_sha" ] ||
-      fail 'youtube-downloader structure differs from the Stage B2 checkpoint'
-    continue
-  fi
-  git -C "$AGENTS" diff --quiet "$B2_SKILLS_BASE" -- "skills/$skill" ||
-    fail "Stage B2 skill payload changed after checkpoint: $skill"
-done <<<"$b2_skills"
+[ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
+expected_b2_skills="$(printf '%s\n' "$b2_skills" | sed 's/^video-downloader$/youtube-downloader/' | LC_ALL=C sort)"
+locked_b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
+[ "$(printf '%s\n' "$locked_b2_skills" | grep -c .)" -eq 26 ] &&
+  [ "$locked_b2_skills" = "$expected_b2_skills" ] ||
+  fail 'Stage B2 skill tree lock inventory drifted'
+
+[ ! -e "$AGENTS/skills/video-downloader" ] &&
+  [ ! -L "$AGENTS/skills/video-downloader" ] ||
+  fail 'retired video-downloader directory still exists'
+for fork in clean-code-dotnet dotnet-core-expert dotnet-test qa-tester; do
+  fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
+done
+while IFS=$'\t' read -r skill expected_tree_sha; do
+  case "$skill" in \#*|"") continue ;; esac
+  actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
+  [ "$actual_tree_sha" = "$expected_tree_sha" ] ||
+    fail "Stage B2 skill tree differs from checkpoint: $skill"
+done < "$B2_SKILLS_LOCK"
 
 while IFS= read -r changed; do
   case "$changed" in

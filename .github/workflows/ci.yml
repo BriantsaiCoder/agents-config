@@ -42,6 +42,9 @@ jobs:
       - name: Matt workflow carrier contracts
         run: bash tests/mattpocock-workflow.sh
 
+      - name: Stage B2 skill checkpoint
+        run: bash tests/matt-thin-workflow.sh
+
       - name: Claude routing collision guard selftest
         run: bash tests/claude-routing-collision.sh --selftest
 

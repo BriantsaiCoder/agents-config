@@ -15,15 +15,41 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
+| `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream assessed at `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-07-31 — preserve the imported agent-skill adaptation; tree SHA-256 `7e53e673348379b72f76c7a85c3c199720ddd09e4b963c85092a03eefa054408` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
-| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-07-31 — preserve the imported local variant and remove obsolete Compose top-level `version`; tree SHA-256 `3beee1999f7a1160dfb13d77d570ab4f695fdfb2239f54c7760d4788d5ac448d` | **Active** |
+| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-07-31 — preserve the imported local variant and remove obsolete Compose top-level `version`; tree SHA-256 `ab80cfe8db12433c4fcd3aaa6f34adb0f490a76e3a476cef6a63951af51d4675` | **Active** |
+| `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-07-31 — preserve local coverage and unit-test reference variants; tree SHA-256 `9c303fb6337b8816e285d64d0d600a0e32362fcb298d6918f200a0244ddecc8f` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
+| `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — model invocation metadata only; tree SHA-256 `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
+
+## Unresolved Stage B2 provenance
+
+`aspnet-api-architect` and `dotnet-find-bugs` have no affirmative upstream ownership evidence.
+Their provenance lock points to the first tracked repository snapshot at `44c7fd0`, not to a
+claimed upstream. Both remain vendored and non-editable until a source repository and revision are
+verified; do not treat either as self-owned.
+
+## clean-code-dotnet
+
+**Decision (2026-07-31): preserve the Stage B2 imported agent-skill adaptation as a recorded fork.**
+
+The local skill names `thangchung/clean-code-dotnet` as its source but is not a wholesale upstream
+checkout. Its exact payload and tree are pinned in `vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the full local skill against upstream from the assessed revision.
+2. Replace it wholesale or explicitly retain the agent-skill adaptation; do not silently mix trees.
+3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
+   `tests/matt-thin-workflow.sh`.
+
+---
 
 ## dotnet-core-expert
 
@@ -45,6 +71,40 @@ payload and tree fingerprints are pinned in `vendored-skills.lock`.
    upstream still contains it.
 4. Recompute both fingerprints in `vendored-skills.lock` and this record, then run
    `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, and `tests/version-tripwire.sh`.
+
+---
+
+## dotnet-test
+
+**Decision (2026-07-31): preserve the Stage B2 reference variants as a recorded fork.**
+
+The local `generate-coverage.md` and `run-unit-tests.md` differ from the assessed
+`GiantCroissant-Lunar/pigeon-pea` snapshot. The full local payload and tree are pinned in
+`vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the full upstream skill against the assessed revision.
+2. Reapply only the two reference variants if their guidance is still required.
+3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
+   `tests/matt-thin-workflow.sh`.
+
+---
+
+## qa-tester
+
+**Decision (2026-07-31): preserve the Stage B2 runtime-only subset as a recorded fork.**
+
+The four local files are content-identical to FINOS `morphir-dotnet` at the assessed revision.
+The local skill omits only upstream `README.md`; payload and tree are pinned in
+`vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the four runtime files and upstream `README.md` against the assessed revision.
+2. Keep omitting `README.md` only while it remains non-runtime documentation.
+3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
+   `tests/matt-thin-workflow.sh`.
 
 ---
 

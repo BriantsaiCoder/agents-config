@@ -42,6 +42,25 @@ done < <(find "$AGENTS/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -type f | 
   ok "skill frontmatter names match directories" ||
   ng "skill frontmatter／directory mismatches: $skill_name_mismatches"
 
+cache_count="$(
+  find "$AGENTS/skills" \
+    \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \) |
+    wc -l | tr -d ' '
+)"
+[ "$cache_count" -eq 0 ] &&
+  ok "shared skills contain no Python cache artifacts" ||
+  ng "Python cache artifacts under shared skills: $cache_count"
+
+bad_exec_count="$(
+  find "$AGENTS/skills" -type f -perm -111 \
+    ! -name '*.sh' ! -name '*.py' ! -name '*.ps1' \
+    ! -name '*.js' ! -name '*.cjs' ! -name '*.fsx' |
+    wc -l | tr -d ' '
+)"
+[ "$bad_exec_count" -eq 0 ] &&
+  ok "only shared skill scripts are executable" ||
+  ng "non-script executable files under shared skills: $bad_exec_count"
+
 if rg -Fq '[ ! -L "$AGENTS/skills/video-downloader" ]' \
   "$AGENTS/tests/matt-thin-workflow.sh"; then
   ok "retired skill identity rejects broken symlinks"
