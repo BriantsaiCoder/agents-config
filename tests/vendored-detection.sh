@@ -215,7 +215,7 @@ if [ -d "$AGENTS/skills" ]; then
   # 這是刻意的 tripwire,不是待維護的清單:新增或退役任何 skill 都會讓這條紅燈,直到有人
   # 回來更新它。那正是要的行為——「悄悄多了一個 vendored skill」本來就該被攔下來人工確認。
   # 與 CI 的「skill-index 與 skills/ 一致」不同:那條比對兩個生成產物,這條釘死已知事實。
-  expect_vnd="agent-browser appinsights-instrumentation azure-resource-visualizer azure-role-selector native-feel-cross-platform-desktop playwright-best-practices security-audit tailwind-v4-shadcn vueuse-functions youtube-downloader"
+  expect_vnd="agent-browser appinsights-instrumentation azure-resource-visualizer azure-role-selector dotnet-core-expert native-feel-cross-platform-desktop playwright-best-practices security-audit tailwind-v4-shadcn vueuse-functions youtube-downloader"
   if [ -r "$AGENTS/mattpocock-skills.lock" ]; then
     locked=$(sed -n 's/^skill=//p' "$AGENTS/mattpocock-skills.lock")
     check "Matt lock 的 skill 數量" "22" "$(printf '%s\n' "$locked" | grep -c .)"
@@ -223,7 +223,7 @@ if [ -d "$AGENTS/skills" ]; then
   fi
   if [ -r "$AGENTS/vendored-skills.lock" ]; then
     generic_count=$(grep -vc '^#' "$AGENTS/vendored-skills.lock")
-    check "generic provenance lock 的 skill 數量" "1" "$generic_count"
+    check "generic provenance lock 的 skill 數量" "2" "$generic_count"
     while IFS=$'\t' read -r skill source revision expected_payload_sha expected_tree_sha; do
       case "$skill" in \#*|"") continue ;; esac
       actual_payload_sha=$(

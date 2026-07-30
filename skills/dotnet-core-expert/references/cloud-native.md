@@ -43,8 +43,6 @@ ENTRYPOINT ["dotnet", "WebApi.dll"]
 ## Docker Compose for Development
 
 ```yaml
-version: '3.8'
-
 services:
   api:
     build:

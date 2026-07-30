@@ -188,6 +188,18 @@ b2_skills="$(
 [ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 26 ] ||
   fail 'Stage B2 skill checkpoint does not contain exactly 26 directories'
 while IFS= read -r skill; do
+  if [ "$skill" = dotnet-core-expert ]; then
+    fork_recorded "$skill" ||
+      fail 'dotnet-core-expert Stage B2 fork is not recorded'
+    expected_tree_sha="$(
+      vendored_lock_record "$skill" |
+        awk -F '\t' '{ print $5 }'
+    )"
+    actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
+    [ -n "$expected_tree_sha" ] && [ "$actual_tree_sha" = "$expected_tree_sha" ] ||
+      fail 'dotnet-core-expert tree differs from its recorded fork fingerprint'
+    continue
+  fi
   if [ "$skill" = video-downloader ]; then
     [ ! -e "$AGENTS/skills/video-downloader" ] &&
       [ ! -L "$AGENTS/skills/video-downloader" ] ||

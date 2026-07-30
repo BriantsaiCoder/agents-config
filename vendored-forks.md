@@ -16,6 +16,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
+| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-07-31 — preserve the imported local variant and remove obsolete Compose top-level `version`; tree SHA-256 `3beee1999f7a1160dfb13d77d570ab4f695fdfb2239f54c7760d4788d5ac448d` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — model invocation metadata only; tree SHA-256 `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
@@ -23,6 +24,29 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 <!-- fork-index:end -->
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
+
+## dotnet-core-expert
+
+**Decision (2026-07-31): accept the Stage B2 imported snapshot as a recorded fork.**
+
+The imported payload already differs from current `Jeffallan/claude-skills` in its Controllers
+guidance, workflow, and templates. This decision preserves that existing local variant and removes
+one obsolete line from the copyable Compose example: top-level `version: '3.8'`. Upstream assessed
+at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` still contains that obsolete line. The complete local
+payload and tree fingerprints are pinned in `vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the full upstream `skills/dotnet-core-expert/` tree against the Stage B2 snapshot
+   `7080450715c0e5f264e19ab60a48da9c4437c0af`.
+2. Decide explicitly whether to retain the local Controllers/templates variant or replace it
+   wholesale with upstream; do not mix the trees silently.
+3. If retaining the fork, reapply removal of the obsolete Compose top-level `version` only when
+   upstream still contains it.
+4. Recompute both fingerprints in `vendored-skills.lock` and this record, then run
+   `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, and `tests/version-tripwire.sh`.
+
+---
 
 ## Pinned Matt set — 20 unmodified + 2 recorded forks
 
