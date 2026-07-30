@@ -3,6 +3,7 @@ set -euo pipefail
 
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
 WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
+B2_SKILLS_BASE="${B2_SKILLS_BASE:-7080450715c0e5f264e19ab60a48da9c4437c0af}"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
 VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
@@ -31,27 +32,55 @@ for heading in \
   rg -q "$heading" "$KERNEL" || fail "thin kernel heading missing: $heading"
 done
 
-for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6; do
+for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6 INT-7; do
   rg -q "\\[$rule\\]" "$KERNEL" || fail "thin kernel guard missing: $rule"
 done
 
-for skill in \
-  triage \
-  grilling \
-  domain-modeling \
-  grill-with-docs \
-  to-spec \
-  to-tickets \
-  implement \
-  tdd \
-  diagnosing-bugs \
-  code-review \
-  codebase-design \
-  wayfinder \
-  handoff; do
-  rg -q "\`$skill\`" "$KERNEL" || fail "active route missing: $skill"
+while IFS= read -r skill; do
   [ -f "$AGENTS/skills/$skill/SKILL.md" ] || fail "routed skill missing: $skill"
-done
+done < <(
+  sed -n '/^| Need | Route |$/,/^$/p' "$KERNEL" |
+    rg -o '`[a-z0-9-]+`' |
+    tr -d '`' |
+    sort -u
+)
+
+expected_invocation_sha="$(
+  sed -n 's/^invocation_manifest_sha256=//p' "$AGENTS/mattpocock-skills.lock"
+)"
+[[ "$expected_invocation_sha" =~ ^[a-f0-9]{64}$ ]] ||
+  fail 'Matt invocation manifest fingerprint missing'
+actual_invocation_sha="$(
+  while IFS='=' read -r key skill; do
+    [ "$key" = skill ] || continue
+    if rg -q '^disable-model-invocation:[[:space:]]*true$' \
+      "$AGENTS/skills/$skill/SKILL.md"; then
+      mode=user
+    else
+      mode=model
+    fi
+    printf '%s=%s\n' "$skill" "$mode"
+  done < "$AGENTS/mattpocock-skills.lock" |
+    LC_ALL=C sort |
+    shasum -a 256 |
+    awk '{ print $1 }'
+)"
+[ "$actual_invocation_sha" = "$expected_invocation_sha" ] ||
+  fail 'Matt invocation split drifted'
+
+rg -q '\[INT-7\].*disable-model-invocation.*MUST NOT.*自動 invoke' "$KERNEL" ||
+  fail 'thin kernel does not preserve the Matt user-only invocation boundary'
+rg -q 'user-only skill.*推薦.*explicit invocation command.*等待' "$KERNEL" ||
+  fail 'thin kernel does not hand user-only routes back to explicit user invocation'
+sed -n '/^### Claude$/,/^### Codex$/p' "$KERNEL" |
+  rg -q 'user-only skill command = `/<skill-name>`' ||
+  fail 'Claude user-only invocation syntax missing'
+sed -n '/^### Codex$/,/^### Copilot$/p' "$KERNEL" |
+  rg -q 'user-only skill command = `\$<skill-name>`' ||
+  fail 'Codex user-only invocation syntax missing'
+sed -n '/^### Copilot$/,/^## References$/p' "$KERNEL" |
+  rg -q 'user-only skill command = `/<skill-name>`' ||
+  fail 'Copilot user-only invocation syntax missing'
 
 rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
   fail 'grilling does not offer compact options with the recommendation first'
@@ -115,8 +144,51 @@ done < "$AGENTS/mattpocock-skills.lock"
 # 的死路徑，改成不帶路徑的「家規」措辭（規則內容本來就內聯在同一段）。兩者都是 house
 # skill，不在 mattpocock-skills.lock 的 22 個內，所以上面第 106-112 行的 vendored gate
 # 不適用。註解不能插在 case pattern 的 `\` 續行之間——那是語法錯誤。
+# Stage B2 的 commit 同時是 exact directory allowlist 與 payload checkpoint。這會允許
+# 該 commit 新增的 26 個目錄存在，但拒絕它們在 checkpoint 後被新增、刪除或改寫。
+b2_skills="$(
+  git -C "$AGENTS" diff-tree --no-commit-id --name-only -r \
+    "$B2_SKILLS_BASE" -- skills |
+    awk -F/ 'NF > 1 { print $2 }' |
+    LC_ALL=C sort -u
+)"
+[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 26 ] ||
+  fail 'Stage B2 skill checkpoint does not contain exactly 26 directories'
+while IFS= read -r skill; do
+  if [ "$skill" = video-downloader ]; then
+    [ ! -e "$AGENTS/skills/video-downloader" ] &&
+      [ ! -L "$AGENTS/skills/video-downloader" ] ||
+      fail 'retired video-downloader directory still exists'
+    expected_payload_sha="$(
+      vendored_lock_record youtube-downloader |
+        awk -F '\t' '{ print $4 }'
+    )"
+    actual_payload_sha="$(
+      cd "$AGENTS/skills/youtube-downloader" &&
+        find . -type f -print0 |
+        LC_ALL=C sort -z |
+        xargs -0 shasum -a 256 |
+        shasum -a 256 |
+        awk '{ print $1 }'
+    )"
+    [ "$actual_payload_sha" = "$expected_payload_sha" ] ||
+      fail 'youtube-downloader payload differs from the Stage B2 checkpoint'
+    expected_tree_sha="$(
+      vendored_lock_record youtube-downloader |
+        awk -F '\t' '{ print $5 }'
+    )"
+    actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/youtube-downloader")"
+    [ -n "$expected_tree_sha" ] && [ "$actual_tree_sha" = "$expected_tree_sha" ] ||
+      fail 'youtube-downloader structure differs from the Stage B2 checkpoint'
+    continue
+  fi
+  git -C "$AGENTS" diff --quiet "$B2_SKILLS_BASE" -- "skills/$skill" ||
+    fail "Stage B2 skill payload changed after checkpoint: $skill"
+done <<<"$b2_skills"
+
 while IFS= read -r changed; do
   case "$changed" in
+    skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/dev-workflow/* | \
     skills/grilling/SKILL.md | \
     skills/mp-diagnose/* | \
@@ -125,7 +197,17 @@ while IFS= read -r changed; do
     skills/mp-tdd/* | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/references/styling-and-ui.md) ;;
-    *) fail "non-allowlisted shared skill changed: $changed" ;;
+    *)
+      changed_skill="${changed#skills/}"
+      changed_skill="${changed_skill%%/*}"
+      if [ "$changed_skill" = youtube-downloader ]; then
+        checkpoint_skill=video-downloader
+      else
+        checkpoint_skill="$changed_skill"
+      fi
+      printf '%s\n' "$b2_skills" | grep -Fxq "$checkpoint_skill" ||
+        fail "non-allowlisted shared skill changed: $changed"
+      ;;
   esac
 done < <(git -C "$AGENTS" diff --name-only "$WORKFLOW_BASE" -- skills)
 

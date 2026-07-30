@@ -17,6 +17,38 @@ else
   ng "shared skills source"
 fi
 
+skill_name_mismatches=0
+while IFS= read -r skill_file; do
+  directory_name="$(basename "$(dirname "$skill_file")")"
+  frontmatter_name="$(
+    awk '
+      NR == 1 && $0 == "---" { frontmatter=1; next }
+      frontmatter && $0 == "---" { exit }
+      frontmatter && /^name:[[:space:]]*/ {
+        sub(/^name:[[:space:]]*/, "")
+        print
+        exit
+      }
+    ' "$skill_file"
+  )"
+  frontmatter_name="${frontmatter_name#\'}"
+  frontmatter_name="${frontmatter_name%\'}"
+  frontmatter_name="${frontmatter_name#\"}"
+  frontmatter_name="${frontmatter_name%\"}"
+  [ "$frontmatter_name" = "$directory_name" ] ||
+    skill_name_mismatches=$((skill_name_mismatches + 1))
+done < <(find "$AGENTS/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -type f | sort)
+[ "$skill_name_mismatches" -eq 0 ] &&
+  ok "skill frontmatter names match directories" ||
+  ng "skill frontmatter／directory mismatches: $skill_name_mismatches"
+
+if rg -Fq '[ ! -L "$AGENTS/skills/video-downloader" ]' \
+  "$AGENTS/tests/matt-thin-workflow.sh"; then
+  ok "retired skill identity rejects broken symlinks"
+else
+  ng "retired skill identity can miss a broken symlink"
+fi
+
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/agents-conformance.XXXXXX")"
 trap 'chmod -R u+rwX "$scratch" 2>/dev/null || true; rm -rf "$scratch"' EXIT
 mkdir -p "$scratch/home/.claude/skills"

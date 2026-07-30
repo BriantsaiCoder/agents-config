@@ -87,10 +87,48 @@ check "root lock 列出的 skill -> VND" "VND" "$(vendored_flag "$d")"
 check "root lock 的 source_url -> owner" "https://github.com/example/skills.git" "$(vendored_owner "$d")"
 unset MATTPOCOCK_SKILLS_LOCK
 
+d=$(mkskill generic-lock-listed)
+GENERIC_LOCK="$TMP/vendored-skills.lock"
+printf '# skill\tsource_url\tassessed_revision\tpayload_sha256\ttree_sha256\n%s\t%s\t%s\t%s\t%s\n' \
+  generic-lock-listed https://github.com/example/skills.git deadbeef \
+  0123456789abcdef fedcba9876543210 \
+  > "$GENERIC_LOCK"
+VENDORED_SKILLS_LOCK="$GENERIC_LOCK"
+export VENDORED_SKILLS_LOCK
+check "generic provenance lock 列出的 skill -> VND" "VND" "$(vendored_flag "$d")"
+check "generic provenance lock 的 source_url -> owner" \
+  "https://github.com/example/skills.git" "$(vendored_owner "$d")"
+unset VENDORED_SKILLS_LOCK
+
 check "目錄不存在 -> ERR" "ERR" "$(vendored_flag "$TMP/does-not-exist")"
 
 d="$TMP/no-skill-md"; mkdir -p "$d"
 check "目錄存在但無 SKILL.md -> ERR" "ERR" "$(vendored_flag "$d")"
+
+echo
+echo "── vendored_tree_sha256：內容、mode、symlink 都必須受保護 ──"
+
+d=$(mkskill tree-hash)
+tree_hash_before="$(vendored_tree_sha256 "$d")"
+chmod +x "$d/SKILL.md"
+tree_hash_executable="$(vendored_tree_sha256 "$d")"
+[ "$tree_hash_before" != "$tree_hash_executable" ] &&
+  ok "executable bit 變更 -> tree SHA 變更" ||
+  bad "executable bit 變更" "different SHA" "$tree_hash_executable"
+chmod -x "$d/SKILL.md"
+ln -s first-target "$d/link"
+tree_hash_first_link="$(vendored_tree_sha256 "$d")"
+ln -snf second-target "$d/link"
+tree_hash_second_link="$(vendored_tree_sha256 "$d")"
+[ "$tree_hash_first_link" != "$tree_hash_second_link" ] &&
+  ok "symlink target 變更 -> tree SHA 變更" ||
+  bad "symlink target 變更" "different SHA" "$tree_hash_second_link"
+ln -s "$d" "$TMP/tree-hash-root-link"
+if vendored_tree_sha256 "$TMP/tree-hash-root-link" >/dev/null 2>&1; then
+  bad "skill root 換成 symlink" "rejected" "accepted"
+else
+  ok "skill root 換成 symlink -> rejected"
+fi
 
 echo
 echo "── vendored_flag：不可誤判（false positive 防線）──"
@@ -177,11 +215,35 @@ if [ -d "$AGENTS/skills" ]; then
   # 這是刻意的 tripwire,不是待維護的清單:新增或退役任何 skill 都會讓這條紅燈,直到有人
   # 回來更新它。那正是要的行為——「悄悄多了一個 vendored skill」本來就該被攔下來人工確認。
   # 與 CI 的「skill-index 與 skills/ 一致」不同:那條比對兩個生成產物,這條釘死已知事實。
-  expect_vnd="agent-browser native-feel-cross-platform-desktop playwright-best-practices security-audit tailwind-v4-shadcn vueuse-functions"
+  expect_vnd="agent-browser appinsights-instrumentation azure-resource-visualizer azure-role-selector native-feel-cross-platform-desktop playwright-best-practices security-audit tailwind-v4-shadcn vueuse-functions youtube-downloader"
   if [ -r "$AGENTS/mattpocock-skills.lock" ]; then
     locked=$(sed -n 's/^skill=//p' "$AGENTS/mattpocock-skills.lock")
     check "Matt lock 的 skill 數量" "22" "$(printf '%s\n' "$locked" | grep -c .)"
     expect_vnd="$expect_vnd $(printf '%s\n' "$locked" | tr '\n' ' ' | sed 's/ $//')"
+  fi
+  if [ -r "$AGENTS/vendored-skills.lock" ]; then
+    generic_count=$(grep -vc '^#' "$AGENTS/vendored-skills.lock")
+    check "generic provenance lock 的 skill 數量" "1" "$generic_count"
+    while IFS=$'\t' read -r skill source revision expected_payload_sha expected_tree_sha; do
+      case "$skill" in \#*|"") continue ;; esac
+      actual_payload_sha=$(
+        cd "$AGENTS/skills/$skill" &&
+          find . -type f -print0 |
+          LC_ALL=C sort -z |
+          xargs -0 shasum -a 256 |
+          shasum -a 256 |
+          awk '{ print $1 }'
+      )
+      check "generic provenance lock 的 payload SHA：$skill" \
+        "$expected_payload_sha" "$actual_payload_sha"
+      actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
+      check "generic provenance lock 的 tree SHA：$skill" \
+        "$expected_tree_sha" "$actual_tree_sha"
+      [[ "$revision" =~ ^[a-f0-9]{40}$ ]] ||
+        bad "generic provenance lock 的 revision：$skill" "40-char SHA" "$revision"
+      [ -n "$source" ] ||
+        bad "generic provenance lock 的 source_url：$skill" "非空" "(空)"
+    done < "$AGENTS/vendored-skills.lock"
   fi
   actual=""
   for sd in "$AGENTS"/skills/*/; do

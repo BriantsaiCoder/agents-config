@@ -3,7 +3,7 @@ name: dev-workflow
 description: 收到任何開發任務時先讀本檔。這是三 host 共用的 thin kernel：S0 route 到 Matt Pocock skills，S2 處理授權與風險，完成後只保留 S4 驗證、S5 審查、S6 收尾。
 ---
 
-<!-- tier: workflow | consumed-by: claude,codex,copilot | last-verified: 2026-07-29 -->
+<!-- tier: workflow | consumed-by: claude,codex,copilot | last-verified: 2026-07-30 -->
 
 # dev-workflow — thin routing and governance kernel
 
@@ -21,9 +21,10 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 - [INT-1] push／open PR／merge／final closeout MUST 只在 S4、S5 適用 gate PASS 後執行。觸發：任一收尾動作。例外：SKIPPED／UNAVAILABLE 須附理由或 probe。驗證：S4/S5 ledger 與 evidence 齊備。
 - [INT-2] MUST 在 fix 前先有 failing regression test（RED→GREEN）。觸發：BUGFIX 或改既有 behavior。例外：無可測 seam 時記錄架構問題，fix 後交接 `codebase-design`。驗證：RED evidence 早於 fix。
 - [INT-3] 命中 [T0-8] 時 MUST 停在 S2 等明確核准；auto／autopilot 不豁免。觸發：將改檔且屬 plan-first／中高風險。例外：未命中時可引用 user 的 change／build／fix 原句標 SKIPPED。驗證：核准原句或 SKIPPED evidence。
-- [INT-4] Delegation 的寫入 ownership 與 read-only evidence scope MUST 不重疊；未獲 user／repo／higher instruction 授權即 SKIPPED。Subagent 回報不是完成證據，main context MUST 重驗。觸發：任何 delegation。例外：skill 明定的固定 fan-out。驗證：scope 清單 + main-context probe。
+- [INT-4] Delegation 只用於可獨立平行的實質工作；預設 1 個，未經 user／repo／higher instruction 明示最多 2 個。寫入 ownership 與 read-only evidence scope MUST 不重疊；未獲 user／repo／higher instruction 授權即 SKIPPED。Subagent 回報不是完成證據，main context MUST 重驗。觸發：任何 delegation。例外：無。驗證：scope 清單 + main-context probe。
 - [INT-5] `setup-matt-pocock-skills` 只有使用者明示才可執行；先讀 repo `docs/agents/issue-tracker.md`，不存在才讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：Matt skill 需要 tracker contract。例外：無。驗證：contract 存在或引用使用者 setup 原句。
 - [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
+- [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 由 model 自動 invoke 或假裝已 invoke；S0 只能推薦下一個 host-specific command，並等待使用者明示啟動。觸發：route 命中 user-only skill。例外：無。驗證：skill frontmatter + 使用者 invocation 原句。
 
 退役 ID 殼標記（CONVENTIONS 規則 3：ID 永不重編、永不回收，舊 transcript 與 commit message 可能仍引用）：`[R-1 DEPRECATED→INT-1 2026-07]`、`[R-2 DEPRECATED→INT-2 2026-07]`。兩者原定義於 `core/routing.md`，該檔 2026-07-30 退役至 `attic/core/`；條文語意由上方 [INT-1]／[INT-2] 逐項承接。
 
@@ -40,7 +41,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | 拆 tracer-bullet tickets | `to-tickets` |
 | 超過單一 session 的決策地圖 | `wayfinder` |
 | session 中斷且重要 context 尚未進 canonical artifact | `handoff` |
-| 需求已清楚且單一 session 可完成（含已核准 spec／ticket） | kernel 的 `implement` adapter；每個 slice 用 `tdd` |
+| 需求已清楚且單一 session 可完成（含已核准 spec／ticket） | 推薦使用者顯式 invoke `implement`；啟動後由 kernel adapter 管理，每個 slice 用 `tdd` |
 | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
 | code review | `code-review` |
 | 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
@@ -49,15 +50,16 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | skill 建立／修改／稽核 | `writing-great-skills`／`auditing-skill-folder` |
 | 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
-Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
+Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於已 invoke；命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。
 
 ### Routing continuations
 
-- `triage`、`grilling` 或 `wayfinder` 釐清需求後，單一 session 可完成的 coherent vertical slice 進 `implement`。
-- 多個可獨立驗收的 implementation slices：無 canonical spec 時依序跑 `to-spec` → `to-tickets`；已有完整 spec／agent-ready issue 時略過 `to-spec`，直接跑 `to-tickets`。
-- 每張 ticket 以 fresh session 開始，先進 isolated branch／worktree，再依 `implement` adapter 執行；fresh session 不豁免 S2。
+- `triage`、`grilling` 或 `wayfinder` 釐清需求後，單一 session 可完成的 coherent vertical slice 推薦使用者顯式 invoke `implement`。
+- 多個可獨立驗收的 implementation slices：無 canonical spec 時依序推薦使用者顯式 invoke `to-spec` → `to-tickets`；已有完整 spec／agent-ready issue 時略過 `to-spec`，直接推薦 `to-tickets`。
+- 每張 ticket 以 fresh session 開始，由使用者顯式 invoke `implement`；啟動後先進 isolated branch／worktree，再依 adapter 執行，fresh session 不豁免 S2。
 - `wayfinder` 只處理跨 session 的決策迷霧；決策已清楚但實作量大時走 spec／tickets 分流。
-- `handoff` 只橋接中斷時仍未進入 spec、ticket 或 wayfinder map 的重要 context；已有 canonical artifact 時只引用，不重複內容。
+- 使用者明示要換 session、交接或讓另一個 agent 接手時，`handoff` 只橋接仍未進入 spec、ticket 或 wayfinder map 的重要 context；需要時依 [INT-7] 推薦 host-specific command 並等待使用者啟動。
+- Agent 因 blocker 或 session 邊界必須停止且工作未完成時，若仍有未落盤的重要 context，將 `handoff` 列為唯一 next action；已有 canonical artifact 時只引用、不重複內容。一般 context compaction、任務已完成或只是內容很長 MUST NOT 觸發 `handoff`。
 
 ## S2 AUTHORIZE
 
@@ -86,7 +88,9 @@ Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
 
 ## S5 REVIEW
 
-- 用 `code-review` 分開執行 Standards 與 Spec；各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
+- [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
+- [S5-2] Working tree dirty review MUST 先以 staged `git diff --cached --name-status`、unstaged `git diff --name-status`、untracked `git ls-files --others --exclude-standard` 與 task 明列的 ignored path 取得 metadata-only inventory，再依序用 `gitleaks git --staged --redact`、`gitleaks git --pre-commit --redact` 與候選 path 的 `gitleaks dir --redact` 掃描；全部通過後才可取得 staged raw `git diff --cached --`、unstaged raw `git diff --` 並組 review package。任一 finding MUST 使 package assembly FAIL，命中的 raw file／hunk MUST omit，只保留 path、set/unset 與 redacted finding；`.env*`、credentials、private keys、token stores 等 secret-bearing 內容 MUST NOT 傳全文；非敏感文字檔 ≤256 KiB 才可傳全文，binary 或超過 256 KiB 只傳 path、size、hash。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
+- 各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
 - Spec 不存在可標 SKIPPED；缺 reviewer capability 必須附 UNAVAILABLE probe，不得假裝自審等價。
 - Actionable finding 回 implementation；bug finding 先補 RED test（[INT-2]）。Delegation 依 [INT-4]。
 
@@ -102,19 +106,24 @@ Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
 ### Claude
 
 - plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent。
-- S5 的 `code-review` 固定 fan-out 受 [INT-4] 管理；`uiux-reviewer` 是 Claude-only。
+- user-only skill command = `/<skill-name>`。
+- S5 適用時，`code-review` 的 Standards／Spec 可在 [INT-4] 上限內平行；`uiux-reviewer` 是 Claude-only。
 
 ### Codex
 
 - plan = Plan Mode；todo = update_plan；子代理 = spawn_agent／wait_agent。
+- user-only skill command = `$<skill-name>`。
 - `implement` 先用 `bin/agents-branch` 或 repo worktree 建 isolated branch；S6 用 PR heartbeat。
 - Git guard 由 `~/.codex/hooks.json` 與 `~/.codex/rules/default.rules` 疊加，不能取代 tier0／CI。
 
 ### Copilot
 
 - plan = `--mode plan`；todo = update_todo；子代理 = `task` 工具。
+- user-only skill command = `/<skill-name>`。
 - 命中 [T0-8] 時，非 plan mode 必須先提出計畫並取得核准。
-- S5 同一 response 用兩個 `task` 跑 Standards／Spec；Copilot user-level hooks 已配置於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
+- S5 適用且 working tree dirty 時，預設 1 個 `task` review current package；兩軸獨立且平行有實益時，依 [INT-4] 增至 2 個；clean／fixed-point review 才執行 `code-review`。
+- Copilot user-level hooks 已配置於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
+- 子代理沿用模型預設 effort；僅 hard debugging、security、migration 或高風險 review 升 `high`，`xhigh`／`max` 需量測證明收益。
 
 ## References
 

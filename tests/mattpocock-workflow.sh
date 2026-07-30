@@ -24,6 +24,14 @@ lacks() {
   fi
 }
 
+rule_has() {
+  local label="$1" id="$2" pattern="$3"
+  sed -n "/^\\- \\[$id\\]/p" "$ROOT/skills/dev-workflow/SKILL.md" |
+    grep -qE "$pattern" &&
+    ok "$label" ||
+    ng "$label"
+}
+
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
 refs=$(grep -o '\[INT-4\]' "$ROOT/skills/dev-workflow/SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
 [ "$refs" -ge 5 ] && ok "[INT-4] referenced across workflow" || ng "[INT-4] referenced across workflow"
@@ -83,12 +91,60 @@ has "existing spec skips duplicate to-spec" '已有完整 spec.*略過 `to-spec`
 has "ticket implementation starts fresh" '每張 ticket.*fresh session.*isolated.*worktree' skills/dev-workflow/SKILL.md
 has "session interruption routes to handoff" 'session 中斷.*`handoff`' skills/dev-workflow/SKILL.md
 has "handoff only bridges uncaptured context" '`handoff`.*未進入 spec.*ticket.*wayfinder map' skills/dev-workflow/SKILL.md
+has "explicit session switch recommends handoff" '使用者明示.*換 session.*交接.*另一個 agent.*`handoff`' skills/dev-workflow/SKILL.md
+has "unfinished stop makes handoff the sole next action" 'blocker.*session 邊界.*工作未完成.*`handoff`.*唯一 next action' skills/dev-workflow/SKILL.md
+has "canonical artifact suppresses duplicate handoff" '已有 canonical artifact.*只引用.*不重複' skills/dev-workflow/SKILL.md
+has "compaction and completion do not trigger handoff" 'context compaction.*任務已完成.*內容很長.*MUST NOT.*`handoff`' skills/dev-workflow/SKILL.md
 
 has "closeout is action-triggered" 'push.*open PR.*merge.*final closeout' skills/dev-workflow/SKILL.md
 has "implement adapter enters branch" '`implement`.*(branch|worktree)' skills/dev-workflow/SKILL.md
 has "implement adapter requires S4-S6" '`implement`.*S4.*S6' skills/dev-workflow/SKILL.md
 has "S5 has Standards and Spec axes" 'Standards.*Spec' skills/dev-workflow/SKILL.md
 has "S5 axes have four states" 'PASS.*FAIL.*SKIPPED.*UNAVAILABLE' skills/dev-workflow/SKILL.md
+has "S5 dirty review includes staged and unstaged changes" 'staged.*`git diff --cached --`.*unstaged.*`git diff --`' skills/dev-workflow/SKILL.md
+has "S5 dirty review includes untracked files" 'git ls-files --others --exclude-standard' skills/dev-workflow/SKILL.md
+rule_has "S5 risk contract has five elements" S5-1 'MUST.*觸發：.*例外：.*驗證：'
+rule_has "S5 package contract has five elements" S5-2 'MUST.*觸發：.*例外：.*驗證：'
+rule_has "S5 dirty review inventories explicit ignored paths" S5-2 'task 明列.*ignored path.*metadata-only inventory'
+rule_has "S5 package omits secret-bearing content" S5-2 'secret-bearing.*MUST NOT.*全文'
+rule_has "S5 package limits secret evidence" S5-2 'path.*set/unset.*redacted finding'
+rule_has "S5 package names common secret paths" S5-2 '\.env\*.*credentials.*private keys.*token stores'
+rule_has "S5 package scans staged changes" S5-2 'gitleaks git --staged --redact'
+rule_has "S5 package scans unstaged changes" S5-2 'gitleaks git --pre-commit --redact'
+rule_has "S5 package scans untracked and ignored candidates" S5-2 'gitleaks dir --redact'
+rule_has "S5 package inventories metadata before scans and raw diff" S5-2 'name-status.*gitleaks git --staged.*全部通過後.*git diff --cached --`'
+rule_has "S5 finding blocks raw package assembly" S5-2 'finding.*MUST.*FAIL.*raw.*MUST.*omit'
+rule_has "S5 package bounds binary and oversized files" S5-2 'binary.*256 KiB.*path.*size.*hash|256 KiB.*binary.*path.*size.*hash'
+lacks "S5 package has no unconditional ignored-file content" 'ignored path 全文' skills/dev-workflow/SKILL.md
+has "delegation is bounded by default" 'Delegation.*預設 1.*user.*repo.*higher instruction.*最多 2' skills/dev-workflow/SKILL.md
+rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
+rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
+has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
+has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' skills/dev-workflow/SKILL.md
+has "Copilot S5 handles dirty reviews" 'working tree dirty.*預設 1 個 `task`' skills/dev-workflow/SKILL.md
+has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' skills/dev-workflow/SKILL.md
+lacks "S5 has no unconditional fixed fan-out" '固定 fan-out|S5.*同一 response.*兩個|Standards.*Spec.*各.*(一|1)個.*task' skills/dev-workflow/SKILL.md
+
+if command -v gitleaks >/dev/null 2>&1; then
+  scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/matt-secret-fixture.XXXXXX")"
+  printf 'ghp_%s%s\n' '123456789012345678' '901234567890123456' > "$scan_fixture/leak.txt"
+  if gitleaks dir --redact --no-banner --no-color "$scan_fixture" >/dev/null 2>&1; then
+    ng "gitleaks fixture blocks a review package"
+  else
+    ok "gitleaks fixture blocks a review package"
+  fi
+  rm -r -- "$scan_fixture"
+else
+  ng "gitleaks scanner is available"
+fi
+
+copilot_s5_count="$(
+  sed -n '/^### Copilot$/,/^## References$/p' "$ROOT/skills/dev-workflow/SKILL.md" |
+    rg -c '^- S5 '
+)"
+[ "$copilot_s5_count" = 1 ] &&
+  ok "Copilot adapter has one canonical S5 directive" ||
+  ng "Copilot adapter has one canonical S5 directive"
 has "bugfix routes to diagnosing-bugs" 'diagnosing-bugs' skills/bug-fix-settlement/SKILL.md
 
 for active in skills/dev-workflow/SKILL.md \
