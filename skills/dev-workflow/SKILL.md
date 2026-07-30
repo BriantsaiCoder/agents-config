@@ -25,6 +25,8 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 - [INT-5] `setup-matt-pocock-skills` 只有使用者明示才可執行；先讀 repo `docs/agents/issue-tracker.md`，不存在才讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：Matt skill 需要 tracker contract。例外：無。驗證：contract 存在或引用使用者 setup 原句。
 - [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
 
+退役 ID 殼標記（CONVENTIONS 規則 3：ID 永不重編、永不回收，舊 transcript 與 commit message 可能仍引用）：`[R-1 DEPRECATED→INT-1 2026-07]`、`[R-2 DEPRECATED→INT-2 2026-07]`。兩者原定義於 `core/routing.md`，該檔 2026-07-30 退役至 `attic/core/`；條文語意由上方 [INT-1]／[INT-2] 逐項承接。
+
 ## S0 ROUTE
 
 由上而下套用需要的 method skills；可組合，不複製其方法 prose：

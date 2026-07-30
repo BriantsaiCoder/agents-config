@@ -94,7 +94,7 @@ done
 
 # 2026-07-30：移除對 $AGENTS/core/tier2-style.md 的 SHA 比對。core/ 三家 runtime 都不讀
 # （本檔第 200 行的反向斷言已禁止 host config 引用 .agents control plane），已退役至
-# attic/core-2026-07-30/。T2-6 的 active 正本只在三家 host-local config，由下面 claude
+# attic/core/。T2-6 的 active 正本只在三家 host-local config，由下面 claude
 # candidate 那條與第 88-92 行的逐字 preserved_response_policy 檢查把關。
 expected_tier2_sha='677f78d81cfe358760584b27bd7a8e0e7e08fd1197842f08ceabb7f725aeba5e'
 claude_tier2_sha="$(shasum -a 256 "$CLAUDE_CANDIDATE/core/tier2-style.md" | awk '{ print $1 }')"

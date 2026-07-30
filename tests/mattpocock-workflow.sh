@@ -29,7 +29,9 @@ refs=$(grep -o '\[INT-4\]' "$ROOT/skills/dev-workflow/SKILL.md" 2>/dev/null | wc
 [ "$refs" -ge 5 ] && ok "[INT-4] referenced across workflow" || ng "[INT-4] referenced across workflow"
 # 2026-07-30：原本驗 core/tier1-workflow.md 的 [T1-10] 條文，但 core/ 三家不讀且已退役。
 # tier1 條文的 active 正本在各 host 自己的 core/ 底下，~/.agents 的 test 不該跨進 host
-# 擁有的檔案（ownership 邊界）。改驗 dev-workflow 的 Codex adapter 有指向該工具。
+# 擁有的檔案（ownership 邊界）。拆成兩條：isolation 要求由 [INT-6] 承接，工具指向由
+# Codex adapter 承接。只驗 'bin/agents-branch' 是不夠的——那條在 [INT-6] 被刪掉後仍會綠。
+has "[INT-6] requires isolated worktree" '^\- \[INT-6\].*(isolated worktree|worktree)' skills/dev-workflow/SKILL.md
 has "[T1-10] tooling points to agents-branch" 'bin/agents-branch' skills/dev-workflow/SKILL.md
 
 has "house skill standards exists" '^# Skill standards' skills/auditing-skill-folder/references/skill-standards.md
@@ -62,7 +64,7 @@ done
 # 理由：core/routing.md 三家 runtime 都不讀（Claude 只 @import ~/.claude/core/*，Codex 與
 # Copilot 的 config 對 .agents/ 只引用 skills/），而本檔第 83 行的 for-active 迴圈卻把它
 # 當 active——test 說 active、CONVENTIONS 規則 1 說歷史 evidence、runtime 不讀，三種互斥。
-# 驗真正被讀的那份檔才是斷言的本意。core/ 已退役至 attic/core-2026-07-30/。
+# 驗真正被讀的那份檔才是斷言的本意。core/ 已退役至 attic/core/。
 has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' skills/dev-workflow/SKILL.md
 has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.md
 has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md

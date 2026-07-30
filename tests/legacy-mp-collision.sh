@@ -40,7 +40,7 @@ done
 }
 
 # 2026-07-30：掃描目標從 core/routing.md 改為 dev-workflow SKILL.md（S0 ROUTE 表）。
-# core/ 三家 runtime 都不讀，已退役至 attic/core-2026-07-30/；active routing 的真正本是
+# core/ 三家 runtime 都不讀，已退役至 attic/core/；active routing 的真正本是
 # dev-workflow 的 S0 表。SKILLS_DIR 已涵蓋它，但明列可讓斷言在 skills/ 佈局改變時仍成立。
 if rg -q 'mp-(diagnose|grill-with-docs|improve-codebase-architecture|tdd)' \
   "$ROOT/skills/dev-workflow/SKILL.md" "$SKILLS_DIR"; then

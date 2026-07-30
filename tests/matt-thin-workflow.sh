@@ -88,7 +88,7 @@ if rg -n 'superpowers:' "$AGENTS/skills" >/dev/null; then
   fail 'active shared skills still reference Superpowers'
 fi
 # 2026-07-30：掃描目標從 $AGENTS/core/routing.md 改為 $KERNEL（dev-workflow SKILL.md）。
-# core/ 三家 runtime 都不讀，已退役至 attic/core-2026-07-30/；active routing 的真正本是
+# core/ 三家 runtime 都不讀，已退役至 attic/core/；active routing 的真正本是
 # kernel 的 S0 ROUTE 表。
 if rg -n 'mp-(diagnose|grill-with-docs|improve-codebase-architecture|tdd)' \
   "$KERNEL" "$AGENTS/skills" >/dev/null; then

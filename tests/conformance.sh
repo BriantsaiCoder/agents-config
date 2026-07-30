@@ -104,5 +104,19 @@ else
   ng "legacy mp collision guard"
 fi
 
+# CONVENTIONS 規則 11 的 ~/.agents 一側，下沉自 prose（規則 9）。必須用 find 不得用
+# ls + glob：後者在 zsh 下 nomatch 中止即回 0＝假合規。dotfile 排除＝規則 11 的
+# 「app 自管 runtime state 備份」例外。
+bak_count="$(find "$AGENTS" -name '*.bak*' -not -path '*/.git/*' -not -name '.*' 2>/dev/null | wc -l | tr -d ' ')"
+[ "$bak_count" = 0 ] &&
+  ok "no manual .bak under ~/.agents" ||
+  ng "manual .bak found under ~/.agents: $bak_count"
+
+if "$AGENTS/tests/hook-parity.sh" >/dev/null 2>&1; then
+  ok "[T0-3] guard parity checker"
+else
+  ng "[T0-3] guard parity checker"
+fi
+
 printf '\n%d PASS / %d FAIL / %d SKIP\n' "$pass" "$fail" "$skipped"
 [ "$fail" -eq 0 ]
