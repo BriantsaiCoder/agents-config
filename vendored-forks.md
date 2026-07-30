@@ -17,21 +17,22 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 |---|---|---|---|---|
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
+| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — model invocation metadata only; tree SHA-256 `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
-## Pinned Matt set — 21 unmodified + 1 recorded fork
+## Pinned Matt set — 20 unmodified + 2 recorded forks
 
 **`mattpocock/skills` stable 22 — active, pinned 2026-07-27.**
 
 - Source: `https://github.com/mattpocock/skills.git` at `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
 - Selection: `.claude-plugin/plugin.json` SHA-256 `e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba`.
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
-- The 21 entries other than `grilling` are byte-for-byte upstream and immutable.
-- `grilling` is the one recorded fork; its exact payload fingerprint and re-merge procedure are recorded below.
+- The 20 entries other than `grilling` and `writing-great-skills` are byte-for-byte upstream and immutable.
+- The two recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
 ## Hybrid — house wrapper over vendored payload
@@ -90,6 +91,27 @@ summarizes every decision and waits for final confirmation before acting.
    still lacks equivalent behavior.
 3. Run `tests/matt-thin-workflow.sh`, `tests/vendored-detection.sh`, and the skill validator.
 4. Update the fork index's upstream commit; remove this record if upstream fully absorbs the behavior.
+
+---
+
+## writing-great-skills
+
+**Decision (2026-07-31): accept the model-invocation metadata fork.**
+
+The upstream reference remains unchanged below frontmatter. The local fork removes
+`disable-model-invocation: true`, narrows the description to single-skill authoring, and sets
+`agents/openai.yaml` `allow_implicit_invocation: true`. Approved tree SHA-256: `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Diff the new upstream `writing-great-skills/` against pinned commit
+   `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
+2. Replace the pinned Matt set, then reapply only the frontmatter description, invocation flag
+   removal, and Codex implicit policy when upstream still keeps this skill user-only.
+3. Recompute `invocation_manifest_sha256` and the recorded tree SHA-256.
+4. Run `tests/matt-thin-workflow.sh`, `tests/mattpocock-workflow.sh`,
+   `tests/host-skill-resolver.sh`, and `tests/vendored-detection.sh`.
+5. Remove this record if upstream provides equivalent model-invocation behavior.
 
 ---
 

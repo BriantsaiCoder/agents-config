@@ -6,6 +6,9 @@ WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
 B2_SKILLS_BASE="${B2_SKILLS_BASE:-7080450715c0e5f264e19ab60a48da9c4437c0af}"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
+WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
+WRITING_SKILLS_DIR="$AGENTS/skills/writing-great-skills"
+WRITING_SKILLS_POLICY="$AGENTS/skills/writing-great-skills/agents/openai.yaml"
 VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
 
 # shellcheck source=../skills/auditing-skill-folder/scripts/lib-vendored.sh
@@ -68,6 +71,36 @@ actual_invocation_sha="$(
 [ "$actual_invocation_sha" = "$expected_invocation_sha" ] ||
   fail 'Matt invocation split drifted'
 
+while IFS='=' read -r key skill; do
+  [ "$key" = skill ] || continue
+  rg -q '^disable-model-invocation:[[:space:]]*true$' \
+    "$AGENTS/skills/$skill/SKILL.md" || continue
+  policy="$AGENTS/skills/$skill/agents/openai.yaml"
+  [ -f "$policy" ] ||
+    fail "Codex user-only policy missing: $skill"
+  rg -q '^[[:space:]]*allow_implicit_invocation:[[:space:]]*false$' "$policy" ||
+    fail "Codex user-only policy permits implicit invocation: $skill"
+done < "$AGENTS/mattpocock-skills.lock"
+
+! rg -q '^disable-model-invocation:[[:space:]]*true$' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills is not model-invoked'
+rg -q '^description: Skill authoring.*single skill' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills lacks a focused model trigger'
+rg -q '^[[:space:]]*allow_implicit_invocation:[[:space:]]*true$' \
+  "$WRITING_SKILLS_POLICY" ||
+  fail 'Codex policy blocks writing-great-skills implicit invocation'
+fork_recorded writing-great-skills ||
+  fail 'writing-great-skills fork is not recorded inside the fork index'
+expected_writing_tree_sha="$(
+  sed -n '/^## writing-great-skills$/,/^---$/p' "$AGENTS/vendored-forks.md" |
+    sed -n 's/.*tree SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p'
+)"
+[ -n "$expected_writing_tree_sha" ] ||
+  fail 'writing-great-skills fork record lacks an approved tree SHA-256'
+actual_writing_tree_sha="$(vendored_tree_sha256 "$WRITING_SKILLS_DIR")"
+[ "$actual_writing_tree_sha" = "$expected_writing_tree_sha" ] ||
+  fail 'writing-great-skills tree differs from the recorded fork fingerprint'
+
 rg -q '\[INT-7\].*disable-model-invocation.*MUST NOT.*自動 invoke' "$KERNEL" ||
   fail 'thin kernel does not preserve the Matt user-only invocation boundary'
 rg -q 'user-only skill.*推薦.*explicit invocation command.*等待' "$KERNEL" ||
@@ -101,8 +134,8 @@ expected_grilling_sha="$(
 actual_grilling_sha="$(shasum -a 256 "$GRILLING" | awk '{ print $1 }')"
 [ "$actual_grilling_sha" = "$expected_grilling_sha" ] ||
   fail 'grilling payload differs from the recorded fork fingerprint'
-rg -q '21 unmodified.*1 recorded fork' "$AGENTS/vendored-forks.md" ||
-  fail 'Matt set summary does not distinguish the grilling fork'
+rg -q '20 unmodified.*2 recorded forks' "$AGENTS/vendored-forks.md" ||
+  fail 'Matt set summary does not distinguish both recorded forks'
 
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
   fail 'implement route does not return to S4-S6'
@@ -135,7 +168,7 @@ git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- skills/mp-zoom-out ||
 while IFS='=' read -r key skill; do
   [ "$key" = skill ] || continue
   if ! git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- "skills/$skill"; then
-    [ "$skill" = grilling ] && fork_recorded grilling ||
+    fork_recorded "$skill" ||
       fail "unrecorded Matt upstream skill change: $skill"
   fi
 done < "$AGENTS/mattpocock-skills.lock"
@@ -188,9 +221,9 @@ done <<<"$b2_skills"
 
 while IFS= read -r changed; do
   case "$changed" in
+    skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/dev-workflow/* | \
-    skills/grilling/SKILL.md | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
@@ -200,6 +233,9 @@ while IFS= read -r changed; do
     *)
       changed_skill="${changed#skills/}"
       changed_skill="${changed_skill%%/*}"
+      if fork_recorded "$changed_skill"; then
+        continue
+      fi
       if [ "$changed_skill" = youtube-downloader ]; then
         checkpoint_skill=video-downloader
       else

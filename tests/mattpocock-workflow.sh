@@ -77,6 +77,10 @@ has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' skills
 has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.md
 has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md
 has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
+has "single-skill authoring routes to writing-great-skills" '單一 skill.*建立.*修改.*`writing-great-skills`' skills/dev-workflow/SKILL.md
+has "skill-folder lifecycle audit routes to auditing-skill-folder" 'skill folder.*keep.*trim.*delete.*migrate.*`auditing-skill-folder`' skills/dev-workflow/SKILL.md
+has "single-skill trigger failure starts with diagnosing-bugs" '單一 skill.*trigger failure.*`diagnosing-bugs`.*RED' skills/dev-workflow/SKILL.md
+lacks "audit no longer requests explicit writing-skill invocation" 'explicitly invoke `writing-great-skills`|明示.*`writing-great-skills`' skills/auditing-skill-folder/SKILL.md
 # explicit route: grill-with-docs 由第 67 行的「明示.*`grill-with-docs`」涵蓋（措辭更精確），
 # 不再重複斷言 —— S0 表用反引號而非斜線前綴，原本的 '/grill-with-docs' 在此不成立。
 has "explicit route: improve-codebase-architecture" 'improve-codebase-architecture.*explicit-only' skills/dev-workflow/SKILL.md
@@ -117,13 +121,38 @@ rule_has "S5 finding blocks raw package assembly" S5-2 'finding.*MUST.*FAIL.*raw
 rule_has "S5 package bounds binary and oversized files" S5-2 'binary.*256 KiB.*path.*size.*hash|256 KiB.*binary.*path.*size.*hash'
 lacks "S5 package has no unconditional ignored-file content" 'ignored path 全文' skills/dev-workflow/SKILL.md
 has "delegation is bounded by default" 'Delegation.*預設 1.*user.*repo.*higher instruction.*最多 2' skills/dev-workflow/SKILL.md
+rule_has "S5 two read-only review agents are workflow-authorized" INT-4 'S5 `code-review`.*Standards／Spec.*恰好 2 個 read-only review agents.*視為 workflow 已授權'
+rule_has "wayfinder fan-out stays within two per batch" INT-4 '`wayfinder` research fan-out.*每批最多 2 個.*超過須取得額外授權'
+rule_has "existing public behavior seam is pre-confirmed" INT-2 '既有 public behavior seam 視為已確認.*只有新增 seam 才需.*確認'
 rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
 rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
+has "skill changes require invocation canaries" 'Skill change.*frontmatter.*relative references.*positive/negative.*trigger canary' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' skills/dev-workflow/SKILL.md
 has "Copilot S5 handles dirty reviews" 'working tree dirty.*預設 1 個 `task`' skills/dev-workflow/SKILL.md
 has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' skills/dev-workflow/SKILL.md
 lacks "S5 has no unconditional fixed fan-out" '固定 fan-out|S5.*同一 response.*兩個|Standards.*Spec.*各.*(一|1)個.*task' skills/dev-workflow/SKILL.md
+has "host resolver derives the user-only count" 'expected_user_only_count=.*0' tests/host-skill-resolver.sh
+lacks "host resolver has no hard-coded user-only count" '13/13|-eq 13' tests/host-skill-resolver.sh
+has "host resolver compares complete skill directories" 'diff -qr.*skill_path.*AGENTS/skills' tests/host-skill-resolver.sh
+resolver_fixture="$(mktemp -d "${TMPDIR:-/tmp}/host-resolver-fixture.XXXXXX")"
+printf 'skill=missing-skill\n' > "$resolver_fixture/mattpocock-skills.lock"
+resolver_output="$(
+  AGENTS_HOME="$resolver_fixture" CLAUDE_SKILLS_ROOT="$resolver_fixture/no-claude" \
+    bash "$ROOT/tests/host-skill-resolver.sh" 2>&1
+)"
+resolver_rc=$?
+if [ "$resolver_rc" -ne 0 ] &&
+   printf '%s\n' "$resolver_output" | rg -q 'Codex locked skill missing: missing-skill'; then
+  ok "host resolver fails closed when a locked skill is missing"
+else
+  ng "host resolver fails closed when a locked skill is missing"
+fi
+rm -r -- "$resolver_fixture"
+has "same-conversation compact is not a Matt handoff" 'same-conversation `/compact`.*MUST NOT.*`handoff`' skills/dev-workflow/SKILL.md
+has "Codex native handoff does not invoke Matt handoff" 'Local/Worktree Handoff.*MUST NOT.*Matt `\$handoff`' skills/dev-workflow/SKILL.md
+has "conflict analysis does not authorize mutation" '分析.*conflict.*不得.*resolve.*stage.*commit' skills/dev-workflow/SKILL.md
+has "conflict resolution requires explicit user authorization" '明示.*解決 conflict.*`resolving-merge-conflicts`' skills/dev-workflow/SKILL.md
 
 if command -v gitleaks >/dev/null 2>&1; then
   scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/matt-secret-fixture.XXXXXX")"

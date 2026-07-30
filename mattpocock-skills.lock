@@ -1,7 +1,7 @@
 source_url=https://github.com/mattpocock/skills.git
 assessed_commit=ed37663cc5fbef691ddfecd080dff42f7e7e350d
 manifest_sha256=e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba
-invocation_manifest_sha256=48bd97bffeb103d96fcfbf348b051d84e4d78de9d50061e286b19fa4cf00dde0
+invocation_manifest_sha256=af42506a9e1666161604c91177a0363061606369173908723fed4c55eb0e4eeb
 skill=ask-matt
 skill=diagnosing-bugs
 skill=grill-with-docs
