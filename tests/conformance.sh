@@ -42,6 +42,15 @@ done < <(find "$AGENTS/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -type f | 
   ok "skill frontmatter names match directories" ||
   ng "skill frontmatter／directory mismatches: $skill_name_mismatches"
 
+context7_skill="$AGENTS/skills/context7-mcp/SKILL.md"
+if [ -f "$context7_skill" ] &&
+   rg -q 'resolve-library-id' "$context7_skill" &&
+   rg -q 'query-docs' "$context7_skill"; then
+  ok "Context7 canonical procedure"
+else
+  ng "Context7 canonical procedure missing"
+fi
+
 cache_count="$(
   find "$AGENTS/skills" \
     \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \) |

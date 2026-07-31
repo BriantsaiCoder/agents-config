@@ -44,6 +44,8 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | 需求已清楚且單一 session 可完成（含已核准 spec／ticket） | 推薦使用者顯式 invoke `implement`；啟動後由 kernel adapter 管理，每個 slice 用 `tdd` |
 | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
 | code review | `code-review` |
+| 高扇入共用介面變更 | MUST 先用 `deps-check` 列出完整 callers |
+| Security | code／diff／path 的 focused data-flow review → `security-review`；使用者明示 whole-codebase adversarial audit／pen-test 且接受持久化 artifacts → `security-audit`；CI／pre-commit／SBOM／container gate → `dependency-security-scan` |
 | 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
 | 陌生 repo | `acquire-codebase-knowledge` |
 | 單檔且 ≤3 tasks 的低風險 change | `sdd` |
@@ -93,7 +95,7 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 ## S5 REVIEW
 
 - [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
-- [S5-2] Working tree dirty review MUST 先以 staged `git diff --cached --name-status`、unstaged `git diff --name-status`、untracked `git ls-files --others --exclude-standard` 與 task 明列的 ignored path 取得 metadata-only inventory，再依序用 `gitleaks git --staged --redact`、`gitleaks git --pre-commit --redact` 與候選 path 的 `gitleaks dir --redact` 掃描；全部通過後才可取得 staged raw `git diff --cached --`、unstaged raw `git diff --` 並組 review package。任一 finding MUST 使 package assembly FAIL，命中的 raw file／hunk MUST omit，只保留 path、set/unset 與 redacted finding；`.env*`、credentials、private keys、token stores 等 secret-bearing 內容 MUST NOT 傳全文；非敏感文字檔 ≤256 KiB 才可傳全文，binary 或超過 256 KiB 只傳 path、size、hash。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
+- [S5-2] Working tree dirty review MUST 在讀任何 raw diff 前完成 `references/dirty-review-package.md`；任一 finding 即 FAIL。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
 - 各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
 - Spec 不存在可標 SKIPPED；缺 reviewer capability 必須附 UNAVAILABLE probe，不得假裝自審等價。
 - Actionable finding 回 implementation；bug finding 先補 RED test（[INT-2]）。Delegation 依 [INT-4]。
@@ -101,7 +103,7 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 ## S6 CLOSEOUT
 
 - 只有 [INT-1] 成立才 commit／push／open PR／merge／final closeout；commit／PR 用 zh-TW Conventional Commits。
-- PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger，依 `references/review-triage.md` 等待並處理 bot review；Ready PR 後每次 push 跑 `bin/pr-review-gate <PR>` 對 current HEAD 重查至 PASS（[T1-11]）；merge 前 CI 綠。
+- PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger；Ready PR 的 current-HEAD CI／bot-review gate 與唯一 command 由 `references/review-triage.md` 定義，該 gate PASS 才可 merge。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更同步 current architecture docs。
 - 「分析 conflict」不得授權 resolve、stage 或 commit；只有使用者明示「解決 conflict」時才可執行 `resolving-merge-conflicts`。
 - 合併後依 repo policy 清理已合併 branch；不得 force-push main／master。
@@ -119,7 +121,7 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 - plan = Plan Mode；todo = update_plan；子代理 = spawn_agent／wait_agent。
 - user-only skill command = `$<skill-name>`。
 - Codex native Local/Worktree Handoff 只移動同一 chat 與 code，MUST NOT 觸發 Matt `$handoff`；跨 session／agent 文件仍走 `$handoff`。
-- `implement` 先用 `bin/agents-branch` 或 repo worktree 建 isolated branch；S6 用 PR heartbeat。
+- `implement` 先用 `~/.agents/bin/agents-branch` 或 repo worktree 建 isolated branch；S6 用 PR heartbeat。
 - Git guard 由 `~/.codex/hooks.json` 與 `~/.codex/rules/default.rules` 疊加，不能取代 tier0／CI。
 
 ### Copilot
@@ -136,3 +138,4 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 - `references/ledgers.md`
 - `references/review-triage.md`
 - `references/reviewer-template.md`
+- `references/dirty-review-package.md`

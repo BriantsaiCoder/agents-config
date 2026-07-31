@@ -24,13 +24,19 @@ lacks() {
   fi
 }
 
-rule_has() {
-  local label="$1" id="$2" pattern="$3"
-  sed -n "/^\\- \\[$id\\]/p" "$ROOT/skills/dev-workflow/SKILL.md" |
+rule_has_in() {
+  local label="$1" id="$2" pattern="$3" file="$4"
+  sed -n "/^\\- \\[$id\\]/p" "$ROOT/$file" |
     grep -qE "$pattern" &&
     ok "$label" ||
     ng "$label"
 }
+
+rule_has() {
+  rule_has_in "$1" "$2" "$3" skills/dev-workflow/SKILL.md
+}
+
+dirty_review=skills/dev-workflow/references/dirty-review-package.md
 
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
 refs=$(grep -o '\[INT-4\]' "$ROOT/skills/dev-workflow/SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
@@ -40,7 +46,7 @@ refs=$(grep -o '\[INT-4\]' "$ROOT/skills/dev-workflow/SKILL.md" 2>/dev/null | wc
 # 擁有的檔案（ownership 邊界）。拆成兩條：isolation 要求由 [INT-6] 承接，工具指向由
 # Codex adapter 承接。只驗 'bin/agents-branch' 是不夠的——那條在 [INT-6] 被刪掉後仍會綠。
 has "[INT-6] requires isolated worktree" '^\- \[INT-6\].*(isolated worktree|worktree)' skills/dev-workflow/SKILL.md
-has "[T1-10] tooling points to agents-branch" 'bin/agents-branch' skills/dev-workflow/SKILL.md
+has "[T1-10] tooling points to agents-branch" '~/.agents/bin/agents-branch' skills/dev-workflow/SKILL.md
 
 has "house skill standards exists" '^# Skill standards' skills/auditing-skill-folder/references/skill-standards.md
 lacks "audit no longer depends on superpowers:writing-skills" 'superpowers:writing-skills' skills/auditing-skill-folder
@@ -77,6 +83,10 @@ has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' skills
 has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.md
 has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md
 has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
+has "high-fan-in changes route to deps-check" '高扇入.*`deps-check`.*callers' skills/dev-workflow/SKILL.md
+has "focused security routes to security-review" 'focused.*`security-review`' skills/dev-workflow/SKILL.md
+has "heavy security audit is explicit and artifact-aware" '明示.*artifacts.*`security-audit`' skills/dev-workflow/SKILL.md
+has "security pipeline gates stay separate" 'SBOM.*`dependency-security-scan`' skills/dev-workflow/SKILL.md
 has "single-skill authoring routes to writing-great-skills" '單一 skill.*建立.*修改.*`writing-great-skills`' skills/dev-workflow/SKILL.md
 has "skill-folder lifecycle audit routes to auditing-skill-folder" 'skill folder.*keep.*trim.*delete.*migrate.*`auditing-skill-folder`' skills/dev-workflow/SKILL.md
 has "single-skill trigger failure starts with diagnosing-bugs" '單一 skill.*trigger failure.*`diagnosing-bugs`.*RED' skills/dev-workflow/SKILL.md
@@ -105,21 +115,22 @@ has "implement adapter enters branch" '`implement`.*(branch|worktree)' skills/de
 has "implement adapter requires S4-S6" '`implement`.*S4.*S6' skills/dev-workflow/SKILL.md
 has "S5 has Standards and Spec axes" 'Standards.*Spec' skills/dev-workflow/SKILL.md
 has "S5 axes have four states" 'PASS.*FAIL.*SKIPPED.*UNAVAILABLE' skills/dev-workflow/SKILL.md
-has "S5 dirty review includes staged and unstaged changes" 'staged.*`git diff --cached --`.*unstaged.*`git diff --`' skills/dev-workflow/SKILL.md
-has "S5 dirty review includes untracked files" 'git ls-files --others --exclude-standard' skills/dev-workflow/SKILL.md
+has "S5 dirty review includes staged and unstaged changes" 'staged.*`git diff --cached --`.*unstaged.*`git diff --`' "$dirty_review"
+has "S5 dirty review includes untracked files" 'git ls-files --others --exclude-standard' "$dirty_review"
 rule_has "S5 risk contract has five elements" S5-1 'MUST.*觸發：.*例外：.*驗證：'
 rule_has "S5 package contract has five elements" S5-2 'MUST.*觸發：.*例外：.*驗證：'
-rule_has "S5 dirty review inventories explicit ignored paths" S5-2 'task 明列.*ignored path.*metadata-only inventory'
-rule_has "S5 package omits secret-bearing content" S5-2 'secret-bearing.*MUST NOT.*全文'
-rule_has "S5 package limits secret evidence" S5-2 'path.*set/unset.*redacted finding'
-rule_has "S5 package names common secret paths" S5-2 '\.env\*.*credentials.*private keys.*token stores'
-rule_has "S5 package scans staged changes" S5-2 'gitleaks git --staged --redact'
-rule_has "S5 package scans unstaged changes" S5-2 'gitleaks git --pre-commit --redact'
-rule_has "S5 package scans untracked and ignored candidates" S5-2 'gitleaks dir --redact'
-rule_has "S5 package inventories metadata before scans and raw diff" S5-2 'name-status.*gitleaks git --staged.*全部通過後.*git diff --cached --`'
-rule_has "S5 finding blocks raw package assembly" S5-2 'finding.*MUST.*FAIL.*raw.*MUST.*omit'
-rule_has "S5 package bounds binary and oversized files" S5-2 'binary.*256 KiB.*path.*size.*hash|256 KiB.*binary.*path.*size.*hash'
-lacks "S5 package has no unconditional ignored-file content" 'ignored path 全文' skills/dev-workflow/SKILL.md
+has "S5 dirty review inventories explicit ignored paths" 'metadata inventory.*task 明列.*ignored' "$dirty_review"
+has "S5 package omits secret-bearing content" 'secret-bearing.*MUST NOT.*全文' "$dirty_review"
+has "S5 package limits secret evidence" 'path.*set／unset.*redacted finding' "$dirty_review"
+has "S5 package names common secret paths" '\.env\*.*credentials.*private keys.*token stores' "$dirty_review"
+has "S5 package scans staged changes" 'gitleaks git --staged --redact' "$dirty_review"
+has "S5 package scans unstaged changes" 'gitleaks git --pre-commit --redact' "$dirty_review"
+has "S5 package scans untracked and ignored candidates" 'gitleaks dir --redact' "$dirty_review"
+has "S5 package scans before raw diff" '全部掃描通過後.*git diff --cached --`.*git diff --`' "$dirty_review"
+has "S5 finding blocks raw package assembly" 'finding.*MUST.*FAIL.*raw.*MUST.*omit' "$dirty_review"
+has "S5 package bounds binary and oversized files" 'binary.*256 KiB.*path.*size.*hash|256 KiB.*binary.*path.*size.*hash' "$dirty_review"
+has "S5 package includes safe untracked candidates" '非敏感.*untracked.*ignored.*納入.*review package' "$dirty_review"
+lacks "S5 package has no unconditional ignored-file content" 'ignored path 全文' "$dirty_review"
 has "delegation is bounded by default" 'Delegation.*預設 1.*user.*repo.*higher instruction.*最多 2' skills/dev-workflow/SKILL.md
 rule_has "S5 two read-only review agents are workflow-authorized" INT-4 'S5 `code-review`.*Standards／Spec.*恰好 2 個 read-only review agents.*視為 workflow 已授權'
 rule_has "wayfinder fan-out stays within two per batch" INT-4 '`wayfinder` research fan-out.*每批最多 2 個.*超過須取得額外授權'
@@ -172,6 +183,9 @@ has "same-conversation compact is not a Matt handoff" 'same-conversation `/compa
 has "Codex native handoff does not invoke Matt handoff" 'Local/Worktree Handoff.*MUST NOT.*Matt `\$handoff`' skills/dev-workflow/SKILL.md
 has "conflict analysis does not authorize mutation" '分析.*conflict.*不得.*resolve.*stage.*commit' skills/dev-workflow/SKILL.md
 has "conflict resolution requires explicit user authorization" '明示.*解決 conflict.*`resolving-merge-conflicts`' skills/dev-workflow/SKILL.md
+lacks "no dangling T1-11" '\[T1-11\]' skills/dev-workflow/SKILL.md
+lacks "kernel does not duplicate PR command" 'pr-review-gate' skills/dev-workflow/SKILL.md
+has "review triage owns exact PR command" '~/.agents/bin/pr-review-gate' skills/dev-workflow/references/review-triage.md
 
 if command -v gitleaks >/dev/null 2>&1; then
   scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/matt-secret-fixture.XXXXXX")"
@@ -197,6 +211,7 @@ has "bugfix routes to diagnosing-bugs" 'diagnosing-bugs' skills/bug-fix-settleme
 
 for active in skills/dev-workflow/SKILL.md \
               skills/dev-workflow/references/review-triage.md \
+              skills/dev-workflow/references/dirty-review-package.md \
               skills/bug-fix-settlement/SKILL.md; do
   lacks "no active Superpowers workflow ref: $active" \
     'superpowers:|finishing-a-development-branch|systematic-debugging|receiving-code-review' "$active"

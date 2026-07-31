@@ -220,6 +220,7 @@ while IFS= read -r changed; do
   case "$changed" in
     skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
+    skills/context7-mcp/* | \
     skills/dev-workflow/* | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
@@ -237,7 +238,12 @@ while IFS= read -r changed; do
         fail "non-allowlisted shared skill changed: $changed"
       ;;
   esac
-done < <(git -C "$AGENTS" diff --name-only "$WORKFLOW_BASE" -- skills)
+done < <(
+  {
+    git -C "$AGENTS" diff --name-only "$WORKFLOW_BASE" -- skills
+    git -C "$AGENTS" ls-files --others --exclude-standard -- skills
+  } | LC_ALL=C sort -u
+)
 
 [ -f "$WRAPPER_PARITY_EVIDENCE" ] ||
   fail "wrapper parity evidence missing: $WRAPPER_PARITY_EVIDENCE"
