@@ -46,6 +46,16 @@ vendored_lock_record() {
 
 # Hash a skill tree using Git-relevant structure: path, type, executable mode, file content,
 # and symlink target. NUL separators keep unusual filenames unambiguous.
+#
+# `.claude/` is pruned. It is agent-harness scratch (`.claude/.cc-writes`, an empty directory
+# created whenever Claude Code writes into a skill folder) and is gitignored repo-wide, so it is
+# present on a working machine and absent from every clean checkout. Hashing it made the
+# fingerprint a property of the ENVIRONMENT rather than of the committed payload: on 2026-08-01
+# `tests/matt-thin-workflow.sh` passed locally and failed in CI with "writing-great-skills tree
+# differs from the recorded fork fingerprint", because the recorded SHA had been computed on a
+# machine where 13 skill folders already carried the directory. The prune is deliberately narrow —
+# `tests/vendored-detection.sh` asserts both that `.claude/` is ignored AND that any other added
+# file still moves the SHA, so the exclusion cannot quietly widen into a hole.
 vendored_tree_sha256() {
   local dir="$1" manifest rc entry mode file_sha
   [ -d "$dir" ] && [ ! -L "$dir" ] || return 1
@@ -67,7 +77,7 @@ vendored_tree_sha256() {
         printf 'unsupported vendored payload type: %s\n' "$entry" >&2
         exit 1
       fi
-    done < <(find . -mindepth 1 -print0 | LC_ALL=C sort -z)
+    done < <(find . -mindepth 1 -type d -name .claude -prune -o -print0 | LC_ALL=C sort -z)
   ) > "$manifest"
   rc=$?
   if [ "$rc" -eq 0 ]; then

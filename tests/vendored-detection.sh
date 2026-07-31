@@ -130,6 +130,24 @@ else
   ok "skill root 換成 symlink -> rejected"
 fi
 
+# 指紋必須是「已提交 payload 的屬性」，不是「工作機環境的屬性」。
+# 2026-08-01 CI 實測：Claude Code 對 skill 寫檔時會在該資料夾建立 .claude/.cc-writes
+# （空目錄、已被 .gitignore 排除）。舊版 find 把它算進 manifest，於是本機算出的
+# tree SHA 永遠對不上 CI 的乾淨 checkout——matt-thin-workflow 報
+# "writing-great-skills tree differs from the recorded fork fingerprint"，
+# 而本機同一支測試是綠的。當時 13 個 skill 資料夾已帶有這個產物。
+d=$(mkskill tree-hash-scratch)
+tree_hash_clean="$(vendored_tree_sha256 "$d")"
+mkdir -p "$d/.claude/.cc-writes"
+tree_hash_scratch="$(vendored_tree_sha256 "$d")"
+check "harness scratch .claude/ 不改變 tree SHA" "$tree_hash_clean" "$tree_hash_scratch"
+# 但 .claude 以外的新增內容仍必須改變指紋——排除範圍不得擴散。
+printf 'x\n' > "$d/extra.md"
+tree_hash_extra="$(vendored_tree_sha256 "$d")"
+[ "$tree_hash_clean" != "$tree_hash_extra" ] &&
+  ok "非 .claude 的新增檔仍改變 tree SHA" ||
+  bad "非 .claude 的新增檔仍改變 tree SHA" "different SHA" "$tree_hash_extra"
+
 echo
 echo "── vendored_flag：不可誤判（false positive 防線）──"
 

@@ -25,7 +25,7 @@ Detection is the **union** of five signals because none alone is sufficient — 
 - Both together still missed two skills (2026-07-25, caught by hand, fixed 2026-07-26): `tailwind-v4-shadcn` declares provenance only in `.claude-plugin/plugin.json`, which was not in the scanned file set; `agent-browser` puts its `upstream:` marker in an HTML comment **after** the closing `---`, where the frontmatter-bounded scan had already stopped. Both are now covered — the marker scan reads the whole `SKILL.md`, anchored on `^` / `<!--` / `|`.
 - A pinned upstream set may intentionally keep provenance outside the payload to preserve byte identity. `mattpocock-skills.lock` is the central source/hash/inventory record for that case; an exact basename entry is vendored without adding wrappers or LICENSE copies to each skill.
 
-The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (91 cases, in CI) pins that: every provenance form, both false-positive defences, both lock paths, and the exact `VND` set of `skills/`.
+The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (93 cases, in CI) pins that: every provenance form, both false-positive defences, both lock paths, and the exact `VND` set of `skills/`.
 
 **File existence is never the signal — provenance content is.** Plenty of self-owned skills have a `README.md`; `.claude-plugin/plugin.json` is read for its `repository` / `author`, not counted for being there. (The existence test would also have been 0-false-positive on this corpus — exactly 1 of 50 skills has that directory — and was rejected anyway, because content-only keeps this one rule rather than two.)
 

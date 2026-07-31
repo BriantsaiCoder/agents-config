@@ -22,7 +22,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
-| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened from invocation metadata to body corrections**: exhaustiveness bar, description-mechanic accuracy (6 sites), disclosed-reference rung name, pointer condition, per-host invocation key, leading-word imperative, criterion hedge; tree SHA-256 `0050ffd7d068e864ba0d32be6cf82254599507a69c6eb69d76ceda62795a028e` | **Active** |
+| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened from invocation metadata to body corrections**: exhaustiveness bar, description-mechanic accuracy (6 sites), disclosed-reference rung name, pointer condition, per-host invocation key, leading-word imperative, criterion hedge; tree SHA-256 `231a72c153e3abc84f33512aa3f8af8f942da23283b85005ebb770030df3631a` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
@@ -236,7 +236,7 @@ decision extends it deliberately, on the strength of a two-round audit
 verification and was then re-verified against the live tree. Provenance was excluded from the
 judgement by standing instruction; it governs only this landing procedure.
 
-Approved tree SHA-256: `0050ffd7d068e864ba0d32be6cf82254599507a69c6eb69d76ceda62795a028e`.
+Approved tree SHA-256: `231a72c153e3abc84f33512aa3f8af8f942da23283b85005ebb770030df3631a`.
 
 ### Local changes
 
