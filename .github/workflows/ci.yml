@@ -22,6 +22,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: install ripgrep test dependency
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
       # 驗證 shared skills source、Claude link scratch bootstrap／doctor、
       # retired deployment interfaces fail-loud、shell syntax 與 collision guard。
       # CI runner 沒有 live ~/.agents；該 host-local check 會明確標為 SKIP。

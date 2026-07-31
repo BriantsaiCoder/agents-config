@@ -135,6 +135,9 @@ lacks "S5 has no unconditional fixed fan-out" '固定 fan-out|S5.*同一 respons
 has "host resolver derives the user-only count" 'expected_user_only_count=.*0' tests/host-skill-resolver.sh
 lacks "host resolver has no hard-coded user-only count" '13/13|-eq 13' tests/host-skill-resolver.sh
 has "host resolver compares complete skill directories" 'diff -qr.*skill_path.*AGENTS/skills' tests/host-skill-resolver.sh
+has "CI installs the ripgrep test dependency" \
+  '^[[:space:]]*run:[[:space:]]*sudo apt-get update && sudo apt-get install -y ripgrep[[:space:]]*$' \
+  .github/workflows/ci.yml
 has "CI runs the Stage B2 skill checkpoint" 'bash tests/matt-thin-workflow.sh' .github/workflows/ci.yml
 resolver_fixture="$(mktemp -d "${TMPDIR:-/tmp}/host-resolver-fixture.XXXXXX")"
 printf 'skill=missing-skill\n' > "$resolver_fixture/mattpocock-skills.lock"
