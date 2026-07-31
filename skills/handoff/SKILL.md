@@ -15,4 +15,4 @@ Redact any sensitive information, such as API keys, passwords, or personally ide
 
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.
 
-When this run was triggered interactively by the user, end your reply with a copy-pasteable start prompt for the next session, containing the document's absolute path, the next session's focus, and the skills to invoke first. That block is for a human to copy; its shape is not a machine-parseable contract.
+When this run was triggered interactively by the user, end your reply with a copy-pasteable start prompt for the next session: the document's absolute path, the focus in one line, and the skills to invoke first — nothing else, at most four lines. Everything the next agent needs beyond that is in the document. That block is for a human to copy; its shape is not a machine-parseable contract.

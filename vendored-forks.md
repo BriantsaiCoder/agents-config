@@ -20,7 +20,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-07-31 — preserve the imported local variant and remove obsolete Compose top-level `version`; tree SHA-256 `ab80cfe8db12433c4fcd3aaa6f34adb0f490a76e3a476cef6a63951af51d4675` | **Active** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-07-31 — preserve local coverage and unit-test reference variants; tree SHA-256 `9c303fb6337b8816e285d64d0d600a0e32362fcb298d6918f200a0244ddecc8f` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
-| `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session; payload SHA-256 `e180dcc5a399ea92b4caad6de49833778e0ffda01d48c70929bc743a9496c9a7` | **Active** |
+| `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — model invocation metadata only; tree SHA-256 `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
@@ -189,7 +189,7 @@ noticing the path in the reply and composing the follow-up prompt themselves. Th
 closes that gap: an interactively-triggered run ends with a copy-pasteable start prompt carrying the
 document's absolute path, the next session's focus, and the skills to invoke first.
 
-Three constraints are deliberate and must survive any re-merge:
+Four constraints are deliberate and must survive any re-merge:
 
 - **`When this run was triggered interactively by the user`** — scopes the behavior to human-driven
   runs. A future automated caller (a workflow `agent()` step, especially one with a `schema`) is
@@ -197,6 +197,10 @@ Three constraints are deliberate and must survive any re-merge:
 - **absolute path, not a literal one** — the skill still says "temporary directory of the user's OS".
   `$TMPDIR` differs per host (Claude Code sets `/tmp/claude-<uid>`; Codex and Copilot get the macOS
   default `/var/folders/…`), so the resolved path belongs in the emitted block, never in this file.
+- **`nothing else, at most four lines`** — added 2026-07-31 after the first live run. The original
+  wording named the three required elements but set no ceiling, and the run produced a four-paragraph
+  block that restated environment state already in the document. The cap plus "everything the next
+  agent needs beyond that is in the document" is what keeps the block a pointer rather than a summary.
 - **`not a machine-parseable contract`** — prevents a downstream script from parsing the block and
   turning a human convenience into an undeclared interface.
 
