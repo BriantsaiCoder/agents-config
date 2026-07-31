@@ -1,18 +1,20 @@
 ---
 name: writing-great-skills
-description: Skill authoring guidance. Use when creating or editing a single skill, including invocation, descriptions, information hierarchy, completion criteria, and pruning.
+description: Skill authoring. Use when creating, editing, or pruning a single skill or its description; when a skill fires unreliably, sprawls, repeats itself, or lets the agent stop early; or when another skill routes a single-skill edit here.
 ---
 
 A skill exists to wrangle determinism out of a stochastic system. **Predictability** — the agent taking the same _process_ every run, not producing the same output — is the root virtue; every lever below serves it.
 
-**Bold terms** are defined in [`GLOSSARY.md`](GLOSSARY.md); look them up there for the full meaning.
+Every rule below applies to the skill in hand. You are done when each section has produced a verdict: the **invocation** chosen, the **description**'s **branches** listed, every piece's rung on the ladder fixed, every line put through **relevance**, **duplication** and **no-op**, every restatement tried against a **leading word**, and each **failure mode** ruled in or out.
+
+**Bold terms** are defined in [`GLOSSARY.md`](GLOSSARY.md). Look up single terms while authoring; read the file end to end before diagnosing a skill that misbehaves or auditing one for pruning.
 
 ## Invocation
 
 Two choices, trading different costs:
 
 - A **model-invoked** skill keeps a **description**, so the agent can fire it autonomously _and_ other skills can reach it (you can still type its name too). It contributes to **context load** — the description sits in the window every turn. Mechanics: omit `disable-model-invocation`, and write a model-facing description with rich trigger phrasing ("Use when the user wants…, mentions…").
-- A **user-invoked** skill strips the description from the agent's reach: only you, typing its name, can invoke it — and no other skill can. Zero context load, but it spends **cognitive load**: _you_ are the index that must remember it exists. Mechanics: set `disable-model-invocation: true`; the `description` becomes human-facing — a one-line summary, trigger lists stripped.
+- A **user-invoked** skill strips the description from the agent's reach: only you, typing its name, can invoke it — and no other skill can. Zero context load, but it spends **cognitive load**: _you_ are the index that must remember it exists. Mechanics: set `disable-model-invocation: true`, and flip every other per-host invocation key the folder carries (e.g. `allow_implicit_invocation: false` in `agents/openai.yaml`) or the skill stays model-invoked on that host. The `description` field stays; it becomes human-facing — a one-line summary, trigger lists stripped.
 
 Pick model-invocation only when the agent must reach the skill on its own, or another skill must. If it only ever fires by hand, make it user-invoked and pay no context load.
 
@@ -30,9 +32,9 @@ A model-invoked **description** does two jobs — state what the skill is, and l
 
 A skill is built from two content types — **steps** and **reference** — that mix freely: a skill can be all steps, all reference, or both. The core decision is which to use and where each sits on the **information hierarchy**, a ladder ranked by how immediately the agent needs the material:
 
-1. **In-skill step** — an ordered action in `SKILL.md`, the primary tier: what the agent does, in order. Each step ends on a **completion criterion**, the condition that tells the agent the work is done. Make it _checkable_ (can the agent tell done from not-done?) and, where it matters, _exhaustive_ ("every modified model accounted for", not "produce a change list") — a vague criterion invites **premature completion**.
+1. **In-skill step** — an ordered action in `SKILL.md`, the primary tier: what the agent does, in order. Each step ends on a **completion criterion**, the condition that tells the agent the work is done. Make it _checkable_ (can the agent tell done from not-done?) and, wherever the work sweeps a set, _exhaustive_ ("every modified model accounted for", not "produce a change list") — a vague criterion invites **premature completion**.
 2. **In-skill reference** — a definition, rule, or fact in `SKILL.md`, consulted on demand. Often a legitimately flat peer-set (every rule of a review on one rung) — a fine arrangement, not a smell. _This skill is all reference._
-3. **External reference** — reference pushed out of `SKILL.md` into a separate file, reached by a **context pointer**, loaded only when the pointer fires. (Spans _disclosed_ reference — a sibling file like `GLOSSARY.md`, still part of the skill — through fully **external reference** that lives outside the skill system and any skill can point at.)
+3. **Reference**, disclosed — pushed out of `SKILL.md` into a separate file, reached by a **context pointer**, loaded only when the pointer fires; a sibling like `GLOSSARY.md` is still part of the skill. Pushed out of the skill system entirely it becomes **external reference**, which any skill can point at.
 
 A demanding completion criterion drives thorough **legwork** — the digging the agent does within the work — whether the skill has steps or not, since "every rule applied" binds flat reference just as "every step done" binds a sequence.
 
@@ -61,7 +63,7 @@ Then hunt **no-ops** sentence by sentence, not just line by line: run the no-op 
 
 A **leading word** is a compact concept already living in the model's pretraining that the agent thinks with while running the skill (e.g. _lesson_, _fog of war_, _tracer bullets_). Repeated throughout the text (though not necessarily - a strong leading word might only be needed once), it accumulates a distributed definition and anchors a whole region of behaviour in the fewest tokens, by recruiting priors the model already holds.
 
-It serves predictability twice. In the body it anchors _execution_: the agent reaches for the same behaviour every time the word appears. In the description it anchors _invocation_: when the same word lives in your prompts, docs, and code, the agent links that shared language to the skill and fires it more reliably.
+It serves predictability twice. In the body it anchors _execution_: the agent reaches for the same behaviour every time the word appears. In the description it anchors _invocation_: word a description with the leading words you actually use when you want the skill — one that lives only in the skill's own vocabulary fires unreliably.
 
 Hunt for opportunities to refactor skills to use leading words. A triad spelled out at three sites (**duplication**), a description spending a sentence to gesture at one idea — each is a passage begging to **collapse** into a single token. Examples include:
 

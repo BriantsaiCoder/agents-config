@@ -22,7 +22,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
-| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — model invocation metadata only; tree SHA-256 `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b` | **Active** |
+| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened from invocation metadata to body corrections**: exhaustiveness bar, description-mechanic accuracy (6 sites), disclosed-reference rung name, pointer condition, per-host invocation key, leading-word imperative, criterion hedge; tree SHA-256 `0050ffd7d068e864ba0d32be6cf82254599507a69c6eb69d76ceda62795a028e` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
@@ -228,21 +228,57 @@ reworded.
 ## writing-great-skills
 
 **Decision (2026-07-31): accept the model-invocation metadata fork.**
+**Decision (2026-08-01): widen the scope to body corrections. Supersedes the above.**
 
-The upstream reference remains unchanged below frontmatter. The local fork removes
-`disable-model-invocation: true`, narrows the description to single-skill authoring, and sets
-`agents/openai.yaml` `allow_implicit_invocation: true`. Approved tree SHA-256: `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b`.
+The 2026-07-31 decision was scoped to invocation metadata and said "do not extend it". This
+decision extends it deliberately, on the strength of a two-round audit
+(`proposals/2026-08-01-two-skill-tuning-audit/`) in which every finding survived adversarial
+verification and was then re-verified against the live tree. Provenance was excluded from the
+judgement by standing instruction; it governs only this landing procedure.
+
+Approved tree SHA-256: `0050ffd7d068e864ba0d32be6cf82254599507a69c6eb69d76ceda62795a028e`.
+
+### Local changes
+
+**Invocation metadata (carried over from 2026-07-31).** `disable-model-invocation: true` removed;
+`agents/openai.yaml` sets `allow_implicit_invocation: true`.
+
+**Frontmatter description (B3).** Rewritten to carry a trigger for the diagnosis branch the body
+opens at "## Failure modes" — the old text had none, making 13% of the file unreachable by its own
+stated use — plus the reach clause the body's own rule provides for. Must keep matching
+`^description: Skill authoring.*single skill` (asserted by `tests/matt-thin-workflow.sh`).
+
+**Body corrections (new in this decision).**
+
+| Site | Change | Why |
+|---|---|---|
+| `SKILL.md` after the predictability line | Added an exhaustiveness bar | The skill declares itself "all reference" and teaches that flat reference still needs one; four of six sections carried no demand, so coverage varied with whichever section the prompt named |
+| `GLOSSARY.md` Description / User-Invoked / Router Skill / Context Load / External Reference, and `SKILL.md` Mechanics | Replaced "delete the description" with "withhold it from the agent" across all 6 sites | **Upstream defect.** `GLOSSARY` prescribed deleting the field; `SKILL.md` prescribed setting the flag and keeping it. Verified against this tree: all 12 user-invoked skills retain a populated `description:`. `SKILL.md`'s own line-8 pointer sends the agent to `GLOSSARY` for the authoritative meaning, so the agent following the skill's navigation was told to strip a required field |
+| `SKILL.md` Model-Invoked conclusion in `GLOSSARY.md` | Deleted the duplicated sentence | It restated `SKILL.md`'s conclusion and had already dropped "or another skill must", so the two copies gave different rules |
+| `SKILL.md` information-hierarchy rung 3 | "External reference" → "**Reference**, disclosed" | The rung's name resolved to a `GLOSSARY` definition that excludes the sibling file the rung offers as its own example |
+| `SKILL.md` bold-terms pointer | Added a reaching condition | The skill's own definition says a pointer's wording decides when and how reliably the agent reaches; this one named no when |
+| `SKILL.md` user-invoked Mechanics | Added per-host invocation keys | Verified: all 12 user-invoked skills carrying `agents/openai.yaml` set both keys. This skill's own folder carries that file |
+| `SKILL.md` leading-word section | Moved the imperative up from `GLOSSARY` | The one instruction the section exists to produce lived only in the on-demand file |
+| `SKILL.md` completion-criterion line | "where it matters" → "wherever the work sweeps a set" | An undecidable hedge whose default resolution is to skip the harder half |
+
+**Upstream-reportable.** The description-mechanic correction (6 sites) is a defect in upstream's own
+text, not in the house fork. If it is reported and accepted upstream, drop that row here and take the
+correction back via wholesale replacement rather than carrying it as a fork. The frontmatter
+description is the opposite: house-authored, so upstream has nothing to fix.
 
 ### Re-merge procedure (when upstream moves)
 
 1. Diff the new upstream `writing-great-skills/` against pinned commit
    `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
-2. Replace the pinned Matt set, then reapply only the frontmatter description, invocation flag
-   removal, and Codex implicit policy when upstream still keeps this skill user-only.
+2. Replace the pinned Matt set, then reapply **both** layers: the invocation metadata (frontmatter
+   description, invocation flag removal, Codex implicit policy when upstream still keeps this skill
+   user-only) **and** every row of the body-corrections table above. Check each body row against the
+   new upstream first — a row upstream has since fixed is dropped, not reapplied.
 3. Recompute `invocation_manifest_sha256` and the recorded tree SHA-256.
 4. Run `tests/matt-thin-workflow.sh`, `tests/mattpocock-workflow.sh`,
    `tests/host-skill-resolver.sh`, and `tests/vendored-detection.sh`.
-5. Remove this record if upstream provides equivalent model-invocation behavior.
+5. Remove this record only when upstream provides equivalent model-invocation behaviour **and** has
+   absorbed the body corrections.
 
 ---
 
