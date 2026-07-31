@@ -7,6 +7,7 @@ B2_SKILLS_LOCK="$AGENTS/stage-b2-skills.lock"
 WRAPPER_PARITY_EVIDENCE="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow/49-three-host-global-config-ownership-split-candidate-evidence.md"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
+HANDOFF="$AGENTS/skills/handoff/SKILL.md"
 WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
 WRITING_SKILLS_DIR="$AGENTS/skills/writing-great-skills"
 WRITING_SKILLS_POLICY="$AGENTS/skills/writing-great-skills/agents/openai.yaml"
@@ -18,6 +19,13 @@ VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
   exit 1
+}
+
+# Anchored to the row's leading "| `<skill>`", per the MACHINE-READ contract in
+# vendored-forks.md. A positional read would silently pick another fork's SHA.
+fork_payload_sha() {
+  sed -n "s/^| \`$1\` .*payload SHA-256 \`\([a-f0-9]\{64\}\)\`.*/\1/p" \
+    "$AGENTS/vendored-forks.md" | head -1
 }
 
 for retired in mp-diagnose mp-grill-with-docs mp-improve-codebase-architecture mp-tdd; do
@@ -126,17 +134,28 @@ rg -q 'summarize.*explicit confirmation' "$GRILLING" ||
   fail 'grilling lacks final decision summary and confirmation'
 fork_recorded grilling ||
   fail 'grilling fork is not recorded inside the fork index'
-expected_grilling_sha="$(
-  sed -n 's/.*payload SHA-256 `\([a-f0-9]\{64\}\)`.*/\1/p' "$AGENTS/vendored-forks.md" |
-    head -1
-)"
+expected_grilling_sha="$(fork_payload_sha grilling)"
 [ -n "$expected_grilling_sha" ] ||
   fail 'grilling fork record lacks an approved payload SHA-256'
 actual_grilling_sha="$(shasum -a 256 "$GRILLING" | awk '{ print $1 }')"
 [ "$actual_grilling_sha" = "$expected_grilling_sha" ] ||
   fail 'grilling payload differs from the recorded fork fingerprint'
-rg -q '20 unmodified.*2 recorded forks' "$AGENTS/vendored-forks.md" ||
-  fail 'Matt set summary does not distinguish both recorded forks'
+
+rg -q 'triggered interactively.*copy-pasteable start prompt' "$HANDOFF" ||
+  fail 'handoff does not emit a start prompt for the next session'
+rg -q 'not a machine-parseable contract' "$HANDOFF" ||
+  fail 'handoff start prompt is not fenced off from machine consumers'
+fork_recorded handoff ||
+  fail 'handoff fork is not recorded inside the fork index'
+expected_handoff_sha="$(fork_payload_sha handoff)"
+[ -n "$expected_handoff_sha" ] ||
+  fail 'handoff fork record lacks an approved payload SHA-256'
+actual_handoff_sha="$(shasum -a 256 "$HANDOFF" | awk '{ print $1 }')"
+[ "$actual_handoff_sha" = "$expected_handoff_sha" ] ||
+  fail 'handoff payload differs from the recorded fork fingerprint'
+
+rg -q '19 unmodified.*3 recorded forks' "$AGENTS/vendored-forks.md" ||
+  fail 'Matt set summary does not distinguish all recorded forks'
 
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
   fail 'implement route does not return to S4-S6'

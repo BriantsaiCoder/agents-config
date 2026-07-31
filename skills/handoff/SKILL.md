@@ -14,3 +14,5 @@ Do not duplicate content already captured in other artifacts (specs, plans, ADRs
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.
 
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.
+
+When this run was triggered interactively by the user, end your reply with a copy-pasteable start prompt for the next session, containing the document's absolute path, the next session's focus, and the skills to invoke first. That block is for a human to copy; its shape is not a machine-parseable contract.
