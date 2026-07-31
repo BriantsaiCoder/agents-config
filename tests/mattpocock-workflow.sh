@@ -138,6 +138,18 @@ has "host resolver compares complete skill directories" 'diff -qr.*skill_path.*A
 has "CI installs the ripgrep test dependency" \
   '^[[:space:]]*run:[[:space:]]*sudo apt-get update && sudo apt-get install -y ripgrep[[:space:]]*$' \
   .github/workflows/ci.yml
+has "CI pins the gitleaks test dependency" \
+  '^[[:space:]]+GITLEAKS_VERSION:[[:space:]]*8\.30\.1[[:space:]]*$' \
+  .github/workflows/ci.yml
+has "CI verifies the gitleaks archive" \
+  '^[[:space:]]+GITLEAKS_SHA256:[[:space:]]*551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb[[:space:]]*$' \
+  .github/workflows/ci.yml
+has "CI downloads gitleaks from the official release" \
+  '^[[:space:]]*curl -fsSLO "https://github\.com/gitleaks/gitleaks/releases/download/v\$\{GITLEAKS_VERSION\}/\$\{archive\}"[[:space:]]*$' \
+  .github/workflows/ci.yml
+has "CI checks the gitleaks archive before extraction" \
+  '^[[:space:]]*echo "\$\{GITLEAKS_SHA256\}  \$\{archive\}" \| sha256sum -c -[[:space:]]*$' \
+  .github/workflows/ci.yml
 has "CI runs the Stage B2 skill checkpoint" 'bash tests/matt-thin-workflow.sh' .github/workflows/ci.yml
 resolver_fixture="$(mktemp -d "${TMPDIR:-/tmp}/host-resolver-fixture.XXXXXX")"
 printf 'skill=missing-skill\n' > "$resolver_fixture/mattpocock-skills.lock"
