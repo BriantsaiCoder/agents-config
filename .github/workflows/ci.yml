@@ -49,8 +49,22 @@ jobs:
       # lib-vendored.sh 是「可否原地編輯第三方 skill」的唯一機械判準。2026-07-25 它漏判
       # 6 個 vendored skill 中的 2 個，其中一個的漏判直接導致一次未察覺的 in-place edit。
       # false negative 才是危險方向：假 VND 只成本一次人工確認，假 "-" 授權改別人的 skill。
-      - name: vendored 偵測回歸（33 cases）
+      - name: vendored 偵測回歸（91 cases）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/vendored-detection.sh
+
+      # Step 2 description linter 的雙語分類。2026-08-01 之前它只認英文，任何 zh-TW
+      # description 只能落到 "?"（UNASSESSED），永遠不可能得 YES。危險方向是只補 GOOD 側：
+      # 那會把「必須人工讀」變成「靜默通過」。這組測試把 TRAP-first 的落地方向釘死，
+      # 並保留一個 fixture 證明 zh-TW 的 "?" 桶仍然可達。
+      - name: description linter 雙語回歸（22 cases）
+        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/description-lint.sh
+
+      # Step 1 的字數預算。`wc -w` 按空白切詞，中文沒有詞間空白，因此一段 40 字的 zh-TW
+      # 段落只算 1 個 word——那不是誤差而是整道閘對一整類 skill 失效。修法是加 CJK 字元計數
+      # 而非換算法：無 CJK 的檔 effective 恆等於 wc -w，英文行為完全不變。另含防復發守衛：
+      # 任何宣告的 tier 若在真實語料上 0 命中即 FAIL（舊的 150/200 兩層匹配 0/95 個 skill）。
+      - name: 字數預算回歸（26 cases，含 CJK 與死 tier）
+        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/word-budget.sh
 
       - name: Matt workflow carrier contracts
         run: bash tests/mattpocock-workflow.sh

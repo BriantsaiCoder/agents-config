@@ -197,6 +197,11 @@ done < "$AGENTS/mattpocock-skills.lock"
 # 的死路徑，改成不帶路徑的「家規」措辭（規則內容本來就內聯在同一段）。兩者都是 house
 # skill，不在 mattpocock-skills.lock 的 22 個內，所以上面第 106-112 行的 vendored gate
 # 不適用。註解不能插在 case pattern 的 `\` 續行之間——那是語法錯誤。
+#
+# scripts/lint-descriptions.sh 於 2026-08-01 加入：Step 2 linter 補上 zh-TW 分類（TRAP 側
+# 先落地，見該檔 SCOPE 段）。auditing-skill-folder 是 house skill、vendored_flag 判為 "-"，
+# 同資料夾的 SKILL.md 與 scripts/lib-vendored.sh 早已在此列。變更由 tests/description-lint.sh
+# 守護，並實測全 95 個 skill 僅 5 個 zh-TW description 改變分類、90 個英文 0 變動。
 # Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
 [ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
 b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
@@ -219,7 +224,12 @@ done < "$B2_SKILLS_LOCK"
 while IFS= read -r changed; do
   case "$changed" in
     skills/auditing-skill-folder/SKILL.md | \
+    skills/auditing-skill-folder/step0-vendored-gate.md | \
+    skills/auditing-skill-folder/references/skill-standards.md | \
+    skills/auditing-skill-folder/scripts/check-vendored.sh | \
+    skills/auditing-skill-folder/scripts/count-words.sh | \
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
+    skills/auditing-skill-folder/scripts/lint-descriptions.sh | \
     skills/context7-mcp/* | \
     skills/dev-workflow/* | \
     skills/mp-diagnose/* | \

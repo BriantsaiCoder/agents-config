@@ -47,8 +47,19 @@ cat <<'EOF'
 CONSTRAINT: vendored skills accept NO in-place structural edit — no Trim, no Split, no
 rewriting their SKILL.md or references. Editing an upstream skill in place IS a fork: it
 trades a one-off load saving for a permanent merge-conflict cost on every upstream update.
-This outranks token cost and trigger precision. Step 1 word counts on these are FYI only.
-A defect found in one gets REPORTED, not fixed.
+This outranks token cost and trigger precision. A defect found in one gets REPORTED, not
+silently fixed.
+
+SCOPE: this gates EXECUTION, not ASSESSMENT. Score every skill on merit — Step 1 counts and
+Step 2 lint results on VND rows are findings, not FYI — and record each defect at the severity
+it earns. A row scored "n/a — vendored" is a skipped step. The flag is not proof of foreign
+authorship either: vendored-skills.lock can name this repo as the source.
+
+The rule is a DEFAULT WITH A RECORDED OVERRIDE, not an absolute (vendored-forks.md, which
+currently carries 8 accepted forks). An assessment that concludes the edit is worth its
+recurring cost lands as a proposed override — dated fork-index row, recomputed tree SHA-256,
+re-run the tests that record names. The silent fork is what is forbidden, not the considered
+one. See step0-vendored-gate.md.
 
 Still legal, because they do not edit the skill's own files:
   - external integration (adding its name to a routing list, a rules file, a hub skill)
