@@ -9,7 +9,7 @@ description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skil
 
 **Core principle:** Structural checks first, content relevance last. Jumping to "do I still need this" produces all-keep or vibes-delete results that miss real defects.
 
-**Not for:** writing a new skill (ask the user to explicitly invoke `writing-great-skills`); debugging one skill's single trigger.
+**Not for:** writing or editing one skill (route to `writing-great-skills`); debugging one skill's single trigger (route to `diagnosing-bugs`).
 
 ## Step 0 — Vendored gate (run FIRST; it decides which verdicts are legal)
 

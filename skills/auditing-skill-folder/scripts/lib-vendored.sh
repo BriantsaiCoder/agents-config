@@ -24,6 +24,60 @@ mattpocock_lock() {
   return 1
 }
 
+vendored_skills_lock() {
+  local f
+  for f in "${VENDORED_SKILLS_LOCK:-}" \
+           "${LIB_SELF_DIR:+$LIB_SELF_DIR/../../../vendored-skills.lock}"; do
+    [ -n "$f" ] && [ -r "$f" ] || continue
+    printf '%s' "$f"
+    return 0
+  done
+  return 1
+}
+
+vendored_lock_record() {
+  local name="$1" lock
+  lock=$(vendored_skills_lock 2>/dev/null) || return 1
+  awk -F '\t' -v name="$name" '
+    $0 !~ /^#/ && $1 == name { print; found=1; exit }
+    END { exit !found }
+  ' "$lock" 2>/dev/null
+}
+
+# Hash a skill tree using Git-relevant structure: path, type, executable mode, file content,
+# and symlink target. NUL separators keep unusual filenames unambiguous.
+vendored_tree_sha256() {
+  local dir="$1" manifest rc entry mode file_sha
+  [ -d "$dir" ] && [ ! -L "$dir" ] || return 1
+  manifest=$(mktemp "${TMPDIR:-/tmp}/vendored-tree.XXXXXX") || return 1
+
+  (
+    cd "$dir" || exit 1
+    while IFS= read -r -d '' entry; do
+      if [ -L "$entry" ]; then
+        printf '%s\0%s\0%s\0%s\0' symlink "$entry" 120000 "$(readlink "$entry")"
+      elif [ -d "$entry" ]; then
+        printf '%s\0%s\0%s\0%s\0' directory "$entry" 040000 -
+      elif [ -f "$entry" ]; then
+        mode=100644
+        [ -x "$entry" ] && mode=100755
+        file_sha=$(shasum -a 256 "$entry" | awk '{ print $1 }') || exit 1
+        printf 'file\0%s\0%s\0%s\0' "$entry" "$mode" "$file_sha"
+      else
+        printf 'unsupported vendored payload type: %s\n' "$entry" >&2
+        exit 1
+      fi
+    done < <(find . -mindepth 1 -print0 | LC_ALL=C sort -z)
+  ) > "$manifest"
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
+    shasum -a 256 "$manifest" | awk '{ print $1 }'
+    rc=$?
+  fi
+  rm -f "$manifest"
+  return "$rc"
+}
+
 # vendored_flag <skill-dir> -> VND | vnd? | ERR | -
 #   VND   root-lock entry, LICENSE file, or an upstream-provenance marker.
 #   vnd?  frontmatter homepage/source only. Probable upstream, confirm by hand.
@@ -47,6 +101,10 @@ mattpocock_lock() {
 vendored_flag() {
   local dir="$1" f lock
   [ -d "$dir" ] && [ -r "$dir" ] || { printf 'ERR'; return; }
+
+  if vendored_lock_record "$(basename "$dir")" >/dev/null; then
+    printf 'VND'; return
+  fi
 
   lock=$(mattpocock_lock 2>/dev/null) || lock=""
   if [ -n "$lock" ] && grep -Fxq "skill=$(basename "$dir")" "$lock" 2>/dev/null; then
@@ -162,6 +220,12 @@ fork_recorded() {
 # have produced two blank OWNER cells.
 vendored_owner() {
   local dir="$1" lic out lock
+  out=$(vendored_lock_record "$(basename "$dir")" 2>/dev/null) || out=""
+  if [ -n "$out" ]; then
+    printf '%s' "$out" | awk -F '\t' '{ print $2 }'
+    return
+  fi
+
   lock=$(mattpocock_lock 2>/dev/null) || lock=""
   if [ -n "$lock" ] && grep -Fxq "skill=$(basename "$dir")" "$lock" 2>/dev/null; then
     sed -n 's/^source_url=//p' "$lock" | head -1

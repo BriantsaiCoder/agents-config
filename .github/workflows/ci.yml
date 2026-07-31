@@ -22,6 +22,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: install ripgrep test dependency
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: install gitleaks test dependency
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
+          sudo tar -xzf "$archive" -C /usr/local/bin gitleaks
+
       # 驗證 shared skills source、Claude link scratch bootstrap／doctor、
       # retired deployment interfaces fail-loud、shell syntax 與 collision guard。
       # CI runner 沒有 live ~/.agents；該 host-local check 會明確標為 SKIP。
@@ -42,6 +55,9 @@ jobs:
       - name: Matt workflow carrier contracts
         run: bash tests/mattpocock-workflow.sh
 
+      - name: Stage B2 skill checkpoint
+        run: bash tests/matt-thin-workflow.sh
+
       - name: Claude routing collision guard selftest
         run: bash tests/claude-routing-collision.sh --selftest
 
@@ -55,10 +71,16 @@ jobs:
       - name: PR review gate 回歸（10 cases）
         run: bash tests/pr-review-gate.sh
 
+      # parity 本身只能在本機比（runner 沒有 ~/.claude / ~/.codex），但 parity 檢查器的
+      # 邏輯可以在 CI 驗——含「exec bit 存在」這條：呼叫端用 [ -x ] 判斷，非 executable
+      # 等於防線靜默失效（2026-07-30 實測過的缺陷）。
+      - name: guard parity 檢查器回歸（11 cases）
+        run: bash tests/hook-parity.sh
+
       # guard 是承載安全判定的 shell；-S error 只抓確定性 bug 不抓風格。
       # skills/auditing-skill-folder/scripts/*.sh 不在此列——上面那條測試是它的守護。
       - name: shellcheck（hooks / tests / bin）
-        run: shellcheck -S error hooks/*.sh tests/*.sh bin/agents-sync bin/pr-review-gate
+        run: shellcheck -S error hooks/*.sh tests/*.sh bin/agents-sync bin/pr-review-gate bin/hook-parity-check
 
       # 2026-07-26 版本時效稽核（約 4.6M subagent token）修掉 30 個 skill 的死寫法：
       # 教已移除的 API、不存在的 image tag、已 EOL 的 runtime。這 28 條把那批缺陷的

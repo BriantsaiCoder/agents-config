@@ -15,23 +15,108 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
+| `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream assessed at `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-07-31 — preserve the imported agent-skill adaptation; tree SHA-256 `7e53e673348379b72f76c7a85c3c199720ddd09e4b963c85092a03eefa054408` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
+| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-07-31 — preserve the imported local variant and remove obsolete Compose top-level `version`; tree SHA-256 `ab80cfe8db12433c4fcd3aaa6f34adb0f490a76e3a476cef6a63951af51d4675` | **Active** |
+| `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-07-31 — preserve local coverage and unit-test reference variants; tree SHA-256 `9c303fb6337b8816e285d64d0d600a0e32362fcb298d6918f200a0244ddecc8f` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
+| `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
+| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — model invocation metadata only; tree SHA-256 `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
-## Pinned Matt set — 21 unmodified + 1 recorded fork
+## Unresolved Stage B2 provenance
+
+`aspnet-api-architect` and `dotnet-find-bugs` have no affirmative upstream ownership evidence.
+Their provenance lock points to the first tracked repository snapshot at `44c7fd0`, not to a
+claimed upstream. Both remain vendored and non-editable until a source repository and revision are
+verified; do not treat either as self-owned.
+
+## clean-code-dotnet
+
+**Decision (2026-07-31): preserve the Stage B2 imported agent-skill adaptation as a recorded fork.**
+
+The local skill names `thangchung/clean-code-dotnet` as its source but is not a wholesale upstream
+checkout. Its exact payload and tree are pinned in `vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the full local skill against upstream from the assessed revision.
+2. Replace it wholesale or explicitly retain the agent-skill adaptation; do not silently mix trees.
+3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
+   `tests/matt-thin-workflow.sh`.
+
+---
+
+## dotnet-core-expert
+
+**Decision (2026-07-31): accept the Stage B2 imported snapshot as a recorded fork.**
+
+The imported payload already differs from current `Jeffallan/claude-skills` in its Controllers
+guidance, workflow, and templates. This decision preserves that existing local variant and removes
+one obsolete line from the copyable Compose example: top-level `version: '3.8'`. Upstream assessed
+at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` still contains that obsolete line. The complete local
+payload and tree fingerprints are pinned in `vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the full upstream `skills/dotnet-core-expert/` tree against the Stage B2 snapshot
+   `7080450715c0e5f264e19ab60a48da9c4437c0af`.
+2. Decide explicitly whether to retain the local Controllers/templates variant or replace it
+   wholesale with upstream; do not mix the trees silently.
+3. If retaining the fork, reapply removal of the obsolete Compose top-level `version` only when
+   upstream still contains it.
+4. Recompute both fingerprints in `vendored-skills.lock` and this record, then run
+   `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, and `tests/version-tripwire.sh`.
+
+---
+
+## dotnet-test
+
+**Decision (2026-07-31): preserve the Stage B2 reference variants as a recorded fork.**
+
+The local `generate-coverage.md` and `run-unit-tests.md` differ from the assessed
+`GiantCroissant-Lunar/pigeon-pea` snapshot. The full local payload and tree are pinned in
+`vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the full upstream skill against the assessed revision.
+2. Reapply only the two reference variants if their guidance is still required.
+3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
+   `tests/matt-thin-workflow.sh`.
+
+---
+
+## qa-tester
+
+**Decision (2026-07-31): preserve the Stage B2 runtime-only subset as a recorded fork.**
+
+The four local files are content-identical to FINOS `morphir-dotnet` at the assessed revision.
+The local skill omits only upstream `README.md`; payload and tree are pinned in
+`vendored-skills.lock`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare the four runtime files and upstream `README.md` against the assessed revision.
+2. Keep omitting `README.md` only while it remains non-runtime documentation.
+3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
+   `tests/matt-thin-workflow.sh`.
+
+---
+
+## Pinned Matt set — 20 unmodified + 2 recorded forks
 
 **`mattpocock/skills` stable 22 — active, pinned 2026-07-27.**
 
 - Source: `https://github.com/mattpocock/skills.git` at `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
 - Selection: `.claude-plugin/plugin.json` SHA-256 `e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba`.
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
-- The 21 entries other than `grilling` are byte-for-byte upstream and immutable.
-- `grilling` is the one recorded fork; its exact payload fingerprint and re-merge procedure are recorded below.
+- The 20 entries other than `grilling` and `writing-great-skills` are byte-for-byte upstream and immutable.
+- The two recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
 ## Hybrid — house wrapper over vendored payload
@@ -93,6 +178,27 @@ summarizes every decision and waits for final confirmation before acting.
 
 ---
 
+## writing-great-skills
+
+**Decision (2026-07-31): accept the model-invocation metadata fork.**
+
+The upstream reference remains unchanged below frontmatter. The local fork removes
+`disable-model-invocation: true`, narrows the description to single-skill authoring, and sets
+`agents/openai.yaml` `allow_implicit_invocation: true`. Approved tree SHA-256: `6d00cd49dd5038656fc226c1b81ed09915f8fc26047a00f0bc1aa386fdb7325b`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Diff the new upstream `writing-great-skills/` against pinned commit
+   `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
+2. Replace the pinned Matt set, then reapply only the frontmatter description, invocation flag
+   removal, and Codex implicit policy when upstream still keeps this skill user-only.
+3. Recompute `invocation_manifest_sha256` and the recorded tree SHA-256.
+4. Run `tests/matt-thin-workflow.sh`, `tests/mattpocock-workflow.sh`,
+   `tests/host-skill-resolver.sh`, and `tests/vendored-detection.sh`.
+5. Remove this record if upstream provides equivalent model-invocation behavior.
+
+---
+
 ## tailwind-v4-shadcn
 
 **Decision (2026-07-25): accept the fork. Two factual corrections, both confirmed against upstream's current version.**
@@ -112,11 +218,11 @@ The decision to keep the corrections was taken **after** the status was known, o
 
 ### Not fixed, deliberately: the `rules/` subdirectory
 
-`rules/tailwind-v4-shadcn.md` carries a `paths:` frontmatter (single-line comma form, unlike the YAML-list form `~/.agents/rules/*` uses). Inside a skill that frontmatter never fires — path-triggered loading only reads `~/.claude/rules/` and `.claude/rules/` — so it is upstream residue that reads like a live rule. `SKILL.md:39` indexes the file correctly as "Rule text for agents/tools", and its content is correct (the `@apply` correction above landed there).
+`rules/tailwind-v4-shadcn.md` carries a `paths:` frontmatter (single-line comma form, unlike the YAML-list form the house stack rules use). Inside a skill that frontmatter never fires — path-triggered loading only reads `~/.claude/rules/` and `.claude/rules/` — so it is upstream residue that reads like a live rule. `SKILL.md:39` indexes the file correctly as "Rule text for agents/tools", and its content is correct (the `@apply` correction above landed there).
 
 Left alone on purpose. Removing the dead frontmatter, or moving the file to `references/` where it belongs by type, is a second structural edit to someone else's skill — a new override decision bought for the removal of a misleading comment. That trade is the wrong way round, and per this file's opening rule, an existing record does not authorise further editing.
 
-The tempting alternative is also rejected: promoting it to `~/.agents/rules/` would be legal (external integration touches none of the skill's own files) but wrong. External integration is already done — `core/routing.md:8` routes "Tailwind v4 → `tailwind-v4-shadcn`" and `rules/frontend-spa.md:16` declares the Tailwind + shadcn stack. A new rules file would duplicate skill content into the path-triggered layer on `**/*.css` / `**/*.tsx`, re-inflating resident context that a 2026-07-25 pass had just trimmed.
+The tempting alternative is also rejected: promoting it to a shared house `rules/` file would be legal (external integration touches none of the skill's own files) but wrong. External integration is already done — the `dev-workflow` S0 route sends "Tailwind v4 → `tailwind-v4-shadcn`", and each host's own `rules/frontend-spa.md` declares the Tailwind + shadcn stack. (Both coordinates moved on 2026-07-30: `core/` and `rules/` retired to `attic/`, the routing assertion now reads `skills/dev-workflow/SKILL.md`, and the stack rules live only in `~/.claude|.codex|.copilot/rules/`.) A new rules file would duplicate skill content into the path-triggered layer on `**/*.css` / `**/*.tsx`, re-inflating resident context that a 2026-07-25 pass had just trimmed.
 
 ### What was wrong
 

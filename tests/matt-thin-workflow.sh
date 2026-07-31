@@ -3,8 +3,13 @@ set -euo pipefail
 
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
 WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
+B2_SKILLS_LOCK="$AGENTS/stage-b2-skills.lock"
+WRAPPER_PARITY_EVIDENCE="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow/49-three-host-global-config-ownership-split-candidate-evidence.md"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
+WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
+WRITING_SKILLS_DIR="$AGENTS/skills/writing-great-skills"
+WRITING_SKILLS_POLICY="$AGENTS/skills/writing-great-skills/agents/openai.yaml"
 VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
 
 # shellcheck source=../skills/auditing-skill-folder/scripts/lib-vendored.sh
@@ -31,27 +36,85 @@ for heading in \
   rg -q "$heading" "$KERNEL" || fail "thin kernel heading missing: $heading"
 done
 
-for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6; do
+for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6 INT-7; do
   rg -q "\\[$rule\\]" "$KERNEL" || fail "thin kernel guard missing: $rule"
 done
 
-for skill in \
-  triage \
-  grilling \
-  domain-modeling \
-  grill-with-docs \
-  to-spec \
-  to-tickets \
-  implement \
-  tdd \
-  diagnosing-bugs \
-  code-review \
-  codebase-design \
-  wayfinder \
-  handoff; do
-  rg -q "\`$skill\`" "$KERNEL" || fail "active route missing: $skill"
+while IFS= read -r skill; do
   [ -f "$AGENTS/skills/$skill/SKILL.md" ] || fail "routed skill missing: $skill"
-done
+done < <(
+  sed -n '/^| Need | Route |$/,/^$/p' "$KERNEL" |
+    rg -o '`[a-z0-9-]+`' |
+    tr -d '`' |
+    sort -u
+)
+
+expected_invocation_sha="$(
+  sed -n 's/^invocation_manifest_sha256=//p' "$AGENTS/mattpocock-skills.lock"
+)"
+[[ "$expected_invocation_sha" =~ ^[a-f0-9]{64}$ ]] ||
+  fail 'Matt invocation manifest fingerprint missing'
+actual_invocation_sha="$(
+  while IFS='=' read -r key skill; do
+    [ "$key" = skill ] || continue
+    if rg -q '^disable-model-invocation:[[:space:]]*true$' \
+      "$AGENTS/skills/$skill/SKILL.md"; then
+      mode=user
+    else
+      mode=model
+    fi
+    printf '%s=%s\n' "$skill" "$mode"
+  done < "$AGENTS/mattpocock-skills.lock" |
+    LC_ALL=C sort |
+    shasum -a 256 |
+    awk '{ print $1 }'
+)"
+[ "$actual_invocation_sha" = "$expected_invocation_sha" ] ||
+  fail 'Matt invocation split drifted'
+
+while IFS='=' read -r key skill; do
+  [ "$key" = skill ] || continue
+  rg -q '^disable-model-invocation:[[:space:]]*true$' \
+    "$AGENTS/skills/$skill/SKILL.md" || continue
+  policy="$AGENTS/skills/$skill/agents/openai.yaml"
+  [ -f "$policy" ] ||
+    fail "Codex user-only policy missing: $skill"
+  rg -q '^[[:space:]]*allow_implicit_invocation:[[:space:]]*false$' "$policy" ||
+    fail "Codex user-only policy permits implicit invocation: $skill"
+done < "$AGENTS/mattpocock-skills.lock"
+
+! rg -q '^disable-model-invocation:[[:space:]]*true$' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills is not model-invoked'
+rg -q '^description: Skill authoring.*single skill' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills lacks a focused model trigger'
+rg -q '^[[:space:]]*allow_implicit_invocation:[[:space:]]*true$' \
+  "$WRITING_SKILLS_POLICY" ||
+  fail 'Codex policy blocks writing-great-skills implicit invocation'
+fork_recorded writing-great-skills ||
+  fail 'writing-great-skills fork is not recorded inside the fork index'
+expected_writing_tree_sha="$(
+  sed -n '/^## writing-great-skills$/,/^---$/p' "$AGENTS/vendored-forks.md" |
+    sed -n 's/.*tree SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p'
+)"
+[ -n "$expected_writing_tree_sha" ] ||
+  fail 'writing-great-skills fork record lacks an approved tree SHA-256'
+actual_writing_tree_sha="$(vendored_tree_sha256 "$WRITING_SKILLS_DIR")"
+[ "$actual_writing_tree_sha" = "$expected_writing_tree_sha" ] ||
+  fail 'writing-great-skills tree differs from the recorded fork fingerprint'
+
+rg -q '\[INT-7\].*disable-model-invocation.*MUST NOT.*自動 invoke' "$KERNEL" ||
+  fail 'thin kernel does not preserve the Matt user-only invocation boundary'
+rg -q 'user-only skill.*推薦.*explicit invocation command.*等待' "$KERNEL" ||
+  fail 'thin kernel does not hand user-only routes back to explicit user invocation'
+sed -n '/^### Claude$/,/^### Codex$/p' "$KERNEL" |
+  rg -q 'user-only skill command = `/<skill-name>`' ||
+  fail 'Claude user-only invocation syntax missing'
+sed -n '/^### Codex$/,/^### Copilot$/p' "$KERNEL" |
+  rg -q 'user-only skill command = `\$<skill-name>`' ||
+  fail 'Codex user-only invocation syntax missing'
+sed -n '/^### Copilot$/,/^## References$/p' "$KERNEL" |
+  rg -q 'user-only skill command = `/<skill-name>`' ||
+  fail 'Copilot user-only invocation syntax missing'
 
 rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
   fail 'grilling does not offer compact options with the recommendation first'
@@ -72,8 +135,8 @@ expected_grilling_sha="$(
 actual_grilling_sha="$(shasum -a 256 "$GRILLING" | awk '{ print $1 }')"
 [ "$actual_grilling_sha" = "$expected_grilling_sha" ] ||
   fail 'grilling payload differs from the recorded fork fingerprint'
-rg -q '21 unmodified.*1 recorded fork' "$AGENTS/vendored-forks.md" ||
-  fail 'Matt set summary does not distinguish the grilling fork'
+rg -q '20 unmodified.*2 recorded forks' "$AGENTS/vendored-forks.md" ||
+  fail 'Matt set summary does not distinguish both recorded forks'
 
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
   fail 'implement route does not return to S4-S6'
@@ -87,8 +150,11 @@ rg -q 'GREEN.*micro-refactor|micro-refactor.*GREEN' "$KERNEL" ||
 if rg -n 'superpowers:' "$AGENTS/skills" >/dev/null; then
   fail 'active shared skills still reference Superpowers'
 fi
+# 2026-07-30：掃描目標從 $AGENTS/core/routing.md 改為 $KERNEL（dev-workflow SKILL.md）。
+# core/ 三家 runtime 都不讀，已退役至 attic/core/；active routing 的真正本是
+# kernel 的 S0 ROUTE 表。
 if rg -n 'mp-(diagnose|grill-with-docs|improve-codebase-architecture|tdd)' \
-  "$AGENTS/core/routing.md" "$AGENTS/skills" >/dev/null; then
+  "$KERNEL" "$AGENTS/skills" >/dev/null; then
   fail 'active routing or shared skills still reference retired wrappers'
 fi
 
@@ -103,28 +169,61 @@ git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- skills/mp-zoom-out ||
 while IFS='=' read -r key skill; do
   [ "$key" = skill ] || continue
   if ! git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- "skills/$skill"; then
-    [ "$skill" = grilling ] && fork_recorded grilling ||
+    fork_recorded "$skill" ||
       fail "unrecorded Matt upstream skill change: $skill"
   fi
 done < "$AGENTS/mattpocock-skills.lock"
 
+# 最後兩個 pattern 是 2026-07-30 rules/ 退役加入的：那兩處只移除指向 ~/.agents/rules/
+# 的死路徑，改成不帶路徑的「家規」措辭（規則內容本來就內聯在同一段）。兩者都是 house
+# skill，不在 mattpocock-skills.lock 的 22 個內，所以上面第 106-112 行的 vendored gate
+# 不適用。註解不能插在 case pattern 的 `\` 續行之間——那是語法錯誤。
+# Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
+[ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
+b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
+[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 26 ] ||
+  fail 'Stage B2 skill tree lock inventory drifted'
+
+[ ! -e "$AGENTS/skills/video-downloader" ] &&
+  [ ! -L "$AGENTS/skills/video-downloader" ] ||
+  fail 'retired video-downloader directory still exists'
+for fork in clean-code-dotnet dotnet-core-expert dotnet-test qa-tester; do
+  fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
+done
+while IFS=$'\t' read -r skill expected_tree_sha; do
+  case "$skill" in \#*|"") continue ;; esac
+  actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
+  [ "$actual_tree_sha" = "$expected_tree_sha" ] ||
+    fail "Stage B2 skill tree differs from checkpoint: $skill"
+done < "$B2_SKILLS_LOCK"
+
 while IFS= read -r changed; do
   case "$changed" in
+    skills/auditing-skill-folder/SKILL.md | \
+    skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/dev-workflow/* | \
-    skills/grilling/SKILL.md | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
-    skills/mp-tdd/*) ;;
-    *) fail "non-allowlisted shared skill changed: $changed" ;;
+    skills/mp-tdd/* | \
+    skills/typescript-best-practices/references/config-and-project.md | \
+    skills/vue-best-practices/references/styling-and-ui.md) ;;
+    *)
+      changed_skill="${changed#skills/}"
+      changed_skill="${changed_skill%%/*}"
+      if fork_recorded "$changed_skill"; then
+        continue
+      fi
+      printf '%s\n' "$b2_skills" | grep -Fxq "$changed_skill" ||
+        fail "non-allowlisted shared skill changed: $changed"
+      ;;
   esac
 done < <(git -C "$AGENTS" diff --name-only "$WORKFLOW_BASE" -- skills)
 
-parity="${WRAPPER_PARITY_EVIDENCE:-/private/tmp/three-host-global-config-split-wrapper-parity.tsv}"
-[ -f "$parity" ] || fail "wrapper parity evidence missing: $parity"
+[ -f "$WRAPPER_PARITY_EVIDENCE" ] ||
+  fail "wrapper parity evidence missing: $WRAPPER_PARITY_EVIDENCE"
 for retired in mp-diagnose mp-grill-with-docs mp-improve-codebase-architecture mp-tdd; do
-  awk -F '\t' -v wrapper="$retired" \
-    '$1==wrapper && $2=="PASS" {found=1} END {exit !found}' "$parity" ||
+  rg -q "^\\| \`$retired\` .*\\| PASS" "$WRAPPER_PARITY_EVIDENCE" ||
     fail "wrapper parity missing: $retired"
 done
 

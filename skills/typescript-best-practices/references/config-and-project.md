@@ -136,7 +136,7 @@ import { createUser } from './types'; // ✅ 值 import
 
 ### Barrel exports（`index.ts` re-export）
 
-⛔ **家規禁用**（`~/.agents/rules/typescript.md`：「**NEVER** barrel exports（`index.ts` 重新匯出）」）。禁用的技術理由：
+⛔ **禁止** barrel exports（`index.ts` 重新匯出）。技術理由：
 
 | 代價 | 說明 |
 |---|---|
