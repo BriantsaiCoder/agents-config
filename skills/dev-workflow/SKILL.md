@@ -25,6 +25,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 - [INT-5] `setup-matt-pocock-skills` 只有使用者明示才可執行；先讀 repo `docs/agents/issue-tracker.md`，不存在才讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：Matt skill 需要 tracker contract。例外：無。驗證：contract 存在或引用使用者 setup 原句。
 - [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
 - [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 由 model 自動 invoke 或假裝已 invoke；S0 只能推薦下一個 host-specific command，並等待使用者明示啟動。觸發：route 命中 user-only skill。例外：無。驗證：skill frontmatter + 使用者 invocation 原句。
+- [INT-8] 已列出且經核准的多項工作 MUST 逐項執行至清單完成，不得每項完成即停下等待確認；只有命中 [T0-5] 模糊、[T0-8]／[INT-3] plan gate，或需使用者裁決的取捨才可中斷，中斷時只問該一項。清單外的新發現 MUST 只分列 follow-up，未確認不得實作。觸發：單次任務含 ≥2 個已核准項目。例外：無。驗證：回覆為單次彙總（各項 status + evidence），非逐項往返。
 
 退役 ID 殼標記（CONVENTIONS 規則 3：ID 永不重編、永不回收，舊 transcript 與 commit message 可能仍引用）：`[R-1 DEPRECATED→INT-1 2026-07]`、`[R-2 DEPRECATED→INT-2 2026-07]`。兩者原定義於 `core/routing.md`，該檔 2026-07-30 退役至 `attic/core/`；條文語意由上方 [INT-1]／[INT-2] 逐項承接。
 
