@@ -3,8 +3,8 @@ set -euo pipefail
 
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
 WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
-B2_SKILLS_BASE="${B2_SKILLS_BASE:-7080450715c0e5f264e19ab60a48da9c4437c0af}"
 B2_SKILLS_LOCK="$AGENTS/stage-b2-skills.lock"
+WRAPPER_PARITY_EVIDENCE="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow/49-three-host-global-config-ownership-split-candidate-evidence.md"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
 WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
@@ -178,20 +178,10 @@ done < "$AGENTS/mattpocock-skills.lock"
 # 的死路徑，改成不帶路徑的「家規」措辭（規則內容本來就內聯在同一段）。兩者都是 house
 # skill，不在 mattpocock-skills.lock 的 22 個內，所以上面第 106-112 行的 vendored gate
 # 不適用。註解不能插在 case pattern 的 `\` 續行之間——那是語法錯誤。
-# Stage B2 commit 定義目錄集合；lock 定義經審核後的完整 tree（含 mode 與 symlink）。
-b2_skills="$(
-  git -C "$AGENTS" diff-tree --no-commit-id --name-only -r \
-    "$B2_SKILLS_BASE" -- skills |
-    awk -F/ 'NF > 1 { print $2 }' |
-    LC_ALL=C sort -u
-)"
-[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 26 ] ||
-  fail 'Stage B2 skill checkpoint does not contain exactly 26 directories'
+# Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
 [ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
-expected_b2_skills="$(printf '%s\n' "$b2_skills" | sed 's/^video-downloader$/youtube-downloader/' | LC_ALL=C sort)"
-locked_b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
-[ "$(printf '%s\n' "$locked_b2_skills" | grep -c .)" -eq 26 ] &&
-  [ "$locked_b2_skills" = "$expected_b2_skills" ] ||
+b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
+[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 26 ] ||
   fail 'Stage B2 skill tree lock inventory drifted'
 
 [ ! -e "$AGENTS/skills/video-downloader" ] &&
@@ -224,22 +214,16 @@ while IFS= read -r changed; do
       if fork_recorded "$changed_skill"; then
         continue
       fi
-      if [ "$changed_skill" = youtube-downloader ]; then
-        checkpoint_skill=video-downloader
-      else
-        checkpoint_skill="$changed_skill"
-      fi
-      printf '%s\n' "$b2_skills" | grep -Fxq "$checkpoint_skill" ||
+      printf '%s\n' "$b2_skills" | grep -Fxq "$changed_skill" ||
         fail "non-allowlisted shared skill changed: $changed"
       ;;
   esac
 done < <(git -C "$AGENTS" diff --name-only "$WORKFLOW_BASE" -- skills)
 
-parity="${WRAPPER_PARITY_EVIDENCE:-/private/tmp/three-host-global-config-split-wrapper-parity.tsv}"
-[ -f "$parity" ] || fail "wrapper parity evidence missing: $parity"
+[ -f "$WRAPPER_PARITY_EVIDENCE" ] ||
+  fail "wrapper parity evidence missing: $WRAPPER_PARITY_EVIDENCE"
 for retired in mp-diagnose mp-grill-with-docs mp-improve-codebase-architecture mp-tdd; do
-  awk -F '\t' -v wrapper="$retired" \
-    '$1==wrapper && $2=="PASS" {found=1} END {exit !found}' "$parity" ||
+  rg -q "^\\| \`$retired\` .*\\| PASS" "$WRAPPER_PARITY_EVIDENCE" ||
     fail "wrapper parity missing: $retired"
 done
 

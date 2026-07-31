@@ -151,6 +151,9 @@ has "CI checks the gitleaks archive before extraction" \
   '^[[:space:]]*echo "\$\{GITLEAKS_SHA256\}  \$\{archive\}" \| sha256sum -c -[[:space:]]*$' \
   .github/workflows/ci.yml
 has "CI runs the Stage B2 skill checkpoint" 'bash tests/matt-thin-workflow.sh' .github/workflows/ci.yml
+lacks "Stage B2 test has no local-only commit dependency" \
+  'B2_SKILLS_BASE|7080450715c0e5f264e19ab60a48da9c4437c0af|/private/tmp/three-host-global-config-split-wrapper-parity\.tsv' \
+  tests/matt-thin-workflow.sh
 resolver_fixture="$(mktemp -d "${TMPDIR:-/tmp}/host-resolver-fixture.XXXXXX")"
 printf 'skill=missing-skill\n' > "$resolver_fixture/mattpocock-skills.lock"
 resolver_output="$(
