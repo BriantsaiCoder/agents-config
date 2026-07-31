@@ -95,11 +95,18 @@ echo "── A1：中英夾雜 ──"
 check "mixed-big: 超標" "YES" "$(over_of mixed-big)"
 
 echo "── A1：不依賴任何 UTF-8 locale ──"
-a=$(LC_ALL=C bash "$SCRIPT" "$CORPUS" 2>/dev/null | awk '$6=="chinese-big"{print $1}')
-b=$(LC_ALL=en_US.UTF-8 bash "$SCRIPT" "$CORPUS" 2>/dev/null | awk '$6=="chinese-big"{print $1}')
-c=$(LC_ALL= LANG= bash "$SCRIPT" "$CORPUS" 2>/dev/null | awk '$6=="chinese-big"{print $1}')
-check "locale-independent: LC_ALL=C 與 en_US.UTF-8 一致" "$a" "$b"
-check "locale-independent: locale 全空時亦一致"           "$a" "$c"
+# 逐欄比對，不只比 EFF。2026-08-01 CI 實測：只釘 CJK 那半不夠——EFF 是總和，
+# 任何一項對 locale 敏感就會讓整體漂移。GNU coreutils 的 `wc -w` 在 UTF-8 locale 下用
+# iswspace() 斷詞、在 C locale 下逐位元組，對無空白的 zh-TW 檔兩者差 1（583 vs 582）。
+# macOS BSD wc 兩種 locale 都回 7，所以本機看不到，只有 GNU runner 會炸。
+for col in 1 2 3; do
+  case "$col" in 1) label=EFF ;; 2) label=WORDS ;; 3) label=CJK ;; esac
+  a=$(LC_ALL=C           bash "$SCRIPT" "$CORPUS" 2>/dev/null | awk -v c="$col" '$6=="chinese-big"{print $c}')
+  b=$(LC_ALL=en_US.UTF-8 bash "$SCRIPT" "$CORPUS" 2>/dev/null | awk -v c="$col" '$6=="chinese-big"{print $c}')
+  d=$(LC_ALL= LANG=      bash "$SCRIPT" "$CORPUS" 2>/dev/null | awk -v c="$col" '$6=="chinese-big"{print $c}')
+  check "locale-independent[$label]: C 與 en_US.UTF-8 一致" "$a" "$b"
+  check "locale-independent[$label]: locale 全空時亦一致"    "$a" "$d"
+done
 
 echo "── A4：宣告的 tier 都必須有真實成員 ──"
 LIVE="$AGENTS/skills"

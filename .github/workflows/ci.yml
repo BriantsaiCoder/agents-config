@@ -63,7 +63,7 @@ jobs:
       # 段落只算 1 個 word——那不是誤差而是整道閘對一整類 skill 失效。修法是加 CJK 字元計數
       # 而非換算法：無 CJK 的檔 effective 恆等於 wc -w，英文行為完全不變。另含防復發守衛：
       # 任何宣告的 tier 若在真實語料上 0 命中即 FAIL（舊的 150/200 兩層匹配 0/95 個 skill）。
-      - name: 字數預算回歸（26 cases，含 CJK 與死 tier）
+      - name: 字數預算回歸（30 cases，含 CJK 與死 tier）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/word-budget.sh
 
       - name: Matt workflow carrier contracts

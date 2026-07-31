@@ -25,13 +25,23 @@
 # corpus the weight changes no verdict (every CJK-bearing skill is OVER at weights 0.5 through 1.0);
 # it is chosen so the budget stays meaningful for skills that do not exist yet.
 #
-# CJK counting is byte-level and locale-INDEPENDENT by design. UTF-8 encodes U+3000–U+9FFF (CJK
-# punctuation, kana, and CJK Unified Ideographs) as three bytes with a lead byte in 0xE3–0xE9, and
-# continuation bytes are 0x80–0xBF, so they cannot collide. Counting lead bytes therefore counts
-# characters exactly, with no locale set. The alternative, `wc -m`, needs a UTF-8 locale: with
-# LC_ALL unset it silently returns BYTES (12 rather than 4 on a 4-character sample), and a CI runner
-# is not guaranteed to have en_US.UTF-8 generated. tests/word-budget.sh runs the script under three
-# locale settings and asserts one answer.
+# BOTH counts are pinned to LC_ALL=C, so the effective number is a property of the file and not of
+# the caller's environment.
+#
+# CJK counting is byte-level by design. UTF-8 encodes U+3000–U+9FFF (CJK punctuation, kana, and CJK
+# Unified Ideographs) as three bytes with a lead byte in 0xE3–0xE9, and continuation bytes are
+# 0x80–0xBF, so they cannot collide. Counting lead bytes therefore counts characters exactly, with
+# no locale set. The alternative, `wc -m`, needs a UTF-8 locale: with LC_ALL unset it silently
+# returns BYTES (12 rather than 4 on a 4-character sample), and a CI runner is not guaranteed to
+# have en_US.UTF-8 generated.
+#
+# `wc -w` is pinned for a defect found in CI on 2026-08-01, not out of caution: GNU coreutils splits
+# words with `iswspace()` under a UTF-8 locale and per byte under C, and on a whitespace-free zh-TW
+# file the two disagree — the same fixture measured 583 under en_US.UTF-8 and 582 under C. macOS BSD
+# `wc` answers 7 either way, so this was invisible locally and only the GNU runner exposed it.
+# Pinning the CJK half alone was not enough: the effective number is a sum, so one locale-sensitive
+# term makes the whole thing drift. Verified over all 95 skills: pinning changes no count.
+# tests/word-budget.sh runs the script under three locale settings and asserts one answer.
 #
 # VND column is co-located on purpose: an over-limit count reads as "Trim me", and for a vendored
 # skill that verdict needs a recorded override (see check-vendored.sh). The constraint must be
@@ -67,7 +77,7 @@ while IFS= read -r -d '' f; do
   limit=500
   printf '%s\n' "$ALWAYS_LOADED" | tr ' ' '\n' | grep -Fxq "$name" && limit=200
   # A single unreadable file must not truncate the table (it used to abort the loop under set -e).
-  if ! wc=$(wc -w <"$f" 2>/dev/null | tr -d ' ') || [ -z "$wc" ]; then
+  if ! wc=$(LC_ALL=C wc -w <"$f" 2>/dev/null | tr -d ' ') || [ -z "$wc" ]; then
     rows="${rows}$(printf "%-7s %-7s %-6s %-4s %-5s %s (limit=%d)" \
       "ERR" "ERR" "?" "?" "$(vendored_flag "$dir")" "$name" "$limit")
 "
