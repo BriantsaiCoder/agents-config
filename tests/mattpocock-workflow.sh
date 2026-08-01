@@ -87,9 +87,10 @@ has "high-fan-in changes route to deps-check" '高扇入.*`deps-check`.*callers'
 has "focused security routes to security-review" 'focused.*`security-review`' skills/dev-workflow/SKILL.md
 has "heavy security audit is explicit and artifact-aware" '明示.*artifacts.*`security-audit`' skills/dev-workflow/SKILL.md
 has "security pipeline gates stay separate" 'SBOM.*`dependency-security-scan`' skills/dev-workflow/SKILL.md
-has "single-skill authoring routes to writing-great-skills" '單一 skill.*建立.*修改.*`writing-great-skills`' skills/dev-workflow/SKILL.md
+has "single-skill behavioral authoring routes to writing-great-skills" '單一 skill.*behavior.*invocation.*description.*pruning.*`writing-great-skills`' skills/dev-workflow/SKILL.md
+has "skill scaffolding stays with the host creator" 'skill scaffolding.*host creator' skills/dev-workflow/SKILL.md
 has "skill-folder lifecycle audit routes to auditing-skill-folder" 'skill folder.*keep.*trim.*delete.*migrate.*`auditing-skill-folder`' skills/dev-workflow/SKILL.md
-has "single-skill trigger failure starts with diagnosing-bugs" '單一 skill.*trigger failure.*`diagnosing-bugs`.*RED' skills/dev-workflow/SKILL.md
+has "single-skill trigger failure requires caller-compatible RED" '單一 skill.*trigger failure.*MUST.*preserved RED.*caller.*`diagnosing-bugs`.*Step 2c RED.*`writing-great-skills`' skills/dev-workflow/SKILL.md
 lacks "audit no longer requests explicit writing-skill invocation" 'explicitly invoke `writing-great-skills`|明示.*`writing-great-skills`' skills/auditing-skill-folder/SKILL.md
 # explicit route: grill-with-docs 由第 67 行的「明示.*`grill-with-docs`」涵蓋（措辭更精確），
 # 不再重複斷言 —— S0 表用反引號而非斜線前綴，原本的 '/grill-with-docs' 在此不成立。

@@ -8,8 +8,11 @@ WRAPPER_PARITY_EVIDENCE="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
 HANDOFF="$AGENTS/skills/handoff/SKILL.md"
+DIAGNOSING="$AGENTS/skills/diagnosing-bugs/SKILL.md"
+DIAGNOSING_DIR="$AGENTS/skills/diagnosing-bugs"
 WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
 WRITING_SKILLS_DIR="$AGENTS/skills/writing-great-skills"
+WRITING_GLOSSARY="$WRITING_SKILLS_DIR/GLOSSARY.md"
 WRITING_SKILLS_POLICY="$AGENTS/skills/writing-great-skills/agents/openai.yaml"
 AUDIT_SKILL="$AGENTS/skills/auditing-skill-folder/SKILL.md"
 AUDIT_VENDORED_GATE="$AGENTS/skills/auditing-skill-folder/step0-vendored-gate.md"
@@ -97,8 +100,42 @@ done < "$AGENTS/mattpocock-skills.lock"
 
 ! rg -q '^disable-model-invocation:[[:space:]]*true$' "$WRITING_SKILLS" ||
   fail 'writing-great-skills is not model-invoked'
-rg -q '^description: Skill authoring.*single skill' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills lacks a focused model trigger'
+rg -q '^description: .*Agent Skill fires unreliably.*RED trigger canary before rewrite' "$DIAGNOSING" ||
+  fail 'diagnosing-bugs lacks the skill-trigger failure branch'
+fork_recorded diagnosing-bugs ||
+  fail 'diagnosing-bugs fork is not recorded inside the fork index'
+expected_diagnosing_tree_sha="$(
+  sed -n '/^## diagnosing-bugs$/,/^---$/p' "$AGENTS/vendored-forks.md" |
+    sed -n 's/.*tree SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p'
+)"
+[ -n "$expected_diagnosing_tree_sha" ] ||
+  fail 'diagnosing-bugs fork record lacks an approved tree SHA-256'
+actual_diagnosing_tree_sha="$(vendored_tree_sha256 "$DIAGNOSING_DIR")"
+[ "$actual_diagnosing_tree_sha" = "$expected_diagnosing_tree_sha" ] ||
+  fail 'diagnosing-bugs tree differs from the recorded fork fingerprint'
+rg -q "^description: Use when editing one existing Agent Skill's model/user invocation mode.*another skill routes an already-red single-target behavior rewrite here.*Existing-skill invocation edits stay here.*host creator owns new-skill scaffolding.*folder auditor owns directory audits" "$WRITING_SKILLS" ||
+  fail 'writing-great-skills lacks disambiguated authoring and post-RED triggers'
+rg -q '^\*\*REQUIRED PRECONDITION:\*\*.*preserved RED trigger canary.*Step 2c RED satisfies this gate' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills does not accept a caller-provided Step 2c RED'
+rg -q '^\*\*REQUIRED SUB-SKILL:\*\*.*no caller provides.*invoke `diagnosing-bugs` first' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills does not declare the conditional trigger-diagnosis dependency'
+rg -q 'full.*record a verdict for every applicable section' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills lacks the full-audit completion criterion'
+rg -q 'scoped edit.*only the named branch' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills expands scoped edits into full audits'
+rg -q 'trigger RED canary.*GREEN' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills does not preserve RED to GREEN evidence'
+writing_words=$(LC_ALL=C wc -w < "$WRITING_SKILLS" | tr -d ' ')
+[ "$writing_words" -le 500 ] ||
+  fail "writing-great-skills exceeds its 500-word budget: $writing_words"
+[ -r "$WRITING_GLOSSARY" ] ||
+  fail 'writing-great-skills glossary is missing or unreadable'
+rg -Fq '](GLOSSARY.md)' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills no longer points to its glossary'
+! rg -q '^_Avoid_:' "$WRITING_GLOSSARY" ||
+  fail 'writing-great-skills glossary still carries negation sediment'
+! rg -q '_comprehensive_, _thorough_' "$WRITING_GLOSSARY" ||
+  fail 'writing-great-skills still presents thorough as both weak and effective'
 rg -q '^[[:space:]]*allow_implicit_invocation:[[:space:]]*true$' \
   "$WRITING_SKILLS_POLICY" ||
   fail 'Codex policy blocks writing-great-skills implicit invocation'
@@ -173,7 +210,7 @@ actual_handoff_sha="$(shasum -a 256 "$HANDOFF" | awk '{ print $1 }')"
 [ "$actual_handoff_sha" = "$expected_handoff_sha" ] ||
   fail 'handoff payload differs from the recorded fork fingerprint'
 
-rg -q '19 unmodified.*3 recorded forks' "$AGENTS/vendored-forks.md" ||
+rg -q '18 unmodified.*4 recorded forks' "$AGENTS/vendored-forks.md" ||
   fail 'Matt set summary does not distinguish all recorded forks'
 
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
