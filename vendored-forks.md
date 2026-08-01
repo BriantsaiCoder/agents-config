@@ -262,8 +262,9 @@ The second pass is backed by fresh Claude, Codex, and Copilot routing canaries r
 `proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`. The candidate makes host
 creators own scaffolding, accepts a valid RED from the folder auditor's Step 2c, sends missing-RED
 reproduction to `diagnosing-bugs`, and gives this skill the behavioral rewrite after either handoff.
-It replaces the 1,641-word top level with a 427-word executable checklist and makes completion
-branch-aware instead of forcing a full audit for every scoped edit. The evidence record keeps the
+It replaced the 1,641-word top level with an executable checklist — 427 words as the second pass
+landed it, 437 after the third pass restored the identity clause and the bold-term contract — and
+makes completion branch-aware instead of forcing a full audit for every scoped edit. The evidence record keeps the
 mixed D-route canary as a residual instead of claiming a three-host clean sweep.
 
 The third pass answers a post-landing review
