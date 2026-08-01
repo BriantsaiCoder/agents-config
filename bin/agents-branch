@@ -41,7 +41,34 @@ case "${1:-}" in
     br="${2:?用法：agents-branch --done <branch>}"
     wt="$WT_ROOT/$br"
     [ -d "$wt" ] || die "找不到 worktree：$wt"
-    git worktree remove "$wt" || die "移除失敗（有未提交變更？加 --force 需自行判斷）"
+
+    # 失敗時依「實際留下什麼」判斷下一步——不猜原因。
+    #
+    # 舊版是單行 `git worktree remove "$wt" || die "移除失敗（有未提交變更？加 --force…）"`。
+    # git 自己的訊息其實有透出來，問題不在被吞掉，而在那句**寫死的猜測被當成事實**，且所有
+    # 失敗一律同一句話，不分辨後果。
+    #
+    # 2026-08-01 實測踩到：沙箱擋住 `.git/worktrees/<name>` 的刪除，**目錄其實已經移除成功**，
+    # 只有 metadata 沒清掉。訊息說「有未提交變更？」——歸因錯誤（與變更無關），且暗示什麼都
+    # 沒發生（實際已半完成）。正確的下一步是 git worktree prune，不是 --force。
+    # `|| rc=$?` 而不是分兩行寫 `err=$(...)` 再 `rc=$?`：本檔開頭是 set -e，賦值中的命令替換
+    # 失敗會當場終止整個腳本，rc=$? 永遠執行不到，使用者一個字都看不到。第一版正是這樣壞的，
+    # 由 tests/agents-branch.sh 的「必須轉述 git 的失敗」抓出來。
+    rc=0
+    err=$(git worktree remove "$wt" 2>&1) || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      printf 'agents-branch: git worktree remove 回報失敗（exit=%s）：\n%s\n' "$rc" "$err" >&2
+      if [ -d "$wt" ]; then
+        # 目錄還在＝什麼都沒動。未提交變更是最常見原因，但由 git 的訊息說了算。
+        die "worktree 目錄仍在：$wt。確認上面 git 的原因；若確定要丟棄其中變更，用 git worktree remove --force"
+      fi
+      if git worktree list --porcelain | grep -Fq "worktree $wt"; then
+        # 目錄已消失但登記還在＝半完成。這是沙箱擋住 .git/worktrees/ 刪除時的樣子。
+        die "目錄已移除，但 worktree 登記仍在（$wt）。跑 git worktree prune 清掉殘留登記；若它同樣回 Operation not permitted，是檔案權限或沙箱擋住 .git/worktrees/，非未提交變更"
+      fi
+      # 目錄沒了、登記也沒了＝其實成功了，只是 git 的回傳碼非零。
+      printf 'agents-branch: 但目錄與登記都已清除，視為完成。\n' >&2
+    fi
     printf '已移除 worktree %s（分支 %s 保留）\n' "$wt" "$br"
     exit 0
     ;;
