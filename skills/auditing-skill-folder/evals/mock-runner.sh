@@ -31,7 +31,15 @@ fi
 
 [ "$fire" = "__NORESULT__" ] && exit 0
 
+# A target may be a COMMA-SEPARATED list, emitted as one assistant turn per skill in order. That is
+# what makes "another skill won, but the target fired later in the same turn" reproducible offline —
+# the case Copilot found scoring as a false PASS when quiet was judged on the first tool call alone.
 if [ -n "$fire" ]; then
-  printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_mock","name":"Skill","input":{"skill":"skilleval:%s"}}]}}\n' "$fire"
+  n=0
+  printf '%s\n' "$fire" | tr ',' '\n' | while IFS= read -r one; do
+    [ -n "$one" ] || continue
+    n=$((n + 1))
+    printf '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_mock%s","name":"Skill","input":{"skill":"skilleval:%s"}}]}}\n' "$n" "$one"
+  done
 fi
 printf '{"type":"result","subtype":"success","is_error":false,"result":"mock"}\n'

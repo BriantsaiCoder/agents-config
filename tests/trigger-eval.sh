@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# eval-triggers.sh（Step 2c）離線回歸測試 —— 47 個斷言，零 API 呼叫。
+# eval-triggers.sh（Step 2c）離線回歸測試 —— 55 個斷言，零 API 呼叫。
 # （數字別跟 evals/cases.jsonl 的 23 個 case 混淆：那是要送給模型的評測題目，
 #  這裡是評測腳本自身計分邏輯的斷言，兩者無對應關係。）
 #
@@ -234,6 +234,38 @@ CASES8="$TMP/c8.jsonl"; printf '%s\n' '{"id":"broken", not json at all' > "$CASE
 OUTD=$(run_eval "$CASES8" "$MAP")
 has   "畸形行仍報 ERR malformed case" "$OUTD" "ERR malformed case"
 hasnt "畸形行不得噴出 jq 自身的錯誤訊息" "$OUTD" "jq: error"
+
+echo
+echo "== Copilot re-review（PR #17 第二輪）兩項修正的回歸 =="
+# quiet 的語意是「目標 skill 完全沒 fire」，不是「目標沒贏」。只看第一個 tool_use 時，
+# 模型先叫 beta、後叫 alpha 的 transcript 會讓 alpha 的 quiet case 得到
+# 「PASS (other skill fired: beta)」——目標明明 fire 了卻算通過，正是本檔第 1 條
+# 驗收條件所禁止的假通過，只是換了一個入口。
+CASES9="$TMP/c9.jsonl"; MAP9="$TMP/m9.tsv"
+cat > "$CASES9" <<'JSONL'
+{"id":"t-quiet-fires-second","skill":"alpha","prompt":"BETATHENALPHA here","expect":"quiet"}
+{"id":"t-quiet-truly-silent","skill":"alpha","prompt":"BETAONLY here","expect":"quiet"}
+JSONL
+printf 'BETATHENALPHA\tbeta,alpha\nBETAONLY\tbeta\n' > "$MAP9"
+OUTE=$(run_eval "$CASES9" "$MAP9"); RCE=$?
+has   "目標 skill 後手 fire 仍須 FAIL"        "$OUTE" "FAIL fired when it should not"
+has   "FAIL 訊息點出是誰先贏了該回合"          "$OUTE" "after beta won the turn"
+has   "目標真的沒 fire 才算 PASS"              "$OUTE" "PASS (other skill fired: beta)"
+eq    "有假通過被抓到 → exit=1"                "1" "$RCE"
+eq    "FP 計 1（非 TN=2）"                     "1" "$(printf '%s' "$OUTE" | grep -o 'FP=[0-9]*' | cut -d= -f2)"
+
+# case id 不得成為路徑片段：含 '/' 的 id 會把 transcript 寫到 $TMP 之外或互相覆寫。
+CANARY2="$TMP/canary2-must-survive"; : > "$CANARY2"
+CASES10="$TMP/c10.jsonl"
+cat > "$CASES10" <<'JSONL'
+{"id":"../../evil","skill":"alpha","prompt":"ALPHAWORD go","expect":"fire"}
+{"id":"dup/../dup","skill":"alpha","prompt":"ALPHAWORD go","expect":"fire"}
+JSONL
+OUTF=$(run_eval "$CASES10" "$MAP"); RCF=$?
+eq    "含 '/' 的 id 仍能正常計分（檔名不再取自 id）" "0" "$RCF"
+eq    "兩列都真的跑過而非互相覆寫"                   "2" "$(printf '%s' "$OUTF" | grep -c 'ALPHAWORD\|fire *fire')"
+[ -f "$CANARY2" ] && ok "含穿越字元的 id 未寫出 \$TMP 之外" \
+                  || bad "含穿越字元的 id 未寫出 \$TMP 之外" "canary2 消失"
 
 echo
 echo "== 真實 cases.jsonl 自身健檢 =="

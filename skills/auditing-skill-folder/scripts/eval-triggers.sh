@@ -151,6 +151,15 @@ fired_skill() {
     "$1" 2>/dev/null | head -1
 }
 
+# skill_ever_fired <stream-file> <plugin:skill> -> 0 if that skill was invoked ANYWHERE in the turn.
+# Distinct from fired_skill on purpose: "who won the trigger" and "did this skill stay out of it"
+# are different questions, and only the second one is what a quiet case asserts.
+skill_ever_fired() {
+  jq -R -r 'fromjson? | select(.type=="assistant") | .message.content[]?
+            | select(.type=="tool_use" and .name=="Skill") | .input.skill' \
+    "$1" 2>/dev/null | grep -Fxq "$2"
+}
+
 runner_failed() {
   # A run that never produced a result event failed for infrastructure reasons (auth, rate limit,
   # bad flag). Scoring it as "did not fire" would quietly turn an outage into a passing quiet case.
@@ -218,8 +227,12 @@ while IFS= read -r line; do
     skipped=$((skipped + 1)); continue
   fi
 
-  stream="$TMP/stream.$id.jsonl"
-  printf '%s' "$prompt" | (cd "$RUN_CWD" && "${RUNNER_CMD[@]}") > "$stream" 2>"$TMP/err.$id"
+  # Numbered by position, NOT by $id. The id comes from cases.jsonl and an id containing `/`
+  # would put these files outside $TMP; two cases sharing an id would silently overwrite each
+  # other's transcript. Same class of defect as the skill-name check in install_skill — case data
+  # never becomes a path fragment.
+  stream="$TMP/stream.$total.jsonl"
+  printf '%s' "$prompt" | (cd "$RUN_CWD" && "${RUNNER_CMD[@]}") > "$stream" 2>"$TMP/err.$total"
 
   if runner_failed "$stream"; then
     printf '%-26s %-30s %-7s %-7s %s\n' "$id" "$skill" "$expect" "-" \
@@ -239,8 +252,17 @@ while IFS= read -r line; do
       verdict="FAIL no skill fired"; fail=$((fail + 1)); fn=$((fn + 1))
     fi
   else
-    if [ "$won" = "$PLUGIN_NAME:$skill" ]; then
-      verdict="FAIL fired when it should not"; fail=$((fail + 1)); fp=$((fp + 1))
+    # A quiet case asks "did the target stay out of this prompt entirely", which is NOT the same
+    # question as "who won". Scoring it on $won alone reads the whole transcript through its first
+    # tool call: a model that fires another skill first and the target second would score
+    # `PASS (other skill fired: X)` while the target demonstrably did fire. That is a false pass in
+    # the one direction this harness exists to refuse, so quiet is scored on the whole transcript.
+    # The fire branch above keeps $won on purpose — there, losing to another skill IS the finding.
+    if skill_ever_fired "$stream" "$PLUGIN_NAME:$skill"; then
+      verdict="FAIL fired when it should not"
+      [ "$won" != "$PLUGIN_NAME:$skill" ] &&
+        verdict="FAIL fired when it should not (after ${won#"$PLUGIN_NAME":} won the turn)"
+      fail=$((fail + 1)); fp=$((fp + 1))
     else
       verdict="PASS"; pass=$((pass + 1)); tn=$((tn + 1))
       [ -n "$won" ] && verdict="PASS (other skill fired: ${won#"$PLUGIN_NAME":})"

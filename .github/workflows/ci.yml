@@ -65,7 +65,7 @@ jobs:
       # 被計為 quiet 的 PASS，一次斷網就會產出一份全綠的假稽核報告。該語意與 SKIP
       # （disable-model-invocation，只有 Claude 認）、collision 必須指名贏家、mock 結果
       # 必帶警語，四條都在此把關。
-      - name: Step 2c 觸發評測計分回歸（47 斷言，零 API）
+      - name: Step 2c 觸發評測計分回歸（55 斷言，零 API）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/trigger-eval.sh
 
       # Step 1 的字數預算。`wc -w` 按空白切詞，中文沒有詞間空白，因此一段 40 字的 zh-TW
