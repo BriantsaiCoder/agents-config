@@ -14,7 +14,12 @@ Step 2b (trigger collision) is otherwise a human reading the lint table across r
 
 Baseline, 2026-08-01, collision arm, 95 skills loaded, 6 cases (3 documented routing pairs), 6/6 PASS — TP=3, TN=3, FN=0, FP=0. Each `quiet` case yielded its prompt to exactly the skill its own description names: `security-review` → `dependency-security-scan` (CI/pre-commit), `jest-best-practices` → `testing-library-react-best-practices` (RTL), `css-ui-best-practices` → `tailwind-v4-shadcn` (Tailwind tokens). Those three routing rules are measured, not asserted. Re-run after editing any description in a documented pair.
 
-The numbers held across three measurements, but only the last one is evidence. Run 1 scored `quiet` on the first tool call alone, which cannot distinguish "the target stayed out of it" from "the target fired second" — the numbers matched, the evidence did not support the claim. Run 2 followed `skill_ever_fired`, so a passing `quiet` row means the target appears **nowhere** in the transcript. Run 3 followed the parser becoming shape-agnostic: a wider filter can only find *more* Skill calls, and finding more is exactly what would flip a passing `quiet` row to FAIL, so the baseline was re-taken rather than reasoned about. **Re-measure after any change to the scorer or the parser** — a baseline inherited across a scoring change is not a measurement.
+**Re-measure after any change to the scorer or the parser.** A baseline inherited across a scoring change is not a measurement. This one was taken four times and the same 6/6 came back each time, which is exactly why the rule needs stating: identical numbers are not evidence that the reasoning behind skipping a re-run was sound.
+
+- Run 1 scored `quiet` on the first tool call alone, which cannot tell "the target stayed out of it" from "the target fired second". Numbers matched; the evidence did not support the claim.
+- Run 2 followed `skill_ever_fired` — a passing `quiet` row now means the target appears **nowhere** in the transcript.
+- Run 3 followed the parser becoming shape-agnostic. A wider filter can only find *more* Skill calls, and finding more is precisely what flips a passing `quiet` row to FAIL.
+- Run 4 followed the `ACTUAL` column change, which touches no verdict and no counter — the run that was easiest to argue was unnecessary. It returned six `ERR Failed to authenticate: OAuth session expired` rows. The session had gone stale mid-audit, and the pre-fix `runner_failed()` would have read that outage as three quiet cases passing. **The re-run that looked most skippable is the one that exposed the worst defect.** Run 5, after re-authenticating, is the baseline above.
 
 ## Running it
 
