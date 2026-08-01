@@ -369,6 +369,19 @@ done < "$B2_SKILLS_LOCK"
 # scripts/eval-triggers.sh 是評測器本體，step2c-trigger-eval.md 是被 SKILL.md 指向的細節檔
 # （SKILL.md 已超字數預算，細節必須外移）。計分邏輯由 tests/trigger-eval.sh 的斷言守護，
 # 已在 CI；evals/cases.jsonl 內容漂移另由該測試的「skill 全部存在」健檢把關。
+#
+# 2026-08-01 放行五個自有檔，全部來自同一輪稽核的實證缺陷修復（非重構、非體積調整）：
+#   bug-fix-settlement/SKILL.md      三處硬編碼 ~/.claude 路徑，但這是三 host 共用 skill，
+#                                    ~/.copilot 根本沒有 rules/ 目錄；改為 host-neutral 指標。
+#   deps-check/scripts/deps-check.sh 四條「無法分析」路徑原本 exit 0（fail-open），配上判讀表
+#                                    的「0 依賴 → 安全改動」會把「找不到檔案」讀成「可以放心改」。
+#                                    改為 exit 2；「副檔名不適用」刻意維持 exit 0。
+#   deps-check/SKILL.md              判讀表補 exit-code 前置條件，hook 段補 exit code 語意。
+#   postgresql-optimization/SKILL.md :45 的 ATTACH PARTITION CONCURRENTLY 不是合法語法（PG 14–18
+#                                    的 ATTACH 都不接受該選項），改為 DETACH；同檔 references/
+#                                    partitioning.md 本來就寫對，屬單點筆誤。已加 version-tripwire 絆線。
+#   security-review/SKILL.md         description 補 → security-audit 反向 disambiguator，關掉
+#                                    Step 2b collision；security-audit 是 VND 不能改，故改自有這側。
 while IFS= read -r changed; do
   case "$changed" in
     skills/auditing-skill-folder/SKILL.md | \
@@ -385,12 +398,17 @@ while IFS= read -r changed; do
     skills/auditing-skill-folder/scripts/eval-triggers.sh | \
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/auditing-skill-folder/scripts/lint-descriptions.sh | \
+    skills/bug-fix-settlement/SKILL.md | \
     skills/context7-mcp/* | \
+    skills/deps-check/SKILL.md | \
+    skills/deps-check/scripts/deps-check.sh | \
     skills/dev-workflow/* | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
     skills/mp-tdd/* | \
+    skills/postgresql-optimization/SKILL.md | \
+    skills/security-review/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/references/styling-and-ui.md) ;;
     *)

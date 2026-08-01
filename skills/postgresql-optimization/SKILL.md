@@ -42,4 +42,4 @@ This skill is the deep tuning companion to `postgresql-best-practices`. Use `pos
 - `EXPLAIN ANALYZE` plan changed (no more `Seq Scan` on the hot path / sort no longer spills).
 - Row estimate vs actual within ~10×; if not, `ANALYZE` and consider raising stats target.
 - New indexes show non-zero `idx_scan` after a representative workload.
-- For migration / index changes on hot tables: `CREATE INDEX CONCURRENTLY`, `ATTACH PARTITION CONCURRENTLY` (PG 14+).
+- For migration / index changes on hot tables: `CREATE INDEX CONCURRENTLY`, `DETACH PARTITION ... CONCURRENTLY` (PG 14+). `ATTACH PARTITION` has no `CONCURRENTLY` form — it already takes only SHARE UPDATE EXCLUSIVE on the parent.

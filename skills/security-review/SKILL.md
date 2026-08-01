@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: 'Use when scanning code or a codebase for security vulnerabilities — SQL injection, XSS, command injection, exposed secrets / API keys, weak crypto, broken auth or access control, insecure dependencies, business-logic flaws; "is my code secure", "audit this", "check for vulnerabilities". Data-flow reasoning, not pattern-matching, across JS/TS/Python/Java/PHP/Go/Ruby/Rust. CI/CD or pre-commit gates, SBOM, container scans → dependency-security-scan.'
+description: 'Use when scanning code or a codebase for security vulnerabilities — SQL injection, XSS, command injection, exposed secrets / API keys, weak crypto, broken auth or access control, insecure dependencies, business-logic flaws; "is my code secure", "audit this", "check for vulnerabilities". Data-flow reasoning, not pattern-matching, across JS/TS/Python/Java/PHP/Go/Ruby/Rust. CI/CD or pre-commit gates, SBOM, container scans → dependency-security-scan. Whole-codebase adversarial audit or pen-test that persists artifacts → security-audit.'
 ---
 
 # Security Review

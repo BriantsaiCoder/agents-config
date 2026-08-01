@@ -33,7 +33,7 @@ description: 修復任何技術問題（bug、測試失敗、build 失敗、非�
 
 ## Step 1：評估是否值得沉澱
 
-Cookbook 只收「程式碼、型別、測試、依賴關係**看不出來**」的知識。能被機械工具抓到的東西不該寫——那些會隨程式腐爛，而機械工具不會。Cookbook 的完整定位與結構見 `~/.claude/rules/cookbook.md`（專案若已 `@import`）。
+Cookbook 只收「程式碼、型別、測試、依賴關係**看不出來**」的知識。能被機械工具抓到的東西不該寫——那些會隨程式腐爛，而機械工具不會。Cookbook 的完整定位與結構見**你所在 host 的 rules 目錄**下的 `cookbook.md`（Claude `~/.claude/rules/`、Codex `~/.codex/rules/`；Copilot 目前無 rules 目錄，該 host 上此指標不可用，改直接依本節判準）。
 
 **沉澱前的三問判準**（任何一題答「是」就不寫 cookbook）：
 
@@ -65,7 +65,7 @@ Cookbook 只收「程式碼、型別、測試、依賴關係**看不出來**」�
 |----------|------------|------|
 | **Cookbook**（`docs/cookbook/`，隨 git） | 專案特定、機械工具抓不到的隱性知識 | Dashboard 模組需各自包 ErrorBoundary，否則一處 API 錯誤白屏整頁 |
 | **Memory**（auto memory，feedback 類型） | 跨專案通用的開發回饋 | 使用者偏好的確認粒度 |
-| **Workflow**（`.claude/commands/` 或 skill） | 流程缺陷導致的錯誤 | 某 command 階段缺完成度檢查 |
+| **Workflow**（host 的 command 目錄或 skill） | 流程缺陷導致的錯誤 | 某 command 階段缺完成度檢查 |
 
 可同時寫入多個目標。**一旦標記 ✅，Step 2 就必須完成對應寫入**。
 
@@ -73,7 +73,7 @@ Cookbook 只收「程式碼、型別、測試、依賴關係**看不出來**」�
 
 這是動作步驟——呼叫 Edit / Write 把根因分析寫進檔案。做完 Step 2 卻沒呼叫過任何寫入工具，就是漏掉了。
 
-**Cookbook**：用 Glob 找 `docs/cookbook/**/*.md`，依修改的模組找對應檔案；業務邏輯寫 `business-rules.md`、踩坑寫 `pitfalls.md`、架構決策寫 `architecture/`。資料夾 / 檔案不存在就建立。寫入格式（問題 → 原因 → ✅正確做法 / ❌錯誤做法）與分類規則見 `~/.claude/rules/cookbook.md`。
+**Cookbook**：用 Glob 找 `docs/cookbook/**/*.md`，依修改的模組找對應檔案；業務邏輯寫 `business-rules.md`、踩坑寫 `pitfalls.md`、架構決策寫 `architecture/`。資料夾 / 檔案不存在就建立。寫入格式（問題 → 原因 → ✅正確做法 / ❌錯誤做法）與分類規則見你所在 host 的 `rules/cookbook.md`；該檔不存在時（如 Copilot）依本節格式直接寫。
 
 **Memory**：在 auto memory 目錄建 `feedback_*.md`，含 **Why**（為什麼會犯錯）與 **How to apply**（未來怎麼避免），更新 `MEMORY.md` 索引。
 

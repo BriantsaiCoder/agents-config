@@ -20,13 +20,15 @@ fi
 
 if [[ ! -f "$TARGET" ]]; then
   echo "deps-check: file not found: $TARGET" >&2
-  exit 0
+  echo "deps-check: UNKNOWN — 未執行任何扇入分析，不得推論為安全" >&2
+  exit 2
 fi
 
 case "$TARGET" in
   *.ts|*.tsx|*.js|*.jsx|*.mts|*.cts) MODE="tsjs" ;;
   *.cs)                              MODE="dotnet" ;;
   *)
+    # 刻意 exit 0：這是「不適用」不是「分析失敗」。掛 hook 時對 .md/.json 擋 Edit 是錯的。
     echo "deps-check: skipped (not a TS/JS or C# file)"
     exit 0
     ;;
@@ -42,8 +44,8 @@ if [[ "$MODE" == "tsjs" ]]; then
   done
 
   if [[ ! -f "$ROOT/package.json" ]]; then
-    echo "deps-check: no package.json found, skipped"
-    exit 0
+    echo "deps-check: no package.json found — UNKNOWN，未執行扇入分析" >&2
+    exit 2
   fi
 
   REL_TARGET="${TARGET#"$ROOT"/}"
@@ -126,8 +128,8 @@ if [[ "$MODE" == "dotnet" ]]; then
   fi
 
   if [[ -z "$SEARCH_ROOT" ]]; then
-    echo "deps-check: no .sln or .csproj found, skipped"
-    exit 0
+    echo "deps-check: no .sln or .csproj found — UNKNOWN，未執行扇入分析" >&2
+    exit 2
   fi
 
   echo "deps-check: analyzing ${TARGET#"$SEARCH_ROOT"/}"
@@ -145,10 +147,10 @@ if [[ "$MODE" == "dotnet" ]]; then
   TYPES=$(printf '%s\n%s\n' "$TYPES_A" "$TYPES_B" | grep -v '^$' | sort -u || true)
 
   if [[ -z "$TYPES" ]]; then
-    echo "deps-check: 此檔未宣告 public/internal 型別（可能是 partial、internal helper 或純擴充方法）"
-    echo "→ 無法用型別名做扇入分析；若改的是 public 成員，請手動 grep 成員名"
-    echo "→ 收尾：改完跑 dotnet build 驗證"
-    exit 0
+    echo "deps-check: 此檔未宣告 public/internal 型別（可能是 partial、internal helper 或純擴充方法）" >&2
+    echo "→ UNKNOWN：無法用型別名做扇入分析；若改的是 public 成員，請手動 grep 成員名" >&2
+    echo "→ 收尾：改完跑 dotnet build 驗證" >&2
+    exit 2
   fi
 
   echo "target 宣告的型別：$(echo "$TYPES" | paste -sd ',' - | sed 's/,/, /g')"

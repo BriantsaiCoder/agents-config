@@ -84,6 +84,7 @@ F	Oracle changed the support policy	MySQL 5.7 走的是與 5.6 / 8.0 / 8.4 相�
 F	**Premier Support ended:** October 2023	MySQL 5.7 的 Premier Support 結束於 2020-10，不是 2023-10；2023-10 是 Extended 
 F	Upgrade to MySQL 8.0 (or 8.4 LTS)	MySQL 8.0 已於 2026-04-30 EOL（Premier 2025-04、Extended 2026-04 結束），與 5.7
 F	.NET Framework 4.6.1+, .NET 6/7/8/9	MySqlConnector 2.3.0 已 drop net461 與 netcoreapp3.1，2.5.0 加入 .NET 10 支援
+F	ATTACH PARTITION CONCURRENTLY	PostgreSQL 的 ALTER TABLE ... ATTACH PARTITION 從 PG 14 到 18 都不接受 CONCURRENTLY；支援該選項的是 DETACH PARTITION。照抄會直接語法錯誤
 F	PostgreSQL supports `STORED` generated columns only (no `VIRTUAL`)	PostgreSQL 18 加入 VIRTUAL generated column，且未指定時預設為 VIRTUAL（PG 17 及更早只有
 F	Use this skill for Entity Framework 6 code in .NET Framework projects	EF 6.3+（2019-09）起 EF6 就能跑在 .NET Core 3.0 及之後；EF 6.5.2（2026-04）相容 .NET 
 F	`System.Data.Entity` and targets .NET Framework	同一個 EF 6.3+ 跨平台事實，這條守 SKILL.md「When This Skill Applies」的判準句：舊文把「引用 Sys
@@ -146,6 +147,7 @@ F	Oracle changed the support policy	MySQL 5.7 走的是與 5.6 / 8.0 / 8.4 相�
 F	**Premier Support ended:** October 2023	MySQL 5.7 的 Premier Support 結束於 2020-10，不是 2023-10；2023-10 是 Extended 
 F	Upgrade to MySQL 8.0 (or 8.4 LTS)	MySQL 8.0 已於 2026-04-30 EOL（Premier 2025-04、Extended 2026-04 結束），與 5.7
 F	.NET Framework 4.6.1+, .NET 6/7/8/9	MySqlConnector 2.3.0 已 drop net461 與 netcoreapp3.1，2.5.0 加入 .NET 10 支援
+F	ATTACH PARTITION CONCURRENTLY	PostgreSQL 的 ALTER TABLE ... ATTACH PARTITION 從 PG 14 到 18 都不接受 CONCURRENTLY；支援該選項的是 DETACH PARTITION。照抄會直接語法錯誤
 F	PostgreSQL supports `STORED` generated columns only (no `VIRTUAL`)	PostgreSQL 18 加入 VIRTUAL generated column，且未指定時預設為 VIRTUAL（PG 17 及更早只有
 F	Use this skill for Entity Framework 6 code in .NET Framework projects	EF 6.3+（2019-09）起 EF6 就能跑在 .NET Core 3.0 及之後；EF 6.5.2（2026-04）相容 .NET 
 F	`System.Data.Entity` and targets .NET Framework	同一個 EF 6.3+ 跨平台事實，這條守 SKILL.md「When This Skill Applies」的判準句：舊文把「引用 Sys
