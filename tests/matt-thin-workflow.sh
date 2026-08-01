@@ -132,6 +132,10 @@ writing_words=$(LC_ALL=C wc -w < "$WRITING_SKILLS" | tr -d ' ')
   fail 'writing-great-skills glossary is missing or unreadable'
 rg -Fq '](GLOSSARY.md)' "$WRITING_SKILLS" ||
   fail 'writing-great-skills no longer points to its glossary'
+rg -Fq 'Look for repeated phrasing a **leading word** can collapse; keep it only when a canary shows improved invocation or execution.' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills no longer searches for evidence-gated leading words'
+rg -Fq "Use each heading's exact term for that concept; synonyms dilute its **leading word**." "$WRITING_GLOSSARY" ||
+  fail 'writing-great-skills no longer preserves canonical glossary terminology'
 ! rg -q '^_Avoid_:' "$WRITING_GLOSSARY" ||
   fail 'writing-great-skills glossary still carries negation sediment'
 ! rg -q '_comprehensive_, _thorough_' "$WRITING_GLOSSARY" ||
@@ -147,6 +151,12 @@ expected_writing_tree_sha="$(
 )"
 [ -n "$expected_writing_tree_sha" ] ||
   fail 'writing-great-skills fork record lacks an approved tree SHA-256'
+indexed_writing_tree_sha="$(
+  sed -n '/^| `writing-great-skills` |/s/.*tree SHA-256 `\([a-f0-9]\{64\}\)`.*/\1/p' \
+    "$AGENTS/vendored-forks.md"
+)"
+[ "$indexed_writing_tree_sha" = "$expected_writing_tree_sha" ] ||
+  fail 'writing-great-skills fork index and detailed fingerprint disagree'
 actual_writing_tree_sha="$(vendored_tree_sha256 "$WRITING_SKILLS_DIR")"
 [ "$actual_writing_tree_sha" = "$expected_writing_tree_sha" ] ||
   fail 'writing-great-skills tree differs from the recorded fork fingerprint'

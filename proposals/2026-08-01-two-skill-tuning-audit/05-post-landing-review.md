@@ -32,6 +32,88 @@ broken relative reference、vague completion + duplication/no-op）沒有任何�
 附帶修正：`tests/matt-thin-workflow.sh:116,120` 兩條寫死措辭的斷言因 F2／F5 改動而 FAIL，已改為斷言
 新措辭——順帶把 identity clause 與 RED gate 的 branch 限定變成 CI 斷言。
 
+## Fourth pass：leading-word／canonical-term semantic canary（2026-08-01）
+
+同一個 `gpt-5.6-sol` low-reasoning、read-only prompt，baseline 由 live third-pass skill 提供 payload，
+candidate 由 fixture-local `.agents/skills/writing-great-skills` 提供 isolated-worktree payload。呼叫前的
+filesystem boundary probe 與預期輸出如下；Codex CLI 不提供 actual invocation event，故
+**UNVERIFIED: model 是否在各 arm 實際 invoke 該 skill**，只能由 isolation、session output 與 paired
+behavior 差異交叉佐證。
+
+```sh
+source /Users/pochientsai/.agents/skills/auditing-skill-folder/scripts/lib-vendored.sh
+vendored_tree_sha256 /Users/pochientsai/.agents/skills/writing-great-skills
+readlink /private/tmp/wgs-leading-canary.019fbba6/.agents/skills/writing-great-skills
+vendored_tree_sha256 /private/tmp/agents-worktrees/codex/wgs-leading-word-terminology/skills/writing-great-skills
+# expected: 74b2dc4989bdd2eac958308c89b619d4c3dc252f2662908f2fb9e2d1bd0b7084
+# expected: /private/tmp/agents-worktrees/codex/wgs-leading-word-terminology/skills/writing-great-skills
+# expected: 3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa
+```
+
+評分只接受 skill 明示要求的行為，不把模型從題目自行推理出的偏好算通過。
+
+```text
+---
+name: incident-tracer
+description: Trace failures to their source.
+---
+
+Trace every caller until the cause is found.
+Keep investigating after the first symptom.
+Continue through every related path.
+Pursue the root cause until the evidence closes.
+Put each rule in its canonical home.
+Remove repetition and redundant instructions.
+
+Return exactly two lines:
+LEADING_WORD=<one compact term or NONE>
+CANONICAL_TERMS=<synonym to exact glossary heading mappings or NONE>
+```
+
+Prompt 的 scoring rules 另行要求：只有 loaded skill 主動要求尋找可收斂 repeated phrasing 的 leading
+word 才能輸出 non-`NONE`；只有 loaded skill 要求 exact glossary headings 才能輸出 mapping；不得從 draft
+本身推導。Prompt 沒有洩漏任何預期 term 或 heading。
+
+| Arm | Result | Verdict |
+|---|---|---|
+| Third-pass baseline | `LEADING_WORD=NONE`; `CANONICAL_TERMS=NONE` | **RED** |
+| Fourth-pass candidate | `LEADING_WORD=TRACER BULLETS`; `canonical home` → `Single Source of Truth`; `repetition/redundant instructions` → `Duplication`; `evidence closes` → `Completion Criterion` | **GREEN** |
+
+唯一 payload 差異是兩條規則：`SKILL.md` 主動尋找可收斂的 repeated phrasing、`GLOSSARY.md` 要求使用
+heading 的 exact term。Candidate 同時改變 active leading-word search 與 canonical mapping，且三個
+mapping 都逐字命中 glossary heading，因此判 **GREEN**。`TRACER BULLETS` 是從四條 tracing instruction
+收斂出的 leading word，不需要同時是 glossary term。
+
+兩個早期 fixture 不計分：第一個把 `GREEN requires LEADING_WORD=Predictability` 寫進 prompt，baseline
+也會 false-GREEN；第二個要求列出 exact-heading mapping，baseline 即使沒有新規則也照題意產生 mapping。
+這兩次分別有 expected-answer leakage 與 prompt-induced behavior。有效 A/B 是 **n = 1 per arm**，只證明
+這兩條新增規則在該 behavior fixture 上的因果差異，不是 cross-model 統計，也不驗證 28 條已移除的
+`_Avoid_:` aliases；故不恢復那批清單。
+
+### Fourth-pass host canary ledger
+
+| Host／gate | Status | Evidence |
+|---|---|---|
+| Candidate host resolver | **PASS** | Claude `22/22`、Codex policy `12/12`、Copilot `22/22`; `3 PASS / 0 FAIL / 1 UNAVAILABLE` |
+| Offline positive／negative trigger contracts | **PASS**（非 live audit number） | `tests/trigger-eval.sh`: `98 PASS / 0 FAIL` |
+| Claude live positive／negative trigger | **PASS** | candidate tree；positive `FIRE`、negative `QUIET`；`2/2`、TP=1、TN=1、recall=1.00、precision=1.00；由 tool event 驗證實際 invocation |
+| Codex isolated meta-routing | **PASS** | isolated `HOME`／`CODEX_HOME` 的 repo scope 只含 candidate 與 system skills；positive `FIRE`、negative `QUIET`；session `019fbc1a-85c9-7cc0-a6f3-1bcdb0f2e9da` |
+| Copilot isolated meta-routing | **PASS** | empty isolated `HOME`／`COPILOT_HOME`，project scope 只有 candidate 與 builtin；positive `FIRE`、negative `QUIET` |
+
+Invocation `description` 與 `agents/openai.yaml` 相對 fixed point 均為 byte-identical，故此次 payload edit
+沒有改 trigger input。Claude 有 machine-readable invocation event；Codex／Copilot CLI 沒有同等事件，
+所以其結果只能稱 isolated candidate-only meta-routing PASS，不能冒充 actual invocation evidence。
+**UNVERIFIED: Codex／Copilot 各回合的 actual invocation boundary**；session output 與執行時的 isolated
+skill listing 是佐證，但這次沒有保留可重播的 sanitized listing artifact。Claude probe 可重播：
+
+```sh
+skills/auditing-skill-folder/scripts/eval-triggers.sh \
+  --runner claude \
+  --cases /private/tmp/wgs-trigger-cases.019fbba6.jsonl \
+  --skills /private/tmp/agents-worktrees/codex/wgs-leading-word-terminology/skills
+# expected: cases=2 pass=2 fail=0; TP=1 FN=0 FP=0 TN=1
+```
+
 ### 效力驗證：candidate vs 21:00 原版
 
 同一個 16-line synthetic fixture（SHA-256 `1922d454…`，與 `02-writing-great-skills.md` 記錄逐位元組相同），
@@ -65,16 +147,19 @@ Result SHA-256（含絕對路徑，僅供同機重播比對）：candidate `08a5
 **偏離揭露**：candidate 的總結行用了 `Verdict: FAIL`，而 `SKILL.md:12` 的 output contract 只定義
 `KEEP`／`CHANGE`／`N/A`。逐列 ledger 遵守契約，額外的總結標籤是契約外的加碼，非缺陷但如實記錄。
 
-## 比較邊界（已驗證）
+## Third-pass review 的歷史比較邊界（當時已驗證）
+
+以下只固定 post-landing review 當時的第二／第三輪 snapshot，不代表 fourth-pass candidate 或部署後 live
+state；第四輪的 current fingerprint、word count 與 dirty state 以上方 ledger 及 `vendored-forks.md` 為準。
 
 | 項目 | 值 | 驗證指令 |
 |---|---|---|
 | 原版 snapshot | `15f055d`（2026-07-31 20:51:39 +0800） | — |
 | 該 snapshot 的 skill payload | 等同 `04d273b`（20:05:51），本路徑無差異 | `git diff 15f055d 04d273b -- skills/writing-great-skills/` → 空 |
-| 當前版本 | `004d67a`（2026-08-01 11:35:37 +0800），worktree clean | `git status --short` |
-| 部署副本 | `~/.claude/skills/writing-great-skills` 為 symlink，無第二份實體 | `readlink` |
-| fork 指紋 | live tree `b58b27d78ee…` **＝** `vendored-forks.md` 記錄 | `vendored_tree_sha256` |
-| `SKILL.md` 字數 | 427 / limit 500（餘裕 73），**含 frontmatter**（其中 50 words） | `count-words.sh skills`；`matt-thin-workflow.sh:128` 用 `LC_ALL=C wc -w` 全檔 |
+| 當時版本 | `004d67a`（2026-08-01 11:35:37 +0800），worktree clean | `git status --short` |
+| 當時部署副本 | `~/.claude/skills/writing-great-skills` 為 symlink，無第二份實體 | `readlink` |
+| 當時 fork 指紋 | live tree `b58b27d78ee…` **＝** 當時 `vendored-forks.md` 記錄 | `vendored_tree_sha256` |
+| 當時 `SKILL.md` 字數 | 427 / limit 500（餘裕 73），**含 frontmatter**（其中 50 words） | `count-words.sh skills`；`matt-thin-workflow.sh:128` 用 `LC_ALL=C wc -w` 全檔 |
 
 三個獨立變更點：`387c5e2`（round 1，11 項調教）→ `004d67a`（round 2，結構精簡）。
 以下 findings 多數來自 **round 2 相對 round 1** 的差異，前兩輪報告成文於 round 2 之前。

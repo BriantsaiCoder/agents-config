@@ -23,7 +23,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
-| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through canary-backed structural trim**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable top-level checklist, glossary negation cleanup; tree SHA-256 `b58b27d78ee29a15319aff92f153fd715cf1d4f0c27b39ceea8d65dcf2b7221c` | **Active** |
+| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
@@ -251,6 +251,7 @@ reworded.
 **Decision (2026-08-01): widen the scope to body corrections. Supersedes the above.**
 **Decision (2026-08-01, second pass): add trigger ownership and structural trim. Supersedes the above.**
 **Decision (2026-08-01, third pass): scope the RED gate, restore the bold-term contract, restore the identity clause, and reconcile this record with what the second pass actually shipped. Supersedes the above.**
+**Decision (2026-08-01, fourth pass): restore evidence-gated leading-word discovery and canonical glossary terminology. Supersedes the above.**
 
 The 2026-07-31 decision was scoped to invocation metadata and said "do not extend it". This
 decision extends it deliberately, on the strength of a two-round audit
@@ -277,7 +278,18 @@ two live divergences recorded rather than repaired, because repairing either wou
 fourth time. F4 (the `_Avoid_:` removal has no canary covering the behavior those lines protected) is
 recorded in the review and **not** actioned here.
 
-Approved tree SHA-256: `74b2dc4989bdd2eac958308c89b619d4c3dc252f2662908f2fb9e2d1bd0b7084`.
+The fourth pass targets only the leading-word and canonical-terminology evidence gap. A paired,
+blind low-reasoning Codex canary used the same prompt against the live third-pass payload and an
+isolated candidate. RED returned `LEADING_WORD=NONE` and `CANONICAL_TERMS=NONE`; GREEN returned
+`LEADING_WORD=TRACER BULLETS` and mapped three synonyms to the exact glossary headings `Single Source
+of Truth`, `Duplication`, and `Completion Criterion`. Claude's live tool-event canary passed positive
+and negative routing (`2/2`); isolated candidate-only Codex and Copilot meta-routing each returned
+positive `FIRE` and negative `QUIET`. The evaluated draft and output contract, scoring-rule summary,
+two rejected prompt-contaminated attempts, resolution limits, and host-canary evidence are in
+`proposals/2026-08-01-two-skill-tuning-audit/05-post-landing-review.md`. This does not validate or
+restore the 28 removed `_Avoid_:` aliases.
+
+Approved tree SHA-256: `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa`.
 
 ### Local changes
 
@@ -322,15 +334,12 @@ rationale; the status column is what HEAD actually carries.
 | rung 3 "External reference" → "**Reference**, disclosed" | **Superseded** — the trim rewrote rung 3 whole; neither phrase survives, and the ambiguity went with them | `SKILL.md:35` |
 | bold-terms pointer reaching condition | **Active** — restored and reworded by the third pass | `SKILL.md:14` |
 | user-invoked per-host invocation keys | **Active** | `grep -c "allow_implicit_invocation: false" SKILL.md` → 1 |
-| leading-word imperative moved up from `GLOSSARY` | **Reversed** — the trim deleted the whole section, so the imperative is now in neither file; `SKILL.md:41` carries a canary permission gate instead, which is the opposite behavioral direction | `grep -ci "hunt for\|go find"` → 0 in both files |
+| leading-word imperative moved up from `GLOSSARY` | **Reactivated by the fourth pass** — `SKILL.md:41` now requires the search while retaining the canary acceptance gate | blind paired RED→GREEN semantic canary plus three-host positive／negative routing evidence |
 | completion criterion "wherever the work sweeps a set" | **Active** — reworded to "Criteria that sweep a set are exhaustive" | `SKILL.md:33` |
 
-The two live divergences are recorded, not repaired. Restoring the leading-word imperative would be a
-fourth widening of this fork, and the trim that removed it is backed by the A/B in
-`proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`. **Disclosure:** none of that
-A/B fixture's four planted defects is "a restatement collapsible into a leading word", so neither
-direction of the A/B measured what the removal costs. Accepting the trim here is a deliberate
-judgement, not an evidence-backed one.
+The diagnostic-description divergence remains recorded, not repaired. The leading-word text gap and
+canonical-term contract are repaired by the fourth pass and satisfy the strict paired RED→GREEN
+acceptance fixture; no broader alias-restoration claim is made.
 
 **Second-pass structural trim.** `SKILL.md` is now an executable checklist within the 500-word
 house budget; `GLOSSARY.md` remains the definition source. Completion is exhaustive for a full
@@ -346,7 +355,12 @@ uses `_relentless_` rather than presenting `_thorough_` as both weak and effecti
 | `SKILL.md` glossary pointer, plus 13 term sites | Restored the term-to-heading contract and the bold markers | The trim deleted the original "**Bold terms** are defined in `GLOSSARY.md`" contract along with 43 markers, but kept a pointer that presupposes the agent can still identify headings; 11 glossary terms sat bare in the body. Every bold term now resolves to a matching `###` heading, `completion criterion` included (the plural did not). The contract is worded "Every bold term **below**" and is itself unbolded, because the two `REQUIRED` labels above it are bold and are not headings — an unscoped contract would have made its own file a counterexample |
 | `SKILL.md` frontmatter description | Restored the identity clause (`Agent Skill authoring.`) | `SKILL.md`'s own Description rule requires identity plus one trigger per branch; the trim dropped identity, so the skill violated the rule it teaches |
 
-`SKILL.md` is 437 words against the 500-word budget.
+**Fourth-pass corrections.** `SKILL.md` now actively searches for repeated phrasing that a leading
+word can collapse, but accepts the word only after a canary improves invocation or execution.
+`GLOSSARY.md` now directs authors to use each heading's exact term, preserving canonical vocabulary
+without restoring its 28 negative alias lists.
+
+`SKILL.md` is 442 words against the 500-word budget.
 
 **Reported upstream.** The description-mechanic correction (6 sites) is tracked in
 `mattpocock/skills#714`. If accepted upstream, drop that row here and take the correction back via
@@ -357,10 +371,10 @@ opposite: house-authored, so upstream has nothing to fix.
 
 1. Diff the new upstream `writing-great-skills/` against pinned commit
    `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
-2. Replace the pinned Matt set, then reapply all three layers: invocation metadata, every still-live
-   row of the body-corrections table, and the second-pass trigger ownership/structural trim. Check
-   each correction against the new upstream first — a row upstream has since fixed is dropped, not
-   reapplied.
+2. Replace the pinned Matt set, then reapply invocation metadata, every still-live row of the
+   body-corrections table, the second-pass trigger ownership/structural trim, and the third-/fourth-
+   pass corrections. Check each correction against the new upstream first — a row upstream has
+   since fixed is dropped, not reapplied.
 3. Recompute `invocation_manifest_sha256` and the recorded tree SHA-256.
 4. Before merge, run `tests/matt-thin-workflow.sh`, `tests/mattpocock-workflow.sh`, and
    `tests/vendored-detection.sh`; run `tests/host-skill-resolver.sh` from an isolated candidate HOME

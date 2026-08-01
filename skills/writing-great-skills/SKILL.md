@@ -38,4 +38,4 @@ Keep each concept's rule and caveats together. Split by invocation only for an i
 
 ## Pruning
 
-Keep each meaning in one authoritative place. Check every sentence for **relevance**, **duplication**, and **no-op** behavior; delete a failing sentence whole. Use a **leading word** only when a canary shows that it improves invocation or execution. State the target behavior positively.
+Keep each meaning in one authoritative place. Check every sentence for **relevance**, **duplication**, and **no-op** behavior; delete a failing sentence whole. Look for repeated phrasing a **leading word** can collapse; keep it only when a canary shows improved invocation or execution. State the target behavior positively.

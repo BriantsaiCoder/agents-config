@@ -4,7 +4,7 @@ The domain model for what makes a skill great. A skill exists to wrangle determi
 
 The terms are grouped by axis: **Invocation** (how a skill is reached), **Information Hierarchy** (how its content is arranged), **Steering** (how the agent's runtime behaviour is shaped), and **Pruning** (how it is kept lean). Each **failure mode** lives beside the lever that cures it, tagged _failure mode_.
 
-**Bold terms** in any definition are themselves defined in this glossary; find them by their heading.
+**Bold terms** in any definition are themselves defined in this glossary; find them by their heading. Use each heading's exact term for that concept; synonyms dilute its **leading word**.
 
 ## Predictability
 
