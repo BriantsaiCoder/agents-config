@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# eval-triggers.sh（Step 2c）離線回歸測試 —— 77 個斷言，零 API 呼叫。
+# eval-triggers.sh（Step 2c）離線回歸測試 —— 88 個斷言，零 API 呼叫。
 # （數字別跟 evals/cases.jsonl 的 23 個 case 混淆：那是要送給模型的評測題目，
 #  這裡是評測腳本自身計分邏輯的斷言，兩者無對應關係。）
 #
@@ -207,6 +207,13 @@ cat >/dev/null
 printf '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t0","name":"Skill","input":{}}]}}\n'
 printf '{"type":"result","subtype":"success","is_error":false}\n'
 SH
+# 已認證過期但仍吐出 result 事件——2026-08-01 實測：subtype 是 "success" 而 is_error 為 true。
+# 只檢查 result 事件存在的守衛會把整場 auth outage 讀成「skill 沒觸發」，quiet 全數假通過。
+cat > "$COPY/evals/autherr-runner.sh" <<'SH'
+#!/usr/bin/env sh
+cat >/dev/null
+printf '{"type":"result","subtype":"success","is_error":true,"result":"Failed to authenticate: OAuth session expired and could not be refreshed","terminal_reason":"api_error"}\n'
+SH
 cat > "$COPY/evals/spaced-runner.sh" <<'SH'
 #!/usr/bin/env sh
 cat >/dev/null
@@ -217,13 +224,15 @@ cat > "$COPY/evals/runners.json" <<'J'
 {
   "noiso":  {"format":"claude-stream-json","command":["/bin/echo","{\"type\":\"result\"}"]},
   "badiso": {"format":"claude-stream-json","command":["/bin/echo","--setting-sources","user"]},
+  "autherr": {"format":"claude-stream-json","command":["{EVALS_DIR}/autherr-runner.sh","--setting-sources",""]},
   "nullskill": {"format":"claude-stream-json","command":["{EVALS_DIR}/nullskill-runner.sh","--setting-sources",""]},
   "toplevel": {"format":"claude-stream-json","command":["{EVALS_DIR}/toplevel-runner.sh","--setting-sources",""]},
   "spaced": {"format":"claude-stream-json","command":["{EVALS_DIR}/spaced-runner.sh","--setting-sources",""]},
   "mock":   {"format":"claude-stream-json","command":["{EVALS_DIR}/mock-runner.sh","{PLUGIN_DIR}"]}
 }
 J
-chmod +x "$COPY/scripts/eval-triggers.sh" "$COPY/evals/mock-runner.sh" "$COPY/evals/spaced-runner.sh" "$COPY/evals/toplevel-runner.sh" "$COPY/evals/nullskill-runner.sh"
+chmod +x "$COPY/scripts/eval-triggers.sh" "$COPY/evals/mock-runner.sh" "$COPY/evals/spaced-runner.sh" \
+         "$COPY/evals/toplevel-runner.sh" "$COPY/evals/nullskill-runner.sh" "$COPY/evals/autherr-runner.sh"
 
 OUTA=$("$COPY/scripts/eval-triggers.sh" --runner noiso --cases "$CASES" --skills "$CORPUS" 2>&1); RCA=$?
 has "無 --setting-sources 的 runner 直接拒跑" "$OUTA" "has no --setting-sources"
@@ -284,7 +293,10 @@ cat > "$CASES10" <<'JSONL'
 JSONL
 OUTF=$(run_eval "$CASES10" "$MAP"); RCF=$?
 eq    "含 '/' 的 id 仍能正常計分（檔名不再取自 id）" "0" "$RCF"
-eq    "兩列都真的跑過而非互相覆寫"                   "2" "$(printf '%s' "$OUTF" | grep -c 'ALPHAWORD\|fire *fire')"
+# 用摘要行斷言而非 grep：舊版寫 grep -c 'ALPHAWORD\|fire *fire'，其中 ALPHAWORD 根本
+# 不會出現在輸出裡（那是 prompt 不是輸出），而 \| 是 GNU BRE 擴充，在嚴格的 grep 上會
+# 被當字面值而永遠 0 命中——一條既多餘又不可攜的斷言。
+has   "兩列都真的跑過而非互相覆寫"                   "$OUTF" "cases=2  pass=2"
 [ -f "$CANARY2" ] && ok "含穿越字元的 id 未寫出 \$TMP 之外" \
                   || bad "含穿越字元的 id 未寫出 \$TMP 之外" "canary2 消失"
 
@@ -358,6 +370,43 @@ hasnt "--runner 清單不得寫死正本的 runner 名"           "$OUTN" "claud
 # 底線開頭的鍵是文件區塊，不是 runner，不得混進清單。
 hasnt "文件用的底線鍵不得被當成 runner 列出" \
       "$("$SCRIPT" --cases "$CASES" --skills "$CORPUS" 2>&1)" "_codex_deliberately_absent"
+
+echo
+echo "== Copilot 第六輪 review：ACTUAL 欄語意 =="
+# ACTUAL 必須回答與 EXPECT 同一個問題（目標 skill 有沒有觸發），否則正確 PASS 的 quiet 列
+# 會印出 `quiet fire PASS` 這種自相矛盾的行，JSONL 的 actual 也會對下游說謊。
+CASES14="$TMP/c14.jsonl"; JOUT2="$TMP/out2.jsonl"
+cat > "$CASES14" <<'JSONL'
+{"id":"t-quiet-other-wins","skill":"alpha","prompt":"BETAONLY here","expect":"quiet"}
+{"id":"t-fire-lost","skill":"alpha","prompt":"BETAONLY here","expect":"fire"}
+JSONL
+OUTO=$(run_eval "$CASES14" "$MAP9" --jsonl "$JOUT2")
+has   "quiet 因他人獲勝而 PASS 時 ACTUAL 須為 quiet" "$OUTO" "quiet   quiet   PASS (other skill fired: beta)"
+hasnt "不得再出現 quiet/fire 自相矛盾的列"            "$OUTO" "quiet   fire    PASS"
+has   "fire 輸掉 collision 時 ACTUAL 亦為 quiet"      "$OUTO" "fire    quiet   FAIL collision — won by beta"
+eq    "JSONL 的 actual 對 quiet 列為 quiet" "quiet" \
+      "$(jq -r 'select(.id=="t-quiet-other-wins") | .actual' "$JOUT2")"
+eq    "JSONL 仍保留贏家資訊（未因此遺失）" "skilleval:beta" \
+      "$(jq -r 'select(.id=="t-quiet-other-wins") | .winner' "$JOUT2")"
+
+echo
+echo "== 認證過期：吐得出 result 事件不等於跑成功 =="
+# 2026-08-01 實測抓到的真缺陷。OAuth 過期時 claude 仍會吐 {"type":"result"}，且 subtype
+# 竟是 "success"，只有 is_error 為 true。只檢查 result 事件「存在」的守衛會把整場 auth
+# outage 讀成「skill 沒觸發」——三個 quiet case 拿到 TN 假通過，報表看起來乾淨。
+# 這正是本檔第 1 條驗收條件要禁止的事，而守衛自己漏了它。
+CASES15="$TMP/c15.jsonl"
+cat > "$CASES15" <<'JSONL'
+{"id":"t-auth-quiet","skill":"alpha","prompt":"x","expect":"quiet"}
+{"id":"t-auth-fire","skill":"alpha","prompt":"x","expect":"fire"}
+JSONL
+OUTP=$("$COPY/scripts/eval-triggers.sh" --runner autherr --cases "$CASES15" --skills "$CORPUS" --isolate 2>&1); RCP=$?
+hasnt "auth 過期不得讓 quiet 取得假通過"     "$OUTP" "PASS"
+has   "auth 過期必須計為 ERR"                "$OUTP" "ERR"
+has   "ERR 須轉述 emitter 自己的原因"        "$OUTP" "OAuth session expired"
+has   "兩列皆未被量測"                       "$OUTP" "err=2"
+has   "confusion 不得把假通過算進 TN"        "$OUTP" "TN=0"
+eq    "auth 過期 exit=1（不是綠）"           "1" "$RCP"
 
 echo
 echo "== 真實 cases.jsonl 自身健檢 =="

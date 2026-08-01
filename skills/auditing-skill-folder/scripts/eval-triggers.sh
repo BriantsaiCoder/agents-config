@@ -199,13 +199,30 @@ fired_skill() { skill_calls "$1" | head -1; }
 skill_ever_fired() { skill_calls "$1" | grep -Fxq "$2"; }
 
 runner_failed() {
-  # A run that never produced a result event failed for infrastructure reasons (auth, rate limit,
-  # bad flag). Scoring it as "did not fire" would quietly turn an outage into a passing quiet case.
+  # Infrastructure failure means: no result event, OR a result event that reports an error.
+  # Scoring either as "did not fire" turns an outage into passing quiet cases.
   #
-  # Parsed rather than grepped for `"type":"result"`. This is the single guard standing between an
-  # outage and a full-green report, so it must not hinge on the emitter's whitespace: the compact
-  # stream matches that substring, `"type": "result"` does not.
-  [ -z "$(jq -R -r 'fromjson? | select(.type=="result") | "y"' "$1" 2>/dev/null | head -1)" ]
+  # The is_error half is not hypothetical. Measured 2026-08-01: an expired OAuth session produced
+  #   {"type":"result","subtype":"success","is_error":true,
+  #    "result":"Failed to authenticate: OAuth session expired and could not be refreshed",
+  #    "terminal_reason":"api_error"}
+  # A presence-only check called that a healthy run, no skill fired, and every quiet case scored
+  # TN — a clean sheet produced entirely by an auth outage. Note `subtype` said "success" while
+  # is_error was true, so subtype is not a usable signal; is_error is.
+  #
+  # Parsed rather than grepped. This is the single guard standing between an outage and a
+  # full-green report, so it must not hinge on the emitter's whitespace.
+  _res=$(jq -R -r 'fromjson? | select(.type=="result")
+                   | if (.is_error == true) then "err" else "ok" end' "$1" 2>/dev/null | head -1)
+  [ "$_res" != "ok" ]
+}
+
+# runner_error_reason <stream-file> -> the emitter's own explanation, for the ERR row.
+# "runner produced no result event" is useless when the real cause is a stale login; the operator
+# needs to know whether to re-authenticate, wait out a rate limit, or fix a flag.
+runner_error_reason() {
+  jq -R -r 'fromjson? | select(.type=="result" and .is_error == true) | .result? // empty' \
+    "$1" 2>/dev/null | head -1 | cut -c1-80
 }
 
 printf '%-26s %-30s %-7s %-7s %s\n' "CASE" "TARGET SKILL" "EXPECT" "ACTUAL" "RESULT"
@@ -276,13 +293,23 @@ while IFS= read -r line; do
   printf '%s' "$prompt" | (cd "$RUN_CWD" && "${RUNNER_CMD[@]}") > "$stream" 2>"$TMP/err.$total"
 
   if runner_failed "$stream"; then
-    printf '%-26s %-30s %-7s %-7s %s\n' "$id" "$skill" "$expect" "-" \
-      "ERR runner produced no result event"
+    why=$(runner_error_reason "$stream")
+    [ -n "$why" ] || why="runner produced no result event"
+    printf '%-26s %-30s %-7s %-7s %s\n' "$id" "$skill" "$expect" "-" "ERR $why"
     errored=$((errored + 1)); continue
   fi
 
   won=$(fired_skill "$stream")
-  actual="quiet"; [ -n "$won" ] && actual="fire"
+
+  # ACTUAL answers the SAME question EXPECT asks: did the TARGET skill fire? Reading it as "did
+  # anything fire" produced rows that contradicted their own verdict — a quiet case that correctly
+  # passed because another skill won printed `quiet fire PASS`, and the JSONL `actual` field told
+  # downstream tooling the target had fired when it had not. Computed once here and reused by the
+  # quiet branch below, so the transcript is parsed once and the column can never disagree with
+  # the score. No information is lost: `winner` still names whoever took the turn.
+  target_fired=1   # 1 = no, 0 = yes (shell truth)
+  skill_ever_fired "$stream" "$PLUGIN_NAME:$skill" && target_fired=0
+  actual="quiet"; [ "$target_fired" -eq 0 ] && actual="fire"
 
   if [ "$expect" = "fire" ]; then
     if [ "$won" = "$PLUGIN_NAME:$skill" ]; then
@@ -299,7 +326,7 @@ while IFS= read -r line; do
     # `PASS (other skill fired: X)` while the target demonstrably did fire. That is a false pass in
     # the one direction this harness exists to refuse, so quiet is scored on the whole transcript.
     # The fire branch above keeps $won on purpose — there, losing to another skill IS the finding.
-    if skill_ever_fired "$stream" "$PLUGIN_NAME:$skill"; then
+    if [ "$target_fired" -eq 0 ]; then
       verdict="FAIL fired when it should not"
       [ "$won" != "$PLUGIN_NAME:$skill" ] &&
         verdict="FAIL fired when it should not (after ${won#"$PLUGIN_NAME":} won the turn)"
