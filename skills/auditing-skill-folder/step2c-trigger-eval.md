@@ -12,7 +12,9 @@ It does **not** judge whether the skill's body then did good work. Output qualit
 
 Step 2b (trigger collision) is otherwise a human reading the lint table across rows and arguing about which of two descriptions owns a prompt. Here every competing skill is loaded at once and the transcript **names the winner**. The argument becomes an observation.
 
-Baseline, 2026-08-01, collision arm, 95 skills loaded, 6 cases (3 documented routing pairs), 6/6 PASS. Every `quiet` case fired a *different* skill and it was the one its own description names — `security-review` yielded a CI/pre-commit prompt to `dependency-security-scan`, `jest-best-practices` yielded an RTL prompt to `testing-library-react-best-practices`, `css-ui-best-practices` yielded a Tailwind-token prompt to `tailwind-v4-shadcn`. Those three routing rules are now measured, not asserted. Re-run after editing any description in a documented pair.
+Baseline, 2026-08-01, collision arm, 95 skills loaded, 6 cases (3 documented routing pairs), 6/6 PASS — TP=3, TN=3, FN=0, FP=0. Each `quiet` case yielded its prompt to exactly the skill its own description names: `security-review` → `dependency-security-scan` (CI/pre-commit), `jest-best-practices` → `testing-library-react-best-practices` (RTL), `css-ui-best-practices` → `tailwind-v4-shadcn` (Tailwind tokens). Those three routing rules are measured, not asserted. Re-run after editing any description in a documented pair.
+
+This baseline was measured twice. The first run scored `quiet` on the first tool call alone, which cannot distinguish "the target stayed out of it" from "the target fired second"; the numbers happened to match, but the evidence did not support the claim. It was re-measured after `skill_ever_fired` landed, so a passing `quiet` row now means the target appears **nowhere** in the transcript.
 
 ## Running it
 
