@@ -189,14 +189,9 @@ skill_calls() {
     "$1" 2>/dev/null
 }
 
-# fired_skill <stream-file> -> "skilleval:name" of the FIRST Skill tool call, or "" if none.
-# First call is the answer to "which skill won this trigger", which is what a collision is about.
-fired_skill() { skill_calls "$1" | head -1; }
-
-# skill_ever_fired <stream-file> <plugin:skill> -> 0 if that skill was invoked ANYWHERE in the turn.
-# Distinct from fired_skill on purpose: "who won the trigger" and "did this skill stay out of it"
-# are different questions, and only the second one is what a quiet case asserts.
-skill_ever_fired() { skill_calls "$1" | grep -Fxq "$2"; }
+# Both questions the scorer asks — "who won the trigger" and "did the target stay out of it" — are
+# answered from ONE skill_calls() result per case, read at the call site. They were briefly two
+# wrapper functions, which meant two jq passes over the same transcript while a comment claimed one.
 
 runner_failed() {
   # Infrastructure failure means: no result event, OR a result event that reports an error.
@@ -299,16 +294,21 @@ while IFS= read -r line; do
     errored=$((errored + 1)); continue
   fi
 
-  won=$(fired_skill "$stream")
+  # One jq pass per case. Both values below are derived from this same list, so the reported column
+  # and the score are read from identical evidence and cannot drift apart.
+  calls=$(skill_calls "$stream")
+
+  # First call = who won the trigger, which is what a collision is about.
+  won=$(printf '%s\n' "$calls" | head -1)
 
   # ACTUAL answers the SAME question EXPECT asks: did the TARGET skill fire? Reading it as "did
   # anything fire" produced rows that contradicted their own verdict — a quiet case that correctly
   # passed because another skill won printed `quiet fire PASS`, and the JSONL `actual` field told
-  # downstream tooling the target had fired when it had not. Computed once here and reused by the
-  # quiet branch below, so the transcript is parsed once and the column can never disagree with
-  # the score. No information is lost: `winner` still names whoever took the turn.
+  # downstream tooling the target had fired when it had not. Anywhere in the turn counts, not just
+  # first: that is exactly what a quiet case asserts. No information is lost — `winner` still names
+  # whoever took the turn.
   target_fired=1   # 1 = no, 0 = yes (shell truth)
-  skill_ever_fired "$stream" "$PLUGIN_NAME:$skill" && target_fired=0
+  printf '%s\n' "$calls" | grep -Fxq "$PLUGIN_NAME:$skill" && target_fired=0
   actual="quiet"; [ "$target_fired" -eq 0 ] && actual="fire"
 
   if [ "$expect" = "fire" ]; then
