@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# eval-triggers.sh（Step 2c）離線回歸測試 —— 55 個斷言，零 API 呼叫。
+# eval-triggers.sh（Step 2c）離線回歸測試 —— 65 個斷言，零 API 呼叫。
 # （數字別跟 evals/cases.jsonl 的 23 個 case 混淆：那是要送給模型的評測題目，
 #  這裡是評測腳本自身計分邏輯的斷言，兩者無對應關係。）
 #
@@ -198,6 +198,7 @@ SH
 cat > "$COPY/evals/runners.json" <<'J'
 {
   "noiso":  {"format":"claude-stream-json","command":["/bin/echo","{\"type\":\"result\"}"]},
+  "badiso": {"format":"claude-stream-json","command":["/bin/echo","--setting-sources","user"]},
   "spaced": {"format":"claude-stream-json","command":["{EVALS_DIR}/spaced-runner.sh","--setting-sources",""]},
   "mock":   {"format":"claude-stream-json","command":["{EVALS_DIR}/mock-runner.sh","{PLUGIN_DIR}"]}
 }
@@ -266,6 +267,32 @@ eq    "含 '/' 的 id 仍能正常計分（檔名不再取自 id）" "0" "$RCF"
 eq    "兩列都真的跑過而非互相覆寫"                   "2" "$(printf '%s' "$OUTF" | grep -c 'ALPHAWORD\|fire *fire')"
 [ -f "$CANARY2" ] && ok "含穿越字元的 id 未寫出 \$TMP 之外" \
                   || bad "含穿越字元的 id 未寫出 \$TMP 之外" "canary2 消失"
+
+echo
+echo "== Copilot 第三輪 review 四項修正的回歸 =="
+# 護欄只檢查旗標存在是半套的：--setting-sources user 會載入本機設定卻仍通過檢查，
+# 產出看似「隔離」的數字——正是這道護欄當初被加進來要防的那件事。
+OUTG=$("$COPY/scripts/eval-triggers.sh" --runner badiso --cases "$CASES" --skills "$CORPUS" 2>&1); RCG=$?
+has "非空的 --setting-sources 值必須被擋" "$OUTG" "non-empty value"
+eq  "非空隔離值 exit=1"                    "1" "$RCG"
+
+# 參數防呆：壞的呼叫要死在一行清楚訊息上，不可洩漏 shell 自己的診斷到表格裡。
+OUTH=$("$SCRIPT" --runner mock --max-cases foo --cases "$CASES" --skills "$CORPUS" 2>&1); RCH=$?
+has   "--max-cases 非數字 → 明確訊息"   "$OUTH" "must be a non-negative integer"
+hasnt "不得洩漏 shell 的 integer 診斷"   "$OUTH" "integer expression expected"
+eq    "--max-cases 非數字 exit=1"        "1" "$RCH"
+OUTI=$("$SCRIPT" --cases "$CASES" --skills "$CORPUS" --runner 2>&1); RCI=$?
+has   "旗標缺值 → requires a value"      "$OUTI" "requires a value"
+eq    "旗標缺值 exit=1"                  "1" "$RCI"
+
+# --jsonl 不可寫時必須死，否則整輪跑完、使用者卻拿不到機器可讀輸出而不自知。
+OUTJ=$(run_eval "$CASES" "$MAP" --jsonl "$TMP/no-such-dir/out.jsonl"); RCJ=$?
+has "--jsonl 路徑不可寫 → 明確拒跑" "$OUTJ" "cannot write --jsonl target"
+eq  "--jsonl 不可寫 exit=1"          "1" "$RCJ"
+
+# 註解裡的斷言數字不得再寫死（本輪就是因為 47→55 沒同步而被抓到）。
+hasnt "allowlist 註解不得寫死過期的斷言數" \
+      "$(cat "$AGENTS/tests/matt-thin-workflow.sh")" "47 條斷言"
 
 echo
 echo "== 真實 cases.jsonl 自身健檢 =="

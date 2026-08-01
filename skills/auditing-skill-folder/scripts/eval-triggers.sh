@@ -41,14 +41,20 @@ ISOLATE=0
 JSONL_OUT=""
 
 die() { printf 'eval-triggers: %s\n' "$*" >&2; exit 1; }
+need_val() { [ "$#" -ge 2 ] || die "$1 requires a value"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --runner)    RUNNER="${2:-}"; shift 2 ;;
-    --cases)     CASES="${2:-}"; shift 2 ;;
-    --skills)    SKILLS_DIR="${2:-}"; shift 2 ;;
-    --max-cases) MAX_CASES="${2:-0}"; shift 2 ;;
-    --jsonl)     JSONL_OUT="${2:-}"; shift 2 ;;
+    # need_val before every value-taking flag: `--runner` at the end of the line used to set an
+    # empty value and then `shift 2` past the end. A bad invocation must die with one clear line,
+    # not leak a shell diagnostic into a table that other tools parse.
+    --runner)    need_val "$@"; RUNNER="$2"; shift 2 ;;
+    --cases)     need_val "$@"; CASES="$2"; shift 2 ;;
+    --skills)    need_val "$@"; SKILLS_DIR="$2"; shift 2 ;;
+    --max-cases) need_val "$@"
+                 case "$2" in ''|*[!0-9]*) die "--max-cases must be a non-negative integer, got: $2" ;; esac
+                 MAX_CASES="$2"; shift 2 ;;
+    --jsonl)     need_val "$@"; JSONL_OUT="$2"; shift 2 ;;
     --isolate)   ISOLATE=1; shift ;;
     -h|--help)   sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)           die "unknown argument: $1" ;;
@@ -129,13 +135,25 @@ done < <(jq -r --arg r "$RUNNER" --arg p "$PLUGIN_DIR" --arg e "$EVALS_DIR" \
 # group proved that), and the result still LOOKS like a clean audit — the failure mode this whole
 # script exists to refuse. Prose in runners.json cannot enforce itself; this can.
 # 'mock' is exempt: it never reaches a model, so there is nothing to isolate.
+# The VALUE is checked, not just the flag's presence. `--setting-sources user` loads the host's
+# own settings while still satisfying a presence-only check — the guard would pass and the run
+# would quietly measure this machine's config instead of the skill, which is the precise failure
+# it was added to prevent. Only the empty string means "load nothing".
 if [ "$RUNNER" != "mock" ]; then
-  _iso=0
-  for _arg in "${RUNNER_CMD[@]}"; do
-    [ "$_arg" = "--setting-sources" ] && _iso=1
+  _iso=0; _seen=0; _n=${#RUNNER_CMD[@]}; _i=0
+  while [ "$_i" -lt "$_n" ]; do
+    if [ "${RUNNER_CMD[$_i]}" = "--setting-sources" ]; then
+      _seen=1
+      _j=$((_i + 1))
+      [ "$_j" -lt "$_n" ] && [ -z "${RUNNER_CMD[$_j]}" ] && _iso=1
+    fi
+    _i=$((_i + 1))
   done
-  [ "$_iso" -eq 1 ] ||
+  if [ "$_seen" -eq 0 ]; then
     die "runner '$RUNNER' has no --setting-sources: the run would load host config and the result would not be an isolated measurement"
+  elif [ "$_iso" -eq 0 ]; then
+    die "runner '$RUNNER' passes --setting-sources with a non-empty value: only \"\" loads nothing, so the result would not be an isolated measurement"
+  fi
 fi
 
 # Both parsers below read the stream with `jq -R` + `fromjson?` rather than `jq -s`. -s slurps the
@@ -175,7 +193,10 @@ printf '%-26s %-30s %-7s %-7s %s\n' "----" "------------" "------" "------" "---
 
 total=0; pass=0; fail=0; skipped=0; errored=0; truncated=0
 tp=0; fp=0; fn=0; tn=0
-[ -n "$JSONL_OUT" ] && : > "$JSONL_OUT"
+# Truncate now and die if it fails. Without set -e an unwritable path (missing directory, no
+# permission) would let the whole run proceed and finish "successfully" while the machine-readable
+# output the caller asked for never existed.
+[ -n "$JSONL_OUT" ] && { : > "$JSONL_OUT" 2>/dev/null || die "cannot write --jsonl target: $JSONL_OUT"; }
 
 if [ "$ISOLATE" -eq 0 ]; then
   installed=$(install_all_skills)

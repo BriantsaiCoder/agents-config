@@ -244,7 +244,7 @@ done < "$B2_SKILLS_LOCK"
 # 萬用字元會讓往後任何新檔靜默通過，而這道閘的用途正是強迫每個新檔被有意識地放行一次。
 # 新增這五個檔案的理由（Step 2c 觸發評測）：evals/ 三個是評測輸入與離線 mock runner，
 # scripts/eval-triggers.sh 是評測器本體，step2c-trigger-eval.md 是被 SKILL.md 指向的細節檔
-# （SKILL.md 已超字數預算，細節必須外移）。計分邏輯由 tests/trigger-eval.sh 47 條斷言守護，
+# （SKILL.md 已超字數預算，細節必須外移）。計分邏輯由 tests/trigger-eval.sh 的斷言守護，
 # 已在 CI；evals/cases.jsonl 內容漂移另由該測試的「skill 全部存在」健檢把關。
 while IFS= read -r changed; do
   case "$changed" in
