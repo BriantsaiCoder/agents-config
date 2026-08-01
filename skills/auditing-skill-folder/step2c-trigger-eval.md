@@ -53,7 +53,7 @@ Runner flags are documented in `evals/runners.json`, which records the probe tha
 2. **`CLAUDE_CONFIG_DIR=<empty dir>` and `--bare` break auth on an OAuth host** (`Not logged in`). They are viable only where `ANTHROPIC_API_KEY` is set.
 3. **Built-in skills stay loaded** (18 observed: `code-review`, `debug`, `verify`, `simplify`, …). A built-in winning a contested prompt is a real collision your users will hit, so it is reported, never filtered out.
 
-One case is one full model turn against the 5-hour window. The 23-case suite is not free — budget it, or use `--max-cases`.
+One case is one full model turn against the 5-hour window. The 27-case suite is not free — budget it, or use `--max-cases`.
 
 ## Claude only, and why
 

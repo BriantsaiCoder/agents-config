@@ -1,19 +1,158 @@
 # writing-great-skills — 11 條調教提案
 
-`VND*`（mattpocock/skills @ `ed37663`），現有 fork 範圍僅「model invocation metadata only」。
+`VND*`（mattpocock/skills @ `ed37663`）；稽核起點的 fork 範圍僅「model invocation metadata only」，最終差異與驗證見下方實作證據。
 **判斷不受 provenance 影響**；provenance 只決定落地程序（見 `04-execution-order.md`）。
 
 裁決者退回 25 條中的 13 條。以下 11 條為存活者，關鍵 4 條經 main context 獨立複驗。
 
+## 實作後 A/B 證據（2026-08-01）
+
+### 比較邊界
+
+`2026-07-31 21:00 +08:00` 前最後 commit 是
+`15f055d07bd9a8b5f7e04f28dc8947d07f6c0a57`，commit time
+`2026-07-31 20:51:39 +08:00`。本文的「原版」只指這個 snapshot；`afe57d4` 的
+1,641-word 檔案是 2026-08-01 的中間版，不混作原版。
+
+| 量測 | 21:00 原版 | 8/1 中間版 | 最終 candidate | 原版 → candidate |
+|---|---:|---:|---:|---:|
+| `SKILL.md` words | 1,527 | 1,641 | 427 | −72.0% |
+| `GLOSSARY.md` words | 2,939 | 2,920 | 2,789 | −5.1% |
+| Markdown full load | 4,466 | 4,561 | 3,216 | −28.0% |
+| `_Avoid_:` rows | 28 | 28 | 0 | −100% |
+
+463 words 是第一個 trim candidate，不是最終值。Trigger canary 促使 description 一度回升到
+495 words；Standards review 再把 routing 與 S4 procedure 移回 `dev-workflow` 的 canonical owner，
+收斂到 416 words。Rebase 後為相容新加入的 folder-audit Step 2c RED handoff 增加 11 words，最終為
+427 words。它保留 decision／completion／output contract；被刪的是重複定義、修辭、negation list
+與跨 skill 重複程序。
+
+### Execution A/B
+
+同一個 16-line synthetic skill 放入四個 defect：模糊 description、body-only trigger、broken
+relative reference、vague completion 加 duplication/no-op。Claude/Codex/Copilot routing 之外，另以
+Codex low-reasoning 執行同一個 single-skill review prompt：
+
+| Snapshot | 找到核心 defect | Scope／verdict |
+|---|---:|---|
+| 21:00 原版 | 4/4 | 擴張成 folder six-step audit，`DELETE` |
+| 最終 candidate | 4/4 | 限定 single skill，`CHANGE`/`N/A` 並附 probe evidence |
+
+結論：瘦身沒有降低這個 fixture 的 defect recall；改善的是 scope discipline 與可驗收輸出。
+
+可重播 fixture（SHA-256 `1922d454b107a8463c9d5bcad4415304c28b4ec1788f9c2d00cae34b4956196e`）：
+
+```markdown
+---
+name: sample-skill
+description: A comprehensive helper that checks files carefully and thoroughly.
 ---
 
-## 總體判斷
+# Sample Skill
+
+Use this skill when a user asks to validate a file.
+
+1. Read the target file.
+2. Check every problem.
+3. Be thorough and report issues.
+
+See [validation details](DETAILS.md).
+
+Check every problem carefully.
+```
+
+Exact prompt：`Read-only review <fixture>/sample-skill as one existing Agent Skill. Assess its
+invocation, information hierarchy, completion criteria, and pruning quality; tell me what must
+change with file:line evidence and finish with a verdict. Follow the applicable workflow. Do not
+modify files.` Candidate 與 snapshot 都用 `codex exec --ephemeral --skip-git-repo-check -s
+read-only -c model_reasoning_effort=low -C <fixture-root> '<prompt>'`；唯一變數是
+`<fixture-root>/.agents/skills` 分別解析到 current candidate 或 commit `15f055d`。
+
+Normalized raw result：candidate 依序輸出 `CHANGE — Invocation`、`CHANGE — Information
+hierarchy`（`test -f DETAILS.md` exit 1）、`CHANGE — Completion criteria`、`CHANGE — Pruning`、
+`N/A — Sprawl/sediment/negation`，最後 `Verdict: CHANGE`；snapshot 輸出同四項必改，但再擴張到
+folder six-step audit，最後 `Verdict: DELETE`。Result SHA-256 分別為
+`5230a4e8ae6e57b9d0382ec586a0023918cd8c58e53c36406b6773e3737034b0` 與
+`0801d97476c41bba2565b13423fa6a60275b96a90908a7dba694d936291d9abd`。
+
+### Routing canary
+
+Carrier versions：Claude Code `2.1.220`、Codex CLI `0.146.0`、Copilot CLI `1.0.75`。下表是
+2026-08-01 的 paired fresh-process run；兩側使用同一 prompt，只替換 isolated
+candidate/snapshot skill root。Command pattern 分別為 `claude -p`、`codex exec --ephemeral -s
+read-only`、`copilot -p --disable-builtin-mcps`。Credential 只以既有登入注入，未記錄值。
+
+| Host | 21:00 snapshot A / B / C / E | Candidate A / B / C / E | Paired delta |
+|---|---|---|---|
+| Claude | WGS / WGS / auditor / WGS | WGS / WGS / auditor / WGS | primary owner 相同；B 兩側都誤選 WGS |
+| Codex | `dev-workflow`→WGS / →creator / →auditor / →WGS | WGS / creator / auditor / WGS | primary owner 相同；candidate 這次省略 kernel prelude |
+| Copilot | WGS / creator / auditor / WGS | WGS / creator / auditor / WGS | 相同且四項 owner 正確 |
+
+A = edit one existing skill description/completion；B = scaffold a brand-new Codex skill；C =
+audit a whole skills directory；E = convert one existing skill to user-only metadata。這組 paired
+evidence **不支持 routing 變好**，只支持 primary-owner recall 沒有回歸。Claude B 在 earlier
+candidate sample 曾回 `none`，paired rerun 又回 WGS，因此仍是 stochastic collision，不能宣稱消失。
+
+D（unreliable trigger → RED → rewrite）是剩餘 stochastic risk，不能包裝成全綠：candidate 的
+Claude sample 為 1/2 完整順序、Copilot 1/1 完整順序；Codex meta-only carrier 先選
+`dev-workflow`，但不展開中間 `diagnosing-bugs`。21:00 control 是 Claude 2/2、Codex 1/2 且帶
+額外 route、Copilot 0/1。因 meta-only route 不會執行已選 skill body，最終 candidate 另以三層
+mechanical contract 鎖順序：`diagnosing-bugs` description 承接 missing-RED branch、`dev-workflow`
+要求任何來源的 preserved RED、本 skill 以 `REQUIRED PRECONDITION` 接受 Step 2c handoff，並只在
+caller 未提供 RED 時要求 `diagnosing-bugs`。`cases.jsonl` 另固定 pre-RED／post-RED／folder-audit
+三向 boundary；offline scorer 95/95 PASS，尚未把 mock 結果冒充 live audit number。Runtime residual
+仍在，不宣稱已消失。
+
+### Candidate host resolver replay
+
+以下 recipe 只隔離 child-process HOME，不改 live HOME，也不複製 credential；在 candidate repo root
+執行：
+
+```bash
+candidate_repo="$(pwd -P)"
+resolver_root="$(mktemp -d /private/tmp/wgs-candidate-resolver.XXXXXX)"
+mkdir -p "$resolver_root/home/.claude/skills" "$resolver_root/tmp"
+ln -s "$candidate_repo" "$resolver_root/home/.agents"
+while IFS='=' read -r key skill; do
+  [ "$key" = skill ] || continue
+  ln -s "../../.agents/skills/$skill" "$resolver_root/home/.claude/skills/$skill"
+done < "$candidate_repo/mattpocock-skills.lock"
+/usr/bin/env HOME="$resolver_root/home" TMPDIR="$resolver_root/tmp" \
+  AGENTS_HOME="$candidate_repo" \
+  CLAUDE_SKILLS_ROOT="$resolver_root/home/.claude/skills" \
+  PROJECT_ROOT="$resolver_root" \
+  bash "$candidate_repo/tests/host-skill-resolver.sh"
+```
+
+Observed exit `0`：Claude `22/22`、Codex user-only policy `12/12`、Copilot `22/22`，總結
+`3 PASS / 0 FAIL / 1 UNAVAILABLE`。唯一 `UNAVAILABLE` 是 Codex CLI `0.146.0` 沒有 local
+skill-list command。直接在未部署的 worktree 跑 live resolver 會正確以 Copilot drift exit `1`；
+landing 後才以 live HOME 無 override 重跑 post-deploy gate。
+
+### Verdict
+
+**整體較好，但勝點是 execution contract 與 context cost，不是 routing 命中率。** 主要勝點是
+top-level −72.0%、相同 4/4 defect recall、scope 不再擴張、full/scoped/RED→GREEN completion 可機械
+檢查；paired A/B/C/E routing 沒有觀察到 primary-owner 回歸，也沒有證明改善。主要風險是 Claude B
+collision 與 D route 的 stochastic drift。Upstream description/glossary 矛盾已回報為
+[mattpocock/skills#714](https://github.com/mattpocock/skills/issues/714)。
+
+---
+
+## 第一輪稽核的總體判斷（實作前）
 
 > 需要調教，但幅度不大，而且集中在三處而非散佈全檔。資訊階層、granularity、leading words 三節基本不需要動。
 
+此段保留第一輪裁決語境；上方「實作證據與最終 verdict」取代它作為最終結論。
+
 ---
 
-## B1 [HIGH] 全檔沒有窮盡性門檻——而它自己說這是缺陷 — `SKILL.md:6`
+## Historical proposal ledger — `15f055d` snapshot
+
+以下 B1–B11 與「被退回」段落都是 21:00 snapshot 的實作前 findings；行號只適用該 snapshot。
+它們在 candidate 已 `RESOLVED` 或由上方 final verdict supersede，不代表 current findings。
+
+### B1 [HIGH] 全檔沒有窮盡性門檻——而它自己說這是缺陷 — `SKILL.md:6`
 
 **這條是它違反自己 doctrine 最直接的一次。**
 
@@ -38,7 +177,7 @@ restatement tried against a **leading word**, and each **failure mode** ruled in
 
 ---
 
-## B2 [HIGH] GLOSSARY 給的操作與 repo 實況相反 — `GLOSSARY.md:33`
+### B2 [HIGH] GLOSSARY 給的操作與 repo 實況相反 — `GLOSSARY.md:33`
 
 **現行：**
 > Its mere presence _is_ the invocation axis: keep it and the skill is model-invoked (and reachable by other skills); **delete it** and the skill is **user-invoked**, reachable only by the human.
@@ -74,7 +213,7 @@ keeps it out of the agent's reach — and the skill is **user-invoked**, invocab
 
 ---
 
-## B3 [HIGH] description 少了一整條 branch 的 trigger — `frontmatter:3`
+### B3 [HIGH] description 少了一整條 branch 的 trigger — `frontmatter:3`
 
 **現行：**
 ```yaml
@@ -109,7 +248,7 @@ description: Skill authoring. Use when creating, editing, or pruning a single sk
 
 ---
 
-## B4 [MEDIUM] GLOSSARY 持有 SKILL.md 的操作結論，且已漂移 — `GLOSSARY.md:21`
+### B4 [MEDIUM] GLOSSARY 持有 SKILL.md 的操作結論，且已漂移 — `GLOSSARY.md:21`
 
 **現行末句：**
 > Pick model-invocation only when the agent must reach the skill on its own; if it never fires except by hand, drop the description and pay no context load.
@@ -123,7 +262,7 @@ GLOSSARY 的副本**掉了「or another skill must」**。透過 GLOSSARY 取得
 
 ---
 
-## B5 [MEDIUM] user-invoked 的機制對多 host 資料夾不完整 — `SKILL.md:15`
+### B5 [MEDIUM] user-invoked 的機制對多 host 資料夾不完整 — `SKILL.md:15`
 
 **複驗數據（main context）：**
 
@@ -142,7 +281,7 @@ user-invoked 且帶 agents/openai.yaml 的 skill = 12 個
 
 ---
 
-## B6 [MEDIUM] 一個粗體詞解析出兩個意思 — `SKILL.md:35`
+### B6 [MEDIUM] 一個粗體詞解析出兩個意思 — `SKILL.md:35`
 
 第三階名為 **External reference**，但 `GLOSSARY:97` 把 External Reference 定義為「lives **outside the skill system** — a plain file, no description, no steps, **not invocable**」——這個定義**排除了該階自己舉的例子**（`GLOSSARY.md` 這個 sibling 檔）。
 
@@ -159,7 +298,7 @@ user-invoked 且帶 agents/openai.yaml 的 skill = 12 個
 
 ---
 
-## B7 [MEDIUM] 唯一的 context pointer 沒有編碼任何條件 — `SKILL.md:8`
+### B7 [MEDIUM] 唯一的 context pointer 沒有編碼任何條件 — `SKILL.md:8`
 
 **現行：**
 > **Bold terms** are defined in [`GLOSSARY.md`](GLOSSARY.md); look them up there for the full meaning.
@@ -171,7 +310,7 @@ user-invoked 且帶 agents/openai.yaml 的 skill = 12 個
 
 ---
 
-## B8 [MEDIUM] 這一節唯一要產出的祈使句，放在按需檔而非常駐檔 — `SKILL.md:64`
+### B8 [MEDIUM] 這一節唯一要產出的祈使句，放在按需檔而非常駐檔 — `SKILL.md:64`
 
 祈使句只活在 on-demand 檔（`GLOSSARY:133`「Word a description with the leading words you actually use when you want the skill」，`GLOSSARY:63` 有回聲），而 SKILL.md 只承載它的**理由**，且近乎逐字重複。SKILL.md 從頭到尾沒有陳述過那個祈使句。階層剛好倒置。
 
@@ -180,7 +319,7 @@ user-invoked 且帶 agents/openai.yaml 的 skill = 12 個
 
 ---
 
-## B9 [MEDIUM] 假前提的第三處 — `GLOSSARY.md:27`
+### B9 [MEDIUM] 假前提的第三處 — `GLOSSARY.md:27`
 
 User-Invoked 條目：「A skill with its **description** stripped」「Because it has no description」。兩處都讀作「把欄位移除」，與 `SKILL.md:15` 矛盾，且對這個 tree 的 12 個 user-invoked skill 全部為假。
 
@@ -191,7 +330,7 @@ User-Invoked 條目：「A skill with its **description** stripped」「Because 
 
 ---
 
-## B10 [LOW] 同一機制在同一檔第四次陳述 — `GLOSSARY.md:57`
+### B10 [LOW] 同一機制在同一檔第四次陳述 — `GLOSSARY.md:57`
 
 Router Skill：「It can only hint, never fire them: user-invoked skills have no **description**, so nothing but the human can reach them.」
 
@@ -201,7 +340,7 @@ Router Skill：「It can only hint, never fire them: user-invoked skills have no
 
 ---
 
-## B11 [LOW] 一個沒有判準的 hedge — `SKILL.md:33`
+### B11 [LOW] 一個沒有判準的 hedge — `SKILL.md:33`
 
 「Make it _checkable_ ... and, **where it matters**, _exhaustive_」——「where it matters」交給 agent 一個沒有測試方法的決定，而未解 hedge 的預設解法是跳過較難的那一半。替 review skill 寫 criterion 時，agent 判斷窮盡性「不重要」，交出「produce a change list」——正是這句自己舉出來當失敗範例的弱形式。
 
@@ -209,7 +348,7 @@ Router Skill：「It can only hint, never fire them: user-invoked skills have no
 
 ---
 
-## 被退回的 13 條（摘要，供對照）
+### 被退回的 13 條（摘要，供對照）
 
 | 類別 | 條數 | 統一退回理由 |
 |---|---|---|

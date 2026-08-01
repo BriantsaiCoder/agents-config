@@ -50,9 +50,9 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
 | 陌生 repo | `acquire-codebase-knowledge` |
 | 單檔且 ≤3 tasks 的低風險 change | `sdd` |
-| 單一 skill 建立／修改 | `writing-great-skills` |
+| 單一 skill behavior／invocation／description／pruning（skill scaffolding 由 host creator 負責） | `writing-great-skills` |
 | skill folder keep／trim／delete／migrate 稽核 | `auditing-skill-folder`；verdict 不授權修改 |
-| 單一 skill trigger failure | `diagnosing-bugs` 建 RED canary；需要改寫時續接 `writing-great-skills` |
+| 單一 skill trigger failure | MUST 先有 preserved RED canary；caller 未提供時才由 `diagnosing-bugs` 建立；`auditing-skill-folder` Step 2c RED 或 diagnosis handoff 後續接 `writing-great-skills` |
 | 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
 Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於已 invoke；命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# eval-triggers.sh（Step 2c）離線回歸測試 —— 88 個斷言，零 API 呼叫。
-# （數字別跟 evals/cases.jsonl 的 23 個 case 混淆：那是要送給模型的評測題目，
+# eval-triggers.sh（Step 2c）離線回歸測試 —— 95 個斷言，零 API 呼叫。
+# （數字別跟 evals/cases.jsonl 的 27 個 case 混淆：那是要送給模型的評測題目，
 #  這裡是評測腳本自身計分邏輯的斷言，兩者無對應關係。）
 #
 # 為何存在：Step 2c 是唯一會花真實 rate-limit 額度的稽核步驟，所以它的計分邏輯必須能在
@@ -421,6 +421,22 @@ if [ -r "$REALCASES" ]; then
   done < <(jq -r '.skill' "$REALCASES" 2>/dev/null | sort -u)
   [ -z "$missing" ] && ok "cases.jsonl 指涉的 skill 全部存在" \
                     || bad "cases.jsonl 指涉的 skill 全部存在" "找不到：$missing"
+  jq -e 'select(.id=="fire-diagnosing-skill-pre-red" and .skill=="diagnosing-bugs" and .expect=="fire")' "$REALCASES" >/dev/null &&
+    ok "pre-RED 由 diagnosing-bugs fire" || bad "pre-RED 由 diagnosing-bugs fire" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="quiet-writing-skill-pre-red" and .skill=="writing-great-skills" and .expect=="quiet")' "$REALCASES" >/dev/null &&
+    ok "pre-RED 時 writing-great-skills quiet" || bad "pre-RED 時 writing-great-skills quiet" "case 缺失或 contract 漂移"
+  pre_red_fire_prompt=$(jq -r 'select(.id=="fire-diagnosing-skill-pre-red") | .prompt' "$REALCASES")
+  pre_red_quiet_prompt=$(jq -r 'select(.id=="quiet-writing-skill-pre-red") | .prompt' "$REALCASES")
+  eq "pre-RED fire/quiet 使用同一 prompt" "$pre_red_fire_prompt" "$pre_red_quiet_prompt"
+  jq -e 'select(.id=="fire-writing-skill-after-red" and .skill=="writing-great-skills" and .expect=="fire")' "$REALCASES" >/dev/null &&
+    ok "post-RED 由 writing-great-skills fire" || bad "post-RED 由 writing-great-skills fire" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="fire-auditing-skill-folder" and .skill=="auditing-skill-folder" and .expect=="fire")' "$REALCASES" >/dev/null &&
+    ok "folder audit 由 auditing-skill-folder fire" || bad "folder audit 由 auditing-skill-folder fire" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="quiet-writing-great-skills-folder" and .skill=="writing-great-skills" and .expect=="quiet")' "$REALCASES" >/dev/null &&
+    ok "folder audit 時 writing-great-skills quiet" || bad "folder audit 時 writing-great-skills quiet" "case 缺失或 contract 漂移"
+  folder_fire_prompt=$(jq -r 'select(.id=="fire-auditing-skill-folder") | .prompt' "$REALCASES")
+  folder_quiet_prompt=$(jq -r 'select(.id=="quiet-writing-great-skills-folder") | .prompt' "$REALCASES")
+  eq "folder fire/quiet 使用同一 prompt" "$folder_fire_prompt" "$folder_quiet_prompt"
 else
   bad "cases.jsonl 存在" "$REALCASES 不存在"
 fi

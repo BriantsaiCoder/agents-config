@@ -17,12 +17,13 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 |---|---|---|---|---|
 | `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream assessed at `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-07-31 — preserve the imported agent-skill adaptation; tree SHA-256 `7e53e673348379b72f76c7a85c3c199720ddd09e4b963c85092a03eefa054408` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
+| `diagnosing-bugs` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-07-31 — preserve the imported local variant and remove obsolete Compose top-level `version`; tree SHA-256 `ab80cfe8db12433c4fcd3aaa6f34adb0f490a76e3a476cef6a63951af51d4675` | **Active** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-07-31 — preserve local coverage and unit-test reference variants; tree SHA-256 `9c303fb6337b8816e285d64d0d600a0e32362fcb298d6918f200a0244ddecc8f` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
-| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened from invocation metadata to body corrections**: exhaustiveness bar, description-mechanic accuracy (6 sites), disclosed-reference rung name, pointer condition, per-host invocation key, leading-word imperative, criterion hedge; tree SHA-256 `231a72c153e3abc84f33512aa3f8af8f942da23283b85005ebb770030df3631a` | **Active** |
+| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through canary-backed structural trim**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable top-level checklist, glossary negation cleanup; tree SHA-256 `b58b27d78ee29a15319aff92f153fd715cf1d4f0c27b39ceea8d65dcf2b7221c` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
 <!-- fork-index:end -->
@@ -109,15 +110,15 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 
 ---
 
-## Pinned Matt set — 19 unmodified + 3 recorded forks
+## Pinned Matt set — 18 unmodified + 4 recorded forks
 
 **`mattpocock/skills` stable 22 — active, pinned 2026-07-27.**
 
 - Source: `https://github.com/mattpocock/skills.git` at `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
 - Selection: `.claude-plugin/plugin.json` SHA-256 `e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba`.
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
-- The 19 entries other than `grilling`, `handoff`, and `writing-great-skills` are byte-for-byte upstream and immutable.
-- The three recorded forks have exact payload fingerprints and re-merge procedures below.
+- The 18 entries other than `diagnosing-bugs`, `grilling`, `handoff`, and `writing-great-skills` are byte-for-byte upstream and immutable.
+- The four recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
 ## Hybrid — house wrapper over vendored payload
@@ -156,6 +157,25 @@ Deliberately outside the index table above: these were never edited, so they are
 - Removed on user instruction while trimming the resident skill listing. Wholesale removal is legal under the vendored gate — what is forbidden is editing in place.
 - Cost it was carrying: 319 chars of name+description in every session's skill listing (2.9MB / 295 files on disk, which cost nothing resident).
 - **Restore when**: a project actually integrates ECPay 金流 / 電子發票 / 物流. The knowledge is 綠界-specific and not model-stable — 12-language CheckMacValue / AES vectors, ECPG vs ecpayment dual-domain traps, per-service test MerchantIDs. Nothing else in `skills/` covers it.
+
+---
+
+## diagnosing-bugs
+
+**Decision (2026-08-01): add one trigger branch for Agent Skill invocation failures.**
+
+The generic upstream description names broken, failing, flaky, and slow software, but not an Agent
+Skill that fires unreliably. Routing canaries therefore let `writing-great-skills` steal the first
+step even though the canonical workflow requires a RED trigger canary first. The local change adds
+only that missing description branch; the body is untouched.
+
+Approved tree SHA-256: `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba`.
+Evidence and the 21:00 control are recorded in
+`proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`.
+
+On upstream update, drop this fork if the new description carries an equivalent Agent Skill
+trigger-failure／RED-canary branch; otherwise reapply the one-line description change and recompute
+the tree fingerprint.
 
 ---
 
@@ -229,6 +249,7 @@ reworded.
 
 **Decision (2026-07-31): accept the model-invocation metadata fork.**
 **Decision (2026-08-01): widen the scope to body corrections. Supersedes the above.**
+**Decision (2026-08-01, second pass): add trigger ownership and structural trim. Supersedes the above.**
 
 The 2026-07-31 decision was scoped to invocation metadata and said "do not extend it". This
 decision extends it deliberately, on the strength of a two-round audit
@@ -236,17 +257,27 @@ decision extends it deliberately, on the strength of a two-round audit
 verification and was then re-verified against the live tree. Provenance was excluded from the
 judgement by standing instruction; it governs only this landing procedure.
 
-Approved tree SHA-256: `231a72c153e3abc84f33512aa3f8af8f942da23283b85005ebb770030df3631a`.
+The second pass is backed by fresh Claude, Codex, and Copilot routing canaries recorded in
+`proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`. The candidate makes host
+creators own scaffolding, accepts a valid RED from the folder auditor's Step 2c, sends missing-RED
+reproduction to `diagnosing-bugs`, and gives this skill the behavioral rewrite after either handoff.
+It replaces the 1,641-word top level with a 427-word executable checklist and makes completion
+branch-aware instead of forcing a full audit for every scoped edit. The evidence record keeps the
+mixed D-route canary as a residual instead of claiming a three-host clean sweep.
+
+Approved tree SHA-256: `b58b27d78ee29a15319aff92f153fd715cf1d4f0c27b39ceea8d65dcf2b7221c`.
 
 ### Local changes
 
 **Invocation metadata (carried over from 2026-07-31).** `disable-model-invocation: true` removed;
 `agents/openai.yaml` sets `allow_implicit_invocation: true`.
 
-**Frontmatter description (B3).** Rewritten to carry a trigger for the diagnosis branch the body
-opens at "## Failure modes" — the old text had none, making 13% of the file unreachable by its own
-stated use — plus the reach clause the body's own rule provides for. Must keep matching
-`^description: Skill authoring.*single skill` (asserted by `tests/matt-thin-workflow.sh`).
+**Frontmatter description (B3 plus second-pass ownership).** Trigger-led and narrowed to one
+existing Agent Skill behavioral edit or an already-red rewrite handed off by another skill.
+New-skill scaffolding remains with the host creator and directory-wide assessment with the folder
+auditor. The body requires a preserved RED, accepts the auditor's Step 2c handoff, and invokes
+`diagnosing-bugs` only when no caller supplied one; the exact ownership anchors are asserted by
+`tests/matt-thin-workflow.sh` and `tests/trigger-eval.sh`.
 
 **Body corrections (new in this decision).**
 
@@ -261,23 +292,33 @@ stated use — plus the reach clause the body's own rule provides for. Must keep
 | `SKILL.md` leading-word section | Moved the imperative up from `GLOSSARY` | The one instruction the section exists to produce lived only in the on-demand file |
 | `SKILL.md` completion-criterion line | "where it matters" → "wherever the work sweeps a set" | An undecidable hedge whose default resolution is to skip the harder half |
 
-**Upstream-reportable.** The description-mechanic correction (6 sites) is a defect in upstream's own
-text, not in the house fork. If it is reported and accepted upstream, drop that row here and take the
-correction back via wholesale replacement rather than carrying it as a fork. The frontmatter
-description is the opposite: house-authored, so upstream has nothing to fix.
+**Second-pass structural trim.** `SKILL.md` is now an executable checklist within the 500-word
+house budget; `GLOSSARY.md` remains the definition source. Completion is exhaustive for a full
+behavioral-authoring/pruning audit, scoped to the named branch for a focused edit, and RED→GREEN for a
+misbehavior rewrite. The glossary's 28 `_Avoid_:` negation lists were removed, and `Legwork` now
+uses `_relentless_` rather than presenting `_thorough_` as both weak and effective.
+
+**Reported upstream.** The description-mechanic correction (6 sites) is tracked in
+`mattpocock/skills#714`. If accepted upstream, drop that row here and take the correction back via
+wholesale replacement rather than carrying it as a fork. The frontmatter description is the
+opposite: house-authored, so upstream has nothing to fix.
 
 ### Re-merge procedure (when upstream moves)
 
 1. Diff the new upstream `writing-great-skills/` against pinned commit
    `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
-2. Replace the pinned Matt set, then reapply **both** layers: the invocation metadata (frontmatter
-   description, invocation flag removal, Codex implicit policy when upstream still keeps this skill
-   user-only) **and** every row of the body-corrections table above. Check each body row against the
-   new upstream first — a row upstream has since fixed is dropped, not reapplied.
+2. Replace the pinned Matt set, then reapply all three layers: invocation metadata, every still-live
+   row of the body-corrections table, and the second-pass trigger ownership/structural trim. Check
+   each correction against the new upstream first — a row upstream has since fixed is dropped, not
+   reapplied.
 3. Recompute `invocation_manifest_sha256` and the recorded tree SHA-256.
-4. Run `tests/matt-thin-workflow.sh`, `tests/mattpocock-workflow.sh`,
-   `tests/host-skill-resolver.sh`, and `tests/vendored-detection.sh`.
-5. Remove this record only when upstream provides equivalent model-invocation behaviour **and** has
+4. Before merge, run `tests/matt-thin-workflow.sh`, `tests/mattpocock-workflow.sh`, and
+   `tests/vendored-detection.sh`; run `tests/host-skill-resolver.sh` from an isolated candidate HOME
+   with the exact `Candidate host resolver replay` recipe in
+   `proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`; require exit 0 and
+   `3 PASS / 0 FAIL / 1 UNAVAILABLE` so Copilot resolves the candidate rather than live main.
+5. After landing to live main, run `tests/host-skill-resolver.sh` without overrides.
+6. Remove this record only when upstream provides equivalent model-invocation behaviour **and** has
    absorbed the body corrections.
 
 ---
