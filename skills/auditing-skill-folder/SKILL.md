@@ -3,73 +3,40 @@ name: auditing-skill-folder
 description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skills/) for keep/trim/delete/migrate decisions. Apply when a prior audit kept everything (suspicious uniform-keep), when only "built-in knowledge sufficient?" was used as criterion, or when skill trigger rate feels low.
 ---
 
-# Auditing a Skill Folder
+# 稽核 Skill 資料夾
 
-## Overview
+先做結構檢查，再判斷內容。單一 skill 改走 [`../dev-workflow/SKILL.md`](../dev-workflow/SKILL.md)。
 
-**Core principle:** Structural checks first, content relevance last. Jumping to "do I still need this" produces all-keep or vibes-delete results that miss real defects.
+## 必要流程
 
-**Not for:** one skill rather than a folder. Route single-skill work through [`../dev-workflow/SKILL.md`](../dev-workflow/SKILL.md), the canonical routing authority.
+完成條件：Step 0 → Portable structural gate；每個 skill 完成 Steps 1–6；每個資料夾完成一次 Step 2b。缺任一結果即重跑。
 
-## Step 0 — Vendored gate (run FIRST; it decides which verdicts are legal)
+### Step 0 — Vendored gate
 
-`scripts/check-vendored.sh <folder>` → `VND` / `VND*` (fork recorded in `vendored-forks.md`) / `vnd?` / `ERR` / `-`. Steps 1–2 repeat the flag as a column.
+執行 `scripts/check-vendored.sh <folder>`；每列記錄 `VND`、`VND*`、`vnd?`、`ERR` 或 `-`。所有 skill 都須評分並保留真實 assessment verdict。`ERR` 視為 `VND`；原地修改附 `proposed override required`，整體移除或替換仍合法。詳細規則見 [`step0-vendored-gate.md`](step0-vendored-gate.md)。
 
-**Vendored skills take no IN-PLACE structural edit** — no Trim, no Split, no rewriting their files. Removing or replacing the whole skill stays legal.
+### Portable structural gate（必要）
 
-**The flag gates execution, not assessment.** Score every skill on merit and record each defect at the severity it earns; a row left unscored because of its flag is a skipped step.
+依 [`references/skill-standards.md`](references/skill-standards.md) 驗證目錄與 `name` 一致、frontmatter 含有效 `name`／`description`、relative references 可解析。回報缺陷；Step 0 constraint 另行套用。
 
-**The rule is a default with a recorded override, not an absolute.** An assessment concluding the edit is worth its recurring cost lands as a *proposed override* against `vendored-forks.md` — the silent fork is forbidden, not the considered one.
+### Steps 1–6
 
-**A flag you cannot explain from the skill's own files is normal.** Detection is a union of five signals; `vendored-skills.lock` is checked first, and its recorded source may be this repo.
+| # | 檢查 | 方法與結果 |
+|---|---|---|
+| 1 | Token cost | `scripts/count-words.sh <folder>`；超額列依 [`step1-verdict-guide.md`](step1-verdict-guide.md) 判斷。 |
+| 2 | Description trap | `scripts/lint-descriptions.sh <folder>`；區分 trigger-led description 與 workflow summary。 |
+| 2b | Trigger collision | 跨列比較 Step 2；model-invoked trigger space 重疊且無 disambiguator 即 `Collision`。 |
+| 3 | Stance bleed | 純 user/team stance 移至 host/repo instructions。 |
+| 4 | Mechanical-only | lint、hook 或 regex 可強制的行為移至 deterministic enforcement。 |
+| 5 | Type clarity | 依 standards 分為 Technique、Pattern 或 Reference；只有 defined mixed type 才提議 `Split`。 |
+| 6 | Delete evidence | 排除重複、不相關與 no-op prose 後，盤點 behavior-changing unique policies、guards、procedures。只有盤點為空、current primary docs 取代 reference value，且 reversible temp-disable A/B canary 無品質、安全、routing 或 workflow regression，才列為 `Delete` 候選。只用 temporary corpus/plugin；live shared-skill change 須另取得各 host 授權，並在每個 consuming host 記錄 `PASS`／`FAIL`／`UNAVAILABLE`。 |
 
-Detection detail, the override procedure, and why each of the three rules above needs stating: `step0-vendored-gate.md`.
+### Step 2c — Optional trigger accuracy
 
-## Six-Step Protocol
+Rate-limit 成本合理時才執行 `scripts/eval-triggers.sh --runner claude` 並讀取 [`step2c-trigger-eval.md`](step2c-trigger-eval.md)。記錄含 host/result 的 `RUN` 或 `SKIPPED(reason)`；各 host 分別附 evidence 回報 `PASS`／`FAIL`／`UNAVAILABLE`。Step 2c 不影響必要完成條件。
 
-Run in order after Step 0. Steps 1–2 use scripts, 2b is a semantic cross-row comparison, 3–5 read, and 6 is the call you wanted to start with — defer it. Every rung except 2b scores one skill in isolation; 2b is the only one that compares skills to each other.
+純 style 檢查維持 optional：[`step7-style-checks.md`](step7-style-checks.md)。
 
-| # | Step | Tool | Output |
-|---|---|---|---|
-| 1 | Token cost | `scripts/count-words.sh <folder>` | Effective count over its row's limit; over → `step1-verdict-guide.md` (Trim vs Externalize vs Refactor) |
-| 2 | Description trap | `scripts/lint-descriptions.sh <folder>` | Descriptions summarizing workflow vs. trigger-only |
-| 2b | Trigger collision | Same table, read **across** rows | Two model-invoked descriptions claiming one trigger space with no disambiguator = Collision. Invisible to every per-skill rung, and a cause of "which skill fires" being nondeterministic |
-| 2c | Trigger accuracy — OPT-IN, spends rate limit | `scripts/eval-triggers.sh --runner claude` | Did it actually fire? Names the winner when skills contest one prompt, making 2b observable rather than argued. Detail: `step2c-trigger-eval.md` |
-| 3 | Stance bleed | Read | Pure stance ("use Serilog", "no barrels") → propose CLAUDE.md |
-| 4 | Mechanical-only | Read | Enforceable by lint/hook/regex → propose hook |
-| 5 | Type clarity | Read | Technique / Pattern / Reference (defined in `references/skill-standards.md`); mixed-type → propose split |
-| 6 | Built-in coverage | Judgement + Context7 | Only now: training-data + Context7 covers it AND no user stance AND no workflow discipline → candidate delete |
+## 報告契約
 
-## Red Flags / Rationalizations — STOP and Restart from Step 1
-
-| Trigger | Reality |
-|---|---|
-| "Quick 5-min pass, skip scripts" | Scripts run in <2 sec. Refusing them IS the bias. |
-| "Last audit kept all, trust it" | Last audit may have skipped 1–5 too — re-verify, don't recurse |
-| "Sort by line count instead of `wc -w`" | Wrong proxy, use the script |
-| "User stance obvious, skill stays" | Step 3 skipped; stance often belongs in CLAUDE.md, not skill |
-| "Mechanical part is short, leave inline" | Step 4 skipped; hooks fire 100%, skills ~50% — mechanical → hook |
-| "Type is obviously Technique" | Step 5 skipped; mixed-type is the common defect, not absent type |
-| "Built-in coverage is what matters at the end" | Step 6 of 6, not step 1 of 1 |
-| "Stance and operation inseparable here" | True for some — document the call, don't skip step 3 wholesale |
-| "Bloated AND third-party, so trim hard" | Backwards — vendored makes the trim need an override, not makes it overdue |
-| "It's vendored, so scoring it is pointless" | The flag gates execution, not assessment. Unscored = skipped step = restart |
-| "Vendored, so I'll log it as low severity" | Severity comes from the defect, never from the flag. Landing cost is recorded separately |
-| "Each description reads fine on its own" | Step 2b skipped. Collisions are invisible per-skill — compare descriptions to each other, not just to the rules |
-| "Step 2 says trigger-led, so it fires" | Step 2 is a regex proxy for firing. Run 2c, or record that you did not |
-| "2c came back green, ship it" | Read `err=` and `TRUNCATED`; `--runner mock` is canned data, never an audit number |
-| "I'll eyeball which are vendored" | Two hand-scans missed 2 (`LICENSE.md` ≠ `LICENSE`). Run Step 0. |
-
-## Step 7 (optional) — Style anti-patterns
-
-**OPTIONAL REFERENCE:** see `step7-style-checks.md`. Tag-only, not restart-gating.
-
-## Iron Law
-
-**Every audit produces a written report scoring each skill against every step**, ending in a verdict block: Keep / Trim / Move-to-CLAUDE.md / Convert-to-hook / Split / Delete / Collision. "Looked at it, looks fine" is not a verdict. If you cannot fill in a step result, you did not run that step. Skipping any of steps 1–5 means restart. Step 2b is scored once per folder rather than per skill, and its absence from the report means the same restart.
-
-**Step 0 is a gate, not a scored step:** an in-place structural verdict on a `VND` skill is void *as an immediate action* — it becomes a proposed override against `vendored-forks.md`, not a discarded finding. Default outcome: Keep plus a reported defect at its true severity. Treat `ERR` as `VND`.
-
-**Every skill appears in the report whatever its flag.** A row reading "n/a — vendored" is a skipped step and means restart; the constraint is recorded *alongside* the verdict, never instead of it.
-
-**REQUIRED BACKGROUND:** Read [references/skill-standards.md](references/skill-standards.md), the automatically loadable house authority.
+每個 skill 須列出 vendored flag、structural result、Steps 1–6 results，以及一個 verdict：`Keep`、`Trim`、`Move-to-host/repo-instructions`、`Convert-to-deterministic-enforcement`、`Split`、`Delete` 或 `Collision`。每個資料夾記錄一次 Step 2b。Vendored constraint 只附加於 verdict，不取代 assessment 或降低 severity。

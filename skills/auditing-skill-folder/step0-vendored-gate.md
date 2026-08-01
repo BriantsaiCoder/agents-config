@@ -47,7 +47,7 @@ Note the vocabulary trap: "Delete" as a protocol verdict means *removing the who
 
 ## What the gate does NOT do
 
-It does not gate the **assessment**. Judge every skill purely on whether it needs tuning or optimisation: read it, count it, lint it, score all six steps, and record each defect at the severity the defect earns. The flag never softens, downgrades, defers or suppresses a finding — it decides only how a verdict *lands*. An audit that scores a `VND` skill as "n/a — vendored", or quietly grades its defects down, has skipped steps, and the Iron Law calls that a restart.
+此 gate 不限制 **assessment**。每個 skill 都須依是否需要 tuning 或 optimisation 判斷：讀取內容、計數、lint、完成六個 steps，並依缺陷本身記錄 severity。Flag 不得弱化、降級、延後或隱藏 finding，只決定 verdict 如何落地。若稽核把 `VND` skill 記為 "n/a — vendored"，或降低缺陷等級，即缺少必要 assessment，必須重新開始。
 
 Three reasons this has to be stated rather than left implied:
 
@@ -59,7 +59,7 @@ Three reasons this has to be stated rather than left implied:
 
 `vendored-forks.md` states it outright — the no-in-place-edit rule is *"a default requiring a recorded override, not an absolute"*, and its fork index is the accepted-fork inventory.
 
-So an assessment that concludes an in-place edit is genuinely worth its permanent merge-conflict cost does not get dropped. It lands as a **proposed override**:
+若 assessment 判定原地修改值得承擔永久 merge-conflict 成本，須保留 assessment verdict，並附加 execution constraint **`proposed override required`**：
 
 1. Diff against the pinned upstream commit for that skill.
 2. Add a dated row inside the `<!-- fork-index:begin/end -->` block naming the local change; a row outside that block is inert.
@@ -73,7 +73,7 @@ An existing `VND*` record does not license further editing: read its current sco
 
 ## Why this is Step 0 and not a scored step
 
-Steps 1–6 produce verdicts. This one decides which verdicts are *legal*, so it runs before them and voids anything that lands wrong — however well steps 1–6 argue for it. Record such a case as Keep plus a reported defect.
+Steps 1–6 產出 assessment verdict；Step 0 只附加 execution constraint。不得因 `VND` 將 `Trim`、`Split` 或其他真實 assessment 改成 `Keep`；原地修改建議須記錄真實 verdict 加 `proposed override required`。
 
 Steps 1–2 carry a `VND` column for the same reason: an over-limit word count reads as "Trim me", and that must not be readable without the constraint on the same line.
 

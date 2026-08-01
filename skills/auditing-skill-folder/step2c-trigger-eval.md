@@ -1,72 +1,45 @@
 # Step 2c — Trigger accuracy eval
 
-Externalized from SKILL.md, which is already over its 500-word budget (1016 before this step existed). Read this only when running 2c.
+只有執行 optional Step 2c 時才讀取本檔。
 
-## What it measures, and what it does not
+## 量測內容
 
-Step 2 reads a description and infers from regex whether it is written as a trigger. That is a proxy. Step 2c measures the thing the proxy stands in for: given a prompt a user would actually type, **does the skill fire?**
+Step 2 是 regex proxy。Step 2c 驗證 realistic prompt 是否真的 invoke target skill；只量測 invocation，不量測 output quality。
 
-It does **not** judge whether the skill's body then did good work. Output quality is a separate rubric; conflating the two produces a number that cannot be acted on — a skill can fire perfectly and give bad advice, or never fire while its body is excellent, and those need opposite fixes.
+UNVERIFIED: current Claude CLI 是否依 runner 設定載入 supplied skills 與 built-ins。Collision arm 會將所有 supplied skills 提供給 `--plugin-dir`；`--isolate` 只提供 target。2026-08-01 probe 曾在兩個 arm 觀察到 built-ins。Isolate 通過而 collision 失敗時，修正 disambiguation。Isolate 中的 `FAIL no skill fired` 指向 description 問題；具名 built-in winner 仍屬 collision。
 
-## Why it is worth the money
+2026-08-01 的 historical evidence 載入 95 個 skills，並通過 6/6 documented routing-pair cases。五次執行中，第四次發現 OAuth session 過期；舊 guard 會把它誤判為 quiet case 通過，第五次在重新認證後通過。這些執行早於目前 scorer 變更，不是 current baseline。Scorer、parser、runner 或相關 description 變更後須重新量測。
 
-Step 2b (trigger collision) is otherwise a human reading the lint table across rows and arguing about which of two descriptions owns a prompt. Here every competing skill is loaded at once and the transcript **names the winner**. The argument becomes an observation.
+## Run
 
-Baseline, 2026-08-01, collision arm, 95 skills loaded, 6 cases (3 documented routing pairs), 6/6 PASS — TP=3, TN=3, FN=0, FP=0. Each `quiet` case yielded its prompt to exactly the skill its own description names: `security-review` → `dependency-security-scan` (CI/pre-commit), `jest-best-practices` → `testing-library-react-best-practices` (RTL), `css-ui-best-practices` → `tailwind-v4-shadcn` (Tailwind tokens). Those three routing rules are measured, not asserted. Re-run after editing any description in a documented pair.
-
-**Re-measure after any change to the scorer or the parser.** A baseline inherited across a scoring change is not a measurement. This one was taken four times and the same 6/6 came back each time, which is exactly why the rule needs stating: identical numbers are not evidence that the reasoning behind skipping a re-run was sound.
-
-- Run 1 scored `quiet` on the first tool call alone, which cannot tell "the target stayed out of it" from "the target fired second". Numbers matched; the evidence did not support the claim.
-- Run 2 followed `skill_ever_fired` — a passing `quiet` row now means the target appears **nowhere** in the transcript.
-- Run 3 followed the parser becoming shape-agnostic. A wider filter can only find *more* Skill calls, and finding more is precisely what flips a passing `quiet` row to FAIL.
-- Run 4 followed the `ACTUAL` column change, which touches no verdict and no counter — the run that was easiest to argue was unnecessary. It returned six `ERR Failed to authenticate: OAuth session expired` rows. The session had gone stale mid-audit, and the pre-fix `runner_failed()` would have read that outage as three quiet cases passing. **The re-run that looked most skippable is the one that exposed the worst defect.** Run 5, after re-authenticating, is the baseline above.
-
-## Running it
-
-```
-scripts/eval-triggers.sh --runner claude                  # collision arm (default): all skills loaded
-scripts/eval-triggers.sh --runner claude --isolate        # each description alone, no collision pressure
-scripts/eval-triggers.sh --runner claude --max-cases 5    # while iterating
-scripts/eval-triggers.sh --runner mock                    # offline; canned data, NEVER an audit number
+```sh
+scripts/eval-triggers.sh --runner claude                  # 所有 skills，含 collision pressure
+scripts/eval-triggers.sh --runner claude --isolate        # isolate arm：只提供 target corpus
+scripts/eval-triggers.sh --runner claude --max-cases 5    # 有上限的 iteration
+scripts/eval-triggers.sh --runner mock                    # canned offline data
 ```
 
-`--runner` has no default on purpose: one arm spends real rate-limit budget, the other returns canned data, and defaulting to either is a way to be silently wrong.
+刻意不提供 default runner：Claude 會消耗 rate limit，mock output 也永遠不是 audit result。
 
-Run **both** arms when a case fails. `--isolate` PASS + collision-arm FAIL is a collision (fix the disambiguator). Failing in both is a description defect (fix the trigger wording, via `writing-great-skills`).
-
-## Reading the output
-
-| Signal | Meaning |
+| Signal | 意義 |
 |---|---|
-| `FAIL collision — won by X` | X's description claims this trigger space too. A Step 2b Collision verdict, now with evidence |
-| `FAIL no skill fired` | Description never reaches the model's threshold on a prompt it should own |
-| `FAIL fired when it should not` | Over-broad trigger. Costs listing budget and steals other skills' prompts |
-| `SKIP user-invoked only` | `disable-model-invocation: true`. Not a miss — the frontmatter asked for this |
-| `ERR ...` | **Unmeasured, not passed.** Errored cases are excluded from recall/precision |
-| `TRUNCATED` | `--max-cases` cut the run. Partial coverage must not be reported as full |
+| `FAIL collision — won by X` | 另一個 skill 贏得 prompt。 |
+| `FAIL no skill fired` | Target 未達 invocation threshold。 |
+| `FAIL fired when it should not` | Trigger 過寬。 |
+| `SKIP user-invoked only` | Frontmatter 刻意停用 model invocation。 |
+| `ERR ...` | 未量測；不納入 recall 與 precision。 |
+| `TRUNCATED` | Coverage 不完整；不得回報 full-suite result。 |
 
-## Cost and contamination, both measured
+## Isolation 與成本
 
-Runner flags are documented in `evals/runners.json`, which records the probe that chose each one. Three findings worth repeating here:
+Runner flags 與附日期的 isolation rationale 位於 `evals/runners.json`。UNVERIFIED: current Claude CLI isolation semantics；2026-08-01 probe 曾觀察到空的 `CLAUDE_CONFIG_DIR` 與 `--bare` 使 OAuth 失敗，且兩個 arm 都列出 built-ins。Current run 若出現具名 built-in winner，判為 collision。
 
-1. **`--setting-sources ''` is the isolation flag.** A control run without it quoted the host's own `~/.claude/CLAUDE.md` verbatim and obeyed a sentinel `CLAUDE.md` planted in cwd. Drop it and the eval measures your config, not the skill.
-2. **`CLAUDE_CONFIG_DIR=<empty dir>` and `--bare` break auth on an OAuth host** (`Not logged in`). They are viable only where `ANTHROPIC_API_KEY` is set.
-3. **Built-in skills stay loaded** (18 observed: `code-review`, `debug`, `verify`, `simplify`, …). A built-in winning a contested prompt is a real collision your users will hit, so it is reported, never filtered out.
+每個 case 消耗一個 model turn。用 `jq -s length evals/cases.jsonl` 取得目前 case 數後編列預算，或使用 `--max-cases`。
 
-One case is one full model turn against the 5-hour window. The 27-case suite is not free — budget it, or use `--max-cases`.
+## Claude-only 邊界
 
-## Claude only, and why
+此 runner 只提供 Claude evidence。2026-08-01 Codex probe 未發現可指出 invoked skill 的 event，因此 Codex scorer 沒有 ground truth；Copilot invocation policy 也未量測。除非存在 host-specific observable，否則將這些 hosts 回報為 `UNAVAILABLE`。不得把 Claude pass 外推到其他 hosts。
 
-There is no codex arm. Probed 2026-08-01 (codex-cli 0.146.0): codex loads a skill without emitting any event that names it — an explicit `$skill` invocation produced only `agent_message`, while the agent itself confirmed the skill was loaded. With no ground truth, a codex runner would score every case `quiet` and report a clean sheet.
+## 新增 cases
 
-Two findings from that probe are recorded in `runners.json` and matter beyond this step: upstream's `--ephemeral --ignore-user-config` does **not** isolate `~/.codex/AGENTS.md` (control group quoted `[T0-3]` verbatim), and what does work is `CODEX_HOME` at a temp dir with `auth.json` symlinked in.
-
-So a green 2c run says the trigger holds **on Claude**. Codex reads `agents/openai.yaml` and Copilot ignores invocation policy entirely, so neither is covered by this number — do not report it as a cross-host result.
-
-## Adding cases
-
-`evals/cases.jsonl`, one JSON object per line: `{id, skill, prompt, expect: "fire"|"quiet", why}`.
-
-Pair every `fire` case with the `quiet` case its own description implies. A description that says "X → other-skill" is a testable claim in both directions; asserting only the `fire` half lets an over-broad trigger score a perfect run.
-
-`tests/trigger-eval.sh` re-validates that every `skill` named here still exists, so a renamed skill fails in CI rather than silently scoring `ERR` during an audit.
+在 `evals/cases.jsonl` 每列加入一個 JSON object：`{id, skill, prompt, expect: "fire"|"quiet", why}`。每個 `fire` case 都須搭配同一 description 所隱含的 `quiet` case。`tests/trigger-eval.sh` 會驗證 referenced skills 仍存在。

@@ -17,6 +17,9 @@ WRITING_SKILLS_POLICY="$AGENTS/skills/writing-great-skills/agents/openai.yaml"
 AUDIT_SKILL="$AGENTS/skills/auditing-skill-folder/SKILL.md"
 AUDIT_VENDORED_GATE="$AGENTS/skills/auditing-skill-folder/step0-vendored-gate.md"
 AUDIT_VERDICT_GUIDE="$AGENTS/skills/auditing-skill-folder/step1-verdict-guide.md"
+AUDIT_TRIGGER_EVAL="$AGENTS/skills/auditing-skill-folder/step2c-trigger-eval.md"
+AUDIT_TRIGGER_RUNNER="$AGENTS/skills/auditing-skill-folder/scripts/eval-triggers.sh"
+AUDIT_STYLE_CHECKS="$AGENTS/skills/auditing-skill-folder/step7-style-checks.md"
 AUDIT_LINTER="$AGENTS/skills/auditing-skill-folder/scripts/lint-descriptions.sh"
 VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
 
@@ -163,8 +166,81 @@ actual_writing_tree_sha="$(vendored_tree_sha256 "$WRITING_SKILLS_DIR")"
 
 rg -q '\.\./dev-workflow/SKILL\.md' "$AUDIT_SKILL" ||
   fail 'auditing-skill-folder does not route through the canonical dev-workflow path'
+audit_words=$(
+  "$AGENTS/skills/auditing-skill-folder/scripts/count-words.sh" "$AGENTS/skills" |
+    awk '$6 == "auditing-skill-folder" { print $1 }'
+)
+[ -n "$audit_words" ] ||
+  fail 'auditing-skill-folder is missing from the effective word-count report'
+[ "$audit_words" -le 500 ] ||
+  fail "auditing-skill-folder exceeds its 500-word effective budget: $audit_words"
+rg -q '完成條件：Step 0' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder no longer requires the vendored gate to run first'
+rg -q 'Portable structural gate.*必要' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder lacks a required portable structural gate'
+rg -q 'name.*frontmatter.*relative references' "$AUDIT_SKILL" ||
+  fail 'portable structural gate does not cover name, frontmatter, and relative references'
+rg -q 'Steps 1–6.*資料夾.*Step 2b' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder required completion contract is incomplete'
+rg -q 'RUN.*SKIPPED\(reason\)' "$AUDIT_SKILL" ||
+  fail 'Step 2c does not require an honest RUN or SKIPPED(reason) record'
+rg -q 'Step 2c 不影響必要完成條件' "$AUDIT_SKILL" ||
+  fail 'optional Step 2c still changes required completion'
+rg -q 'Move-to-host/repo-instructions' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder still lacks a host-neutral instruction verdict'
+rg -q 'Convert-to-deterministic-enforcement' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder still lacks a host-neutral enforcement verdict'
+sed -n '/^### Step 2c/,/^## 報告契約/p' "$AUDIT_SKILL" |
+  rg -q '各 host.*PASS.*FAIL.*UNAVAILABLE' ||
+  fail 'auditing-skill-folder does not preserve per-host evidence'
+! rg -q 'Move-to-CLAUDE\.md|propose CLAUDE\.md' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder still hard-codes the Claude instruction surface'
+step6_row=$(sed -n '/^| 6 |/p' "$AUDIT_SKILL")
+printf '%s\n' "$step6_row" | rg -q 'behavior-changing unique policies.*guards.*procedures' ||
+  fail 'Delete criterion lacks a behavior-changing unique-content inventory'
+printf '%s\n' "$step6_row" | rg -q 'primary docs' ||
+  fail 'Delete criterion lacks a primary-documentation check'
+printf '%s\n' "$step6_row" | rg -q 'reversible temp-disable A/B canary' ||
+  fail 'Delete criterion lacks a reversible A/B canary'
+printf '%s\n' "$step6_row" | rg -q 'temporary corpus/plugin' ||
+  fail 'Delete canary is not constrained to an isolated temporary corpus/plugin'
+printf '%s\n' "$step6_row" | rg -q '每個 consuming host.*PASS.*FAIL.*UNAVAILABLE' ||
+  fail 'Delete canary lacks a per-consuming-host result contract'
+! rg -q 'training-data' "$AUDIT_SKILL" ||
+  fail 'Delete criterion still relies on unobservable training-data coverage'
+! rg -q 'fix-naming|fix-frontmatter|fix-cross-reference' "$AUDIT_STYLE_CHECKS" ||
+  fail 'required portable structure remains misclassified as optional style'
+rg -q '^# Step 7（optional）— Style spot-check$' "$AUDIT_STYLE_CHECKS" ||
+  fail 'pure style checks are no longer explicitly optional'
+rg -q '五次執行中' "$AUDIT_TRIGGER_EVAL" ||
+  fail 'Step 2c baseline does not report all five measurements'
+rg -q '不是 current baseline' "$AUDIT_TRIGGER_EVAL" ||
+  fail 'Step 2c historical evidence is still presented as a current baseline'
+! rg -q 'four times' "$AUDIT_TRIGGER_EVAL" ||
+  fail 'Step 2c baseline still contradicts its five-run chronology'
+rg -q 'UNVERIFIED: current Claude CLI.*Collision arm.*supplied skills.*--isolate.*target.*2026-08-01 probe.*built-ins' \
+  "$AUDIT_TRIGGER_EVAL" ||
+  fail 'Step 2c isolate arm still hides built-in collision pressure'
+rg -q 'UNVERIFIED.*Claude CLI semantics' "$AGENTS/skills/auditing-skill-folder/evals/runners.json" ||
+  fail 'Step 2c runner isolation claim lacks a current-verification boundary'
+rg -q 'UNVERIFIED: current Claude CLI loading semantics' "$AUDIT_TRIGGER_RUNNER" ||
+  fail 'Step 2c runner header lacks a current-verification boundary'
+! rg -q 'every competing skill is loaded at once|Default \(all skills loaded\)|Load ONLY' \
+  "$AUDIT_TRIGGER_RUNNER" ||
+  fail 'Step 2c runner header claims unverified host loading semantics'
+! rg -q 'UNVERIFIED：' "$AUDIT_TRIGGER_EVAL" \
+  "$AGENTS/skills/auditing-skill-folder/evals/runners.json" ||
+  fail 'Step 2c uses a non-machine-readable UNVERIFIED prefix'
+rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 93 cases' "$AGENTS/vendored-forks.md" ||
+  fail 'vendored detector regression count is stale'
 ! rg -q 'model invocation metadata only|four steps above' "$AUDIT_VENDORED_GATE" ||
   fail 'auditing-skill-folder carries a stale fork scope or override step count'
+rg -q 'assessment verdict.*proposed override required' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder conflates the vendored assessment verdict with its execution constraint'
+rg -q 'Steps 1–6.*assessment verdict.*execution constraint' "$AUDIT_VENDORED_GATE" ||
+  fail 'vendored gate does not preserve the assessment and execution axes'
+! rg -q 'Keep plus a reported defect|Iron Law' "$AUDIT_VENDORED_GATE" ||
+  fail 'vendored gate still carries the stale Keep-only or Iron Law wording'
 ! rg -q '/ 150 words' "$AUDIT_VERDICT_GUIDE" ||
   fail 'auditing-skill-folder verdict guide carries the retired 150-word tier'
 rg -q 'UNION of five signals' "$VENDORED_LIB" ||
@@ -299,6 +375,7 @@ while IFS= read -r changed; do
     skills/auditing-skill-folder/step0-vendored-gate.md | \
     skills/auditing-skill-folder/step1-verdict-guide.md | \
     skills/auditing-skill-folder/step2c-trigger-eval.md | \
+    skills/auditing-skill-folder/step7-style-checks.md | \
     skills/auditing-skill-folder/evals/cases.jsonl | \
     skills/auditing-skill-folder/evals/mock-runner.sh | \
     skills/auditing-skill-folder/evals/runners.json | \

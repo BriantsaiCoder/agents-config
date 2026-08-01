@@ -1,29 +1,13 @@
-# Step 7 (optional) — Style & structural spot-check
+# Step 7（optional）— Style spot-check
 
-Checks Steps 1–6 do not catch. Run after the six-step protocol to surface lower-priority defects. Findings are tag-and-fix, not restart-gating; never promote Style → Delete (deletion belongs to Step 6).
-
-Read [references/skill-standards.md](references/skill-standards.md) before applying these checks.
+Portable structure 已由 `SKILL.md` 列為必要。此 optional pass 只記錄 readability findings，不得改變 required completion、severity 或 Steps 1–6 verdict。
 
 ## Checks
 
-| Check | Source | Flag |
-|---|---|---|
-| Name matches directory; 1–64 lowercase letters/numbers/hyphens; no edge/double hyphen | Agent Skills spec | `Style:fix-naming` |
-| Required `name` / `description`; description non-empty and ≤1024 characters | Agent Skills spec | `Style:fix-frontmatter` |
-| Description says what + when with useful routing keywords; house model-invoked skills prefer trigger-focused `Use when...` wording | Agent Skills spec + Matt guidance + house policy | `Style:fix-description` |
-| Relative file references resolve; house cross-skill dependencies use explicit required markers and never auto-depend on user-invoked skills | Agent Skills spec + house policy | `Style:fix-cross-reference` |
-| Steps have checkable completion criteria; branch-only reference is progressively disclosed; stale/no-op content is absent | Matt guidance | `Style:fix-information-hierarchy` |
+| 檢查 | Tag |
+|---|---|
+| Headings 與 terminology 一致且容易掃讀 | `Style:clarify-structure` |
+| Tables 與 lists 改善掃讀，不重複 prose | `Style:dedupe-formatting` |
+| Examples 精簡、current 且必要 | `Style:trim-example` |
 
-Fixed section templates, gerund names, rationalization tables, Red Flags, Iron Laws, flowchart rules, and example-count rules were Superpowers-specific. They are not generic audit failures; use them only when an observed behavior requires that shape.
-
-## Verdict augmentation
-
-Append to existing verdict block per skill:
-
-- `Style:fix-naming`
-- `Style:fix-frontmatter`
-- `Style:fix-description`
-- `Style:fix-cross-reference`
-- `Style:fix-information-hierarchy`
-
-Multiple tags allowed. Style findings stack with the Step 1–6 verdict (Keep / Trim / Move / Hook / Split / Delete) but never override it.
+將 tags 附加至既有 verdict。固定 templates、gerund names、rationalization tables、Red Flags、Iron Laws、flowcharts 與 example counts 都不是 generic requirements；只有 observed behavior 需要時才使用該形式。
