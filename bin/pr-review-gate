@@ -7,8 +7,17 @@ if [[ ! "$pr" =~ ^[0-9]+$ ]]; then
   exit 64
 fi
 
+# repo= 必須出現在 UNAVAILABLE 行。這支工具用 `gh repo view` 從 **cwd** 解析 repo，所以從別的
+# repo 目錄跑 `pr-review-gate 18`，查的是「那個 repo 的 #18」。其餘每個 STATE 行都帶 url=，
+# 裡面就含 repo，看得出查錯了；只有 UNAVAILABLE 兩者皆無，於是「查錯 repo」與「這個 PR 真的
+# 有問題」印出完全相同的一行。
+#
+# 實測（2026-08-01）：同一句 `pr-review-gate 18`，在 ~/.agents 回 STATE=WAIT_REVIEW ci=PASS，
+# 在另一個專案目錄回 STATE=UNAVAILABLE reason=pr_not_open。當時被誤判為「暫時性讀取失敗」，
+# 兩次都是。若那個 repo 剛好也有一個 open 的 #18，回報的會是它的狀態——不是錯誤，是靜默的
+# 錯答案。
 unavailable() {
-  printf 'STATE=UNAVAILABLE reason=%s\n' "$1"
+  printf 'STATE=UNAVAILABLE repo=%s reason=%s\n' "${repo:-unresolved}" "$1"
   exit 30
 }
 

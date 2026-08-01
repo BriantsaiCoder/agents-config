@@ -12,6 +12,8 @@ cat > "$FAKEBIN/gh" <<'EOF'
 set -u
 
 if [[ "$1 $2" == "repo view" ]]; then
+  # GH_FAKE_REPO_FAIL：模擬 repo 解析失敗，驗 unavailable() 在 repo 尚未賦值時的輸出。
+  [[ -n "${GH_FAKE_REPO_FAIL:-}" ]] && exit 1
   printf 'owner/repo\n'
 elif [[ "$1 $2" == "pr view" ]]; then
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
@@ -93,6 +95,28 @@ probe "failed CI blocks"            30 FAIL_CI     0 head-new 0 0 FAILURE
 probe "failure outranks pending CI" 30 FAIL_CI     0 head-new 0 0 FAILURE,PENDING
 probe "draft PR waits"              11 WAIT_READY  0 head-new 0 0 SUCCESS true
 probe "thread pagination fails safe" 30 UNAVAILABLE 0 head-new 0 0 SUCCESS false true
+
+# UNAVAILABLE 行必須指名解析到的 repo。這支工具從 cwd 解析 repo，其餘 STATE 行都靠 url= 讓
+# 「查錯 repo」看得出來，只有 UNAVAILABLE 兩者皆無——查錯 repo 與該 PR 真有問題會印出一模一樣
+# 的一行。實測踩過兩次並誤判為暫時性失敗。
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=true "$GATE" 42 2>&1)
+if [[ "$out" == *"repo=owner/repo"* ]]; then
+  ((pass += 1)); printf 'PASS UNAVAILABLE names the resolved repo\n'
+else
+  ((fail += 1)); printf 'FAIL UNAVAILABLE names the resolved repo: output=%s\n' "$out"
+fi
+
+# repo 尚未解析出來時（repo_probe_failed）也不得印出空欄位——空的 repo= 會讀成「解析到空字串」
+# 而不是「還沒解析」。
+out=$(PATH="$FAKEBIN:$PATH" GH_FAKE_REPO_FAIL=1 "$GATE" 42 2>&1)
+if [[ "$out" == *"repo=unresolved"* ]]; then
+  ((pass += 1)); printf 'PASS repo probe failure says unresolved, not empty\n'
+else
+  ((fail += 1)); printf 'FAIL repo probe failure says unresolved, not empty: output=%s\n' "$out"
+fi
 
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"
 ((fail == 0))
