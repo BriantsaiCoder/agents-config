@@ -42,14 +42,22 @@ broken relative reference、vague completion + duplication/no-op）沒有任何�
 symlink 到各自版本、`.codex` symlink 保留 credential）後才真正分離，transcript 分別解析到
 `.worktrees/fix/wgs-f2-f3-f5/…` 與 `wgs-snapshot/…`。
 
+**n = 1 per side**（單次 low-effort sample，非 paired 多次）。
+
 | 量測 | 21:00 原版 | candidate | 判定 |
 |---|---|---|---|
 | 核心 defect recall | 4/4 | 4/4 | 持平 |
 | Scope（最終輸出） | 擴張成 folder Six-step audit（Vendored gate／Token cost／Stance bleed…） | 守在 single skill，12 列 Audit ledger | **candidate 勝** |
-| Verdict 類型 | `DELETE`——lifecycle 裁決，屬 folder auditor | `FAIL — 必須重寫後才算可用`，逐列 `KEEP`／`CHANGE`／`N/A` + evidence | **candidate 勝** |
+| Verdict 類型 | `DELETE`——lifecycle 裁決，屬 folder auditor 的職責 | `FAIL` + 逐列 `KEEP`／`CHANGE`／`N/A` + evidence | **candidate 勝** |
 | Probe evidence | 有 | 有（`details_file_exit=1`） | 持平 |
 
-**結論：candidate 效力 ≥ 原版。** 缺陷偵測無損失，改善在 scope discipline 與可驗收輸出。
+**結論：candidate 效力 ≥ 原版**——但成立的理由不是分數差，n=1 撐不起那種宣稱。本文件
+`02-writing-great-skills.md:93-94` 自己就拒絕從單次 sample 宣稱 routing 改善。這裡可以下判斷，
+是因為兩項差異**結構性且可追溯到被改的文字**：scope 擴張對應被 trim 刪掉的 folder-audit 散文，
+verdict 型別對應被加入的 `KEEP`／`CHANGE`／`N/A` output contract。兩者都不是邊際分數波動。
+
+**框架修正**：原版的 `DELETE` 對這個 fixture 而言不是錯誤判斷，是**越界**判斷——lifecycle 裁決
+屬 `auditing-skill-folder`。candidate 的勝點是 scope discipline 與 output contract，不是 correctness。
 
 Result SHA-256（含絕對路徑，僅供同機重播比對）：candidate `08a50fd158ce37f569a0e159ef596c65d08183819a11bb8adb66c9d76a3969ea`、
 原版 `153a63d74ee2bcce1b8c233093289ad4af7d23d6578e2c9276443526be74dadb`。
