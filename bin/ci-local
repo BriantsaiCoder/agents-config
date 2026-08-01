@@ -1,0 +1,252 @@
+#!/usr/bin/env bash
+# 在本機跑「CI 實際會跑的東西」，步驟清單衍生自 .github/workflows/ci.yml。
+#
+# 為什麼存在（2026-08-01）：一次 PR 裡本機只跑了 CI 16 個 step 中的 5 個就回報「全綠」，
+# 推上去被 tests/matt-thin-workflow.sh 擋下。根因不是疏忽，是沒有「跑 CI 跑的東西」這個動作
+# ——要跑什麼得靠人記，記漏了不會有人抗議。
+#
+# 關鍵設計：步驟從 ci.yml **解析出來**，不是在這裡另抄一份清單。抄一份就是第二個真實來源，
+# CI 加一個 step 它就靜默過期，而輸出看起來仍然權威。
+#
+# 三類步驟不在本機跑，每一類都會「印出來」而非靜默略過：
+#   1. 需 sudo 的 provisioning（apt-get / 寫 /usr/local/bin）——本機不裝東西。改為驗證對應的
+#      執行檔是否已存在；缺了就是 FAIL 不是 SKIP。你踩過「CI 缺 rg 讓反向斷言整段沒跑仍回綠」，
+#      缺工具的失敗方向是假綠，比報錯危險。
+#   2. hooks/install-hooks.sh——它會寫進 .git/hooks，是對使用者 repo 的副作用。預設不跑，
+#      要跑加 --with-side-effects。
+#   3. actions/* 這類非 run: 步驟（checkout 等）——本機工作區就是 checkout 的結果。
+#
+# 用法：
+#   ci-local                      跑全部可在本機跑的 step
+#   ci-local --with-side-effects  連 install-hooks.sh 一起跑
+#   ci-local --list               只列出將跑／將略過什麼，不執行
+#
+# Exit: 0 = 全部通過且無未解析的前置工具。1 = 有 FAIL。2 = 解析不出步驟（不是乾淨的通過）。
+set -uo pipefail
+
+AGENTS="${AGENTS_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd -P)}"
+WORKFLOW="$AGENTS/.github/workflows/ci.yml"
+JOB="${CI_LOCAL_JOB:-verify}"
+WITH_SIDE_EFFECTS=0
+LIST_ONLY=0
+
+die() { printf 'ci-local: %s\n' "$*" >&2; exit 2; }
+
+if [ "${1:-}" = "--selftest" ]; then
+  # 一個永遠回綠的 CI 包裝器比沒有更糟：它讓「本機驗過了」這句話變成噪音。這裡用假 workflow
+  # 把失敗語意釘死——尤其是「缺工具算 FAIL 不算 SKIP」，因為缺工具的失敗方向是假綠。
+  t=$(mktemp -d) || exit 1
+  trap 'rm -rf "$t"' EXIT
+  P=0; F=0
+  mk() { mkdir -p "$t/$1/.github/workflows"; cat > "$t/$1/.github/workflows/ci.yml"; }
+  run_st() { AGENTS_HOME="$t/$1" bash "$0" "${@:2}" 2>&1; }
+  chk() { [ "$2" = "$3" ] && { printf '  PASS  %s\n' "$1"; P=$((P+1)); } ||
+          { printf '  FAIL  %s（期望=%s 實得=%s）\n' "$1" "$2" "$3"; F=$((F+1)); }; }
+  hasq() { case "$2" in *"$3"*) printf '  PASS  %s\n' "$1"; P=$((P+1)) ;;
+                        *) printf '  FAIL  %s（輸出未含：%s）\n' "$1" "$3"; F=$((F+1)) ;; esac; }
+
+  mk fail <<'Y'
+jobs: {verify: {steps: [{name: ok-step, run: "true"}, {name: bad-step, run: "echo boom >&2; exit 3"}]}}
+Y
+  o=$(run_st fail); rc=$?
+  hasq "失敗步驟標 FAIL" "$o" "FAIL  bad-step"
+  hasq "失敗時附上輸出片段" "$o" "boom"
+  chk  "有 FAIL → exit=1" 1 "$rc"
+
+  mk missing <<'Y'
+jobs: {verify: {steps: [{name: prov, run: "sudo apt-get install -y definitely-not-installed-xyz"}]}}
+Y
+  o=$(run_st missing); rc=$?
+  hasq "缺工具標 FAIL 而非 SKIP" "$o" "FAIL  prov"
+  hasq "缺工具明列 MISSING" "$o" "definitely-not-installed-xyz:MISSING"
+  hasq "缺工具點名假綠風險" "$o" "假綠"
+  chk  "缺工具 → exit=1" 1 "$rc"
+
+  mk unres <<'Y'
+jobs: {verify: {steps: [{name: prov2, run: "sudo something-opaque --do-it"}]}}
+Y
+  o=$(run_st unres); rc=$?
+  hasq "解析不出工具標 UNRESOLVED" "$o" "UNRESOLVED"
+  chk  "UNRESOLVED → exit=1（等同未驗證）" 1 "$rc"
+
+  mk side <<'Y'
+jobs: {verify: {steps: [{name: hooks, run: "bash hooks/install-hooks.sh"}]}}
+Y
+  o=$(run_st side --list)
+  hasq "副作用步驟預設 SKIP" "$o" "SKIP  hooks"
+  o=$(run_st side --list --with-side-effects)
+  hasq "--with-side-effects 後改為 RUN" "$o" "RUN   hooks"
+
+  mk empty <<'Y'
+jobs: {verify: {steps: []}}
+Y
+  o=$(run_st empty); rc=$?
+  chk "空 job → exit=2（不是乾淨通過）" 2 "$rc"
+
+  mk nonrun <<'Y'
+jobs: {verify: {steps: [{uses: "actions/checkout@v4"}, {name: ok, run: "true"}]}}
+Y
+  o=$(run_st nonrun)
+  hasq "非 run: 步驟標 SKIP" "$o" "SKIP  uses:actions/checkout@v4"
+  hasq "非 run: 不計入 RAN" "$o" "RAN=1"
+
+  printf '總計：PASS=%s FAIL=%s\n' "$P" "$F"
+  [ "$F" -eq 0 ]; exit $?
+fi
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --with-side-effects) WITH_SIDE_EFFECTS=1; shift ;;
+    --list)              LIST_ONLY=1; shift ;;
+    -h|--help)           sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)                   die "unknown argument: $1" ;;
+  esac
+done
+
+[ -r "$WORKFLOW" ] || die "找不到 workflow：$WORKFLOW"
+command -v python3 >/dev/null 2>&1 || die "需要 python3 來解析 YAML"
+
+# RUNNER_TEMP 若由外部給（CI 會給，巢狀執行時父層也會 export），就借用不擁有——結束時不能刪。
+# steps 檔一律 mktemp 取唯一名，不用固定路徑。
+#
+# 這兩點都是巢狀跑出來的真 bug（2026-08-01，把 --selftest 接進 ci.yml 後由 ci-local 自己跑到）：
+# 父層 export 了 RUNNER_TEMP，子行程於是把 steps.nul 寫到同一個路徑，在父層正讀到一半時覆寫，
+# 父層只跑到第 10 步就結束並印出看似正常的摘要；子行程的 EXIT trap 再把整個共用目錄刪掉。
+if [ -n "${RUNNER_TEMP:-}" ] && [ -d "$RUNNER_TEMP" ]; then
+  OWN_TEMP=0
+else
+  RUNNER_TEMP=$(mktemp -d "${TMPDIR:-/tmp}/cilocal.XXXXXX") || die "mktemp 失敗"
+  OWN_TEMP=1
+fi
+export GITHUB_WORKSPACE="$AGENTS" RUNNER_TEMP
+STEPS_FILE=$(mktemp "$RUNNER_TEMP/steps.XXXXXX") || die "mktemp 失敗"
+cleanup() { rm -f "$STEPS_FILE"; [ "$OWN_TEMP" -eq 1 ] && rm -rf "$RUNNER_TEMP"; }
+trap cleanup EXIT
+
+# 每筆「name<TAB>run」以 NUL 結尾（含最後一筆），因為 run 是多行 script。
+#
+# 寫檔而不是 steps=$(...)：bash 的 command substitution 會**丟棄 NUL byte**，第一版就是這樣壞的
+# ——所有步驟被併成一筆且沒有終止符，迴圈一次都沒進去，卻印出 TOTAL=0 這種看起來「跑完了」的
+# 摘要。檔案重導向保留 NUL。
+#
+# 用 python 而非 yq/grep：YAML 區塊純量（run: |）沒有可靠的 grep 解法，而解析錯會靜默漏掉步驟
+# ——正是本工具要防的事。
+python3 - "$WORKFLOW" "$JOB" > "$STEPS_FILE" <<'PY'
+import sys, yaml
+path, job = sys.argv[1], sys.argv[2]
+with open(path) as f:
+    doc = yaml.safe_load(f)
+try:
+    steps = doc["jobs"][job]["steps"]
+except (KeyError, TypeError):
+    sys.exit("job not found: " + job)
+for s in steps:
+    if not isinstance(s, dict):
+        continue
+    name = s.get("name") or ("uses:" + s["uses"] if "uses" in s else "(unnamed)")
+    sys.stdout.write(name + "\t" + (s.get("run") or "") + "\0")
+PY
+[ $? -eq 0 ] || die "解析 $WORKFLOW 的 job '$JOB' 失敗"
+[ -s "$STEPS_FILE" ] || die "job '$JOB' 沒有任何步驟——這不是乾淨的通過"
+
+# provision_tools <run-body> -> 該步驟會提供的執行檔名，一行一個。
+# apt 的套件名不等於執行檔名（ripgrep 裝出來的是 rg），所以需要一張小對照表。表要小、要有
+# 註解、且無法對應時必須明講 UNRESOLVED，不能猜——猜錯的方向是「以為驗過了」。
+alias_bin() {
+  case "$1" in
+    ripgrep) echo rg ;;
+    *)       echo "$1" ;;
+  esac
+}
+provision_tools() {
+  local body="$1"
+  { printf '%s\n' "$body" | sed -n 's/.*apt-get install -y \([a-zA-Z0-9 ._+-]*\).*/\1/p' | tr ' ' '\n'
+    printf '%s\n' "$body" | sed -n 's|.*-C /usr/local/bin \([a-zA-Z0-9_-]*\).*|\1|p'
+  } | sed '/^$/d' | sort -u
+}
+
+total=0; ran=0; passed=0; failed=0; skipped=0; unresolved=0; missing=0
+printf 'ci-local：%s（job=%s）\n' "$WORKFLOW" "$JOB"
+printf 'GITHUB_WORKSPACE=%s\n\n' "$GITHUB_WORKSPACE"
+
+while IFS= read -r -d '' entry; do
+  total=$((total + 1))
+  name=${entry%%$'\t'*}
+  body=${entry#*$'\t'}
+  # 不截斷。printf 的 %.Ns 是「位元組」精度，step 名稱多為 zh-TW，截斷會切在 UTF-8 序列中間
+  # 印出破字（實測：「零 API」變成「零 A」、「tier）」變成「tier�」）。欄位對齊是好看，
+  # 破字是缺陷；寧可讓右欄參差。
+  label="$name"
+
+  # 1. 非 run: 步驟
+  if [ -z "$body" ]; then
+    printf '[%2d] SKIP  %-52s %s\n' "$total" "$label" "非 run: 步驟；本機工作區即 checkout 結果"
+    skipped=$((skipped + 1)); continue
+  fi
+
+  # 2. 需 sudo 的 provisioning：不裝，改驗本機已有對應執行檔
+  case "$body" in
+    *sudo\ *)
+      tools=$(provision_tools "$body")
+      if [ -z "$tools" ]; then
+        printf '[%2d] SKIP  %-52s %s\n' "$total" "$label" "需 sudo；UNRESOLVED：解析不出提供哪個執行檔"
+        unresolved=$((unresolved + 1))
+      else
+        state=""; bad=0
+        while IFS= read -r t; do
+          b=$(alias_bin "$t")
+          if command -v "$b" >/dev/null 2>&1; then state="$state $b:present"
+          else state="$state $b:MISSING"; bad=1; fi
+        done <<EOF
+$tools
+EOF
+        if [ "$bad" -eq 1 ]; then
+          printf '[%2d] FAIL  %-52s %s\n' "$total" "$label" "需 sudo；本機缺工具 →$state"
+          missing=$((missing + 1)); failed=$((failed + 1))
+        else
+          printf '[%2d] SKIP  %-52s %s\n' "$total" "$label" "需 sudo；本機$state"
+          skipped=$((skipped + 1))
+        fi
+      fi
+      continue ;;
+  esac
+
+  # 3. 對使用者 repo 有副作用者，預設不跑
+  case "$body" in
+    *install-hooks.sh*)
+      if [ "$WITH_SIDE_EFFECTS" -eq 0 ]; then
+        printf '[%2d] SKIP  %-52s %s\n' "$total" "$label" "會寫入 .git/hooks；加 --with-side-effects 才跑"
+        skipped=$((skipped + 1)); continue
+      fi ;;
+  esac
+
+  if [ "$LIST_ONLY" -eq 1 ]; then
+    printf '[%2d] RUN   %s\n' "$total" "$label"; ran=$((ran + 1)); continue
+  fi
+
+  start=$(date +%s)
+  out=$(cd "$AGENTS" && bash -c "$body" 2>&1); rc=$?
+  dur=$(( $(date +%s) - start ))
+  ran=$((ran + 1))
+  if [ "$rc" -eq 0 ]; then
+    printf '[%2d] PASS  %-52s %ss\n' "$total" "$label" "$dur"
+    passed=$((passed + 1))
+  else
+    printf '[%2d] FAIL  %-52s %ss (exit=%s)\n' "$total" "$label" "$dur" "$rc"
+    printf '%s\n' "$out" | tail -12 | sed 's/^/       │ /'
+    failed=$((failed + 1))
+  fi
+done < "$STEPS_FILE"
+
+echo
+printf 'TOTAL=%s  RAN=%s  PASS=%s  FAIL=%s  SKIPPED=%s\n' \
+  "$total" "$ran" "$passed" "$failed" "$skipped"
+[ "$unresolved" -gt 0 ] &&
+  printf 'UNRESOLVED=%s：有 provisioning 步驟無法判斷提供哪個執行檔，等同未驗證。\n' "$unresolved"
+[ "$missing" -gt 0 ] &&
+  printf '本機缺 CI 會安裝的工具。缺工具的失敗方向是假綠——反向斷言整段不跑仍會回 PASS。\n'
+[ "$WITH_SIDE_EFFECTS" -eq 0 ] &&
+  printf '註：install-hooks.sh 步驟未跑（會寫 .git/hooks）。要完全對齊 CI 請加 --with-side-effects。\n'
+
+[ "$failed" -eq 0 ] && [ "$unresolved" -eq 0 ] && exit 0
+exit 1

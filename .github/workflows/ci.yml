@@ -75,6 +75,13 @@ jobs:
       - name: 字數預算回歸（30 cases，含 CJK 與死 tier）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/word-budget.sh
 
+      # bin/ci-local 是「在本機跑 CI 跑的東西」的單一入口，步驟清單由本檔解析而來。一個永遠
+      # 回綠的 CI 包裝器比沒有更糟——它讓「本機驗過了」變成噪音，而那正是它要消滅的問題。
+      # 這組 selftest 用假 workflow 釘死失敗語意，其中最重要的是「本機缺 CI 會安裝的工具算
+      # FAIL 不算 SKIP」：缺工具的失敗方向是假綠（反向斷言整段不跑仍回 PASS）。
+      - name: ci-local 失敗語意 selftest（14 斷言）
+        run: bash bin/ci-local --selftest
+
       - name: Matt workflow carrier contracts
         run: bash tests/mattpocock-workflow.sh
 
@@ -103,7 +110,7 @@ jobs:
       # guard 是承載安全判定的 shell；-S error 只抓確定性 bug 不抓風格。
       # skills/auditing-skill-folder/scripts/*.sh 不在此列——上面那條測試是它的守護。
       - name: shellcheck（hooks / tests / bin）
-        run: shellcheck -S error hooks/*.sh tests/*.sh bin/agents-sync bin/pr-review-gate bin/hook-parity-check
+        run: shellcheck -S error hooks/*.sh tests/*.sh bin/agents-sync bin/pr-review-gate bin/hook-parity-check bin/ci-local
 
       # 2026-07-26 版本時效稽核（約 4.6M subagent token）修掉 30 個 skill 的死寫法：
       # 教已移除的 API、不存在的 image tag、已 EOL 的 runtime。這 28 條把那批缺陷的
