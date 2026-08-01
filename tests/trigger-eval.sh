@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# eval-triggers.sh（Step 2c）離線回歸測試 —— 38 個斷言，零 API 呼叫。
+# eval-triggers.sh（Step 2c）離線回歸測試 —— 47 個斷言，零 API 呼叫。
 # （數字別跟 evals/cases.jsonl 的 23 個 case 混淆：那是要送給模型的評測題目，
 #  這裡是評測腳本自身計分邏輯的斷言，兩者無對應關係。）
 #
@@ -179,6 +179,61 @@ if [ -s "$JOUT" ] && jq -e . "$JOUT" >/dev/null 2>&1; then
 else
   bad "--jsonl 輸出為合法 JSONL" "檔案空白或 jq 解析失敗"
 fi
+
+echo
+echo "== Copilot review（PR #17）五項修正的回歸 =="
+# 需要一棵可改 runners.json 的複本樹：eval-triggers.sh 由自身路徑推導 EVALS_DIR，
+# 不能只換 runners.json 而不搬腳本。
+COPY="$TMP/copy"; mkdir -p "$COPY/scripts" "$COPY/evals"
+cp "$SCRIPT" "$COPY/scripts/eval-triggers.sh"
+cp "$MOCK" "$COPY/evals/mock-runner.sh"
+# 前導雜訊 + 帶空白的 JSON：釘住 runner_failed 不得靠 grep 字面 "type":"result"，
+# 也釘住 parser 不得用 jq -s（一行不合法就整份 parse 陪葬）。
+cat > "$COPY/evals/spaced-runner.sh" <<'SH'
+#!/usr/bin/env sh
+cat >/dev/null
+printf 'Reading additional input from stdin...\n'
+printf '{"type": "result", "subtype": "success", "is_error": false}\n'
+SH
+cat > "$COPY/evals/runners.json" <<'J'
+{
+  "noiso":  {"format":"claude-stream-json","command":["/bin/echo","{\"type\":\"result\"}"]},
+  "spaced": {"format":"claude-stream-json","command":["{EVALS_DIR}/spaced-runner.sh","--setting-sources",""]},
+  "mock":   {"format":"claude-stream-json","command":["{EVALS_DIR}/mock-runner.sh","{PLUGIN_DIR}"]}
+}
+J
+chmod +x "$COPY/scripts/eval-triggers.sh" "$COPY/evals/mock-runner.sh" "$COPY/evals/spaced-runner.sh"
+
+OUTA=$("$COPY/scripts/eval-triggers.sh" --runner noiso --cases "$CASES" --skills "$CORPUS" 2>&1); RCA=$?
+has "無 --setting-sources 的 runner 直接拒跑" "$OUTA" "has no --setting-sources"
+eq  "拒跑 exit=1"                              "1" "$RCA"
+
+CASES6="$TMP/c6.jsonl"
+printf '%s\n' '{"id":"t-spaced","skill":"alpha","prompt":"anything","expect":"quiet"}' > "$CASES6"
+OUTB=$("$COPY/scripts/eval-triggers.sh" --runner spaced --cases "$CASES6" --skills "$CORPUS" 2>&1); RCB=$?
+hasnt "帶空白的 result 事件不得被誤判為 runner 失敗" "$OUTB" "ERR runner produced no result event"
+hasnt "前導非 JSON 行不得讓整份 parse 失敗"          "$OUTB" "ERR runner"
+eq    "spaced runner 正常計分 exit=0"                "0" "$RCB"
+
+# 路徑穿越：install_skill 內含 rm -rf，名稱未驗證時 `../x` 會刪到 plugin 之外。
+CANARY="$TMP/canary-must-survive"; : > "$CANARY"
+CASES7="$TMP/c7.jsonl"
+{ printf '%s\n' '{"id":"t-traversal","skill":"../../../../..'"$(printf '%s' "${TMP#/}")"'","prompt":"x","expect":"fire"}'
+  printf '%s\n' '{"id":"t-dotdot","skill":"..","prompt":"x","expect":"fire"}'
+  printf '%s\n' '{"id":"t-slash","skill":"alpha/../beta","prompt":"x","expect":"fire"}'
+  printf '%s\n' '{"id":"t-dotfile","skill":".ssh","prompt":"x","expect":"fire"}'
+} > "$CASES7"
+OUTC=$(run_eval "$CASES7" "$MAP" --isolate)
+eq "四個穿越型名稱全部被拒（ERR skill not found ×4）" "4" \
+   "$(printf '%s' "$OUTC" | grep -c 'ERR skill not found')"
+[ -f "$CANARY" ] && ok "plugin 目錄外的檔案未被刪除" \
+                 || bad "plugin 目錄外的檔案未被刪除" "canary 被 rm -rf 掉了"
+
+# 畸形 case：ERR 行必須是唯一的錯誤輸出，不得混入 jq 自己的 parse error。
+CASES8="$TMP/c8.jsonl"; printf '%s\n' '{"id":"broken", not json at all' > "$CASES8"
+OUTD=$(run_eval "$CASES8" "$MAP")
+has   "畸形行仍報 ERR malformed case" "$OUTD" "ERR malformed case"
+hasnt "畸形行不得噴出 jq 自身的錯誤訊息" "$OUTD" "jq: error"
 
 echo
 echo "== 真實 cases.jsonl 自身健檢 =="

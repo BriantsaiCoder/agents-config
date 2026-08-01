@@ -87,8 +87,17 @@ read_frontmatter_bool() {
 # install_skill <name> — copy one skill folder into the throwaway plugin.
 # -L dereferences symlinks: ~/.claude/skills entries are symlinks back into ~/.agents/skills, and
 # a copied dangling symlink would present as a skill with no SKILL.md.
+#
+# The name is validated before it reaches any path. It arrives from cases.jsonl, which is a local
+# file rather than hostile input — but this function does `rm -rf` on a path built from it, and a
+# name containing `/` or `..` would put that deletion outside the throwaway plugin. A single
+# fat-fingered case entry is enough; no attacker required.
 install_skill() {
-  local name="$1" src="$SKILLS_DIR/$1"
+  local name="$1" src
+  case "$name" in
+    ''|.|..|*/*|*'\'*|.*) return 2 ;;
+  esac
+  src="$SKILLS_DIR/$name"
   [ -r "$src/SKILL.md" ] || return 1
   rm -rf "${PLUGIN_DIR:?}/skills/${name:?}"
   cp -RL "$src" "$PLUGIN_DIR/skills/$name" 2>/dev/null || return 1
@@ -115,18 +124,41 @@ done < <(jq -r --arg r "$RUNNER" --arg p "$PLUGIN_DIR" --arg e "$EVALS_DIR" \
   '.[$r].command[] | gsub("\\{PLUGIN_DIR\\}"; $p) | gsub("\\{EVALS_DIR\\}"; $e)' "$RUNNERS_JSON")
 [ "${#RUNNER_CMD[@]}" -gt 0 ] || die "runner '$RUNNER' has an empty command array"
 
+# Mechanical check that the isolation flag documented in runners.json is actually on the command
+# line. Without it a run silently measures the host's own CLAUDE.md instead of the skill (control
+# group proved that), and the result still LOOKS like a clean audit — the failure mode this whole
+# script exists to refuse. Prose in runners.json cannot enforce itself; this can.
+# 'mock' is exempt: it never reaches a model, so there is nothing to isolate.
+if [ "$RUNNER" != "mock" ]; then
+  _iso=0
+  for _arg in "${RUNNER_CMD[@]}"; do
+    [ "$_arg" = "--setting-sources" ] && _iso=1
+  done
+  [ "$_iso" -eq 1 ] ||
+    die "runner '$RUNNER' has no --setting-sources: the run would load host config and the result would not be an isolated measurement"
+fi
+
+# Both parsers below read the stream with `jq -R` + `fromjson?` rather than `jq -s`. -s slurps the
+# whole file and fails outright on ONE unparseable line, so a single stray banner line (a CLI
+# printing "Reading additional input from stdin..." before the stream, say) would take the entire
+# run's parse with it. -R goes line by line and fromjson? drops what is not JSON.
+
 # fired_skill <stream-file> -> "skilleval:name" of the FIRST Skill tool call, or "" if none.
 # First call is the answer to "which skill won this trigger", which is what a collision is about.
 fired_skill() {
-  jq -rs '[ .[]? | select(.type=="assistant") | .message.content[]?
-            | select(.type=="tool_use" and .name=="Skill") | .input.skill ] | .[0] // ""' \
+  jq -R -r 'fromjson? | select(.type=="assistant") | .message.content[]?
+            | select(.type=="tool_use" and .name=="Skill") | .input.skill' \
     "$1" 2>/dev/null | head -1
 }
 
 runner_failed() {
   # A run that never produced a result event failed for infrastructure reasons (auth, rate limit,
   # bad flag). Scoring it as "did not fire" would quietly turn an outage into a passing quiet case.
-  ! grep -q '"type":"result"' "$1" 2>/dev/null
+  #
+  # Parsed rather than grepped for `"type":"result"`. This is the single guard standing between an
+  # outage and a full-green report, so it must not hinge on the emitter's whitespace: the compact
+  # stream matches that substring, `"type": "result"` does not.
+  [ -z "$(jq -R -r 'fromjson? | select(.type=="result") | "y"' "$1" 2>/dev/null | head -1)" ]
 }
 
 printf '%-26s %-30s %-7s %-7s %s\n' "CASE" "TARGET SKILL" "EXPECT" "ACTUAL" "RESULT"
@@ -147,10 +179,13 @@ while IFS= read -r line; do
   [ -n "$line" ] || continue
   case "$line" in \#*) continue ;; esac
 
-  id=$(printf '%s' "$line"     | jq -r '.id // empty')
-  skill=$(printf '%s' "$line"  | jq -r '.skill // empty')
-  prompt=$(printf '%s' "$line" | jq -r '.prompt // empty')
-  expect=$(printf '%s' "$line" | jq -r '.expect // empty')
+  # 2>/dev/null on every field read: a malformed line is already reported as `ERR malformed case`
+  # below, and letting jq also spray its own parse error to stderr buries that row in noise and
+  # breaks anything consuming this table.
+  id=$(printf '%s' "$line"     | jq -r '.id // empty'     2>/dev/null)
+  skill=$(printf '%s' "$line"  | jq -r '.skill // empty'  2>/dev/null)
+  prompt=$(printf '%s' "$line" | jq -r '.prompt // empty' 2>/dev/null)
+  expect=$(printf '%s' "$line" | jq -r '.expect // empty' 2>/dev/null)
   [ -n "$id" ] && [ -n "$skill" ] && [ -n "$prompt" ] && [ -n "$expect" ] || {
     printf '%-26s %-30s %-7s %-7s %s\n' "${id:-(no id)}" "${skill:-?}" "-" "-" "ERR malformed case"
     errored=$((errored + 1)); continue; }

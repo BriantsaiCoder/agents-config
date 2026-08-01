@@ -28,7 +28,11 @@
     "  --bare                 Same reason: its own help text says Anthropic auth becomes strictly",
     "                         ANTHROPIC_API_KEY or apiKeyHelper, so an OAuth host cannot use it.",
     "",
-    "RESIDUAL CONTAMINATION, measured and accepted (assert_env in eval-triggers.sh re-checks it):",
+    "The --setting-sources flag is the one claim here that is mechanically enforced: eval-triggers.sh",
+    "refuses to run any non-mock runner whose resolved command lacks it. Everything else in this",
+    "block is documentation and does not enforce itself.",
+    "",
+    "RESIDUAL CONTAMINATION, measured once and accepted — NOT re-checked at runtime:",
     "  1. Built-in skills stay loaded even at --setting-sources ''. The init event listed 18",
     "     (code-review, debug, verify, simplify, run, loop, ...). USER skills were correctly",
     "     absent. Consequence: a case whose prompt reads like 'review this code' can be won by",
@@ -74,7 +78,7 @@
 
   "mock": {
     "format": "claude-stream-json",
-    "_comment": "Offline runner for tests/trigger-eval.sh. Emits canned stream-json from evals/mock-fixtures/ so CI exercises the REAL parser with zero API calls. Never produces a trustworthy audit number.",
+    "_comment": "Offline runner for tests/trigger-eval.sh. Reads the prompt on stdin and emits canned stream-json, so CI exercises the REAL parser and scorer with zero API calls. What it emits is controlled by $SKILLEVAL_MOCK_MAP: a TSV of <prompt-substring> TAB <skill-name | empty | __NORESULT__>, first match wins, no match means nothing fires. mock-runner.sh holds the full contract. Exempt from the --setting-sources check because it never reaches a model. Never produces a trustworthy audit number.",
     "command": ["{EVALS_DIR}/mock-runner.sh", "{PLUGIN_DIR}"]
   },
 
