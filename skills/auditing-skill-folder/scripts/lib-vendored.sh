@@ -94,20 +94,11 @@ vendored_tree_sha256() {
 #   ERR   directory or SKILL.md unreadable — UNKNOWN, must not be read as self-owned.
 #   -     self-owned.
 #
-# Detection is the UNION of four signals because none alone is sufficient:
-#   - A root lock records immutable vendored sets without changing upstream payload.
-#   - LICENSE alone missed `design-doc-mermaid` (Skilz Marketplace, no LICENSE file). That skill
-#     has since been retired to attic/, but it is the reason this is a union and not a single test.
-#   - A marketplace/upstream marker alone misses `playwright-best-practices` / `vueuse-functions`
-#     (LICENSE.md, no marker).
-#   - Both together still missed two skills, found by hand 2026-07-25 (see PROVENANCE FILE SET and
-#     MARKER SCAN below). Two false negatives out of six real vendored skills, in the gate whose
-#     whole job is to make that manual review unnecessary.
-# The union returns every known vendored skill with 0 false positives across the corpus.
-# File *existence* is not a signal — only provenance CONTENT is. (The one exception considered and
-# rejected: `.claude-plugin/` exists in exactly 1 of 50 skills, so "exists => VND" would also be
-# 0-false-positive here — but it would be a second kind of test, and reading the file's content
-# already catches it with the pattern that was there. Content-only stays the single rule.)
+# Detection is the UNION of five signals; keep this list aligned with step0-vendored-gate.md:
+# vendored-skills.lock, LICENSE variants, provenance content, an upstream: declaration, and
+# mattpocock-skills.lock. LICENSE variants are existence-based; README.md, SKILL.md, and plugin
+# manifests require matching provenance content. Regression coverage: tests/vendored-detection.sh
+# (2026-08-01).
 vendored_flag() {
   local dir="$1" f lock
   [ -d "$dir" ] && [ -r "$dir" ] || { printf 'ERR'; return; }

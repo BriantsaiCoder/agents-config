@@ -1,6 +1,6 @@
 # Step 1 verdict guide — Trim vs Externalize vs Refactor
 
-When `count-words.sh` flags a skill as OVER (> 500 / 200 / 150 words), the next move depends on **why** it exceeds.
+When `count-words.sh` flags a skill as OVER, use the per-row limit it reports; the next move depends on **why** the skill exceeds that limit.
 
 ## Decision
 

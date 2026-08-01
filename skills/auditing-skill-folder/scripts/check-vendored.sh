@@ -55,8 +55,8 @@ Step 2 lint results on VND rows are findings, not FYI — and record each defect
 it earns. A row scored "n/a — vendored" is a skipped step. The flag is not proof of foreign
 authorship either: vendored-skills.lock can name this repo as the source.
 
-The rule is a DEFAULT WITH A RECORDED OVERRIDE, not an absolute (vendored-forks.md, which
-currently carries 8 accepted forks). An assessment that concludes the edit is worth its
+The rule is a DEFAULT WITH A RECORDED OVERRIDE, not an absolute; vendored-forks.md is the
+accepted-fork inventory. An assessment that concludes the edit is worth its
 recurring cost lands as a proposed override — dated fork-index row, recomputed tree SHA-256,
 re-run the tests that record names. The silent fork is what is forbidden, not the considered
 one. See step0-vendored-gate.md.

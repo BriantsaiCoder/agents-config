@@ -18,7 +18,7 @@ The record lives at the repo root (`vendored-forks.md`), never inside the vendor
 
 Detection is the **union** of five signals because none alone is sufficient — every one of them was learned from a miss or an immutable vendored-set requirement:
 
-- `vendored-skills.lock` (repo root, tab-separated: `<basename>`, `source_url`, …) is checked **first** and outranks the rest. It is the general provenance ledger for payloads that carry no in-tree marker at all, and it is the **dominant** signal on this corpus: 23 of the 54 `VND` rows are flagged by it and by nothing else. Column 2 becomes the OWNER cell.
+- `vendored-skills.lock` (repo root, tab-separated: `<basename>`, `source_url`, …) is checked **first** and outranks the rest. It is the general provenance ledger for payloads that carry no in-tree marker at all. Column 2 becomes the OWNER cell.
   - Consequence you must internalise before judging any row: **a `VND` flag is not proof of foreign authorship.** `aspnet-api-architect` renders `OWNER = github.com/BriantsaiCoder/agents-config/...` — this repo. Its provenance is recorded as unresolved (`vendored-forks.md`, "Unresolved Stage B2 provenance"), which is why it stays non-editable rather than self-owned. Reading such a row as "the detector is broken, this is mine" and issuing a Trim is precisely the in-place edit this gate exists to prevent.
 - LICENSE alone missed `design-doc-mermaid`: no LICENSE file at all, upstream was a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README. That skill has since been retired to `attic/`, but it remains the reason this is a union and not a single test.
 - The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker.
@@ -27,7 +27,7 @@ Detection is the **union** of five signals because none alone is sufficient — 
 
 The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (93 cases, in CI) pins that: every provenance form, both false-positive defences, both lock paths, and the exact `VND` set of `skills/`.
 
-**File existence is never the signal — provenance content is.** Plenty of self-owned skills have a `README.md`; `.claude-plugin/plugin.json` is read for its `repository` / `author`, not counted for being there. (The existence test would also have been 0-false-positive on this corpus — exactly 1 of 50 skills has that directory — and was rejected anyway, because content-only keeps this one rule rather than two.)
+**LICENSE variants signal by existence; README, SKILL, and plugin-manifest files signal only by provenance content.** Plenty of self-owned skills have a `README.md`; `.claude-plugin/plugin.json` is read for its `repository` / `author`, not counted for being there.
 
 `upstream:` resolves to `VND`, not `vnd?`: naming that key is an explicit statement of foreign origin. `homepage:` / `source:` stay `vnd?` because a skill can legitimately link its own project.
 
@@ -57,7 +57,7 @@ Three reasons this has to be stated rather than left implied:
 
 ## The override: the constraint is a default, not an absolute
 
-`vendored-forks.md` states it outright — the no-in-place-edit rule is *"a default requiring a recorded override, not an absolute"*, and that file is the record. Eight forks are currently accepted, `writing-great-skills` among them.
+`vendored-forks.md` states it outright — the no-in-place-edit rule is *"a default requiring a recorded override, not an absolute"*, and its fork index is the accepted-fork inventory.
 
 So an assessment that concludes an in-place edit is genuinely worth its permanent merge-conflict cost does not get dropped. It lands as a **proposed override**:
 
@@ -67,9 +67,9 @@ So an assessment that concludes an in-place edit is genuinely worth its permanen
 4. Re-run the tests that skill's record names — at minimum `tests/vendored-detection.sh` and `tests/matt-thin-workflow.sh`.
 5. Write a re-merge procedure into the record, so the next upstream move is reconcilable.
 
-An unrecorded in-place edit is the defect. A recorded one is a decision. What the gate forbids is the *silent* fork, not the considered one — and the four steps above are the whole difference.
+An unrecorded in-place edit is the defect. A recorded one is a decision. What the gate forbids is the *silent* fork, not the considered one — and the five steps above are the whole difference.
 
-An existing `VND*` record does not license further editing: its scope is what that record says it is (`writing-great-skills` is scoped to "model invocation metadata only", and says *do not extend it*). Going beyond a recorded scope is a **new** decision needing a new record, not a continuation of the old one.
+An existing `VND*` record does not license further editing: read its current scope in repo-root `vendored-forks.md`. Going beyond that scope is a **new** decision needing a new record, not a continuation of the old one.
 
 ## Why this is Step 0 and not a scored step
 

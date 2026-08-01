@@ -9,7 +9,7 @@ description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skil
 
 **Core principle:** Structural checks first, content relevance last. Jumping to "do I still need this" produces all-keep or vibes-delete results that miss real defects.
 
-**Not for:** one skill rather than a folder. Route per `dev-workflow`'s routing table, which is the authority if this line drifts from it: editing one skill → `writing-great-skills`; one skill's trigger failing → `diagnosing-bugs` for the RED canary, **then `writing-great-skills` for the rewrite** (stopping at the first hop strands the fix — `diagnosing-bugs` holds nothing on descriptions or pointer wording).
+**Not for:** one skill rather than a folder. Route single-skill work through [`../dev-workflow/SKILL.md`](../dev-workflow/SKILL.md), the canonical routing authority.
 
 ## Step 0 — Vendored gate (run FIRST; it decides which verdicts are legal)
 
@@ -21,19 +21,19 @@ description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skil
 
 **The rule is a default with a recorded override, not an absolute.** An assessment concluding the edit is worth its recurring cost lands as a *proposed override* against `vendored-forks.md` — the silent fork is forbidden, not the considered one.
 
-**A flag you cannot explain from the skill's own files is normal.** Detection is a union of five signals; `vendored-skills.lock` is checked first and is the sole signal for 23 of the 54 current `VND` rows, and its recorded source may be this repo.
+**A flag you cannot explain from the skill's own files is normal.** Detection is a union of five signals; `vendored-skills.lock` is checked first, and its recorded source may be this repo.
 
 Detection detail, the override procedure, and why each of the three rules above needs stating: `step0-vendored-gate.md`.
 
 ## Six-Step Protocol
 
-Run in order after Step 0. Steps 1–2b mechanical, 3–5 read, 6 is the call you wanted to start with — defer it. Every rung except 2b scores one skill in isolation; 2b is the only one that compares skills to each other.
+Run in order after Step 0. Steps 1–2 use scripts, 2b is a semantic cross-row comparison, 3–5 read, and 6 is the call you wanted to start with — defer it. Every rung except 2b scores one skill in isolation; 2b is the only one that compares skills to each other.
 
 | # | Step | Tool | Output |
 |---|---|---|---|
 | 1 | Token cost | `scripts/count-words.sh <folder>` | Effective count over its row's limit; over → `step1-verdict-guide.md` (Trim vs Externalize vs Refactor) |
 | 2 | Description trap | `scripts/lint-descriptions.sh <folder>` | Descriptions summarizing workflow vs. trigger-only |
-| 2b | Trigger collision | Same table, read **across** rows | Two model-invoked descriptions claiming one trigger space with no disambiguator = Collision. Invisible to every per-skill rung, and the mechanical cause of "which skill fires" being nondeterministic |
+| 2b | Trigger collision | Same table, read **across** rows | Two model-invoked descriptions claiming one trigger space with no disambiguator = Collision. Invisible to every per-skill rung, and a cause of "which skill fires" being nondeterministic |
 | 3 | Stance bleed | Read | Pure stance ("use Serilog", "no barrels") → propose CLAUDE.md |
 | 4 | Mechanical-only | Read | Enforceable by lint/hook/regex → propose hook |
 | 5 | Type clarity | Read | Technique / Pattern / Reference (defined in `references/skill-standards.md`); mixed-type → propose split |

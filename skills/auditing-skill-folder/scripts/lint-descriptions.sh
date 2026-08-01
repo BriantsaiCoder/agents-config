@@ -4,22 +4,11 @@
 # Flags descriptions that summarize workflow (sequential verbs, "then", "by ...ing", "step/phase",
 # numbered actions) instead of trigger conditions ("Use when ...").
 #
-# SCOPE: English + zh-TW. Every other language still scores "?" — UNASSESSED, read it yourself.
-#
-# zh-TW support landed 2026-08-01, on the TRAP side FIRST. The constraint is not stylistic: an
-# earlier attempt (2026-07-25, reverted) taught GOOD_RE zh-TW alone, which left zh-TW able to reach
-# only "-" or "?" and never "YES" — converting manual reads into silent passes and blinding the
-# detector to exactly the defect it exists to catch. Any future language must land the same way:
-# TRAP first, or not at all. tests/description-lint.sh pins that direction (22 cases, in CI),
-# including a fixture proving the zh-TW "?" bucket is still reachable.
-#
-# C LOCALE / MULTIBYTE RULE. This host runs LC_CTYPE=C; CI runs GNU grep. Under C, a UTF-8
-# character is a byte SEQUENCE, so a multibyte character inside a bracket expression is matched
-# per byte and the expression silently means something else — a negated class like [^。] is the
-# dangerous form. Therefore: multibyte characters appear ONLY as literal alternatives joined by
-# `|`, never inside [...]. Bracket expressions stay ASCII-only. Literal alternation is safe because
-# UTF-8 is self-synchronising, so the same pattern behaves identically under C and under a UTF-8
-# locale. Verified on ugrep 7.5.0 and GNU grep.
+# SCOPE: English + zh-TW. Other languages are not deliberately classified; language-neutral
+# patterns may still match, so any result outside this scope requires manual review.
+# Add a language's TRAP patterns before GOOD patterns; tests/description-lint.sh pins this order.
+# For C-locale portability, multibyte characters use literal alternatives and bracket expressions
+# remain ASCII-only (2026-08-01 description-lint regression).
 # Exit: 0 = scanned OK. 1 = bad folder. 2 = scanned nothing.
 set -uo pipefail
 
@@ -41,20 +30,9 @@ TRAP_EN=", then |\bthen [a-z]+ (then|and)|\b(step|phase) [0-9]|\bdispatches? \w+
 # excluding verbs that describe what the USER does (要求/想要/打算), which belong to a trigger clause.
 ZH_IMP='(規劃|撰寫|產生|生成|建立|建置|執行|部署|設定|重構|修復|提交|推送|掃描|分析|產出|輸出|判斷|搬移|刪除|新增|驗證|審查|測試|編譯|安裝|更新|整理|轉換|匯入|匯出|檢查|比對|蒐集|收集|彙整)'
 
-# zh-TW workflow-summary smell. Four signals, each measured against the live 95-skill corpus for
-# false positives on English descriptions before being adopted:
-#
-#  1. REPEATED phase label (S0 … S2 …). Repetition is the signal: a single "S3" is a cloud term,
-#     not an enumeration. Word-boundary-guarded with ASCII-only classes so "ES6" cannot match.
-#  2. Explicit step/stage numbering, Arabic or Chinese numerals. Chinese numerals are spelled as
-#     an alternation, NOT a bracket — see the C LOCALE rule at the top of this file.
-#  3. CHAINED arrow (A→B→C). Chaining is the signal, not the arrow: `[^,;]` between the two arrows
-#     rejects comma-separated routing pairs, which is how English descriptions use arrows
-#     (`vue-best-practices` carries four of them: "Pinia state→pinia, SSR→nuxt, …"). Measured:
-#     bare arrow-repetition matched 2 skills, this chained form matches only the real trap.
-#  4. Dash followed by a 頓號-separated imperative list — the zh-TW analogue of TRAP_EN's
-#     `— IMP x, IMP y`. Dash-anchored on purpose: an unanchored 頓號 list is usually a TRIGGER
-#     enumeration ("當使用者要求重構、改名、刪除…時"), which must stay legal.
+# Five zh-TW traps: repeated phase labels, numbered steps, chained arrows, dash-anchored imperative
+# lists, and sequence words. Repetition/chaining/anchoring avoid known English trigger false positives;
+# tests/description-lint.sh carries the fixtures (2026-08-01).
 TRAP_ZH='(^|[^A-Za-z0-9])S[0-9]([^A-Za-z0-9]).*(^|[^A-Za-z0-9])S[0-9]([^A-Za-z0-9])'
 TRAP_ZH="${TRAP_ZH}|(步驟|階段|第)[[:space:]]*[0-9]|第[[:space:]]*(一|二|三|四|五|六|七|八|九|十)+[[:space:]]*(步|階段|階)"
 TRAP_ZH="${TRAP_ZH}|→[^,;]*→|->[^,;]*->"
@@ -64,11 +42,8 @@ TRAP_ZH="${TRAP_ZH}|然後|接著|接下來|依序|其次再|最後再"
 TRAP_RE="${TRAP_EN}|${TRAP_ZH}"
 
 # Trigger-condition signal (good).
-# English stays anchored at ^: house policy is that a model-invoked description LEADS with its
-# trigger. zh-TW is deliberately UNANCHORED, and the asymmetry is a C-locale consequence, not
-# laziness: anchoring a zh-TW clause would need a negated multibyte class ("^[^。]{0,40}…時"),
-# which is exactly the construction the C LOCALE rule above forbids. The looser GOOD side is
-# safe only because TRAP is checked FIRST and is broad — a description matching both is YES.
+# English is anchored at ^. zh-TW stays unanchored to avoid a C-locale-unsafe multibyte negated
+# class; TRAP is evaluated first, so a description matching both remains YES.
 GOOD_EN='^[Uu]se when\b'
 GOOD_ZH='當使用者|當你|當 ?Claude|使用時機|適用時機|觸發關鍵字|之後觸發|時觸發|時先|時務必|時使用|適用於'
 GOOD_RE="${GOOD_EN}|${GOOD_ZH}"
@@ -143,6 +118,7 @@ if [ "$total" -eq 0 ]; then
   exit 2
 fi
 echo "Legend: YES=workflow-summary trap candidate (read body & verify), -=trigger-led OK,"
-echo "        ?=UNASSESSED — read it yourself (assessed languages: English, zh-TW; any other"
-echo "        language always lands here), MISS=no description, ERR=unreadable."
+echo "        ?=UNASSESSED — read it yourself. Assessed languages: English, zh-TW; neutral"
+echo "        patterns may classify other languages, but those results still require manual review."
+echo "        MISS=no description, ERR=unreadable."
 echo "        VND=vendored — a defect found here is REPORTED, not fixed in place. See check-vendored.sh."
