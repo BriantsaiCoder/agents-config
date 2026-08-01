@@ -60,7 +60,10 @@ esac
 # 已經沒了」——真實 git 不會那樣結束（實測踩到時是沙箱擋住 .git/worktrees/ 的刪除才造成），
 # 拿 mkdir 把目錄建回來只會讓 remove 直接成功，測試整段空轉卻仍然 PASS。
 # 假 git 只攔 worktree remove／list 兩個子命令，其餘一律轉給真 git。
-FAKEBIN=$(mktemp -d "${TMPDIR:-/tmp}/agents-branch-fake.XXXXXX")
+# 建在 $TMP 底下，讓本檔開頭既有的 trap 'rm -rf "$TMP"' EXIT 一併清掉。獨立 mktemp 只有跑到
+# 最後那行 rm 才清得掉，任何斷言失敗提早 exit 就會留下暫存目錄——開發本檔時實際漏了好幾個。
+FAKEBIN="$TMP/fakebin"
+mkdir -p "$FAKEBIN"
 # 真 git 的路徑必須在注入 PATH **之前**解析：替身自己叫 command -v git 只會找到它自己。
 # 不寫死 /usr/bin/git——Nix、部分容器、只裝 Homebrew git 的機器都不在那個路徑。
 REAL_GIT=$(command -v git) || { echo "FAIL: 找不到 git"; exit 1; }
@@ -100,7 +103,6 @@ esac
 case "$out" in
   *'有未提交變更？'*) echo "FAIL: 半完成情境不得歸因為未提交變更（實得：$out）"; exit 1 ;;
 esac
-rm -rf "$FAKEBIN"
 
 echo "agents-branch isolated worktree PASS"
 echo "agents-branch --done 失敗訊息 PASS"
