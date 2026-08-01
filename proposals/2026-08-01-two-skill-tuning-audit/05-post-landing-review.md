@@ -41,12 +41,22 @@ filesystem boundary probe 與預期輸出如下；Codex CLI 不提供 actual inv
 behavior 差異交叉佐證。
 
 ```sh
+probe_root=$(mktemp -d)
+mkdir -p "$probe_root/baseline" "$probe_root/candidate" "$probe_root/fixture/.agents/skills"
+git archive --format=tar --output="$probe_root/baseline.tar" \
+  12182cadf6eb910196b1c7f8b1c06ec465c50653 skills/writing-great-skills
+git archive --format=tar --output="$probe_root/candidate.tar" \
+  1fc9989e3fa6b9536171ad067cda12d95eda6281 skills/writing-great-skills
+tar -xf "$probe_root/baseline.tar" -C "$probe_root/baseline"
+tar -xf "$probe_root/candidate.tar" -C "$probe_root/candidate"
+ln -s "$probe_root/candidate/skills/writing-great-skills" \
+  "$probe_root/fixture/.agents/skills/writing-great-skills"
+test "$(readlink "$probe_root/fixture/.agents/skills/writing-great-skills")" = \
+  "$probe_root/candidate/skills/writing-great-skills"
 source /Users/pochientsai/.agents/skills/auditing-skill-folder/scripts/lib-vendored.sh
-vendored_tree_sha256 /Users/pochientsai/.agents/skills/writing-great-skills
-readlink /private/tmp/wgs-leading-canary.019fbba6/.agents/skills/writing-great-skills
-vendored_tree_sha256 /private/tmp/agents-worktrees/codex/wgs-leading-word-terminology/skills/writing-great-skills
+vendored_tree_sha256 "$probe_root/baseline/skills/writing-great-skills"
+vendored_tree_sha256 "$probe_root/candidate/skills/writing-great-skills"
 # expected: 74b2dc4989bdd2eac958308c89b619d4c3dc252f2662908f2fb9e2d1bd0b7084
-# expected: /private/tmp/agents-worktrees/codex/wgs-leading-word-terminology/skills/writing-great-skills
 # expected: 3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa
 ```
 
