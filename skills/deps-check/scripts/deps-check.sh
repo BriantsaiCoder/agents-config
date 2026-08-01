@@ -81,7 +81,8 @@ if [[ "$MODE" == "tsjs" ]]; then
   RESULTS=$(grep -rEn --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mts' --include='*.cts' "$PATTERN" "${SEARCH_DIRS[@]}" 2>/dev/null | grep -v "^$TARGET:" || true)
 
   if [[ -z "$RESULTS" ]]; then
-    echo "✓ no importers found — 安全改動"
+    echo "deps-check: 0 個 heuristic match（madge/grep 未找到 importer）"
+    echo "→ 這不等於「安全」：dynamic import、re-export barrel、字串組出的路徑都掃不到"
     exit 0
   fi
 
@@ -163,7 +164,8 @@ if [[ "$MODE" == "dotnet" ]]; then
     | grep -vE '/(bin|obj)/' || true)
 
   if [[ -z "$RESULTS" ]]; then
-    echo "✓ no references found — 安全改動"
+    echo "deps-check: 0 個 heuristic match（型別名 grep 未找到 reference）"
+    echo "→ 這不等於「安全」：反射、DI 字串註冊、動態組出的型別名都掃不到"
     echo "→ 收尾：改完跑 dotnet build 驗證"
     exit 0
   fi

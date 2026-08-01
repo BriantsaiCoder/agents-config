@@ -62,7 +62,7 @@ description: 動到高扇入共用檔案前，必定先跑 deps-check 列出依�
 
 | 依賴數 | 策略 |
 |--------|------|
-| 0（且 exit 0） | 安全改動，直接進行 |
+| 0（且 exit 0） | **0 個 heuristic match，不等於安全**。確認 target 不經反射／DI 字串註冊／dynamic import 被使用後才進行 |
 | 1-3 | Read 每個依賴方，確認改動不會破壞它們 |
 | 4+ | 回報使用者影響範圍，確認是否要拆成多步驟，或加 deprecation shim |
 
@@ -121,4 +121,4 @@ dotnet build
 
 Hook 模式適合「強制每次都跑」；skill 模式適合「AI 自行判斷時機」。兩種用同一支腳本。
 
-腳本的 exit code 就是 hook 的閘：`0` 放行（分析完成，或副檔名不適用）、`2` 阻擋並把 stderr 回饋給 model（分析未執行）、`1` 用法錯誤。因此路徑打錯或 target 是 partial class 時，hook 會擋下 Edit 而不是靜默放行——這是 fail-closed 的設計，不要在 hook command 後面加 `|| true`。
+腳本的 exit code 就是 hook 的閘：`0` 放行（分析完成，或副檔名不適用）、`2` 阻擋並把 stderr 回饋給 model（分析未執行）、`1` 用法錯誤。因此路徑打錯、找不到 package.json／.sln／.csproj，或 C# 檔完全沒宣告型別時，hook 會擋下 Edit 而不是靜默放行——這是 fail-closed 的設計，不要在 hook command 後面加 `|| true`。注意 `partial class Foo` 仍會被型別名 regex 抽出 `Foo`，走的是正常分析路徑而非 exit 2。
