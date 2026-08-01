@@ -99,13 +99,13 @@ const theme = inject(ThemeKey); // Ref<'light' | 'dark'> | undefined
 
 **Why**: Prevents runtime `undefined`, gives full editor autocomplete.
 
-## 12. Naive UI default; Headless UI / Reka UI when fully custom visuals needed
+## 12. Match the repository's UI stack
 
-User default: **Naive UI** — ships styled, a11y-aware components, fastest path for typical app UI.
+Do not introduce a second UI library or styling system for a local change. Identify the existing stack from dependencies and nearby components; host/repo rules own greenfield defaults.
 
-Reach for **Headless UI / Reka UI** only when the design demands fully self-styled primitives (Tailwind from scratch). They give behavior + ARIA without imposing visual style. Package name is `reka-ui`; projects still on the pre-rename `radix-vue` keep that name until migrated (`radix-vue` → `reka-ui`, `--radix-*` → `--reka-*`, `data-radix-*` → `data-reka-*`).
+When the existing stack is headless, preserve its ARIA/keyboard behavior while styling. Package name is `reka-ui`; projects still on the pre-rename `radix-vue` keep that name until migrated (`radix-vue` → `reka-ui`, `--radix-*` → `--reka-*`, `data-radix-*` → `data-reka-*`).
 
-**Why**: Naive UI covers the common case without re-implementing layout/theming. Headless libraries add value only when Naive UI's style is a constraint, not when you just want components.
+**Why**: mixing component systems duplicates tokens, interaction conventions, CSS reset assumptions, and bundle cost.
 
 ## 13. VueUse for common composables
 
@@ -125,8 +125,8 @@ Don't reinvent `useFetch`, `useLocalStorage`, `useIntersectionObserver`, etc.
 4. Global state → Pinia setup store. Server data → VueUse `useFetch` or dedicated data layer; wrap async actions in try/catch + expose `error`/`loading` refs.
 5. Unique IDs from `crypto.randomUUID()` or counter — never array index.
 6. Forms: `@submit.prevent`, `v-model`, clear inputs after success.
-7. UI: Naive UI by default; Headless UI / Reka UI only when fully custom visuals are required.
-8. Style with `<style scoped>` + Tailwind. Plain CSS in `<style scoped>` if no Tailwind. Avoid runtime CSS-in-JS.
+7. UI: reuse the installed component system and its tokens.
+8. Style with `<style scoped>` or the repository's existing CSS Modules/utility convention.
 9. `<template v-for>` + `:key` for lists; never `v-if` + `v-for` on same element.
 10. Tests for composables + stores (`references/testing.md`).
 11. Run in dev, check Vue DevTools for unnecessary re-renders + reactivity issues.
@@ -137,7 +137,7 @@ Don't reinvent `useFetch`, `useLocalStorage`, `useIntersectionObserver`, etc.
 2. **Template** — `v-if` + `v-for` on same element? Missing/index `:key`? Complex expression that should be `computed`?
 3. **Performance** — `watch` that could be `computed`? Missing `shallowRef` for large non-reactive objects? Heavy components without `defineAsyncComponent`?
 4. **Patterns** — Options API in new code? Bloated component (> 300 lines)? Logic belongs in composable?
-5. **Styling** — unscoped styles leaking? Inline styles that should be Tailwind?
+5. **Styling** — unscoped styles leaking? A second styling system introduced without need?
 6. **Pinia** — store doing too much? Actions with side effects not returning promises?
 
 Group findings by severity (reactivity → template → performance → patterns → style).

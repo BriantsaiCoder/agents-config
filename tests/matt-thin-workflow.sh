@@ -347,7 +347,7 @@ done < "$AGENTS/mattpocock-skills.lock"
 # Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
 [ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
 b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
-[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 12 ] ||
+[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 11 ] ||
   fail 'Stage B2 skill tree lock inventory drifted'
 
 [ ! -e "$AGENTS/skills/video-downloader" ] &&
@@ -356,6 +356,8 @@ b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" 
 for fork in clean-code-dotnet dotnet-core-expert dotnet-test; do
   fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
 done
+fork_recorded playwright-best-practices ||
+  fail 'playwright-best-practices curated fork is not recorded'
 while IFS=$'\t' read -r skill expected_tree_sha; do
   case "$skill" in \#*|"") continue ;; esac
   actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
@@ -371,8 +373,8 @@ done < "$B2_SKILLS_LOCK"
 # 已在 CI；evals/cases.jsonl 內容漂移另由該測試的「skill 全部存在」健檢把關。
 #
 # 2026-08-01 放行五個自有檔，全部來自同一輪稽核的實證缺陷修復（非重構、非體積調整）：
-#   bug-fix-settlement/SKILL.md      三處硬編碼 ~/.claude 路徑，但這是三 host 共用 skill，
-#                                    ~/.copilot 根本沒有 rules/ 目錄；改為 host-neutral 指標。
+#   bug-fix-settlement/SKILL.md      三處硬編碼 ~/.claude 路徑，但這是三 host 共用 skill；
+#                                    改為 host-neutral 指標，避免綁定任一 host 的目錄配置。
 #   deps-check/scripts/deps-check.sh 四條「無法分析」路徑原本 exit 0（fail-open），配上判讀表
 #                                    的「0 依賴 → 安全改動」會把「找不到檔案」讀成「可以放心改」。
 #                                    改為 exit 2；「副檔名不適用」刻意維持 exit 0。
@@ -394,15 +396,31 @@ while IFS= read -r changed; do
     skills/auditing-skill-folder/evals/runners.json | \
     skills/auditing-skill-folder/references/skill-standards.md | \
     skills/auditing-skill-folder/scripts/check-vendored.sh | \
+    skills/auditing-skill-folder/scripts/check-relative-references.sh | \
     skills/auditing-skill-folder/scripts/count-words.sh | \
     skills/auditing-skill-folder/scripts/eval-triggers.sh | \
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/auditing-skill-folder/scripts/lint-descriptions.sh | \
     skills/bug-fix-settlement/SKILL.md | \
+    skills/aspnet-api-architect/SKILL.md | \
+    skills/aspnet-api-architect/templates/design.md | \
+    skills/aspnet-api-architect/templates/tasks.md | \
+    skills/backend-release-verification/SKILL.md | \
+    skills/containerization/SKILL.md | \
     skills/context7-mcp/* | \
+    skills/css-ui-best-practices/SKILL.md | \
+    skills/css-ui-best-practices/references/design-system-patterns.md | \
     skills/deps-check/SKILL.md | \
     skills/deps-check/scripts/deps-check.sh | \
     skills/dev-workflow/* | \
+    skills/dapper-best-practices/SKILL.md | \
+    skills/dapper-best-practices/references/rules-expanded.md | \
+    skills/dotnet-winforms-best-practices/SKILL.md | \
+    skills/dotnet-winforms-best-practices/references/code-patterns.md | \
+    skills/dotnet-winforms-best-practices/references/layout-design.md | \
+    skills/ef-core-best-practices/SKILL.md | \
+    skills/ef-core-best-practices/references/rules-expanded.md | \
+    skills/ef-core-best-practices/references/working-patterns.md | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
@@ -410,6 +428,8 @@ while IFS= read -r changed; do
     skills/postgresql-optimization/SKILL.md | \
     skills/security-review/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
+    skills/vue-best-practices/SKILL.md | \
+    skills/vue-best-practices/references/rules-expanded.md | \
     skills/vue-best-practices/references/styling-and-ui.md) ;;
     *)
       changed_skill="${changed#skills/}"

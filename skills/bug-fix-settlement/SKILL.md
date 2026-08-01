@@ -56,9 +56,9 @@ Cookbook 只收「程式碼、型別、測試、依賴關係**看不出來**」�
 
 ```
 沉澱評估：
-- Cookbook：✅ 需要寫入（原因：...）/ ❌ 不需要（原因：...）
-- Memory：✅ 需要寫入（原因：...）/ ❌ 不需要（原因：...）
-- Workflow：✅ 需要寫入（原因：...）/ ❌ 不需要（原因：...）
+- Cookbook：✅ 建議寫入（原因：...）/ ❌ 不需要（原因：...）
+- Memory：✅ 建議寫入（原因：...）/ ❌ 不需要（原因：...）
+- Workflow：✅ 建議寫入（原因：...）/ ❌ 不需要（原因：...）
 ```
 
 | 沉澱目標 | 什麼時候寫入 | 範例 |
@@ -67,23 +67,27 @@ Cookbook 只收「程式碼、型別、測試、依賴關係**看不出來**」�
 | **Memory**（auto memory，feedback 類型） | 跨專案通用的開發回饋 | 使用者偏好的確認粒度 |
 | **Workflow**（host 的 command 目錄或 skill） | 流程缺陷導致的錯誤 | 某 command 階段缺完成度檢查 |
 
-可同時寫入多個目標。**一旦標記 ✅，Step 2 就必須完成對應寫入**。
+可同時建議多個目標。**✅ 是 assessment result，不是寫入授權**。
 
-## Step 2：寫入檔案
+## Step 2：取得授權後寫入
 
-這是動作步驟——呼叫 Edit / Write 把根因分析寫進檔案。做完 Step 2 卻沒呼叫過任何寫入工具，就是漏掉了。
+評估是強制步驟；持久化是另一個 authorization boundary：
 
-**Cookbook**：用 Glob 找 `docs/cookbook/**/*.md`，依修改的模組找對應檔案；業務邏輯寫 `business-rules.md`、踩坑寫 `pitfalls.md`、架構決策寫 `architecture/`。資料夾 / 檔案不存在就建立。寫入格式（問題 → 原因 → ✅正確做法 / ❌錯誤做法）與分類規則見你所在 host 的 `rules/cookbook.md`。
+- **Cookbook 與 Workflow** 都需使用者核准 exact target/path；若當下請求已明示要把修復知識寫入該目標，即視為已授權。
+- **Memory** 只有使用者明示「記住」或「保存到 memory」才可寫入。
+- 未取得授權時不寫檔，在 Step 3 列出建議目標、路徑與待授權狀態。
 
-**Memory**：在 auto memory 目錄建 `feedback_*.md`，含 **Why**（為什麼會犯錯）與 **How to apply**（未來怎麼避免），更新 `MEMORY.md` 索引。
+**Cookbook（已授權時）**：用 Glob 找 `docs/cookbook/**/*.md`，依修改的模組找對應檔案；業務邏輯寫 `business-rules.md`、踩坑寫 `pitfalls.md`、架構決策寫 `architecture/`。資料夾 / 檔案不存在就建立。寫入格式（問題 → 原因 → ✅正確做法 / ❌錯誤做法）與分類規則見你所在 host 的 `rules/cookbook.md`。
 
-**Workflow**：在對應 command / skill 加入檢查項，說明在哪個階段攔截此類錯誤。
+**Memory（已授權時）**：在 auto memory 目錄建 `feedback_*.md`，含 **Why**（為什麼會犯錯）與 **How to apply**（未來怎麼避免），更新 `MEMORY.md` 索引。
+
+**Workflow（已授權時）**：在對應 command / skill 加入檢查項，說明在哪個階段攔截此類錯誤。
 
 ## Step 3：無條件輸出評估摘要
 
 **強制步驟，不可跳過**。不論寫或不寫都要輸出，讓使用者看到 skill 已執行完整流程。靜默結束 = 使用者以為 skill 沒觸發，正是此 skill 要避免的失敗模式。
 
-**情境 A：有寫入**
+**情境 A：已授權且有寫入**
 
 ```
 📝 錯誤學習已記錄：
@@ -101,6 +105,8 @@ Cookbook 只收「程式碼、型別、測試、依賴關係**看不出來**」�
 - Workflow: ❌ 不寫
 - 建議替代動作：在 CalculateTotal() 補上 return type，編譯器會直接擋下呼叫端型別不匹配
 ```
+
+若評估建議沉澱但尚未取得授權，沿用情境 B 的格式，將該項標為「⏳ 待授權」並列出預計寫入的 exact target/path。
 
 「建議替代動作」是 Step 3 的核心——cookbook 不寫，就一定要告訴使用者「那該做什麼」：補型別 / type guard、加 lint rule、補單元 / E2E 測試、提醒跑 deps-check，或「純 typo / 一次性環境錯，無需動作」。
 

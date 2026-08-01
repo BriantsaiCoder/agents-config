@@ -433,4 +433,4 @@ const products = ref([
 </template>
 ```
 
-**選擇原則**：預設 **Naive UI**（user default，styled + a11y 完備、TypeScript 友善、theme 系統強）。若團隊有設計師且需要高度自訂外觀，選 Reka UI / Headless UI + Tailwind。需要重型後台元件（大量 DataTable）時，PrimeVue 為可選替代。**Element Plus / Vuetify / Bootstrap 為家規禁用，不列入選型。**
+**選擇原則**：沿用 repo 已安裝的 component system 與 tokens。Naive UI 適合 styled + TypeScript/theme 完整的需求；Reka UI / Headless UI 適合高度自訂外觀；PrimeVue 適合大量 DataTable 等重型後台元件。Greenfield 預設與禁用清單由 host/repo rules 決定，不在 portable skill 複製。

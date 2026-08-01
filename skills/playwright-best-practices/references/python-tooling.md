@@ -245,10 +245,4 @@ with sync_playwright() as p:
 
 ## Relationship to Playwright TypeScript
 
-The patterns in this reference are Python-specific, but the concepts (locators, waiting, network mocking, fixtures) are identical across language bindings. For deep Playwright patterns see:
-
-- `core/locators.md` — Locator API
-- `core/assertions-waiting.md` — Auto-waiting and expect()
-- `core/page-object-model.md` — POM (TypeScript, but transferable)
-- `core/configuration.md` — playwright.config.ts
-- `debugging/flaky-tests.md` — Flaky test diagnosis
+The patterns in this reference are Python-specific, but the concepts (locators, waiting, network mocking, fixtures) are identical across language bindings.

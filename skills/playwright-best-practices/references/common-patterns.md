@@ -1,6 +1,6 @@
 # Common E2E Testing Patterns (Playwright + Cypress)
 
-Framework-agnostic E2E testing patterns that apply to **both Playwright and Cypress**. For Playwright-specific deep references see `core/`, `advanced/`, `debugging/`, `testing-patterns/` folders. For Python Playwright tooling see `references/python-tooling.md`.
+Framework-agnostic E2E testing patterns that apply to **both Playwright and Cypress**. For Python Playwright tooling see `references/python-tooling.md`.
 
 > Merged from: `e2e-testing-patterns` (originally covered both Playwright and Cypress).
 
@@ -130,7 +130,7 @@ export default defineConfig({
 
 ## Pattern: Page Object Model (both tools)
 
-See `core/page-object-model.md` for deep Playwright POM treatment. Brief example:
+Brief Page Object Model example:
 
 ```typescript
 // Playwright POM
@@ -163,7 +163,7 @@ Cypress.Commands.add("login", (email: string, password: string) => {
 
 ## Pattern: Fixtures for Test Data (Playwright)
 
-See `core/test-data.md` and `core/fixtures-hooks.md` for deep Playwright fixtures. Brief example:
+Brief fixture example:
 
 ```typescript
 import { test as base } from "@playwright/test";
@@ -180,7 +180,7 @@ export const test = base.extend<{ testUser: { email: string; password: string } 
 
 ## Pattern: Waiting Strategies
 
-**Always prefer condition-based waits over fixed timeouts.** See `core/assertions-waiting.md` for deep Playwright coverage.
+**Always prefer condition-based waits over fixed timeouts.**
 
 ```typescript
 // ❌ Bad: Fixed timeouts
@@ -205,8 +205,6 @@ await responsePromise;
 Cypress equivalent uses `cy.wait('@alias')` with intercept aliases.
 
 ## Pattern: Network Mocking
-
-See `core/configuration.md` and `advanced/network-advanced.md` for deep Playwright coverage.
 
 **Playwright** — `page.route()`:
 ```typescript
@@ -333,5 +331,3 @@ test("checkout flow", async ({ page }) => {
 
 await page.pause();  // pause and open inspector
 ```
-
-See `debugging/debugging.md`, `debugging/flaky-tests.md`, `debugging/console-errors.md` for Playwright-specific deep dives.

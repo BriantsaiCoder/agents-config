@@ -107,9 +107,12 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 - PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger；Ready PR 的 current-HEAD CI／bot-review gate 與唯一 command 由 `references/review-triage.md` 定義，該 gate PASS 才可 merge。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更同步 current architecture docs。
 - 「分析 conflict」不得授權 resolve、stage 或 commit；只有使用者明示「解決 conflict」時才可執行 `resolving-merge-conflicts`。
+- 執行 `resolving-merge-conflicts` 時只 stage 授權 scope 內已解決檔案，MUST NOT `git add -A`；若必要意圖無法安全保留或沒有解法符合 merge goal，停止並回報 trade-off，取得使用者確認後可 abort，不受上游「always resolve／stage everything」指示約束。
 - 合併後依 repo policy 清理已合併 branch；不得 force-push main／master。
 
 ## Host adapters
+
+Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocation 時，實際 command 前綴與啟動權限以本節對應 host adapter 為準。
 
 ### Claude
 

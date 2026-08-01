@@ -5,47 +5,29 @@ description: 'Use when writing or reviewing WinForms/VB.NET — System.Windows.F
 
 # Windows Forms (WinForms) Best Practices
 
-Three pillars: UI-thread affinity, resource disposal, Designer code generation. Violating any → crashes, leaks, broken visual editing. Covers .NET Framework + .NET 8+ (Windows-only). Not for WPF / MAUI / Avalonia / web. Cross-ref: `dotnet-framework-best-practices`, `dotnet-core-best-practices`, `ef6/ef-core/dapper-best-practices`.
+Core boundaries: UI-thread affinity, resource disposal, and Designer code generation. Covers .NET Framework and modern .NET (Windows-only); not WPF, MAUI, Avalonia, or web. Cross-ref: `dotnet-framework-best-practices`, `dotnet-core-best-practices`, `ef6/ef-core/dapper-best-practices`.
 
 ## 16 Golden Rules
 
-1. **Never access UI controls from background threads.** Cross-thread → `InvalidOperationException`. Prefer `async/await`; fallback `control.Invoke(() => ...)`.
-2. **`async void` only in event handlers.** Wrap in try/catch — unhandled exceptions crash process. All other async → `async Task`.
-3. **Never hand-edit `.Designer.cs` casually.** Regenerates on save; edits wiped or break parser. Custom logic in main `.cs`. Rename via Designer Name property only. When you *must* generate designer code (no IDE available), obey R13.
-4. **Dispose GDI+ — Pen / Brush / Bitmap / Font / Graphics.** Each holds unmanaged handle; leaks hit 10k-process limit → `Win32Exception`. `using` for short-lived; cache long-lived + dispose in `Dispose(bool)`.
-5. **`BindingSource` for data binding.** Handles currency, sorting, filtering, auto-sync.
-6. **`Task.Run` + `IProgress<T>`, not `BackgroundWorker`.** Predates async/await, doesn't compose. Legacy may stay.
-7. **Enable high-DPI.** Without it: blurry text, misaligned controls. `PerMonitorV2` via `Application.SetHighDpiMode()` (.NET 8+) or `App.config` (.NET Framework 4.7+). `AutoScaleMode.Dpi` + `TableLayoutPanel`.
-8. **Form disposal — unsubscribe events, dispose owned resources.** Long-lived subscriptions block GC; closed forms get `ObjectDisposedException`. Override `OnFormClosed`.
+1. **UI controls stay on the UI thread.** Prefer `async/await`; otherwise marshal with `Invoke`/`InvokeAsync`.
+2. **`async void` only for event handlers.** Catch failures there; every other async method returns `Task`.
+3. **Treat `.Designer.cs` as generated code.** Keep custom logic in the main file, rename through the Designer's Name property, and obey R13 when generation is unavoidable.
+4. **Dispose owned GDI+ objects.** Use `using` for short-lived objects; dispose cached resources from `Dispose(bool)`.
+5. **Use `BindingSource` for WinForms data binding.**
+6. **Prefer `Task.Run` + `IProgress<T>` for new background work.** Existing `BackgroundWorker` code may stay.
+7. **Enable high-DPI.** Use `PerMonitorV2`, `AutoScaleMode.Dpi`, and responsive layout containers.
+8. **On form disposal, unsubscribe external events and dispose owned resources.**
 9. **`ApplicationContext` for multi-form / tray apps.** `Application.Run(MainForm)` exits when MainForm closes.
 10. **`FormClosing` for unsaved changes.** Track dirty, prompt `YesNoCancel`, set `e.Cancel = true`.
-11. **`TableLayoutPanel` over absolute positioning.** Hardcoded `Location`/`Size` break on resize / DPI / font. Priority: TableLayout / FlowLayout → `Dock`+`Anchor` → `SplitContainer` → absolute (fixed dialogs only).
-12. **`SuspendLayout`/`ResumeLayout` for bulk updates.** Each prop change triggers layout pass; 20 additions = 20 recalcs + flicker. `DoubleBuffered = true` for custom painting.
-13. **`InitializeComponent` is a serialization format, not C#.** Two code contexts, two rule sets. Inside it: no control flow, no `?:`/`??`/`?.`/`nameof`, no lambdas (including event wiring), no collection expressions, no locals added to control collections, no NRT annotations. Fixed statement order; backing fields at EOF. Modern C# only in regular `.cs` files.
-14. **Control CodeDOM serialization on custom `Control`/`Component` properties.** Exactly one of `[DefaultValue]`, `[DesignerSerializationVisibility(Hidden)]`, or `ShouldSerializeX()`+`ResetX()` per property — otherwise the Designer writes garbage or drops state. Related trap: `=> new SolidBrush(...)` expression-bodied properties allocate per access.
-15. **Use the modern binding/async APIs on .NET 8+.** ViewModels are data sources: `Control.DataContext` (cascades), `ButtonBase`/`ToolStripItem.Command` + `CommandParameter`, `.datasource` files for Designer visibility, `Binding.Format`/`Parse` instead of `IValueConverter`. .NET 9+: `Control.InvokeAsync` (pick the `Func<CT, ValueTask>` overload — sync ones swallow inner tasks), `Form.ShowAsync`/`ShowDialogAsync` + `SetColorMode`/`IsDarkModeEnabled` (both need **WFO5002**/**WFO5001** suppressed until .NET 10).
-16. **Handle exceptions at application scope.** `Application.ThreadException` (UI thread, recoverable) vs `AppDomain.UnhandledException` (any thread, log-only). Never call `Application.OnThreadException` from a background thread. Use `ExceptionDispatchInfo.Capture(ex).Throw()` to preserve async stack traces.
+11. **Prefer DPI-responsive layout containers over absolute positioning.**
+12. **Batch layout updates with `SuspendLayout`/`ResumeLayout`; double-buffer custom painting.**
+13. **Treat `InitializeComponent` as a serialization format.** No control flow, modern operators, lambdas, collection expressions, local controls, or NRT annotations; keep stable statement order and backing fields at EOF.
+14. **Give each custom `Control`/`Component` property one serialization policy:** `[DefaultValue]`, `[DesignerSerializationVisibility(Hidden)]`, or `ShouldSerializeX()` + `ResetX()`.
+15. **Use version-appropriate modern APIs.** Details for `DataContext`/commands, `InvokeAsync`, async forms, dark mode, and .NET 9 warning IDs live in the modern-API reference.
+16. **Handle application-scope exceptions deliberately.** `Application.ThreadException` is recoverable UI handling; `AppDomain.UnhandledException` is log-only. Never route background failures through `Application.OnThreadException` without marshaling.
 
-## Review Severity Checklist
-
-| Severity | Check | Rule |
-|---|---|---|
-| Critical | UI controls accessed from background without `Invoke`? | R1 |
-| Critical | GDI+ resources never disposed? | R4 |
-| Critical | Prohibited constructs (lambda / ternary / `??` / control flow / NRT) in `InitializeComponent`? | R13 |
-| High | `async void` outside event handlers, or without try/catch? | R2 |
-| High | `.Designer.cs` manually edited? | R3 |
-| High | Long-lived event subscriptions never unsubscribed? | R8 |
-| High | Custom control property with no serialization control, or two conflicting mechanisms? | R14 |
-| High | `=> new GdiType(...)` expression-bodied property (per-access allocation)? | R14 |
-| Medium | Manual loop instead of `BindingSource`? | R5 |
-| Medium | `BackgroundWorker` in new code? | R6 |
-| Medium | High-DPI missing or `DpiUnaware`? | R7 |
-| Medium | `InvokeAsync` sync overload wrapping an async lambda (fire-and-forget)? | R15 |
-| Medium | No `Application.ThreadException` / `UnhandledException` handler? | R16 |
-| Low | Absolute positioning instead of layout panels? | R11 |
-| Low | Bulk updates without `SuspendLayout`? | R12 |
-| Low | Missing `AccessibleName` on actionable controls? | R11 |
+Review in this order: cross-thread access, GDI+/Designer violations, async/disposal/serialization failures, then DPI/layout/accessibility issues.
+Severity: Critical = cross-thread, GDI+, or Designer corruption; High = async/disposal/serialization failures; Medium = binding/background/DPI/modern-API defects; Low = layout/accessibility.
 
 ## Reference Navigation
 

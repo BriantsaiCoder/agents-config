@@ -18,8 +18,9 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream assessed at `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-07-31 — preserve the imported agent-skill adaptation; tree SHA-256 `7e53e673348379b72f76c7a85c3c199720ddd09e4b963c85092a03eefa054408` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `diagnosing-bugs` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
-| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-07-31 — preserve the imported local variant and remove obsolete Compose top-level `version`; tree SHA-256 `ab80cfe8db12433c4fcd3aaa6f34adb0f490a76e3a476cef6a63951af51d4675` | **Active** |
-| `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-07-31 — preserve local coverage and unit-test reference variants; tree SHA-256 `9c303fb6337b8816e285d64d0d600a0e32362fcb298d6918f200a0244ddecc8f` | **Active** |
+| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-01 — retain the imported Controllers/templates variant, obsolete Compose fix, and correct `templates/task.md` to the shipped `templates/tasks.md`; tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Active** |
+| `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `435a220786ad2ef6c8023111330cd4d822717af241952c6d404160a3acb07bae` | **Active** |
+| `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
@@ -30,12 +31,15 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 Retired entries stay listed: the `attic/` copy still differs from upstream, so anyone restoring it needs this record. `check-vendored.sh` does not scan `attic/`, so a retired entry no longer renders as `VND*`.
 
-## Unresolved Stage B2 provenance
+## Resolved Stage B2 provenance
 
-`aspnet-api-architect` and `dotnet-find-bugs` have no affirmative upstream ownership evidence.
-Their provenance lock points to the first tracked repository snapshot at `44c7fd0`, not to a
-claimed upstream. Both remain vendored and non-editable until a source repository and revision are
-verified; do not treat either as self-owned.
+- `aspnet-api-architect` is self-owned. Its former lock pointed only to this repository's first
+  tracked snapshot (`44c7fd0`, authored by BriantsaiCoder), while a 2026-08-01 GitHub code search
+  found zero copies outside BriantsaiCoder repositories. Its lock rows were removed before the
+  focused requirements-to-design/tasks-to-scaffold rewrite.
+- `dotnet-find-bugs` is a byte-identical upstream snapshot from
+  `ricoisme/vscode-agents@2b1240abad239703d09875acefd7ae42685c88ff`; the generic lock now names
+  that source instead of this repository's import commit.
 
 ## clean-code-dotnet
 
@@ -58,10 +62,9 @@ checkout. Its exact payload and tree are pinned in `vendored-skills.lock`.
 **Decision (2026-07-31): accept the Stage B2 imported snapshot as a recorded fork.**
 
 The imported payload already differs from current `Jeffallan/claude-skills` in its Controllers
-guidance, workflow, and templates. This decision preserves that existing local variant and removes
-one obsolete line from the copyable Compose example: top-level `version: '3.8'`. Upstream assessed
-at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` still contains that obsolete line. The complete local
-payload and tree fingerprints are pinned in `vendored-skills.lock`.
+guidance, workflow, and templates. This decision preserves that existing local variant, removes
+one obsolete Compose top-level `version`, and fixes two references to the shipped `tasks.md`
+template. The complete local payload and tree fingerprints are pinned in `vendored-skills.lock`.
 
 ### Re-merge procedure (when upstream moves)
 
@@ -78,18 +81,43 @@ payload and tree fingerprints are pinned in `vendored-skills.lock`.
 
 ## dotnet-test
 
-**Decision (2026-07-31): preserve the Stage B2 reference variants as a recorded fork.**
+**Decision (2026-08-01): retain only the portable value as a recorded fork.**
 
-The local `generate-coverage.md` and `run-unit-tests.md` differ from the assessed
-`GiantCroissant-Lunar/pigeon-pea` snapshot. The full local payload and tree are pinned in
+The imported entrypoint and two references assumed PigeonPea's `./dotnet` layout, solution,
+projects, test names, and a missing `dotnet-build` skill. Unit-test/coverage procedures are already
+owned by `dotnet-testing-best-practices`; the fork now routes there and keeps the unique
+BenchmarkDotNet baseline/statistics procedure. The full local payload and tree are pinned in
 `vendored-skills.lock`.
 
 ### Re-merge procedure (when upstream moves)
 
 1. Compare the full upstream skill against the assessed revision.
-2. Reapply only the two reference variants if their guidance is still required.
+2. Retain the house route and benchmark reference only while upstream remains repo-bound or the
+   canonical testing skill still omits benchmark interpretation.
 3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
    `tests/matt-thin-workflow.sh`.
+
+---
+
+## playwright-best-practices
+
+**Decision (2026-08-01): record the existing curated fork rather than wholesale-expand it.**
+
+Upstream v1.2 ships a 303-line entrypoint and more than 60 detailed references. The local payload
+uses a 44-line high-signal workflow, three local references, and a current-doc escape hatch. A
+wholesale replacement would restore the structural links but multiply always-read routing prose
+and remove the local MCP/Python branches. Recording the fork makes the existing divergence
+reviewable instead of silently treating a LICENSE-only payload as pristine upstream. The local
+references also omit pointers into upstream directories that are intentionally not part of this
+curated payload; their adjacent examples remain self-contained.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare upstream's full activity map and the three local references by behavior, not file count.
+2. Pull only new failure shields that are absent from the local corpus; keep version-sensitive API
+   detail in official docs.
+3. Recompute both fingerprints and run `tests/vendored-detection.sh`,
+   `tests/matt-thin-workflow.sh`, and `tests/relative-references.sh`.
 
 ---
 

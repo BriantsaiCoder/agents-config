@@ -28,7 +28,7 @@ e.g.  oklch(45% 0.2 260)  →  --color-primary  →  bg-primary (Button)
 
 shadcn/ui 自 Tailwind v4 版起預設 token 已全面改為 `oklch()`（`--background: oklch(1 0 0)`、`--destructive: oklch(0.577 0.245 27.325)`）。新專案一律跟上游用 OKLCH；只有維護 v4 遷移前的舊庫才保留 HSL，且不可與 CLI 產生的 oklch token 混用。
 
-**token 接線的正本是 `tailwind-v4-shadcn`**（`templates/index.css` + `SKILL.md` 的 Critical Rules），本檔不重複。理由是 v3 與 v4 的 token 形式不相容，兩份並存會讓實作端挑錯版本：
+**token 接線的正本是 [`tailwind-v4-shadcn`](../../tailwind-v4-shadcn/SKILL.md)**（[index.css template](../../tailwind-v4-shadcn/templates/index.css) + Critical Rules），本檔不重複。理由是 v3 與 v4 的 token 形式不相容，兩份並存會讓實作端挑錯版本：
 
 | | v3（已過時） | v4（正本） |
 |---|---|---|

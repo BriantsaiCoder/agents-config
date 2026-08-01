@@ -38,6 +38,5 @@ Each rule's *why* + writing/reviewing patterns live in `references/rules-expande
 | N+1 detection, `Include`/`ThenInclude`, tracking trade-offs, projection, split queries, compiled queries, global filters, raw SQL | `references/query-performance.md` |
 | Change tracker internals, `SaveChanges` batching, optimistic concurrency, `ExecuteUpdate`/`ExecuteDelete`, bulk insert, exception handling | `references/change-tracking-saving.md` |
 | Migration deployment, Fluent API config, TPH/TPT/TPC inheritance, owned types, compiled models | `references/migrations-modeling.md` |
-| Existing aggregated working patterns | `references/working-patterns.md` |
 
 Open one file at a time — don't preload.

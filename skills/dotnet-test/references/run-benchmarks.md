@@ -1,315 +1,68 @@
-# Run Benchmarks - Detailed Procedure
+# BenchmarkDotNet procedure
 
-## Overview
+Use this reference for .NET micro-benchmarks. Prefer an existing benchmark project and its checked-in configuration; do not invent a new harness when the repository already has one.
 
-This guide covers running performance benchmarks for the PigeonPea solution using BenchmarkDotNet, a powerful library for benchmarking .NET code with high precision and statistical analysis.
+## 1. Establish the comparison
 
-## What are Benchmarks?
+- State the performance question and the metric that matters: elapsed time, throughput, allocation, or GC.
+- Identify the current implementation as `[Benchmark(Baseline = true)]` and change one variable in the candidate.
+- Keep inputs representative and deterministic. Put setup outside the measured method with `[GlobalSetup]`.
+- Record SDK/runtime, CPU, OS, power mode, and relevant environment variables when results will be compared later.
 
-Benchmarks measure code performance (execution time, memory allocation, throughput) to:
+## 2. Run from the discovered project
 
-- Identify performance bottlenecks
-- Compare alternative implementations
-- Track performance over time
-- Validate optimization efforts
-
-## Prerequisites
-
-- .NET SDK 9.0+
-- Benchmark project: `./dotnet/benchmarks/PigeonPea.Benchmarks.csproj`
-- BenchmarkDotNet package (already configured)
-- **Release configuration** (required for accurate results)
-
-## Standard Benchmark Flow
-
-### Step 1: Navigate to Benchmarks Directory
+Find the existing benchmark `.csproj`; run it in Release mode without assuming a repository layout:
 
 ```bash
-cd ./dotnet/benchmarks
+dotnet run --project path/to/Benchmarks.csproj -c Release -- --filter "*TargetBenchmark*"
 ```
 
-### Step 2: Build in Release Mode
+Use the benchmark project's own arguments when they differ. BenchmarkDotNet writes results under `BenchmarkDotNet.Artifacts/` relative to its working directory unless configuration overrides that path.
 
-```bash
-dotnet build -c Release
-```
-
-**Critical:** Always use Release mode for benchmarks. Debug mode skews results.
-
-### Step 3: Run Benchmarks
-
-```bash
-dotnet run -c Release
-```
-
-BenchmarkDotNet executes benchmarks, performs warm-up, measurement iterations, and statistical analysis.
-
-### Step 4: Review Results
-
-Results are displayed in console and saved to `./BenchmarkDotNet.Artifacts/results/`.
-
-## Benchmark Execution
-
-### Run All Benchmarks
-
-```bash
-cd ./dotnet/benchmarks
-dotnet run -c Release
-```
-
-### Run Specific Benchmark Class
-
-```bash
-cd ./dotnet/benchmarks
-dotnet run -c Release --filter "*StringBenchmarks*"
-```
-
-### Run Specific Benchmark Method
-
-```bash
-cd ./dotnet/benchmarks
-dotnet run -c Release --filter "*StringBenchmarks.Concat*"
-```
-
-### Run with Custom Job
-
-```bash
-cd ./dotnet/benchmarks
-dotnet run -c Release -- --job short
-```
-
-Job options: `short`, `medium`, `long`, `verylong`
-
-## Benchmark Output
-
-### Console Output Example
-
-```
-| Method    | Mean      | Error    | StdDev   | Allocated |
-|---------- |----------:|---------:|---------:|----------:|
-| Concat    | 12.34 ns  | 0.21 ns  | 0.19 ns  | 40 B      |
-| Format    | 45.67 ns  | 0.89 ns  | 0.83 ns  | 64 B      |
-| Interpolate | 23.45 ns | 0.34 ns  | 0.32 ns  | 48 B      |
-```
-
-- **Method:** Benchmark method name
-- **Mean:** Average execution time
-- **Error:** Standard error of the mean
-- **StdDev:** Standard deviation
-- **Allocated:** Memory allocated per operation
-
-### Artifacts Location
-
-```
-./dotnet/benchmarks/BenchmarkDotNet.Artifacts/
-  results/
-    MyBenchmark-report.html     # HTML report
-    MyBenchmark-report.csv      # CSV data
-    MyBenchmark-report.md       # Markdown report
-  logs/
-    MyBenchmark.log             # Detailed log
-```
-
-## Writing Benchmarks
-
-### Basic Benchmark Structure
+Minimal shape:
 
 ```csharp
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-
-namespace PigeonPea.Benchmarks;
 
 [MemoryDiagnoser]
-public class StringBenchmarks
+public class ParserBenchmarks
 {
-    private const int Iterations = 100;
+    [Params(10, 1_000)]
+    public int Count { get; set; }
 
-    [Benchmark]
-    public string Concat()
-    {
-        var result = "";
-        for (int i = 0; i < Iterations; i++)
-            result += "a";
-        return result;
-    }
-
-    [Benchmark]
-    public string StringBuilder()
-    {
-        var sb = new System.Text.StringBuilder();
-        for (int i = 0; i < Iterations; i++)
-            sb.Append("a");
-        return sb.ToString();
-    }
+    [GlobalSetup]
+    public void Setup() { /* deterministic inputs */ }
 
     [Benchmark(Baseline = true)]
-    public string StringCreate()
-    {
-        return string.Create(Iterations, 'a', (span, c) =>
-        {
-            span.Fill(c);
-        });
-    }
-}
+    public object Current() => ParseCurrent(Count);
 
-public class Program
-{
-    public static void Main(string[] args)
-    {
-        BenchmarkRunner.Run<StringBenchmarks>();
-    }
+    [Benchmark]
+    public object Candidate() => ParseCandidate(Count);
 }
 ```
 
-### Benchmark Attributes
+Let BenchmarkDotNet choose warmup and iteration counts by default. Override `[WarmupCount]` or `[IterationCount]` only when the default run is impractical or the report shows instability; record the override with the result.
 
-```csharp
-[Benchmark]                  // Mark method as benchmark
-[Benchmark(Baseline = true)] // Mark as baseline for comparison
-[Arguments(10, 20)]          // Pass arguments to benchmark
-[Params(10, 100, 1000)]      // Run with multiple parameter values
-[IterationCount(10)]         // Custom iteration count
-[WarmupCount(5)]             // Custom warmup count
-```
+## 3. Interpret the report
 
-### Diagnosers
+Read columns together:
 
-```csharp
-[MemoryDiagnoser]           // Track memory allocations
-[ThreadingDiagnoser]        // Track threading info
-[EventPipeProfiler(...)]    // CPU profiling
-```
+- **Mean** is the estimated average; compare it with **Error** and **StdDev**, not in isolation.
+- **Ratio** is relative to the baseline: `0.50` is about twice as fast; `1.50` is about 50% slower.
+- **Allocated** and Gen0/1/2 counts expose GC cost that elapsed time alone hides.
+- **Outliers** may be environmental or real tail behavior. Do not delete them merely to improve the headline.
+- A **multimodal distribution** means multiple timing populations were observed. Treat a small mean delta as inconclusive until interference or workload phases are explained.
 
-## Benchmark Configuration
+Compare like with like: same commit inputs, runtime, architecture, configuration, and machine conditions. A single run on different hardware is not a regression verdict.
 
-### Global Configuration
+## 4. Failure and stability checks
 
-```csharp
-using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Toolchains.InProcess.Emit;
+- "Benchmarks must be run in Release mode" → rerun with `-c Release`.
+- "No benchmarks found" → verify `[Benchmark]`, filter syntax, and the project entry point.
+- Benchmark throws → run the method normally with the same input, fix correctness first, then benchmark.
+- High variance or multimodal warning → close competing workloads, keep power mode stable, rerun, and compare the full distribution.
+- Results too short/noisy → allow BenchmarkDotNet's default adaptive run or increase invocation/iteration count with the reason recorded.
 
-[Config(typeof(Config))]
-public class MyBenchmarks
-{
-    private class Config : ManualConfig
-    {
-        public Config()
-        {
-            AddJob(Job.Default
-                .WithRuntime(CoreRuntime.Core90)
-                .WithPlatform(Platform.X64)
-                .WithJit(Jit.RyuJit));
+## Completion evidence
 
-            AddDiagnoser(MemoryDiagnoser.Default);
-            AddColumn(StatisticColumn.P95);
-        }
-    }
-}
-```
-
-### Job Configuration
-
-```csharp
-[SimpleJob(RuntimeMoniker.Net90)]
-[SimpleJob(RuntimeMoniker.Net80)]
-public class MyBenchmarks
-{
-    // Compare performance across runtimes
-}
-```
-
-## Analyzing Results
-
-### Compare Baseline
-
-```
-| Method       | Mean     | Ratio |
-|------------- |---------:|------:|
-| Baseline     | 100.0 ns | 1.00  |
-| Optimized    | 50.0 ns  | 0.50  |
-| Alternative  | 150.0 ns | 1.50  |
-```
-
-- **Ratio:** Relative to baseline (0.50 = 2x faster, 1.50 = 1.5x slower)
-
-### Statistical Significance
-
-BenchmarkDotNet performs statistical analysis:
-
-- **Outliers:** Identified and can be removed
-- **Multimodal distribution:** Indicates interference (antivirus, background tasks)
-- **Confidence intervals:** 95% by default
-
-### Memory Analysis
-
-```
-| Method    | Allocated |
-|---------- |----------:|
-| Original  | 1024 B    |
-| Optimized | 64 B      |
-```
-
-Lower allocation = less GC pressure = better performance.
-
-## Common Errors and Solutions
-
-### Error: "Benchmarks must be run in Release mode"
-
-**Cause:** Running in Debug configuration
-
-**Fix:**
-
-```bash
-dotnet run -c Release
-```
-
-### Error: "No benchmarks found"
-
-**Cause:** No methods decorated with `[Benchmark]` or benchmark class not passed to `BenchmarkRunner.Run`
-
-**Solutions:**
-
-1. Ensure methods have `[Benchmark]` attribute
-2. Check `Main` method calls `BenchmarkRunner.Run<YourBenchmarkClass>()`
-
-### Error: "Benchmark throws exception"
-
-**Cause:** Code in benchmark method throws unhandled exception
-
-**Solutions:**
-
-1. Run with detailed output:
-
-   ```bash
-   dotnet run -c Release -- --verbosity Detailed
-   ```
-
-2. Fix code in benchmark method
-3. Use `[GlobalSetup]` to initialize state safely
-
-### Warning: Multimodal distribution detected
-
-**Cause:** Performance variance due to background processes
-
-**Solutions:**
-
-1. Close unnecessary applications
-2. Disable antivirus during benchmarking
-3. Use longer warmup: `[WarmupCount(10)]`
-4. Re-run benchmarks
-
-### Warning: High variance
-
-**Cause:** Unstable execution environment
-
-**Solutions:**
-
-1. Ensure sufficient iterations (BenchmarkDotNet auto-adjusts)
-2. Run on dedicated hardware (not VM if possible)
-3. Disable CPU frequency scaling (performance mode)
-
-## Additional References
-
-<!-- Trimmed for size to satisfy validator. See SKILL.md for best practices, CI/CD integration, and example benchmarks. -->
+Return the exact command and project path, environment summary, baseline/candidate Mean + Ratio + Allocated, warnings, artifact path, and whether the result is conclusive. Optimization claims require repeatable improvement without a correctness regression.

@@ -42,6 +42,19 @@ done < <(find "$AGENTS/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -type f | 
   ok "skill frontmatter names match directories" ||
   ng "skill frontmatter／directory mismatches: $skill_name_mismatches"
 
+relative_ref_check="$AGENTS/skills/auditing-skill-folder/scripts/check-relative-references.sh"
+relative_ref_test="$AGENTS/tests/relative-references.sh"
+if [ -x "$relative_ref_test" ] && "$relative_ref_test" >/dev/null 2>&1; then
+  ok "relative-reference checker regressions"
+else
+  ng "relative-reference checker regressions"
+fi
+if [ -x "$relative_ref_check" ] && "$relative_ref_check" "$AGENTS/skills" >/dev/null 2>&1; then
+  ok "skill relative references resolve"
+else
+  ng "skill relative references contain missing targets"
+fi
+
 context7_skill="$AGENTS/skills/context7-mcp/SKILL.md"
 if [ -f "$context7_skill" ] &&
    rg -q 'resolve-library-id' "$context7_skill" &&

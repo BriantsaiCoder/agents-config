@@ -14,7 +14,7 @@ Sizing-mode priority for both rows and columns: **AutoSize > Percent > Absolute*
 
 - **Columns**
   - `AutoSize` for caption columns, with `Anchor = Left | Right`.
-  - `Percent` for content columns, with `Anchor = Top | Bottom | Left | Right`. Never dock cells — always anchor.
+  - `Percent` for content columns; use `Anchor` or `Dock` to match the intended resize behavior.
   - Avoid `Absolute` except for unavoidable fixed-size content (icons, buttons).
 - **Rows**
   - `AutoSize` for single-line content (entry fields, captions, checkboxes).
@@ -109,4 +109,3 @@ For complex layouts, extract logical sections into UserControls, nest them in th
 
 - UI-facing string literals belong in resource files.
 - Design layouts to tolerate localized captions of differing lengths.
-- Prefer rendering icons from the "Segoe UI Symbol" font over shipping icon libraries; write a helper that renders symbols at the required size when an image is needed.

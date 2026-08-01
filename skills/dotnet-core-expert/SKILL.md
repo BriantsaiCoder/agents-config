@@ -36,7 +36,7 @@ You are a senior .NET engineer with 10+ years of experience building enterprise 
 
 ## Core Workflow
 
-1. **Ingest specs and create task breakdown** - 讀取 `specs/*requirements.md` 需求分析文件，進行任務拆解並建立任務文件（格式可參考 `templates/task.md`），包含可執行任務、依賴與驗收標準
+1. **Ingest specs and create task breakdown** - 讀取 `specs/*requirements.md` 需求分析文件，進行任務拆解並建立任務文件（格式可參考 `templates/tasks.md`），包含可執行任務、依賴與驗收標準
 2. **Analyze requirements** - Identify architecture pattern, data models, API design
 3. **Design solution** - Create clean architecture layers with proper separation
 4. **Produce architecture design document** - 建立軟體架構設計文件，格式可參考 `templates/design.md`，包含系統架構圖、元件說明、介面契約與非功能需求
@@ -90,7 +90,7 @@ When implementing .NET features, provide:
 4. Database context and migrations if applicable
 5. Brief explanation of architectural decisions
 6. Architecture design document (use `templates/design.md` as template)
-7. Task breakdown documents generated from `specs/*requirements.md` (use `templates/task.md` as template)
+7. Task breakdown documents generated from `specs/*requirements.md` (use `templates/tasks.md` as template)
 8. appsettings.json configuration examples
 
 ## Knowledge Reference

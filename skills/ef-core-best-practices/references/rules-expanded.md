@@ -76,18 +76,18 @@ Specific catch blocks around `SaveChangesAsync`. For optimistic concurrency, ins
 
 ## Working Pattern — Writing
 
-1. Confirm EF Core version (7+ for `ExecuteUpdate`/`ExecuteDelete`; 8+ for primitive collections, complex types, `EF.Constant`, `SqlQuery<T>`; 9+ for `EnableThreadSafetyChecks` and experimental precompiled queries; 10+ for non-expression `ExecuteUpdateAsync` setters, multi-parameter collection translation, and named default-value constraints via `HasConstraintName`).
+1. Confirm the database provider and EF Core version (7+ for `ExecuteUpdate`/`ExecuteDelete`; 8+ for primitive collections, complex types, `EF.Constant`, `SqlQuery<T>`; 9+ for `EnableThreadSafetyChecks` and experimental precompiled queries; 10+ for non-expression `ExecuteUpdateAsync` setters, multi-parameter collection translation, and named default-value constraints via `HasConstraintName`).
 2. DI: `AddDbContext` (scoped) or `AddDbContextFactory` (manual lifetime). High-throughput → `AddDbContextPool`.
 3. Model: Fluent API for column types, lengths, precision, indexes. Navigation properties for every FK.
 4. Read paths: `AsNoTracking()` + `Select` projection. Eager-load with `Include`/`ThenInclude`; deep loads → `AsSplitQuery()`.
-5. Write paths: async `SaveChangesAsync` with CT. Bulk → `ExecuteUpdateAsync`/`ExecuteDeleteAsync`. Optimistic concurrency → `[Timestamp]` row version + concurrency exception handler.
+5. Write paths: async `SaveChangesAsync` with CT. Return generated IDs, affected rows, or a domain result. Bulk → `ExecuteUpdateAsync`/`ExecuteDeleteAsync`. Optimistic concurrency → `[Timestamp]` row version + concurrency exception handler.
 6. Migrations: `dotnet ef migrations add`, review generated SQL, apply via deployment pipeline (never at runtime).
 
 ## Working Pattern — Reviewing
 
-1. **Security** — `FromSqlRaw($"…{userInput}…")` or string concat in raw SQL? → SQL injection HIGH. Fix: `FromSqlInterpolated` or explicit `@param`.
+1. **Security** — hardcoded credentials, `FromSqlRaw($"…{userInput}…")`, or string concat in raw SQL? → HIGH. Move secrets to configuration; parameterize SQL with `FromSqlInterpolated` or explicit `@param`.
 2. **Lifetime** — DbContext registered as Singleton? Stored in static field? Shared across `Task.WhenAll` branches? → critical correctness.
-3. **Migrations** — `Database.Migrate()` in `Program.cs` / startup? → flag and move to deployment pipeline.
+3. **Migrations** — `Database.Migrate()` / `EnsureCreated()` at startup, or edits to a published migration? → flag and move schema changes to the deployment pipeline.
 4. **Async hygiene** — Sync `ToList`/`First`/`SaveChanges` on async path? `.Result`/`.Wait()`? Missing CT?
 5. **Performance** — Read-only query without `AsNoTracking`? Full-entity return where DTO would do? Navigation access in loop without `Include`?
 6. **Bulk** — `foreach` with `Remove` + `SaveChanges`, or load-mutate-save when `ExecuteUpdate`/`ExecuteDelete` would work?

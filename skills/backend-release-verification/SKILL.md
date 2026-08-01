@@ -39,7 +39,7 @@ Low-risk → lightweight subset; report MUST list skipped + residual risk.
 
 ## Skill Routing
 
-- Rollout / rollback — CLAUDE.md "Plan first".
+- Rollout / rollback — shared `dev-workflow` [T0-8] / S2 authorization gate.
 - `dotnet-testing-best-practices` / `nodejs-best-practices` — tests.
 - `auth-implementation-patterns` — auth / authz / tenant.
 - `containerization` — Docker / image / health.

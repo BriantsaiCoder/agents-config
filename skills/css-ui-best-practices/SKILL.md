@@ -5,12 +5,11 @@ description: 'Use when writing or reviewing CSS, UI, a11y — SCSS, CSS Modules,
 
 # CSS / UI / Accessibility Best Practices
 
-User-stance rules for 2026 CSS / a11y. Apply proactively writing; checklist when reviewing.
+Portable CSS / UI / a11y rules. Apply proactively when writing and as a checklist when reviewing; host or repo rules own stack choices.
 
-## Stack Defaults
+## CSS Defaults
 
-- New → **Tailwind v4** (Oxide engine 5–100× faster, `@theme` CSS-first, no JS config, native layers). Existing → match.
-- Avoid runtime CSS-in-JS in new (RSC-incompatible, bundle cost). Maintain existing styled-components / Emotion.
+- Match the repository's existing styling system; do not introduce a second one for a local change.
 - Design tokens → CSS custom properties.
 - Native CSS first: nesting, `@layer`, `:has()`, container queries.
 - No `!important`. Manage cascade with `@layer`.
@@ -19,7 +18,7 @@ User-stance rules for 2026 CSS / a11y. Apply proactively writing; checklist when
 
 - Animate only `transform` / `opacity`. Never `width` / `height` / `top` (layout, jank, hurts INP).
 - Images: `aspect-ratio` (CLS-safe) + `loading="lazy"` (below fold) + `<picture>` WebP/AVIF.
-- Tailwind purges unused; no UI framework for a few components.
+- Do not add a UI framework for a few components; verify unused CSS from the production build.
 
 ## Accessibility — Non-Negotiable
 
@@ -33,8 +32,8 @@ WCAG 2.2 AA = legal floor (ADA / EAA / EN 301 549). Full → `references/accessi
 ## Writing Pattern
 
 1. Semantic HTML first (`<header>`, `<nav>`, `<main>`, `<button>`).
-2. Tailwind utilities; `@apply` only for repeats.
-3. Tokens as CSS custom properties / Tailwind theme.
+2. Follow the repository's existing utility, module, or component pattern.
+3. Keep design tokens in CSS custom properties or the existing theme layer.
 4. Verify contrast in DevTools.
 5. Keyboard: Tab / Enter / Space / Escape.
 6. `alt` on images; `aria-label` only where semantic HTML insufficient.

@@ -46,7 +46,7 @@ This skill covers **Dockerfile authoring**. It does not cover:
 
 - Docker Compose service networking (use ad-hoc docs / Compose reference).
 - Kubernetes manifests, Helm charts.
-- Infrastructure rollout planning (use `backend-release-verification` / `frontend-release-verification` skills + CLAUDE.md "Plan first" hard rule).
+- Infrastructure rollout planning (use `backend-release-verification` / `frontend-release-verification` skills + shared `dev-workflow` [T0-8] / S2 authorization gate).
 - CI/CD pipeline definition (separate concern; this skill produces the artifact, the pipeline ships it).
 
 If the user's request is one of the above, point to the appropriate skill instead.

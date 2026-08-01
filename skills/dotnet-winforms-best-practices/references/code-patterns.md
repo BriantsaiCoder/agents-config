@@ -1,33 +1,6 @@
 # WinForms Code Patterns per Golden Rule
 
-Complete code examples for Rules 2, 6–10 plus .NET Framework vs .NET 8+ comparison and DI setup. For Rules 1, 4, 12 (UI threading, GDI+, double buffering) see `threading-and-resources.md`. For Rule 5 (BindingSource) see `data-binding-patterns.md`.
-
-## Rule 1 — UI threading (complete examples)
-
-```csharp
-// ❌ Wrong — cross-thread access
-Task.Run(() =>
-{
-    lblStatus.Text = "Done"; // InvalidOperationException
-});
-
-// ✅ Correct — marshal to UI thread
-Task.Run(() =>
-{
-    lblStatus.Invoke(() => lblStatus.Text = "Done");        // .NET 8+
-    // or for .NET Framework:
-    lblStatus.Invoke(new Action(() => lblStatus.Text = "Done"));
-});
-
-// ✅ Best — use async/await which returns to UI thread automatically
-private async void btnProcess_Click(object sender, EventArgs e)
-{
-    btnProcess.Enabled = false;
-    var result = await Task.Run(() => HeavyComputation());
-    lblStatus.Text = $"Result: {result}";  // back on UI thread
-    btnProcess.Enabled = true;
-}
-```
+Complete code examples for Rules 2, 6–10, 12 plus .NET Framework vs .NET 8+ comparison and DI setup. For Rules 1 and 4 (UI threading and GDI+) see `threading-and-resources.md`. For Rule 5 (BindingSource) see `data-binding-patterns.md`.
 
 ## Rule 2 — `async void` only in event handlers
 
@@ -50,66 +23,6 @@ private async void ProcessData() { /* ... */ }  // unhandled exceptions crash pr
 
 // ✅ Correct — return Task for non-event methods
 private async Task ProcessDataAsync() { /* ... */ }
-```
-
-## Rule 4 — Dispose GDI+ resources (full examples)
-
-```csharp
-// ❌ Wrong — leaked resources
-protected override void OnPaint(PaintEventArgs e)
-{
-    var pen = new Pen(Color.Red, 2);      // leaked
-    var brush = new SolidBrush(Color.Blue); // leaked
-    e.Graphics.DrawRectangle(pen, 10, 10, 100, 50);
-    e.Graphics.FillEllipse(brush, 120, 10, 50, 50);
-}
-
-// ✅ Correct — using statements
-protected override void OnPaint(PaintEventArgs e)
-{
-    using var pen = new Pen(Color.Red, 2);
-    using var brush = new SolidBrush(Color.Blue);
-    e.Graphics.DrawRectangle(pen, 10, 10, 100, 50);
-    e.Graphics.FillEllipse(brush, 120, 10, 50, 50);
-}
-
-// ✅ Better for frequently used resources — cache as class fields
-private readonly Pen _borderPen = new Pen(Color.Red, 2);
-private readonly SolidBrush _fillBrush = new SolidBrush(Color.Blue);
-
-protected override void Dispose(bool disposing)
-{
-    if (disposing)
-    {
-        _borderPen.Dispose();
-        _fillBrush.Dispose();
-        components?.Dispose();
-    }
-    base.Dispose(disposing);
-}
-```
-
-## Rule 5 — BindingSource (data binding setup)
-
-```csharp
-private readonly BindingSource _orderBindingSource = new BindingSource();
-
-private void MainForm_Load(object sender, EventArgs e)
-{
-    _orderBindingSource.DataSource = typeof(Order);
-    dgvOrders.DataSource = _orderBindingSource;
-
-    // Bind individual controls to current record
-    txtOrderId.DataBindings.Add("Text", _orderBindingSource, "Id");
-    txtCustomer.DataBindings.Add("Text", _orderBindingSource, "CustomerName");
-}
-
-// Update data — UI refreshes automatically
-private async void btnRefresh_Click(object sender, EventArgs e)
-{
-    var orders = await _orderService.GetAllAsync();
-    _orderBindingSource.DataSource = new BindingList<Order>(orders);
-}
 ```
 
 ## Rule 6 — Task.Run + IProgress<T>
@@ -260,14 +173,12 @@ protected override void OnFormClosing(FormClosingEventArgs e)
 ## Rule 12 — SuspendLayout for bulk updates
 
 ```csharp
-// Batch UI updates
 panel.SuspendLayout();
 try
 {
     foreach (var item in items)
     {
-        var label = new Label { Text = item.Name, Dock = DockStyle.Top };
-        panel.Controls.Add(label);
+        panel.Controls.Add(new Label { Text = item.Name, Dock = DockStyle.Top });
     }
 }
 finally
@@ -275,7 +186,6 @@ finally
     panel.ResumeLayout(performLayout: true);
 }
 
-// For custom painting — use double buffering
 public class BufferedPanel : Panel
 {
     public BufferedPanel()

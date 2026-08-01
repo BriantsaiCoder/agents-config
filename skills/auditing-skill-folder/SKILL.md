@@ -17,7 +17,7 @@ description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skil
 
 ### Portable structural gate（必要）
 
-依 [`references/skill-standards.md`](references/skill-standards.md) 驗證目錄與 `name` 一致、frontmatter 含有效 `name`／`description`、relative references 可解析。回報缺陷；Step 0 constraint 另行套用。
+依 [`references/skill-standards.md`](references/skill-standards.md) 驗證目錄與 `name` 一致、frontmatter 含有效 `name`／`description`；執行 `scripts/check-relative-references.sh <folder>` 驗證 relative references。回報缺陷；Step 0 constraint 另行套用。
 
 ### Steps 1–6
 

@@ -14,7 +14,7 @@ For EF Core / LINQ-to-SQL / other ORMs this skill does **not** apply — say so 
 
 ## Golden Rules
 
-Each rule's *why* + writing/reviewing patterns live in `references/rules-expanded.md`.
+Open the topical reference that matches the task; it contains the detailed rationale and patterns.
 
 1. **Always parameterize.** `@name` + anonymous object / POCO / `DynamicParameters`. *Why:* SQLi defense + plan cache.
 2. **Own connection lifetime with `await using`.** *Why:* deterministic pool return on exception.
@@ -33,7 +33,6 @@ Each rule's *why* + writing/reviewing patterns live in `references/rules-expande
 
 | Need | File |
 |---|---|
-| Why behind each rule + writing / reviewing patterns | `references/rules-expanded.md` |
 | Method cheat sheet, parameterization (anonymous / POCO / DynamicParameters), `IN @ids`, `LIKE` escaping, dialect notes | `references/core-crud-safety.md` |
 | `buffered`, `IAsyncEnumerable`, `QueryMultipleAsync`, multi-mapping + `splitOn` pitfalls, `.Result` / `ConfigureAwait` | `references/performance.md` |
 | `IDbConnectionFactory`, DI lifetimes, `IDbTransaction` vs `TransactionScope`, `IEnumerable from using` trap, unit-of-work | `references/connections-transactions.md` |

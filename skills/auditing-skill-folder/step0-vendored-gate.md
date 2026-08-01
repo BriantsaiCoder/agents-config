@@ -19,7 +19,7 @@ The record lives at the repo root (`vendored-forks.md`), never inside the vendor
 Detection is the **union** of five signals because none alone is sufficient — every one of them was learned from a miss or an immutable vendored-set requirement:
 
 - `vendored-skills.lock` (repo root, tab-separated: `<basename>`, `source_url`, …) is checked **first** and outranks the rest. It is the general provenance ledger for payloads that carry no in-tree marker at all. Column 2 becomes the OWNER cell.
-  - Consequence you must internalise before judging any row: **a `VND` flag is not proof of foreign authorship.** `aspnet-api-architect` renders `OWNER = github.com/BriantsaiCoder/agents-config/...` — this repo. Its provenance is recorded as unresolved (`vendored-forks.md`, "Unresolved Stage B2 provenance"), which is why it stays non-editable rather than self-owned. Reading such a row as "the detector is broken, this is mine" and issuing a Trim is precisely the in-place edit this gate exists to prevent.
+  - Consequence you must internalise before judging any row: **a `VND` flag is not proof of foreign authorship.** Resolve the recorded source before deciding editability. For example, `aspnet-api-architect` was removed from the lock after its source proved to be this repository's own initial snapshot; the evidence now lives under `vendored-forks.md` → "Resolved Stage B2 provenance".
 - LICENSE alone missed `design-doc-mermaid`: no LICENSE file at all, upstream was a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README. That skill has since been retired to `attic/`, but it remains the reason this is a union and not a single test.
 - The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker.
 - Both together still missed two skills (2026-07-25, caught by hand, fixed 2026-07-26): `tailwind-v4-shadcn` declares provenance only in `.claude-plugin/plugin.json`, which was not in the scanned file set; `agent-browser` puts its `upstream:` marker in an HTML comment **after** the closing `---`, where the frontmatter-bounded scan had already stopped. Both are now covered — the marker scan reads the whole `SKILL.md`, anchored on `^` / `<!--` / `|`.
@@ -52,7 +52,7 @@ Note the vocabulary trap: "Delete" as a protocol verdict means *removing the who
 Three reasons this has to be stated rather than left implied:
 
 - The gate's whole vocabulary is prohibitive ("takes no", "is void", "forbidden"), and a prohibition read at speed generalises from *don't edit* to *don't bother*. That drift is the failure this section exists to block.
-- The flag is not proof of foreign authorship. `vendored-skills.lock` records the source, and for some entries that source is **this repo** — `aspnet-api-architect` renders an OWNER inside `BriantsaiCoder/agents-config`, with provenance still unresolved (`vendored-forks.md`, "Unresolved Stage B2 provenance"). Skip-because-vendored on those rows means skipping your own work.
+- The flag is not proof of foreign authorship. Refresh the locks and provenance record before judging: a formerly locked row may be reclassified as self-owned when evidence resolves its source, as happened with `aspnet-api-architect`.
 - Reporting is a real output only if the report is real. A finding recorded at true severity is what a future override decision is argued from; a finding softened at capture time cannot be recovered later.
 
 ## The override: the constraint is a default, not an absolute
