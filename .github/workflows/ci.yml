@@ -59,6 +59,15 @@ jobs:
       - name: description linter 雙語回歸（22 cases）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/description-lint.sh
 
+      # Step 2c 觸發評測的計分邏輯。這是唯一會花真實 rate-limit 額度的稽核步驟，所以它的
+      # 判斷必須能在不花錢的前提下被釘死——本測試以 mock runner 驅動真正的 eval-triggers.sh，
+      # 零 API 呼叫。危險方向是「基礎設施失敗被讀成 skill 沒觸發」：auth 過期或額度耗盡若
+      # 被計為 quiet 的 PASS，一次斷網就會產出一份全綠的假稽核報告。該語意與 SKIP
+      # （disable-model-invocation，只有 Claude 認）、collision 必須指名贏家、mock 結果
+      # 必帶警語，四條都在此把關。
+      - name: Step 2c 觸發評測計分回歸（88 斷言，零 API）
+        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/trigger-eval.sh
+
       # Step 1 的字數預算。`wc -w` 按空白切詞，中文沒有詞間空白，因此一段 40 字的 zh-TW
       # 段落只算 1 個 word——那不是誤差而是整道閘對一整類 skill 失效。修法是加 CJK 字元計數
       # 而非換算法：無 CJK 的檔 effective 恆等於 wc -w，英文行為完全不變。另含防復發守衛：

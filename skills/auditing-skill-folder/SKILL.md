@@ -34,6 +34,7 @@ Run in order after Step 0. Steps 1–2 use scripts, 2b is a semantic cross-row c
 | 1 | Token cost | `scripts/count-words.sh <folder>` | Effective count over its row's limit; over → `step1-verdict-guide.md` (Trim vs Externalize vs Refactor) |
 | 2 | Description trap | `scripts/lint-descriptions.sh <folder>` | Descriptions summarizing workflow vs. trigger-only |
 | 2b | Trigger collision | Same table, read **across** rows | Two model-invoked descriptions claiming one trigger space with no disambiguator = Collision. Invisible to every per-skill rung, and a cause of "which skill fires" being nondeterministic |
+| 2c | Trigger accuracy — OPT-IN, spends rate limit | `scripts/eval-triggers.sh --runner claude` | Did it actually fire? Names the winner when skills contest one prompt, making 2b observable rather than argued. Detail: `step2c-trigger-eval.md` |
 | 3 | Stance bleed | Read | Pure stance ("use Serilog", "no barrels") → propose CLAUDE.md |
 | 4 | Mechanical-only | Read | Enforceable by lint/hook/regex → propose hook |
 | 5 | Type clarity | Read | Technique / Pattern / Reference (defined in `references/skill-standards.md`); mixed-type → propose split |
@@ -55,6 +56,8 @@ Run in order after Step 0. Steps 1–2 use scripts, 2b is a semantic cross-row c
 | "It's vendored, so scoring it is pointless" | The flag gates execution, not assessment. Unscored = skipped step = restart |
 | "Vendored, so I'll log it as low severity" | Severity comes from the defect, never from the flag. Landing cost is recorded separately |
 | "Each description reads fine on its own" | Step 2b skipped. Collisions are invisible per-skill — compare descriptions to each other, not just to the rules |
+| "Step 2 says trigger-led, so it fires" | Step 2 is a regex proxy for firing. Run 2c, or record that you did not |
+| "2c came back green, ship it" | Read `err=` and `TRUNCATED`; `--runner mock` is canned data, never an audit number |
 | "I'll eyeball which are vendored" | Two hand-scans missed 2 (`LICENSE.md` ≠ `LICENSE`). Run Step 0. |
 
 ## Step 7 (optional) — Style anti-patterns

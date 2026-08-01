@@ -240,14 +240,25 @@ while IFS=$'\t' read -r skill expected_tree_sha; do
     fail "Stage B2 skill tree differs from checkpoint: $skill"
 done < "$B2_SKILLS_LOCK"
 
+# auditing-skill-folder 在此是「逐檔」列舉而非 skills/auditing-skill-folder/*，這是刻意的：
+# 萬用字元會讓往後任何新檔靜默通過，而這道閘的用途正是強迫每個新檔被有意識地放行一次。
+# 新增這五個檔案的理由（Step 2c 觸發評測）：evals/ 三個是評測輸入與離線 mock runner，
+# scripts/eval-triggers.sh 是評測器本體，step2c-trigger-eval.md 是被 SKILL.md 指向的細節檔
+# （SKILL.md 已超字數預算，細節必須外移）。計分邏輯由 tests/trigger-eval.sh 的斷言守護，
+# 已在 CI；evals/cases.jsonl 內容漂移另由該測試的「skill 全部存在」健檢把關。
 while IFS= read -r changed; do
   case "$changed" in
     skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/step0-vendored-gate.md | \
     skills/auditing-skill-folder/step1-verdict-guide.md | \
+    skills/auditing-skill-folder/step2c-trigger-eval.md | \
+    skills/auditing-skill-folder/evals/cases.jsonl | \
+    skills/auditing-skill-folder/evals/mock-runner.sh | \
+    skills/auditing-skill-folder/evals/runners.json | \
     skills/auditing-skill-folder/references/skill-standards.md | \
     skills/auditing-skill-folder/scripts/check-vendored.sh | \
     skills/auditing-skill-folder/scripts/count-words.sh | \
+    skills/auditing-skill-folder/scripts/eval-triggers.sh | \
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/auditing-skill-folder/scripts/lint-descriptions.sh | \
     skills/context7-mcp/* | \
