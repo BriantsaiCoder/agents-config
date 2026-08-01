@@ -61,6 +61,10 @@ esac
 # 拿 mkdir 把目錄建回來只會讓 remove 直接成功，測試整段空轉卻仍然 PASS。
 # 假 git 只攔 worktree remove／list 兩個子命令，其餘一律轉給真 git。
 FAKEBIN=$(mktemp -d "${TMPDIR:-/tmp}/agents-branch-fake.XXXXXX")
+# 真 git 的路徑必須在注入 PATH **之前**解析：替身自己叫 command -v git 只會找到它自己。
+# 不寫死 /usr/bin/git——Nix、部分容器、只裝 Homebrew git 的機器都不在那個路徑。
+REAL_GIT=$(command -v git) || { echo "FAIL: 找不到 git"; exit 1; }
+export REAL_GIT
 cat > "$FAKEBIN/git" <<'FAKE'
 #!/usr/bin/env bash
 set -u
@@ -75,7 +79,7 @@ elif [[ "${1:-} ${2:-}" == "worktree list" ]]; then
   printf 'worktree %s\n' "${FAKE_STILL_REGISTERED:-}"
   exit 0
 fi
-exec /usr/bin/git "$@"                          # 其餘轉給真 git
+exec "${REAL_GIT:?REAL_GIT 未設定}" "$@"         # 其餘轉給真 git（路徑由呼叫端解析後傳入）
 FAKE
 chmod +x "$FAKEBIN/git"
 
