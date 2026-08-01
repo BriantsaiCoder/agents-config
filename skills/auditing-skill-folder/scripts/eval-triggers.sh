@@ -161,22 +161,29 @@ fi
 # printing "Reading additional input from stdin..." before the stream, say) would take the entire
 # run's parse with it. -R goes line by line and fromjson? drops what is not JSON.
 
+# skill_calls <stream-file> -> every Skill invocation in the turn, one per line, in order.
+#
+# `..` recurses, so the filter is SHAPE-AGNOSTIC: it finds the tool_use whether it sits nested in
+# {"type":"assistant","message":{"content":[…]}} (what claude 2.1.220 actually emits — see
+# runners.json) or at the top level of its own event. That is not speculative generality. An
+# envelope change would otherwise make both readers below return nothing, every case would score
+# `quiet`, and `runner_failed` would still see its result event — so the run would report a clean
+# sheet built on a parser that stopped parsing. Matching on the object rather than on its position
+# removes the whole failure mode instead of adding a branch per known shape.
+skill_calls() {
+  jq -R -r 'fromjson? | .. | objects
+            | select(.type? == "tool_use" and .name? == "Skill") | .input.skill?' \
+    "$1" 2>/dev/null
+}
+
 # fired_skill <stream-file> -> "skilleval:name" of the FIRST Skill tool call, or "" if none.
 # First call is the answer to "which skill won this trigger", which is what a collision is about.
-fired_skill() {
-  jq -R -r 'fromjson? | select(.type=="assistant") | .message.content[]?
-            | select(.type=="tool_use" and .name=="Skill") | .input.skill' \
-    "$1" 2>/dev/null | head -1
-}
+fired_skill() { skill_calls "$1" | head -1; }
 
 # skill_ever_fired <stream-file> <plugin:skill> -> 0 if that skill was invoked ANYWHERE in the turn.
 # Distinct from fired_skill on purpose: "who won the trigger" and "did this skill stay out of it"
 # are different questions, and only the second one is what a quiet case asserts.
-skill_ever_fired() {
-  jq -R -r 'fromjson? | select(.type=="assistant") | .message.content[]?
-            | select(.type=="tool_use" and .name=="Skill") | .input.skill' \
-    "$1" 2>/dev/null | grep -Fxq "$2"
-}
+skill_ever_fired() { skill_calls "$1" | grep -Fxq "$2"; }
 
 runner_failed() {
   # A run that never produced a result event failed for infrastructure reasons (auth, rate limit,

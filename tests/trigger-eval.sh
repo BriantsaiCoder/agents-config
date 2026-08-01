@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# eval-triggers.sh（Step 2c）離線回歸測試 —— 65 個斷言，零 API 呼叫。
+# eval-triggers.sh（Step 2c）離線回歸測試 —— 70 個斷言，零 API 呼叫。
 # （數字別跟 evals/cases.jsonl 的 23 個 case 混淆：那是要送給模型的評測題目，
 #  這裡是評測腳本自身計分邏輯的斷言，兩者無對應關係。）
 #
@@ -189,6 +189,15 @@ cp "$SCRIPT" "$COPY/scripts/eval-triggers.sh"
 cp "$MOCK" "$COPY/evals/mock-runner.sh"
 # 前導雜訊 + 帶空白的 JSON：釘住 runner_failed 不得靠 grep 字面 "type":"result"，
 # 也釘住 parser 不得用 jq -s（一行不合法就整份 parse 陪葬）。
+# 形狀無關解析：同一個 tool_use 物件放在 top-level 事件裡也必須被認出。位置敏感的
+# parser 在 envelope 改變時會讓每個 case 都判 quiet，而 result 事件照常抵達——
+# 又一次「parser 停止解析卻回報全綠」。
+cat > "$COPY/evals/toplevel-runner.sh" <<'SH'
+#!/usr/bin/env sh
+cat >/dev/null
+printf '{"type":"tool_use","id":"t1","name":"Skill","input":{"skill":"skilleval:alpha"}}\n'
+printf '{"type":"result","subtype":"success","is_error":false}\n'
+SH
 cat > "$COPY/evals/spaced-runner.sh" <<'SH'
 #!/usr/bin/env sh
 cat >/dev/null
@@ -199,11 +208,12 @@ cat > "$COPY/evals/runners.json" <<'J'
 {
   "noiso":  {"format":"claude-stream-json","command":["/bin/echo","{\"type\":\"result\"}"]},
   "badiso": {"format":"claude-stream-json","command":["/bin/echo","--setting-sources","user"]},
+  "toplevel": {"format":"claude-stream-json","command":["{EVALS_DIR}/toplevel-runner.sh","--setting-sources",""]},
   "spaced": {"format":"claude-stream-json","command":["{EVALS_DIR}/spaced-runner.sh","--setting-sources",""]},
   "mock":   {"format":"claude-stream-json","command":["{EVALS_DIR}/mock-runner.sh","{PLUGIN_DIR}"]}
 }
 J
-chmod +x "$COPY/scripts/eval-triggers.sh" "$COPY/evals/mock-runner.sh" "$COPY/evals/spaced-runner.sh"
+chmod +x "$COPY/scripts/eval-triggers.sh" "$COPY/evals/mock-runner.sh" "$COPY/evals/spaced-runner.sh" "$COPY/evals/toplevel-runner.sh"
 
 OUTA=$("$COPY/scripts/eval-triggers.sh" --runner noiso --cases "$CASES" --skills "$CORPUS" 2>&1); RCA=$?
 has "無 --setting-sources 的 runner 直接拒跑" "$OUTA" "has no --setting-sources"
@@ -293,6 +303,28 @@ eq  "--jsonl 不可寫 exit=1"          "1" "$RCJ"
 # 註解裡的斷言數字不得再寫死（本輪就是因為 47→55 沒同步而被抓到）。
 hasnt "allowlist 註解不得寫死過期的斷言數" \
       "$(cat "$AGENTS/tests/matt-thin-workflow.sh")" "47 條斷言"
+
+echo
+echo "== Copilot 第四輪 review：形狀無關解析 =="
+# tool_use 物件放在 top-level 事件而非 assistant.message.content[] 裡也必須被認出。
+# 位置敏感的 parser 在 envelope 改變時會讓每個 case 都判 quiet，而 result 事件照常
+# 抵達——「parser 停止解析卻回報全綠」，與本檔第 1 條同一個失效模式。
+CASES11="$TMP/c11.jsonl"
+printf '%s\n' '{"id":"t-toplevel","skill":"alpha","prompt":"x","expect":"fire"}' > "$CASES11"
+OUTK=$("$COPY/scripts/eval-triggers.sh" --runner toplevel --cases "$CASES11" --skills "$CORPUS" --isolate 2>&1); RCK=$?
+hasnt "top-level tool_use 不得被當成沒觸發" "$OUTK" "FAIL no skill fired"
+eq    "top-level 形狀可正常計分 exit=0"      "0" "$RCK"
+has   "top-level 形狀計為 TP"                "$OUTK" "TP=1"
+
+# 巢狀形狀（真實 emitter 的形狀）不得因為改成形狀無關而退化。
+CASES12="$TMP/c12.jsonl"
+printf '%s\n' '{"id":"t-nested-still-ok","skill":"alpha","prompt":"ALPHAWORD go","expect":"fire"}' > "$CASES12"
+OUTL=$(run_eval "$CASES12" "$MAP"); RCL=$?
+eq "巢狀形狀仍正常（無回歸）" "0" "$RCL"
+
+# 文件不得再宣稱 ground truth 是 top-level——那正是本輪被抓到的不一致。
+has "runners.json 明載實際為巢狀形狀" \
+    "$(cat "$EVALS/runners.json")" "the tool_use is NESTED, not top-level"
 
 echo
 echo "== 真實 cases.jsonl 自身健檢 =="
