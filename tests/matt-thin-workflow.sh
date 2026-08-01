@@ -11,6 +11,10 @@ HANDOFF="$AGENTS/skills/handoff/SKILL.md"
 WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
 WRITING_SKILLS_DIR="$AGENTS/skills/writing-great-skills"
 WRITING_SKILLS_POLICY="$AGENTS/skills/writing-great-skills/agents/openai.yaml"
+AUDIT_SKILL="$AGENTS/skills/auditing-skill-folder/SKILL.md"
+AUDIT_VENDORED_GATE="$AGENTS/skills/auditing-skill-folder/step0-vendored-gate.md"
+AUDIT_VERDICT_GUIDE="$AGENTS/skills/auditing-skill-folder/step1-verdict-guide.md"
+AUDIT_LINTER="$AGENTS/skills/auditing-skill-folder/scripts/lint-descriptions.sh"
 VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
 
 # shellcheck source=../skills/auditing-skill-folder/scripts/lib-vendored.sh
@@ -109,6 +113,21 @@ expected_writing_tree_sha="$(
 actual_writing_tree_sha="$(vendored_tree_sha256 "$WRITING_SKILLS_DIR")"
 [ "$actual_writing_tree_sha" = "$expected_writing_tree_sha" ] ||
   fail 'writing-great-skills tree differs from the recorded fork fingerprint'
+
+rg -q '\.\./dev-workflow/SKILL\.md' "$AUDIT_SKILL" ||
+  fail 'auditing-skill-folder does not route through the canonical dev-workflow path'
+! rg -q 'model invocation metadata only|four steps above' "$AUDIT_VENDORED_GATE" ||
+  fail 'auditing-skill-folder carries a stale fork scope or override step count'
+! rg -q '/ 150 words' "$AUDIT_VERDICT_GUIDE" ||
+  fail 'auditing-skill-folder verdict guide carries the retired 150-word tier'
+rg -q 'UNION of five signals' "$VENDORED_LIB" ||
+  fail 'vendored detector documentation does not match its five signals'
+! rg -q 'File existence alone is not a signal' "$VENDORED_LIB" ||
+  fail 'vendored detector documentation hides LICENSE existence-based detection'
+rg -q 'LICENSE variants.*existence' "$AUDIT_VENDORED_GATE" ||
+  fail 'vendored gate does not document LICENSE existence-based detection'
+! rg -q 'language always lands here|Every other language still scores' "$AUDIT_LINTER" ||
+  fail 'description linter overstates unsupported-language classification'
 
 rg -q '\[INT-7\].*disable-model-invocation.*MUST NOT.*自動 invoke' "$KERNEL" ||
   fail 'thin kernel does not preserve the Matt user-only invocation boundary'
@@ -225,6 +244,7 @@ while IFS= read -r changed; do
   case "$changed" in
     skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/step0-vendored-gate.md | \
+    skills/auditing-skill-folder/step1-verdict-guide.md | \
     skills/auditing-skill-folder/references/skill-standards.md | \
     skills/auditing-skill-folder/scripts/check-vendored.sh | \
     skills/auditing-skill-folder/scripts/count-words.sh | \

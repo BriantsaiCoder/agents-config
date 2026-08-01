@@ -39,11 +39,6 @@
 | [03-opus5-lens.md](03-opus5-lens.md) | Opus 5 視角 0 存活的分析 |
 | [04-execution-order.md](04-execution-order.md) | 建議執行順序與落地程序 |
 
-## 已執行
+## 執行狀態
 
-- `auditing-skill-folder` 已加入「flag gates execution, not assessment」規則（SKILL.md Step 0／Red Flags×3／Iron Law、step0-vendored-gate.md 兩新節、check-vendored.sh 輸出）
-- `lint-descriptions.sh` 已補 zh-TW 分類（TRAP 側先落地），`tests/description-lint.sh` 22 cases 已進 CI
-
-## 未執行
-
-本報告的 18 條發現**一條都未修**。落地程序見 `04-execution-order.md`。
+17 條已完成，A5 因 live corpus 零命中而依 YAGNI 跳過。落地結果與驗證證據集中在 [`STATUS.md`](STATUS.md)，避免在兩處維護相同狀態。
