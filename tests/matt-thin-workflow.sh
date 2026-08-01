@@ -113,12 +113,12 @@ expected_diagnosing_tree_sha="$(
 actual_diagnosing_tree_sha="$(vendored_tree_sha256 "$DIAGNOSING_DIR")"
 [ "$actual_diagnosing_tree_sha" = "$expected_diagnosing_tree_sha" ] ||
   fail 'diagnosing-bugs tree differs from the recorded fork fingerprint'
-rg -q "^description: Use when editing one existing Agent Skill's model/user invocation mode.*another skill routes an already-red single-target behavior rewrite here.*Existing-skill invocation edits stay here.*host creator owns new-skill scaffolding.*folder auditor owns directory audits" "$WRITING_SKILLS" ||
-  fail 'writing-great-skills lacks disambiguated authoring and post-RED triggers'
+rg -q "^description: Agent Skill authoring\. Use when editing one existing Agent Skill's model/user invocation mode.*another skill routes an already-red single-target behavior rewrite here.*Existing-skill invocation edits stay here.*host creator owns new-skill scaffolding.*folder auditor owns directory audits" "$WRITING_SKILLS" ||
+  fail 'writing-great-skills lacks its identity clause, disambiguated authoring, or post-RED triggers'
 rg -q '^\*\*REQUIRED PRECONDITION:\*\*.*preserved RED trigger canary.*Step 2c RED satisfies this gate' "$WRITING_SKILLS" ||
   fail 'writing-great-skills does not accept a caller-provided Step 2c RED'
-rg -q '^\*\*REQUIRED SUB-SKILL:\*\*.*no caller provides.*invoke `diagnosing-bugs` first' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills does not declare the conditional trigger-diagnosis dependency'
+rg -q '^\*\*REQUIRED SUB-SKILL:\*\* For a misbehavior rewrite with no caller-supplied RED, invoke `diagnosing-bugs` first' "$WRITING_SKILLS" ||
+  fail 'writing-great-skills does not scope the trigger-diagnosis dependency to a misbehavior rewrite'
 rg -q 'full.*record a verdict for every applicable section' "$WRITING_SKILLS" ||
   fail 'writing-great-skills lacks the full-audit completion criterion'
 rg -q 'scoped edit.*only the named branch' "$WRITING_SKILLS" ||
