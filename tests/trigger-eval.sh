@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# eval-triggers.sh（Step 2c）離線回歸測試 —— 70 個斷言，零 API 呼叫。
+# eval-triggers.sh（Step 2c）離線回歸測試 —— 77 個斷言，零 API 呼叫。
 # （數字別跟 evals/cases.jsonl 的 23 個 case 混淆：那是要送給模型的評測題目，
 #  這裡是評測腳本自身計分邏輯的斷言，兩者無對應關係。）
 #
@@ -198,6 +198,15 @@ cat >/dev/null
 printf '{"type":"tool_use","id":"t1","name":"Skill","input":{"skill":"skilleval:alpha"}}\n'
 printf '{"type":"result","subtype":"success","is_error":false}\n'
 SH
+# name=Skill 但缺 input.skill 的 tool_use：jq 在 -r 下會把缺值印成字面 "null"，
+# 若未過濾就會被當成一個叫做 null 的 skill 觸發——collision 列出現幽靈贏家、
+# quiet 列出現幽靈違規。形狀無關解析讓 `..` 走訪更多物件，這風險反而變高。
+cat > "$COPY/evals/nullskill-runner.sh" <<'SH'
+#!/usr/bin/env sh
+cat >/dev/null
+printf '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t0","name":"Skill","input":{}}]}}\n'
+printf '{"type":"result","subtype":"success","is_error":false}\n'
+SH
 cat > "$COPY/evals/spaced-runner.sh" <<'SH'
 #!/usr/bin/env sh
 cat >/dev/null
@@ -208,12 +217,13 @@ cat > "$COPY/evals/runners.json" <<'J'
 {
   "noiso":  {"format":"claude-stream-json","command":["/bin/echo","{\"type\":\"result\"}"]},
   "badiso": {"format":"claude-stream-json","command":["/bin/echo","--setting-sources","user"]},
+  "nullskill": {"format":"claude-stream-json","command":["{EVALS_DIR}/nullskill-runner.sh","--setting-sources",""]},
   "toplevel": {"format":"claude-stream-json","command":["{EVALS_DIR}/toplevel-runner.sh","--setting-sources",""]},
   "spaced": {"format":"claude-stream-json","command":["{EVALS_DIR}/spaced-runner.sh","--setting-sources",""]},
   "mock":   {"format":"claude-stream-json","command":["{EVALS_DIR}/mock-runner.sh","{PLUGIN_DIR}"]}
 }
 J
-chmod +x "$COPY/scripts/eval-triggers.sh" "$COPY/evals/mock-runner.sh" "$COPY/evals/spaced-runner.sh" "$COPY/evals/toplevel-runner.sh"
+chmod +x "$COPY/scripts/eval-triggers.sh" "$COPY/evals/mock-runner.sh" "$COPY/evals/spaced-runner.sh" "$COPY/evals/toplevel-runner.sh" "$COPY/evals/nullskill-runner.sh"
 
 OUTA=$("$COPY/scripts/eval-triggers.sh" --runner noiso --cases "$CASES" --skills "$CORPUS" 2>&1); RCA=$?
 has "無 --setting-sources 的 runner 直接拒跑" "$OUTA" "has no --setting-sources"
@@ -325,6 +335,29 @@ eq "巢狀形狀仍正常（無回歸）" "0" "$RCL"
 # 文件不得再宣稱 ground truth 是 top-level——那正是本輪被抓到的不一致。
 has "runners.json 明載實際為巢狀形狀" \
     "$(cat "$EVALS/runners.json")" "the tool_use is NESTED, not top-level"
+
+echo
+echo "== Copilot 第五輪 review 兩項修正的回歸 =="
+# name=Skill 但缺 input.skill 時，jq -r 會印出字面 "null"。未過濾就會被當成一個叫
+# null 的 skill 觸發：collision 列冒出幽靈贏家、quiet 列冒出幽靈違規。
+CASES13="$TMP/c13.jsonl"
+printf '%s\n' '{"id":"t-nullskill","skill":"alpha","prompt":"x","expect":"quiet"}' > "$CASES13"
+OUTM=$("$COPY/scripts/eval-triggers.sh" --runner nullskill --cases "$CASES13" --skills "$CORPUS" --isolate 2>&1); RCM=$?
+# 斷言鎖在「幽靈 skill 名」本身，不是裸字串 null——runner 名稱就叫 nullskill，
+# 用裸字串會被自己的 fixture 名稱誤觸（第一版正是這樣假紅的）。
+hasnt "不得出現名為 null 的幽靈贏家"        "$OUTM" "other skill fired: null"
+hasnt "不得把 null 當成觸發的目標 skill"     "$OUTM" "skilleval:null"
+has   "缺 input.skill 視為未觸發（quiet 通過）" "$OUTM" "TN=1"
+eq    "缺 input.skill exit=0"                   "0" "$RCM"
+
+# --runner 錯誤訊息必須取自 runners.json 而非寫死。複本樹裡有 toplevel/nullskill 這些
+# 正本沒有的 runner：訊息若是衍生的就會提到它們，寫死的就不會。
+OUTN=$("$COPY/scripts/eval-triggers.sh" --cases "$CASES" --skills "$CORPUS" 2>&1)
+has   "--runner 清單取自 runners.json（提到 toplevel）" "$OUTN" "toplevel"
+hasnt "--runner 清單不得寫死正本的 runner 名"           "$OUTN" "claude-baseline"
+# 底線開頭的鍵是文件區塊，不是 runner，不得混進清單。
+hasnt "文件用的底線鍵不得被當成 runner 列出" \
+      "$("$SCRIPT" --cases "$CASES" --skills "$CORPUS" 2>&1)" "_codex_deliberately_absent"
 
 echo
 echo "== 真實 cases.jsonl 自身健檢 =="

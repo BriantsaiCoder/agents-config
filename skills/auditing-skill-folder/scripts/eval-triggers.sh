@@ -62,12 +62,19 @@ while [ $# -gt 0 ]; do
 done
 
 command -v jq >/dev/null 2>&1 || die "jq is required (used by 5 existing tests/ scripts; brew install jq)"
-[ -n "$RUNNER" ] || die "--runner is required (claude | claude-baseline | mock). No default: one costs rate limit, one returns canned data."
-[ -r "$CASES" ]  || die "cases file not found: $CASES"
-[ -d "$SKILLS_DIR" ] || die "skills dir not found: $SKILLS_DIR"
 
 RUNNERS_JSON="$EVALS_DIR/runners.json"
 [ -r "$RUNNERS_JSON" ] || die "runners.json not found: $RUNNERS_JSON"
+
+# The list is read from runners.json rather than spelled out here. A hard-coded list is a second
+# source of truth that goes stale the moment a runner is added, and it goes stale silently — the
+# message keeps looking authoritative while naming runners that no longer exist. Underscore-
+# prefixed keys are documentation blocks, not runners.
+runner_names() { jq -r 'keys[] | select(startswith("_") | not)' "$RUNNERS_JSON" 2>/dev/null | paste -sd'|' -; }
+[ -n "$RUNNER" ] ||
+  die "--runner is required ($(runner_names)). No default: a live runner spends rate limit and mock returns canned data, so defaulting to either is a way to be silently wrong."
+[ -r "$CASES" ]  || die "cases file not found: $CASES"
+[ -d "$SKILLS_DIR" ] || die "skills dir not found: $SKILLS_DIR"
 jq -e --arg r "$RUNNER" 'has($r)' "$RUNNERS_JSON" >/dev/null 2>&1 ||
   die "runner '$RUNNER' not defined in $RUNNERS_JSON"
 
@@ -170,9 +177,15 @@ fi
 # `quiet`, and `runner_failed` would still see its result event — so the run would report a clean
 # sheet built on a parser that stopped parsing. Matching on the object rather than on its position
 # removes the whole failure mode instead of adding a branch per known shape.
+# `// empty` is not decoration. Under -r a missing .input.skill prints the literal string "null",
+# which the scorer would then read as a fired skill named `null` — a phantom winner in a collision
+# row and a phantom violation in a quiet row. The risk went UP when this filter became
+# shape-agnostic, because `..` reaches partial or streaming tool_use objects that the old
+# position-bound filter never visited.
 skill_calls() {
   jq -R -r 'fromjson? | .. | objects
-            | select(.type? == "tool_use" and .name? == "Skill") | .input.skill?' \
+            | select(.type? == "tool_use" and .name? == "Skill")
+            | .input?.skill? // empty' \
     "$1" 2>/dev/null
 }
 
