@@ -250,6 +250,7 @@ reworded.
 **Decision (2026-07-31): accept the model-invocation metadata fork.**
 **Decision (2026-08-01): widen the scope to body corrections. Supersedes the above.**
 **Decision (2026-08-01, second pass): add trigger ownership and structural trim. Supersedes the above.**
+**Decision (2026-08-01, third pass): scope the RED gate, restore the bold-term contract, restore the identity clause, and reconcile this record with what the second pass actually shipped. Supersedes the above.**
 
 The 2026-07-31 decision was scoped to invocation metadata and said "do not extend it". This
 decision extends it deliberately, on the strength of a two-round audit
@@ -261,25 +262,42 @@ The second pass is backed by fresh Claude, Codex, and Copilot routing canaries r
 `proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`. The candidate makes host
 creators own scaffolding, accepts a valid RED from the folder auditor's Step 2c, sends missing-RED
 reproduction to `diagnosing-bugs`, and gives this skill the behavioral rewrite after either handoff.
-It replaces the 1,641-word top level with a 427-word executable checklist and makes completion
-branch-aware instead of forcing a full audit for every scoped edit. The evidence record keeps the
+It replaced the 1,641-word top level with an executable checklist — 427 words as the second pass
+landed it, 437 after the third pass restored the identity clause and the bold-term contract — and
+makes completion branch-aware instead of forcing a full audit for every scoped edit. The evidence record keeps the
 mixed D-route canary as a residual instead of claiming a three-host clean sweep.
 
-Approved tree SHA-256: `b58b27d78ee29a15319aff92f153fd715cf1d4f0c27b39ceea8d65dcf2b7221c`.
+The third pass answers a post-landing review
+(`proposals/2026-08-01-two-skill-tuning-audit/05-post-landing-review.md`, findings F2/F3/F5) of what
+the second pass shipped. It scopes the `diagnosing-bugs` gate to the branch it was written for,
+gives the glossary pointer back the term-to-heading contract the trim removed, and restores the
+identity clause the skill's own Description rule requires. F1 is actioned as a record correction only:
+the two `Reconciliation (F1)` blocks below give every second-pass claim its status in HEAD, with the
+two live divergences recorded rather than repaired, because repairing either would widen the fork a
+fourth time. F4 (the `_Avoid_:` removal has no canary covering the behavior those lines protected) is
+recorded in the review and **not** actioned here.
+
+Approved tree SHA-256: `74b2dc4989bdd2eac958308c89b619d4c3dc252f2662908f2fb9e2d1bd0b7084`.
 
 ### Local changes
 
 **Invocation metadata (carried over from 2026-07-31).** `disable-model-invocation: true` removed;
 `agents/openai.yaml` sets `allow_implicit_invocation: true`.
 
-**Frontmatter description (B3 plus second-pass ownership).** Trigger-led and narrowed to one
-existing Agent Skill behavioral edit or an already-red rewrite handed off by another skill.
-New-skill scaffolding remains with the host creator and directory-wide assessment with the folder
-auditor. The body requires a preserved RED, accepts the auditor's Step 2c handoff, and invokes
-`diagnosing-bugs` only when no caller supplied one; the exact ownership anchors are asserted by
-`tests/matt-thin-workflow.sh` and `tests/trigger-eval.sh`.
+**Frontmatter description (B3, second-pass ownership, third-pass identity).** Identity clause plus
+triggers, narrowed to one existing Agent Skill behavioral edit or an already-red rewrite handed off by
+another skill. New-skill scaffolding remains with the host creator and directory-wide assessment with
+the folder auditor. The body requires a preserved RED, accepts the auditor's Step 2c handoff, and
+invokes `diagnosing-bugs` for a misbehavior rewrite when no caller supplied one; the exact ownership
+anchors are asserted by `tests/matt-thin-workflow.sh` and `tests/trigger-eval.sh`.
 
-**Body corrections (new in this decision).**
+**Reconciliation (F1).** B3's original correction added four diagnostic symptom triggers ("fires
+unreliably, sprawls, repeats itself, or lets the agent stop early"). The second pass removed all four,
+leaving `pruning` as the only route to the six `_Failure mode._` entries `GLOSSARY.md` still carries.
+Recorded, not repaired: restoring them widens the description this decision deliberately narrowed for
+ownership, and the paired A/B/C/E canary shows no primary-owner regression without them.
+
+**Body corrections (introduced by the second-pass decision; reconciled against HEAD below).**
 
 | Site | Change | Why |
 |---|---|---|
@@ -292,11 +310,43 @@ auditor. The body requires a preserved RED, accepts the auditor's Step 2c handof
 | `SKILL.md` leading-word section | Moved the imperative up from `GLOSSARY` | The one instruction the section exists to produce lived only in the on-demand file |
 | `SKILL.md` completion-criterion line | "where it matters" → "wherever the work sweeps a set" | An undecidable hedge whose default resolution is to skip the harder half |
 
+**Reconciliation (F1).** The table above states its rows as facts about the deployed payload, but the
+same-day structural trim landed after it and changed four of them. Rows are kept with their original
+rationale; the status column is what HEAD actually carries.
+
+| Row | Status in HEAD | Evidence |
+|---|---|---|
+| exhaustiveness bar | **Superseded** — the trim replaced the single exhaustive bar with branch-aware completion (full / scoped / RED→GREEN) | `SKILL.md:12` |
+| `GLOSSARY` + `SKILL.md` "withhold the description" | **Active** — all 6 sites carry it; four use non-literal wording ("out of the agent's reach", "the agent sees neither one's description") | `sed -n '/^### /p'` walk of the 5 glossary entries plus `SKILL.md:21` |
+| deleted duplicated Model-Invoked conclusion | **Active** | `grep -c "Pick model-invocation" GLOSSARY.md` → 0 |
+| rung 3 "External reference" → "**Reference**, disclosed" | **Superseded** — the trim rewrote rung 3 whole; neither phrase survives, and the ambiguity went with them | `SKILL.md:35` |
+| bold-terms pointer reaching condition | **Active** — restored and reworded by the third pass | `SKILL.md:14` |
+| user-invoked per-host invocation keys | **Active** | `grep -c "allow_implicit_invocation: false" SKILL.md` → 1 |
+| leading-word imperative moved up from `GLOSSARY` | **Reversed** — the trim deleted the whole section, so the imperative is now in neither file; `SKILL.md:41` carries a canary permission gate instead, which is the opposite behavioral direction | `grep -ci "hunt for\|go find"` → 0 in both files |
+| completion criterion "wherever the work sweeps a set" | **Active** — reworded to "Criteria that sweep a set are exhaustive" | `SKILL.md:33` |
+
+The two live divergences are recorded, not repaired. Restoring the leading-word imperative would be a
+fourth widening of this fork, and the trim that removed it is backed by the A/B in
+`proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`. **Disclosure:** none of that
+A/B fixture's four planted defects is "a restatement collapsible into a leading word", so neither
+direction of the A/B measured what the removal costs. Accepting the trim here is a deliberate
+judgement, not an evidence-backed one.
+
 **Second-pass structural trim.** `SKILL.md` is now an executable checklist within the 500-word
 house budget; `GLOSSARY.md` remains the definition source. Completion is exhaustive for a full
 behavioral-authoring/pruning audit, scoped to the named branch for a focused edit, and RED→GREEN for a
 misbehavior rewrite. The glossary's 28 `_Avoid_:` negation lists were removed, and `Legwork` now
 uses `_relentless_` rather than presenting `_thorough_` as both weak and effective.
+
+**Third-pass corrections.** Applied on top of the trim; each is house-authored, not an upstream defect.
+
+| Site | Change | Why |
+|---|---|---|
+| `SKILL.md` `REQUIRED SUB-SKILL` line | "When no caller provides that RED" → "For a misbehavior rewrite with no caller-supplied RED" | The gate read unconditionally while its branch scoping arrived two paragraphs later, so a scoped metadata edit was routed through `diagnosing-bugs`. Paired `fire-writing-skill-user-only` / `quiet-diagnosing-skill-user-only` cases now fix that boundary, asserted in `tests/trigger-eval.sh` |
+| `SKILL.md` glossary pointer, plus 13 term sites | Restored the term-to-heading contract and the bold markers | The trim deleted the original "**Bold terms** are defined in `GLOSSARY.md`" contract along with 43 markers, but kept a pointer that presupposes the agent can still identify headings; 11 glossary terms sat bare in the body. Every bold term now resolves to a matching `###` heading, `completion criterion` included (the plural did not). The contract is worded "Every bold term **below**" and is itself unbolded, because the two `REQUIRED` labels above it are bold and are not headings — an unscoped contract would have made its own file a counterexample |
+| `SKILL.md` frontmatter description | Restored the identity clause (`Agent Skill authoring.`) | `SKILL.md`'s own Description rule requires identity plus one trigger per branch; the trim dropped identity, so the skill violated the rule it teaches |
+
+`SKILL.md` is 437 words against the 500-word budget.
 
 **Reported upstream.** The description-mechanic correction (6 sites) is tracked in
 `mattpocock/skills#714`. If accepted upstream, drop that row here and take the correction back via

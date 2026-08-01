@@ -437,6 +437,13 @@ if [ -r "$REALCASES" ]; then
   folder_fire_prompt=$(jq -r 'select(.id=="fire-auditing-skill-folder") | .prompt' "$REALCASES")
   folder_quiet_prompt=$(jq -r 'select(.id=="quiet-writing-great-skills-folder") | .prompt' "$REALCASES")
   eq "folder fire/quiet 使用同一 prompt" "$folder_fire_prompt" "$folder_quiet_prompt"
+  jq -e 'select(.id=="fire-writing-skill-user-only" and .skill=="writing-great-skills" and .expect=="fire")' "$REALCASES" >/dev/null &&
+    ok "純 metadata 編輯由 writing-great-skills fire" || bad "純 metadata 編輯由 writing-great-skills fire" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="quiet-diagnosing-skill-user-only" and .skill=="diagnosing-bugs" and .expect=="quiet")' "$REALCASES" >/dev/null &&
+    ok "純 metadata 編輯時 diagnosing-bugs quiet" || bad "純 metadata 編輯時 diagnosing-bugs quiet" "case 缺失或 contract 漂移"
+  user_only_fire_prompt=$(jq -r 'select(.id=="fire-writing-skill-user-only") | .prompt' "$REALCASES")
+  user_only_quiet_prompt=$(jq -r 'select(.id=="quiet-diagnosing-skill-user-only") | .prompt' "$REALCASES")
+  eq "user-only fire/quiet 使用同一 prompt" "$user_only_fire_prompt" "$user_only_quiet_prompt"
 else
   bad "cases.jsonl 存在" "$REALCASES 不存在"
 fi
