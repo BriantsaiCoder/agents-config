@@ -231,7 +231,7 @@ rg -q 'UNVERIFIED: current Claude CLI loading semantics' "$AUDIT_TRIGGER_RUNNER"
 ! rg -q 'UNVERIFIED：' "$AUDIT_TRIGGER_EVAL" \
   "$AGENTS/skills/auditing-skill-folder/evals/runners.json" ||
   fail 'Step 2c uses a non-machine-readable UNVERIFIED prefix'
-rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 93 cases' "$AGENTS/vendored-forks.md" ||
+rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 65 cases' "$AGENTS/vendored-forks.md" ||
   fail 'vendored detector regression count is stale'
 ! rg -q 'model invocation metadata only|four steps above' "$AUDIT_VENDORED_GATE" ||
   fail 'auditing-skill-folder carries a stale fork scope or override step count'
@@ -343,17 +343,17 @@ done < "$AGENTS/mattpocock-skills.lock"
 # scripts/lint-descriptions.sh 於 2026-08-01 加入：Step 2 linter 補上 zh-TW 分類（TRAP 側
 # 先落地，見該檔 SCOPE 段）。auditing-skill-folder 是 house skill、vendored_flag 判為 "-"，
 # 同資料夾的 SKILL.md 與 scripts/lib-vendored.sh 早已在此列。變更由 tests/description-lint.sh
-# 守護，並實測全 95 個 skill 僅 5 個 zh-TW description 改變分類、90 個英文 0 變動。
+# 守護，並實測全 81 個 skill 僅 5 個 zh-TW description 改變分類、76 個英文 0 變動。
 # Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
 [ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
 b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
-[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 26 ] ||
+[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 12 ] ||
   fail 'Stage B2 skill tree lock inventory drifted'
 
 [ ! -e "$AGENTS/skills/video-downloader" ] &&
   [ ! -L "$AGENTS/skills/video-downloader" ] ||
   fail 'retired video-downloader directory still exists'
-for fork in clean-code-dotnet dotnet-core-expert dotnet-test qa-tester; do
+for fork in clean-code-dotnet dotnet-core-expert dotnet-test; do
   fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
 done
 while IFS=$'\t' read -r skill expected_tree_sha; do

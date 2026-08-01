@@ -245,7 +245,7 @@ if [ -d "$AGENTS/skills" ]; then
   fi
   if [ -r "$AGENTS/vendored-skills.lock" ]; then
     generic_count=$(grep -vc '^#' "$AGENTS/vendored-skills.lock")
-    check "generic provenance lock 的 skill 數量" "26" "$generic_count"
+    check "generic provenance lock 的 skill 數量" "12" "$generic_count"
     while IFS=$'\t' read -r skill source revision expected_payload_sha expected_tree_sha; do
       case "$skill" in \#*|"") continue ;; esac
       actual_payload_sha=$(

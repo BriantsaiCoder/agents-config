@@ -22,7 +22,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-07-31 — preserve local coverage and unit-test reference variants; tree SHA-256 `9c303fb6337b8816e285d64d0d600a0e32362fcb298d6918f200a0244ddecc8f` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
-| `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Active** |
+| `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 
@@ -95,7 +95,22 @@ The local `generate-coverage.md` and `run-unit-tests.md` differ from the assesse
 
 ## qa-tester
 
-**Decision (2026-07-31): preserve the Stage B2 runtime-only subset as a recorded fork.**
+**Decision (2026-08-01): removed from `skills/`.** Wholesale removal is legal under the vendored
+gate; this supersedes the preservation decision below without overturning its record.
+
+- Grounds: the skill is bound to FINOS `morphir-dotnet` (its `description` opens with
+  "Specialized QA testing for morphir-dotnet"; 30 in-body references to that repo's layout), and
+  its four relative references resolve to `/Users/pochientsai/docs/content/contributing/qa/*`,
+  which does not exist here. No local checkout of `morphir-dotnet` exists to move it to.
+- Cost it was carrying: 2473 effective words — the largest skill in the corpus.
+- **Restore when**: this machine gains a `morphir-dotnet` checkout. Restore with
+  `git checkout <commit-before-removal> -- skills/qa-tester` plus its `vendored-skills.lock` /
+  `stage-b2-skills.lock` rows, then re-add `qa-tester` to the `for fork in ...` list in
+  `tests/matt-thin-workflow.sh` and bump the two count assertions back.
+- Step 6 A/B canary was **not** run (read-only audit scope); removal was authorised directly by
+  the user on 2026-08-01 after a domain-scope review.
+
+**Superseded decision (2026-07-31): preserve the Stage B2 runtime-only subset as a recorded fork.**
 
 The four local files are content-identical to FINOS `morphir-dotnet` at the assessed revision.
 The local skill omits only upstream `README.md`; payload and tree are pinned in
@@ -148,6 +163,34 @@ costs real work every audit.
 ## Retired vendored — no local modification (NOT forks)
 
 Deliberately outside the index table above: these were never edited, so they are not forks and must not render as recorded forks. The record exists because retirement itself is a decision that needs a restore path.
+
+**13 skills — removed 2026-08-01 after a domain-scope review.** Zero local modification; all were
+byte-identical Stage B2 vendored payload. Their rows were deleted from `vendored-skills.lock` and
+`stage-b2-skills.lock` in the same commit.
+
+| Skill | Upstream | Why removed |
+|---|---|---|
+| `analyzing-financial-statements` | anthropics/claude-cookbooks | Out of domain. Also defective: `calculate_ratios.py` collapses missing values and zero denominators to `0.0`, so a company with +150,000 net income reports `Negative returns` and a balance sheet holding only `current_assets` yields "conservative leverage"; benchmarks in `interpret_ratios.py` are hardcoded with no source |
+| `data-storytelling` | wshobson/agents | Out of domain (stakeholder analytics narrative) |
+| `youtube-downloader` | ComposioHQ/awesome-claude-skills | Out of domain. Also defective: `download_video.py:19` silently runs `pip install --break-system-packages` (called unconditionally at :44), and hardcodes `/mnt/user-data/outputs` at :33/:110/:111 — a container path that does not exist on macOS |
+| `connection-properties` | microsoft/aspire | Repo-specific to Aspire |
+| `vscode-ext-commands` | github/awesome-copilot | Owner does not build VS Code extensions |
+| `vscode-ext-localization` | github/awesome-copilot | Same |
+| `create-mcp-app` | modelcontextprotocol/ext-apps | Owner does not build MCP servers/apps |
+| `appinsights-instrumentation` | github/awesome-copilot | No Azure work in scope. Also carried 2 broken references: `references/ASPNETCORE.md` links to `scripts/appinsights.ps1` without a `../` prefix, so both resolve to a non-existent `references/scripts/` path (the script itself was vendored correctly at the skill root) |
+| `azure-resource-visualizer` | github/awesome-copilot | No Azure work in scope |
+| `azure-role-selector` | github/awesome-copilot | Same |
+| `azure-static-web-apps` | github/awesome-copilot | Same |
+| `github-issues` | github/awesome-copilot | **Non-functional here**: `SKILL.md:8` requires `@modelcontextprotocol/server-github` and its body calls `mcp__github__*`; none of the three hosts has a github MCP server configured (verified in `~/.codex/config.toml`, `~/.copilot/mcp-config.json`, and the Claude tool surface). GitHub work here goes through the `gh` CLI |
+| `webapp-testing` | github/awesome-copilot | Superseded: `playwright-best-practices/references/python-tooling.md:5` already records "Merged from: `webapp-testing`", and `agent-browser` covers browser control |
+
+**Restore any of them with**: `git checkout <commit-before-removal> -- skills/<name>`, then re-add its
+row to both lock files. `tests/vendored-detection.sh` and `tests/matt-thin-workflow.sh` carry
+inventory counts (12) and a regression-case count (65) that must be bumped back in step.
+
+**Step 6 A/B canary was not run** — the audit that produced this list was read-only. Removal was
+authorised directly by the user on 2026-08-01 on domain-scope grounds, not on usage telemetry
+(no unified Claude/Codex/Copilot usage signal exists).
 
 **`ecpay` — retired to `attic/` 2026-07-25.**
 
@@ -505,4 +548,4 @@ Both fixes landed in `vendored_flag()` **and** `vendored_owner()`. Fixing only t
 
 A third defect surfaced while writing this section: `fork_recorded()` matched `| \`name\` |` anywhere in this file, so the table above — documentation, not an index — promoted `agent-browser` to `VND*`, asserting an accepted fork decision that was never made. The fork index now sits between `<!-- fork-index:begin/end -->` markers and the lookup is confined to that block; a file with no markers fails closed.
 
-Regression coverage: `tests/vendored-detection.sh`, 93 cases — every provenance form, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.
+Regression coverage: `tests/vendored-detection.sh`, 65 cases — every provenance form, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.
