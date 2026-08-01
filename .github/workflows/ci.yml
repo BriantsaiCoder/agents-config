@@ -98,7 +98,7 @@ jobs:
       - name: agents-branch portable isolation
         run: bash tests/agents-branch.sh
 
-      - name: PR review gate 回歸（10 cases）
+      - name: PR review gate 回歸（12 cases）
         run: bash tests/pr-review-gate.sh
 
       # parity 本身只能在本機比（runner 沒有 ~/.claude / ~/.codex），但 parity 檢查器的
