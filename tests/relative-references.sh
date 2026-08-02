@@ -90,4 +90,7 @@ ln -s "$TMP/broken" "$TMP/symlink-corpus/broken"
 [ "$RC" -eq 2 ] && ok "empty corpus fails as scanned nothing" || bad "empty corpus fails as scanned nothing"
 
 printf '\n%d PASS / %d FAIL\n' "$PASS" "$FAIL"
+# 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，
+# 那是本測試自己的 fail-open（2026-08-02 稽核 Follow-up 3）。
+[ "$PASS" -gt 0 ] || { printf 'FAIL  沒有任何檢查執行成功\n'; exit 1; }
 [ "$FAIL" -eq 0 ]
