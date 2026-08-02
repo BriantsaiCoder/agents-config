@@ -2,12 +2,13 @@
 
 ## 結論
 
-- 原始母體已逐支 closure：`76 active + 5 archived = 81/81`。
+- 原始 roadmap cohort 已逐支 closure：`76 active + 5 cohort archives = 81/81`。Top-level shared-skill inventory 另含較早歸檔的 `design-doc-mermaid`、`ecpay`，因此是 `76 active + 7 archived entries`；nested `attic/codex-legacy-skills/migrate-to-codex` 是 catalog 外的 legacy bundle，不屬本 roadmap。
 - 「已調教」不等於「每支都改寫」：只有有 factual、routing、scope 或 information-hierarchy finding 的 skill 才修改；其餘保留其 unique value，避免製造無收益 fork。
-- Batch 3/4 最終沒有再移除 active skill。`clean-code-dotnet` 與 `dotnet-find-bugs` 是兩個 provisional retain；前者需 temporary-disable A/B，後者需先解決 replacement namespace/canary，才可安全 archive。
+- Batch 3/4 最終沒有再移除 active skill。`clean-code-dotnet` removal A/B 已以 `20/20` 對 `18/20` 判定保留；`dotnet-find-bugs` 在 namespace migration 後的 removal gate 也因 unique PDB/symbol guard 尚未遷移而判定保留。兩者都不再是 provisional。
+- 原始 81-skill 調教 roadmap 已 closure：保留是完成判決，不是未執行。Current active inventory 維持 76；roadmap cohort 的 archive 數為 5。
 - `dotnet-test` **不是 benchmarks-only**。它仍是 routine `dotnet test`／coverage execution router；只有 BenchmarkDotNet 是未委派的深入 procedure，因此目前不改名。
 
-Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140dda2162402090ea905`；final candidate 已 rebase 至 `main@6584d62`，76-skill set 不變，再加上 `attic/` 的 5 個已歸檔 skill。A–I、M–W 分組原本漏掉唯一的 J–L skill `jest-best-practices`；closure 時已另行補讀並驗證，未把 75/76 誤報為全量。
+Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140dda2162402090ea905`；Batch 3/4 candidate rebase 至 `main@6584d62`，後續 focused reviewer namespace migration 落在 `main@c77d29f`，76-skill set 不變。Roadmap cohort 另有 5 個已歸檔 skill；全域 `attic/` 的其餘兩支早於本 roadmap。A–I、M–W 分組原本漏掉唯一的 J–L skill `jest-best-practices`；closure 時已另行補讀並驗證，未把 75/76 誤報為全量。
 
 ## Batch 3/4 實際修改
 
@@ -15,7 +16,7 @@ Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140
 |---|---|---|---|
 | `aspnet-api-architect` | description 同時宣告 generic review/MSTest，會撞 .NET owners | requirements → design/tasks → authorized scaffold orchestration | 窄化 trigger；generic ASP.NET review RED→GREEN 改由 `dotnet-core-best-practices` 接手 |
 | `bug-fix-settlement` | main 1299 EFF，混入 rubric、examples、templates | root-cause settlement、mechanical-vs-doc 判斷、authorization boundary、visible summary | main 377 EFF；詳例下沉 `references/settlement-guide.md` |
-| `clean-code-dotnet` | 1899 words，重複 SOLID、async、editorconfig 與 generic C# ownership | 360-word C# readability/naming/responsibility/SOLID judgment overlay + illustrative SOLID snippets | recorded thin fork；刪除重複 refs、修正 snippet correctness；仍為 provisional retain |
+| `clean-code-dotnet` | 1899 words，重複 SOLID、async、editorconfig 與 generic C# ownership | 360-word C# readability/naming/responsibility/SOLID judgment overlay + illustrative SOLID snippets | recorded thin fork；removal A/B 的 no-skill arm 品質退化，final retain |
 | `css-ui-best-practices` | 把 WCAG 2.2 AA 說成 ADA/EAA/EN 301 549 universal legal floor | CSS/UI/a11y implementation checklist | 改為 WCAG 2.2 AA default target，法律標準依 product/jurisdiction 驗證；ADA Title II 實際採 WCAG 2.1 A/AA，[官方規則](https://www.ada.gov/law-and-regs/regulations/title-ii-2010-regulations/) |
 | `deps-check` | main 1127 EFF，內嵌 script mechanics/hook sample | fail-closed caller inventory、exit interpretation、fan-in decision gate | main 307 EFF；mechanics 由既有 script 擁有 |
 | `dotnet-core-best-practices` | Controllers-only 與 Global CLAUDE stance bleed | modern .NET DI/API/runtime diagnostics | 改成 requirements-based endpoint model；移除 host-specific wording |
@@ -29,7 +30,7 @@ Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140
 
 ## 76 active skills final ledger
 
-`Keep` 表示 current boundary 有 unique value；`Tuned → Keep` 表示本輪有修改；`Provisional retain` 表示移除 gate 尚未滿足。
+`Keep` 表示 current boundary 有 unique value；`Tuned → Keep` 表示本輪有修改；`Retain after removal gate` 表示已執行移除判定且結果不支持 archive。
 
 | # | Skill | Final status | 調教後仍保留的 unique value／未移除原因 |
 |---:|---|---|---|
@@ -42,7 +43,7 @@ Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140
 | 7 | `backend-release-verification` | Keep | production evidence、rollback、go/no-go boundary |
 | 8 | `bug-fix-settlement` | Tuned → Keep | bugfix 後的 knowledge routing 與 explicit authorization gate |
 | 9 | `c-cpp-best-practices` | Keep | ABI、ownership、RAII、sanitizer/toolchain decisions |
-| 10 | `clean-code-dotnet` | Provisional retain after thin rewrite | 只剩 C# readability/responsibility judgment；是否整併移除仍需 no-skill A/B |
+| 10 | `clean-code-dotnet` | Retain after removal A/B | current arm `20/20`、no-skill arm `18/20`；B 新增不必要 public collection signature 變更並誤判 `JsonSerializer` overload |
 | 11 | `code-review` | Keep | fixed-point Standards/Spec two-axis review；VND 超限不值得 fork |
 | 12 | `codebase-design` | Keep | deep-module vocabulary 與 design principles；VND 超限不直接等於可刪 |
 | 13 | `containerization` | Keep | Docker/IIS build-runtime-security boundaries |
@@ -55,7 +56,7 @@ Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140
 | 20 | `diagnosing-bugs` | Keep | hard-diagnosis RED loop、hypothesis ranking、instrumentation、regression；VND* 不擴張 |
 | 21 | `domain-modeling` | Keep | glossary、bounded contexts、ADR gates；只超 budget 15，fork cost 高於收益 |
 | 22 | `dotnet-core-best-practices` | Tuned → Keep | modern .NET DI/API/runtime diagnostics，已移除 host stance |
-| 23 | `dotnet-find-bugs` | Provisional retain | unique content 已由 narrower owners 覆蓋，但 same-name `security-review` replacement canary 尚無可證明 payload |
+| 23 | `dotnet-find-bugs` | Retain after post-migration removal gate | broad procedures 已有 narrower owners，但 matching binaries/PDB guard 尚未遷移；依 Step 6，unique behavior inventory 非空已足以否決 Delete |
 | 24 | `dotnet-framework-best-practices` | Keep | classic ASP.NET/OWIN/config/async-context guidance |
 | 25 | `dotnet-logging-best-practices` | Tuned → Keep | structured logging、redaction、correlation；不再宣告 tracing ownership |
 | 26 | `dotnet-test` | Keep; no rename | routine test/coverage execution router + BenchmarkDotNet procedure；不是 benchmark-only |
@@ -91,7 +92,7 @@ Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140
 | 56 | `resolving-merge-conflicts` | Keep | intent-preserving conflict resolution與 merge/rebase verification；kernel 覆寫危險 upstream wording |
 | 57 | `sdd` | Tuned → Keep | single-file/single-behavior/≤3 tasks 的三階段流程 |
 | 58 | `security-audit` | Keep | whole-codebase adversarial hunt、independent validation、structured artifacts；VND trim 留待 upstream/新 override |
-| 59 | `security-review` | Keep | focused code/diff data-flow review、changed-file ledger、patch authorization |
+| 59 | `shared-security-review` | Tuned → Keep | collision-free focused code/diff data-flow review、changed-file ledger、patch authorization；舊 `security-review` identity 已完整退休 |
 | 60 | `setup-matt-pocock-skills` | Keep | user-only repo tracker/labels/domain-doc setup；dangling `qa` 留在 override backlog，不因此 fork |
 | 61 | `tailwind-v4-shadcn` | Keep | Tailwind v4/shadcn token wiring、dark mode、build checklist |
 | 62 | `tdd` | Keep | public seam、vertical tracer bullet、RED→GREEN anti-patterns；只超 6 words，kernel 已解衝突 |
@@ -110,7 +111,7 @@ Inventory 原捕捉於 patch-equivalent Batch 2 snapshot `ea475bbe014f6be29f1140
 | 75 | `web-design-reviewer` | Keep | rendered page → DOM/source → authorized repair → same-viewport evidence loop |
 | 76 | `writing-great-skills` | Keep | invocation modes、description design、information hierarchy、pruning criteria |
 
-## 5 archived skills closure
+## 5 roadmap-cohort archived skills closure
 
 | Archive | Replacement coverage | 為何維持歸檔 | Recoverability |
 |---|---|---|---|
@@ -126,18 +127,18 @@ Restore 任何一支都應用 `git mv attic/<name> skills/<name>`，恢復 lock 
 
 | Skill / group | 原建議 | 這次為何未移除 | 建議決策 |
 |---|---|---|---|
-| `clean-code-dotnet` | generic Clean Code 可整併後移除 | 已薄化到 360 words，但尚無 temporary-disable/no-skill A/B 證明 explicit Clean Code/SOLID prompt 不降質 | **建議暫留 thin fork**；若想再減一支，下一批只做可逆 archive A/B，PASS 才移除 |
-| `dotnet-find-bugs` | unique ledger 遷移後 retire | runtime/security/diagnosis 已有 owners，但 Claude collision arm 被另一個 same-name `security-review` 選中，無法證明 replacement payload | **現在不要移除**；先修 alias/identity 並取得 Claude + Copilot + Codex 可觀測 canary |
+| `clean-code-dotnet` | generic Clean Code 可整併後移除 | temporary no-skill A/B 已完成；current `20/20`、B `18/20`，且 B 有兩項實質 correctness/contract regression | **Final retain**；除非 replacement owner 先補齊這兩個 regression，否則不重跑 removal experiment |
+| `dotnet-find-bugs` | unique ledger 遷移後 retire | `shared-security-review` migration 已解決 collision；post-migration A/B preflight 仍抓到未遷移的 PDB/symbol guard；Codex/Copilot named invocation 仍 `UNAVAILABLE`。B 的 explicit identity `1→0` 只記為預期 compatibility impact，不當成 circular FAIL 證據 | **Final retain**；只有 replacement 先吸收該 guard 且有新的 removal scope 時才重開 |
 | `dotnet-test` | 舊 audit 曾建議移除／改 benchmark 名 | current skill 仍負責 routine execution routing；僅 BenchmarkDotNet 是自有深入內容；改名會丟失既有 trigger | **保留現名與內容**；若未來實測 misrouting，再把 benchmark reference 併入 canonical testing skill後 archive，不另造 `dotnet-benchmark` |
 | `web-design-reviewer` | 與 CSS/release/browser 整併後移除 | thin fork 仍有 rendered evidence → source → authorized repair → same viewport 的 unique loop | **保留**；只有 loop 被其他 owner完整吸收才再 archive |
 | Microsoft pair | 合併或 wholesale refresh | current concept/tutorial 與 API/signature/code sample 分工清楚；目前 upstream broad description 會重新撞 Context7/code-reference | **保留兩支**；未來若 refresh，兩支一起遷移並重跑 collision canary |
 | PostgreSQL pair | general 與 optimization 可合併 | correctness/migration/RLS 與 EXPLAIN-first performance tuning 有不同 trigger、procedure、evidence | **保留兩支**；現有雙向 route 已足夠 |
 
-## Remaining debt（不冒充已解決）
+## Closure boundary 與非阻塞追蹤
 
-1. `clean-code-dotnet` removal A/B 尚未跑；這是使用者決策，不是 completion blocker。
-2. `dotnet-find-bugs` replacement identity/cross-host canary 尚未通過；在此之前 archive 不安全。
-3. VND over-budget skills 保留原樣：`agent-browser`、`ask-matt`、`code-review`、`codebase-design`、`diagnosing-bugs`、`domain-modeling`、`dotnet-find-bugs`、`improve-codebase-architecture`、`native-feel-cross-platform-desktop`、`security-audit`、`setup-matt-pocock-skills`、`tdd`、`teach`、`to-spec`、`to-tickets`、`triage`、`wayfinder`。原因是沒有足夠 behavioral benefit 支付永久 remerge cost；其中多支是 user-only，沒有 implicit-load token cost。
+1. 原始 81-skill 調教範圍沒有待執行項目；兩個 removal experiments 均已有 final retain verdict。
+2. Codex/Copilot named invocation observable 仍 `UNAVAILABLE`。這是 future removal 的證據限制，不是本 roadmap 尚未執行的工作。
+3. VND over-budget skills 保留原樣：`agent-browser`、`ask-matt`、`code-review`、`codebase-design`、`diagnosing-bugs`、`domain-modeling`、`dotnet-find-bugs`、`improve-codebase-architecture`、`native-feel-cross-platform-desktop`、`security-audit`、`setup-matt-pocock-skills`、`tdd`、`teach`、`to-spec`、`to-tickets`、`triage`、`wayfinder`。這些是已裁決的 retain，不是未完成：沒有足夠 behavioral benefit 支付永久 remerge cost；其中多支是 user-only，沒有 implicit-load token cost。
 4. `dev-workflow` 超常駐 budget 是明示的 kernel exception；它的 inline authorization/gate contract 不外移。
 
 ## Verification ledger
@@ -149,12 +150,15 @@ Restore 任何一支都應用 `git mv attic/<name> skills/<name>`，恢復 lock 
 | Vendored fingerprints | 58 PASS、0 FAIL；clean-code payload/tree locks current |
 | Description / trigger / word harness | 22 / 122 / 30 PASS |
 | Live trigger canary | pre 8 cases：7 PASS + 1 intentional ASP.NET RED；post ASP.NET + RTL 5/5 PASS；Playwright unchanged 3/3 PASS |
+| `clean-code-dotnet` removal A/B | Claude current `20/20`、no-skill `18/20`；兩位 blind reviewers 完全一致；FAIL → retain |
+| Focused security namespace migration | Claude Code 2.1.220 full-corpus `5/5 PASS`；Codex/Copilot named invocation `UNAVAILABLE`；`security-review` → `shared-security-review` landed at `c77d29f` |
+| `dotnet-find-bugs` post-migration removal gate | `main@c77d29f` temporary A/B：76/75 skills，唯一 corpus 差異為 `dotnet-find-bugs/`；B relative refs 469 PASS、replacement owners 4/4，但 PDB/symbol guard absent；FAIL → retain，quality turns skipped after decisive unique-value FAIL。Explicit identity 1→0 另記 compatibility impact，未納入 verdict |
 | Secret scan | staged、pre-commit、2 untracked candidate scans皆 exit 0 |
 | Independent S5 | Standards fixed-point PASS；Spec fixed-point PASS |
-| Active/archive set | 76/76 active symmetric difference empty；5/5 attic copies readable |
-| Live fast-forward | `main`：`6584d62 → 84f2ff3`，`--ff-only` |
+| Active/archive set | 76/76 active ledger symmetric difference empty；5/5 roadmap-cohort archive copies readable；top-level attic shared-skill entries 7/7 readable；nested legacy bundle 不納入 catalog count |
+| Live integrations | Batch closure fast-forward `6584d62 → 84f2ff3`；namespace migration squash merged as `c77d29f` |
 | Live bootstrap / doctor | source 76；Claude links 76 valid；兩者 exit 0 |
 | Live host resolver | Claude 22/22、Codex policy 12/12、Copilot 22/22；3 PASS、0 FAIL、1 Codex runtime `UNAVAILABLE` |
 | Live local CI | `bin/ci-local` exit 0；17 PASS、0 FAIL、4 expected SKIP |
 
-S6 live cutover 已完成。Codex current CLI 沒有 local skill-list command，因此 runtime resolver 維持 `UNAVAILABLE`，不算 PASS；其餘適用 gates 均已通過。
+先前 skills 與 namespace migration 的 S6 live cutover 已完成。本次 closure refresh 只更新 evidence/docs，不改 live skill payload。Codex current CLI 沒有 local skill-list command，因此 runtime resolver 維持 `UNAVAILABLE`，不算 PASS；其餘適用 gates 均已通過。
