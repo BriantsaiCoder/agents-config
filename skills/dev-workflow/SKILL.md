@@ -111,7 +111,7 @@ Route 到 `research` 時，background agent 仍受 [INT-4]；將 findings 寫入
 
 - [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
 - [S5-2] Working tree dirty review MUST 在讀任何 raw diff 前完成 `references/dirty-review-package.md`；任一 finding 即 FAIL。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
-- [S5-3] Standards 軸的 standards-source 清單 MUST 附加 house over-engineering baseline 兩條、全文傳入 sub-agent prompt：**Reinvented Stdlib** — 手刻標準庫或平台已提供的功能 → 指名該 API 取代；**Redundant Dependency** — 為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。兩條與其餘 baseline 同為 judgement call，documented repo standard 覆寫之。補這兩條是因為 Preflight ledger 的 Self-simplification 只做自檢，無獨立視角。觸發：進入 S5 且 Standards 軸非 SKIPPED。例外：無。驗證：Standards sub-agent prompt 含該兩條全文。
+- [S5-3] S5 的 review agent prompt MUST 含 house over-engineering baseline 兩條全文，不論 reviewer 型別（`code-review` 的 Standards 軸、`dotnet-code-reviewer` 等專屬 agent、或 `references/reviewer-template.md` 泛用 prompt 皆適用）：**Reinvented Stdlib** — 手刻標準庫或平台已提供的功能 → 指名該 API 取代；**Redundant Dependency** — 為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。兩條為 judgement call，documented repo standard 覆寫之。補這兩條是因為 Preflight ledger 的 Self-simplification 只做自檢，無獨立視角。觸發：進入 S5 且 review 非 SKIPPED。例外：無。驗證：review agent prompt 含該兩條全文。
 - 各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
 - Spec 不存在可標 SKIPPED；缺 reviewer capability 必須附 UNAVAILABLE probe，不得假裝自審等價。
 - Actionable finding 回 implementation；bug finding 先補 RED test（[INT-2]）。Delegation 依 [INT-4]。
