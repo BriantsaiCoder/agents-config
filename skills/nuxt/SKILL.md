@@ -1,6 +1,6 @@
 ---
 name: nuxt
-description: 'Nuxt 3/4 app/server framework work: file routing, Nitro/server routes, useFetch/useAsyncData/$fetch, middleware, runtime config, modules/layers, or SSR/SSG/hybrid rendering. Exclude runtime reactivity/hydration bugs → vue-debug-guides, component-only patterns → vue-best-practices, and store-only work → pinia.'
+description: 'Nuxt 3/4 app/server framework work: file routing, Nitro/server routes, useFetch/useAsyncData/$fetch, middleware, runtime config, modules/layers, or SSR/SSG/hybrid rendering. Exclude component patterns, Pinia stores, VueUse composables, and runtime reactivity/hydration debugging → vue-best-practices.'
 ---
 
 # Nuxt

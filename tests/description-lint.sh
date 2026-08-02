@@ -68,7 +68,7 @@ name: en-no-desc
 
 # en-no-desc
 '
-# vue-best-practices 的真實形狀：4 個 routing 箭頭，以逗號分隔。絕不可被鏈式箭頭 trap 命中。
+# 四箭頭形狀（歷史取樣自 vue-best-practices，2026-08-02 合併前），以逗號分隔。絕不可被鏈式箭頭 trap 命中。
 mkdesc en-routing-arrows \
   'Use when writing or reviewing Vue 3 SFCs. Not: Pinia state->pinia, SSR->nuxt, browser composables->vueuse, runtime debugging->vue-debug.'
 # 單一 S<digit> 是雲端術語，不是 phase enumeration。

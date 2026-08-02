@@ -236,7 +236,7 @@ it('呼叫 removeItem action', async () => {
 })
 ```
 
-更多 store 模式 → 參考 `pinia` skill。
+更多 store 模式 → `references/pinia/unit-test-vue-pinia-patterns.md`。
 
 ---
 

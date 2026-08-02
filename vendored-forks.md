@@ -19,7 +19,8 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `diagnosing-bugs` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
-| `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Active** |
+| `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Retired to `attic/` 2026-08-02** |
+| `vueuse-functions` | github.com/serkodev (MIT, Copyright (c) 2026 SerKo) | LICENSE.md only; no upstream revision was ever recorded | 2026-08-02 — **user-authorized override**: the 11-row requirement map and the 6-entry high-frequency index both merged into `vue-best-practices/references/vueuse/INDEX.md`; the use-vs-hand-roll judgment and the SSR/PII guardrails merged into the same file; MIT notice carried with the payload and retained in the archive. Archived tree SHA-256 `95db99f6a5082d25b311154bf6410cf9e7cd3be306417005caf730fc986f8913`（`vendored_tree_sha256 attic/vueuse-functions`，與其他列同公式） | **Retired to `attic/` 2026-08-02** |
 | `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
 | `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; tree SHA-256 `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21` | **Active** |
 | `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
@@ -39,11 +40,49 @@ Retired entries stay listed: the `attic/` copy still differs from upstream, so a
   tracked snapshot (`44c7fd0`, authored by BriantsaiCoder), while a 2026-08-01 GitHub code search
   found zero copies outside BriantsaiCoder repositories. Its lock rows were removed before the
   focused requirements-to-design/tasks-to-scaffold rewrite.
-- `dotnet-find-bugs` remains a byte-identical upstream snapshot from
+- `native-feel-cross-platform-desktop` (MIT, Copyright (c) 2026 yetone) was never forked — it is recorded here rather than in the
+  fork index because `VND*` means "already forked by a recorded decision", and listing an unforked skill there would grant its name a
+  permanent `fork_recorded` bypass of the per-file allowlist in `tests/matt-thin-workflow.sh`. **Retired to `attic/` 2026-08-02**,
+  byte-identical, no content extracted; the user confirmed no cross-platform desktop work is planned.
+- `dotnet-find-bugs` was a byte-identical upstream snapshot from
   `ricoisme/vscode-agents@2b1240abad239703d09875acefd7ae42685c88ff`. Its per-file coverage
   behavior was added to `shared-security-review`. The former `security-review` identity collided
-  with native host owners, so the shared owner was renamed first; retirement remains deferred
-  until post-migration host canaries complete without treating **UNAVAILABLE** as PASS.
+  with native host owners, so the shared owner was renamed first. **Retired to `attic/`
+  2026-08-02**: the one deferral condition — the unmigrated matching-binaries/PDB guard — was
+  closed by writing it into `dotnet-core-best-practices/references/security-performance.md`
+  ("Debugging and diagnostics"). Replacement coverage was re-verified at retirement, not assumed:
+  the 11-item security checklist maps onto `shared-security-review/references/{vuln-categories,
+  workflow}.md`, and all five runtime-diagnostic tools are in the `dotnet-core-best-practices`
+  symptom table, which additionally owns `dotnet-gcdump`, `dotnet-stack`, and the container
+  minidump environment variables the retired skill never carried.
+
+### Where the retired payloads went
+
+Relocation notes are recorded here, **not inside the archived payloads**. Appending a note to an archived
+`SKILL.md` changes its tree hash: the 2026-08-02 first attempt did exactly that and silently invalidated the
+recorded fingerprint of `attic/dotnet-test` (`d583ef03…`) while also breaking the "byte-identical upstream
+snapshot" claim for `attic/dotnet-find-bugs`. Both were reverted; `attic/pinia` and `attic/vue-debug-guides`
+keep their inline notes because they are self-owned and carry no pinned fingerprint.
+
+| Archive | Payload now lives at |
+|---|---|
+| `attic/dotnet-find-bugs` | matching-binaries/PDB precondition → `skills/dotnet-core-best-practices/references/security-performance.md`; per-file attack-surface mapping → `skills/shared-security-review/references/changed-file-attack-surface.md` |
+| `attic/dotnet-test` | `skills/dotnet-testing-best-practices/references/benchmarks.md` |
+| `attic/vueuse-functions` | `skills/vue-best-practices/references/vueuse/` (INDEX.md + LICENSE.md) |
+| `attic/native-feel-cross-platform-desktop` | nothing extracted — retired byte-identical |
+
+**Known trigger-surface gap.** `errorCaptured` / `app.config.errorHandler` survived the merge as *content*
+(`skills/vue-best-practices/references/debugging/INDEX.md`) but not as a *trigger word* — the retired
+`vue-debug-guides` description carried it and the merged `vue-best-practices` description does not (497/500 words,
+no headroom). "my `errorCaptured` hook isn't firing" has no description-level route and only lands once the user
+is already inside `vue-best-practices`. Accepted: one narrow symptom against three words of budget.
+
+### Re-merge procedure for `vueuse-functions` (if it is ever restored)
+
+1. Diff `attic/vueuse-functions/SKILL.md` against the current upstream skill; no revision was ever pinned, so treat the archive as the baseline.
+2. The requirement map, high-frequency index, guardrails, and MIT notice all live in `skills/vue-best-practices/references/vueuse/`. Re-merge means
+   reconciling upstream changes into that file, not restoring the directory.
+3. Only restore it as a separate skill if the corpus reverts the Vue consolidation; a restored copy re-enters the vendored gate as plain `VND`.
 
 ## clean-code-dotnet
 
@@ -711,4 +750,4 @@ Both fixes landed in `vendored_flag()` **and** `vendored_owner()`. Fixing only t
 
 A third defect surfaced while writing this section: `fork_recorded()` matched `| \`name\` |` anywhere in this file, so the table above — documentation, not an index — promoted `agent-browser` to `VND*`, asserting an accepted fork decision that was never made. The fork index now sits between `<!-- fork-index:begin/end -->` markers and the lookup is confined to that block; a file with no markers fails closed.
 
-Regression coverage: `tests/vendored-detection.sh`, 58 cases — every provenance form, Git-untracked empty-directory invariance, fail-closed tree scanning, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.
+Regression coverage: `tests/vendored-detection.sh`, 56 cases — every provenance form, Git-untracked empty-directory invariance, fail-closed tree scanning, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.

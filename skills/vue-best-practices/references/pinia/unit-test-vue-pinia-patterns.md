@@ -1,6 +1,15 @@
 # Pinia Testing Snippets (Cookbook-Aligned)
 
-Use these patterns directly when writing tests with `@pinia/testing`. The main `SKILL.md` decision tree points here when a non-default variant is needed — `initialState`, real actions, plugins, getter overrides, or pure-store testing without component mounting.
+Use these patterns directly when writing tests with `@pinia/testing`.
+
+## Which harness
+
+1. **Pure store logic** — `setActivePinia(createPinia())`, call methods directly. **Not** `createTestingPinia`.
+2. **Assert an action was called** — `createTestingPinia({ createSpy: vi.fn })`.
+3. **Seeded state only** — `createTestingPinia({ initialState: {...} })`.
+4. **Real action side effects must run** — `createTestingPinia({ createSpy: vi.fn, stubActions: false })`.
+
+Assert through DOM, emitted events, callbacks, or store state. `wrapper.vm` is a last resort and needs a stated reason. The sections below cover the non-default variants — `initialState`, real actions, plugins, getter overrides, and pure-store testing without mounting a component.
 
 ## Pure store unit test (no component, no testing-pinia)
 

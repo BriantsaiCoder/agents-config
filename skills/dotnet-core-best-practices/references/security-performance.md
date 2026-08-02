@@ -765,6 +765,8 @@ Use the `dotnet-*` global tools for live diagnosis. They attach to a running PID
 
 Install with `dotnet tool install -g dotnet-counters` etc. On Linux containers, enable crash dumps via env vars: `DOTNET_DbgEnableMiniDump=1`, `DOTNET_DbgMiniDumpType=4`, `DOTNET_DbgMiniDumpName=/tmp/dump.dmp`.
 
+**Symbols are a precondition, not a detail.** `clrstack` and `dumpheap` resolve managed frames from metadata in the dump, but native frames, inlined methods, and line numbers need the *matching* binaries and PDBs — same build, same commit, same RID. A dump analysed against a different build yields plausible-looking frames that point at the wrong lines. Publish with `<DebugType>portable</DebugType>` and keep the PDBs for every artifact you might have to analyse; a stripped release build makes deep triage guesswork. When handing a dump to someone else, ship the PDBs with it. Redact secrets before sharing — a heap dump contains connection strings and tokens in cleartext.
+
 Common leak patterns to watch for during triage: event handlers never unsubscribed, unbounded static collections, `HttpClient` created per request (Rule 3), captured closures holding large graphs alive, and `Timer` instances not disposed.
 
 For micro-benchmarks (before/after a perf fix) use **BenchmarkDotNet** with `[MemoryDiagnoser]` and compare allocations as well as time. Run in Release configuration.
