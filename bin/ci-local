@@ -91,6 +91,11 @@ Y
   hasq "非 run: 不計入 RAN" "$o" "RAN=1"
 
   printf '總計：PASS=%s FAIL=%s\n' "$P" "$F"
+  # 「至少跑到了」自證：chk/hasq 全數沒執行時上面會印 PASS=0 FAIL=0 卻 exit 0，
+  # 那正是本檔開頭說的「一個永遠回綠的 CI 包裝器比沒有更糟」（2026-08-02 稽核
+  # Follow-up 3）。這支是 CI gate（.github/workflows/ci.yml 的 selftest step），
+  # 比任何 tests/ 底下的腳本都更需要這條。
+  [ "$P" -gt 0 ] || { printf 'FAIL  沒有任何檢查執行成功\n'; exit 1; }
   [ "$F" -eq 0 ]; exit $?
 fi
 

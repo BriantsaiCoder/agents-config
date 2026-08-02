@@ -94,5 +94,5 @@ done
 
 printf '\n%d PASS / %d FAIL / %d SKIP\n' "$pass" "$fail" "$skipped"
 # 「至少跑到了」自證：repo 正本必定存在，pass 為 0 代表 probe 全數沒跑成功
-[ "$pass" -gt 0 ] || { printf 'FAIL  沒有任何 probe 執行成功\n'; exit 1; }
+[ "$pass" -gt 0 ] || { printf 'FAIL  沒有任何檢查執行成功\n'; exit 1; }
 [ "$fail" -eq 0 ]
