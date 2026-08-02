@@ -45,11 +45,11 @@ git -C "$WT_ROOT/codex/dirty-test" add scratch.txt
 out=$(run_done codex/dirty-test) && { echo "FAIL: 髒 worktree 竟然成功移除"; exit 1; }
 case "$out" in
   *'git worktree remove 回報失敗'*) ;;
-  *) echo "FAIL: 未轉述 git 的失敗（實得：$out）"; exit 1 ;;
+  *) echo "FAIL: 未轉述 git 的失敗（實得：${out}）"; exit 1 ;;
 esac
 case "$out" in
   *'worktree 目錄仍在'*) ;;
-  *) echo "FAIL: 未指出目錄仍在（實得：$out）"; exit 1 ;;
+  *) echo "FAIL: 未指出目錄仍在（實得：${out}）"; exit 1 ;;
 esac
 [ -d "$WT_ROOT/codex/dirty-test" ] || { echo "FAIL: 失敗後目錄不該消失"; exit 1; }
 
@@ -96,12 +96,12 @@ out=$(PATH="$FAKEBIN:$PATH" FAKE_STILL_REGISTERED="$HALF" \
 [ ! -d "$HALF" ] || { echo "FAIL: 假 git 未真的移除目錄，情境 B 沒被觸發"; exit 1; }
 case "$out" in
   *'git worktree prune'*) ;;
-  *) echo "FAIL: 半完成未指向 git worktree prune（實得：$out）"; exit 1 ;;
+  *) echo "FAIL: 半完成未指向 git worktree prune（實得：${out}）"; exit 1 ;;
 esac
 # 鎖舊版那句誤導的原文「有未提交變更？」，不是裸字串「未提交變更」——新訊息裡有「非未提交
 # 變更」這個否定句，裸字串會把正確的訊息判成失敗（本檔第一版正是這樣假紅的）。
 case "$out" in
-  *'有未提交變更？'*) echo "FAIL: 半完成情境不得歸因為未提交變更（實得：$out）"; exit 1 ;;
+  *'有未提交變更？'*) echo "FAIL: 半完成情境不得歸因為未提交變更（實得：${out}）"; exit 1 ;;
 esac
 
 echo "agents-branch isolated worktree PASS"
