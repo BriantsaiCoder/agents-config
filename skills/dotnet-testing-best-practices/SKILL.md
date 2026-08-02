@@ -46,7 +46,7 @@ xUnit v3 primary (NUnit alt). Compose Moq/NSubstitute, AutoFixture/Bogus, WebApp
 ## Reference Navigation
 
 - `references/code-patterns.md` — Rules 1–12 code, structure, AAA, speed
-- `references/mocking-frameworks.md` — Moq, NSubstitute, HttpClient/ILogger
+- `references/mocking-frameworks.md` — Moq, NSubstitute, HttpClient/ILogger, AutoFixture
 - `references/integration-testing.md` — WebApplicationFactory, Testcontainers, DB, auth, Respawn, CI/CD
 - `references/mstest.md` — MSTest 3.x/4.x, Assert, TestContext, DataRow
 - `references/cli.md` — `dotnet test` CLI, filters, `--blame`, parallelism

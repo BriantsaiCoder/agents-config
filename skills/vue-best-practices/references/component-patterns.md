@@ -300,7 +300,7 @@ onMounted(() => inputEl.value?.focus())
 
 3.5 之前只能靠「同名 `ref` 變數」隱式綁定（`const searchInput = ref(null)` 對應 `ref="searchInput"`）。該寫法在 3.5+ 仍可用，但改名即靜默失效——**新程式碼一律用 `useTemplateRef`**。
 
-子元件的 ref 只暴露 `defineExpose` 宣告過的成員；`v-if` 未渲染或 `await` 之前取用皆為 `null`（見 `vue-debug-guides`）。
+子元件的 ref 只暴露 `defineExpose` 宣告過的成員；`v-if` 未渲染或 `await` 之前取用皆為 `null`（見 `references/debugging/INDEX.md`）。
 
 ---
 

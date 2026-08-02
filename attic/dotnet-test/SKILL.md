@@ -14,6 +14,8 @@ contracts:
 ---
 
 # .NET Test Router
+> **Archived 2026-08-02.** The BenchmarkDotNet procedure now lives at
+> `skills/dotnet-testing-best-practices/references/benchmarks.md`.
 
 This retained trigger routes routine test execution to the canonical testing skill while keeping the corpus's unique BenchmarkDotNet procedure.
 

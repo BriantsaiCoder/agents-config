@@ -5,6 +5,9 @@ description: Use when working with Pinia stores in Vue 3 / Nuxt 3 or 4 — defin
 
 <!-- last-verified: 2026-07-26 -->
 # Pinia
+> **Archived 2026-08-02.** Its `references/` payload was relocated to
+> `skills/vue-best-practices/references/pinia/` when this skill merged into `vue-best-practices`.
+> The reference links below resolve there, not inside this archive.
 
 Pinia is the official Vue 3 state management library. This skill covers store design, SSR safety, plugins, and behavior-first testing.
 

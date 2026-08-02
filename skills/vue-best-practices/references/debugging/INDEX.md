@@ -9,6 +9,21 @@ Use this as a first-pass map. Reproduce the symptom and capture the exact warnin
 - Do not add a deep watcher by default; first check that the watched source is correct.
 - In Nuxt, keep server-safe code separated from browser-only APIs rather than guarding at the call site after the fact.
 
+## Category Map
+
+| Category | Typical symptoms |
+|---|---|
+| Reactivity | ref/reactive not updating, destructuring lost reactivity, proxy identity, same-tick batching |
+| Computed / Watchers | computed side effects, conditional deps, watcher loops, async cleanup, flush timing |
+| Components / Props / Emits | undeclared events, double firing, component ref missing, multi-root attrs |
+| Templates / Refs / Forms | v-if/v-for errors, null template refs, v-model edge cases, IME composition |
+| Lifecycle / Composables | DOM access before mount, async setup context, hidden side effects, missing cleanup |
+| Slots / Provide / Attrs | slot scope confusion, non-reactive provide/inject, fallthrough attrs overwriting |
+| Nuxt / SSR / Suspense | hydration mismatch, cross-request pollution, browser API on server, async component error UI |
+| Transitions / Teleport / KeepAlive | target missing, nested router double mount, transition hooks not completing |
+| Error handling | `errorCaptured` not firing, `app.config.errorHandler` missing async rejections, errors swallowed by a boundary, Suspense fallback masking the throw |
+| TypeScript / SFC / Plugins | defineProps limits, withDefaults factory, named exports, install order, type augmentation |
+
 ## First Checks By Symptom
 
 - Reactivity not updating: check destructuring of `reactive`, missing `.value`, shallow refs, proxy identity, and same-tick batching.
@@ -24,4 +39,4 @@ Use this as a first-pass map. Reproduce the symptom and capture the exact warnin
 
 ## Escalation
 
-If the symptom is still unclear, search current Vue/Nuxt documentation, then hand off to the companion skill that owns the area — `vue-best-practices` (component / reactivity patterns), `pinia` (store state), `nuxt` (SSR, Nitro, hydration), `vueuse-functions` (composables).
+If the symptom is still unclear, search current Vue/Nuxt documentation. Store state, composables, and component patterns all stay in this skill — see `../pinia/`, `../vueuse/INDEX.md`, and `../component-patterns.md`. Only SSR, Nitro, and file-routing symptoms hand off, to `nuxt`.

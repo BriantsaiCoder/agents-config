@@ -4,6 +4,9 @@ description: 'Use when diagnosing or fixing Vue 3 and Nuxt 3/4 runtime bugs — 
 ---
 
 # Vue Debug Guides
+> **Archived 2026-08-02.** Its `references/INDEX.md` was relocated to
+> `skills/vue-best-practices/references/debugging/INDEX.md` when this skill merged into `vue-best-practices`.
+> The reference links below resolve there, not inside this archive.
 
 Vue 3 and Nuxt 3/4 debugging for runtime issues, warnings, async failures, and hydration bugs. The symptom categories below are major-agnostic — Nuxt 4 changes directory layout, not these failure modes. For writing new Vue code and conventions, use `vue-best-practices`.
 

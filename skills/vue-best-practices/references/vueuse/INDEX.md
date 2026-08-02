@@ -10,6 +10,24 @@ Before using one: confirm Vue 3 / Nuxt 3+ and check `package.json` for `@vueuse/
 
 Review check: the composable actually reduces complexity, return values keep reactivity when destructured, and cleanup is automatic or explicit.
 
+## Requirement Map
+
+| Requirement | Prefer |
+|---|---|
+| Persistent reactive state | `useStorage`, `useLocalStorage`, `useSessionStorage`, `useStorageAsync` |
+| Shared / global / injection state | `createGlobalState`, `createSharedComposable`, `createInjectionState` |
+| Async state / HTTP | `useAsyncState`, `useFetch`, `useAxios` |
+| DOM size / visibility / position | `useElementSize`, `useElementVisibility`, `useElementBounding`, `useResizeObserver`, `useIntersectionObserver` |
+| Events / cleanup / scope | `useEventListener`, `onClickOutside`, `onKeyStroke`, `tryOnScopeDispose` |
+| Timers / debounce / throttle | `useTimeoutFn`, `useIntervalFn`, `useDebounceFn`, `useThrottleFn`, `refDebounced`, `refThrottled` |
+| Responsive / media queries | `useBreakpoints`, `useMediaQuery`, `useWindowSize`, `usePreferredDark`, `usePreferredReducedMotion` |
+| Network / realtime | `useWebSocket`, `useEventSource`, `useOnline`, `useNetwork` |
+| Clipboard / files / media | `useClipboard`, `useFileDialog`, `useObjectUrl`, `useUserMedia`, `useMediaControls` |
+| Browser state | `useTitle`, `useUrlSearchParams`, `useBrowserLocation`, `useDark`, `useColorMode` |
+| Animation / frame loops | `useTransition`, `useRafFn` |
+
+Verify the exact signature and return shape against the installed types — the table maps requirement to candidate, it does not vendor the API.
+
 ## High-Frequency Mapping
 
 - Events and cleanup: `useEventListener`, `onClickOutside`, `onKeyStroke`, `tryOnScopeDispose`.

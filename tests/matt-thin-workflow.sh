@@ -480,6 +480,8 @@ while IFS= read -r changed; do
     skills/vue-best-practices/references/vueuse/INDEX.md | \
     skills/vue-best-practices/references/vueuse/LICENSE.md | \
     skills/vue-best-practices/references/debugging/INDEX.md | \
+    skills/vue-best-practices/references/component-patterns.md | \
+    skills/vue-best-practices/references/testing.md | \
     skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/step0-vendored-gate.md | \
     skills/auditing-skill-folder/step1-verdict-guide.md | \

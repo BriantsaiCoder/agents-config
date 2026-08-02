@@ -4,6 +4,9 @@ description: Use when Vue 3 / Nuxt 3 work touches browser APIs, storage, sensors
 ---
 
 # VueUse Functions
+> **Archived 2026-08-02.** Its `references/INDEX.md` and LICENSE were relocated to
+> `skills/vue-best-practices/references/vueuse/` under a user-authorized vendored override.
+> The MIT notice is retained in both places.
 
 Maintained Vue 3 composable library. Skill value = routing: proven composable avoids fragile cleanup, SSR guards, debounce bugs, observer lifecycle, reactive storage mistakes.
 
