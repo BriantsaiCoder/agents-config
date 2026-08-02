@@ -34,8 +34,11 @@
 ```sh
 ~/.agents/bin/agents-branch <branch>
 ~/.agents/bin/agents-branch --list
-~/.agents/bin/agents-branch --done <branch>
+~/.agents/bin/agents-branch --done <branch>     # 收 worktree，分支保留
+~/.agents/bin/agents-branch --merged <branch>   # PR 合併後：worktree + local + remote
 ```
+
+PR 合併後用 `--merged` 而不是 `gh pr merge --delete-branch`：後者在 worktree 流程下必定失敗（local 分支被 worktree 佔用，gh 中止後連 remote 也不刪）。`--merged` 會先用 `gh` 確認 PR 為 `MERGED`，確認不了就拒絕。
 
 每台機器先執行一次 `bash hooks/install-hooks.sh`。`post-checkout` 只在 live checkout 離開 `main` 時警告 shared-skills drift；linked worktree 內保持安靜。
 

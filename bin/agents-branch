@@ -5,6 +5,11 @@
 #   agents-branch <branch>          建立（或接上既有）worktree 並印出路徑
 #   agents-branch --list            列出所有 worktree
 #   agents-branch --done <branch>   移除該 worktree（分支本身保留）
+#   agents-branch --merged <branch> merge 後完整收尾：worktree + local + remote
+#
+# --done 與 --merged 的分工：前者是「工作暫停，分支還要用」，後者是「PR 已合併，
+# 三樣都該消失」。--merged 會先用 gh 確認 PR 為 MERGED，確認不了就拒絕——刪 remote
+# 不可逆。直接推 main 沒開 PR 的分支用 --done，它不碰分支。
 #
 # 為什麼：三家 host 都讀 ~/.agents/skills，Claude 以 symlink 指回它；在這裡
 # 切分支會讓三家的 shared skill 內容當下改變。worktree 把分支工作搬到沒有
@@ -13,6 +18,16 @@
 # 代價講清楚：worktree 裡的 skill 改動**不會**被 host 看到。要做 live canary
 # 必須另走明示 cutover gate；agents-sync 不會部署 worktree 內容。
 set -euo pipefail
+
+# 必須在下面的 `cd "$AGENTS"` 之前鎖成絕對路徑。用相對路徑呼叫（bash bin/agents-branch）
+# 時，cd 之後路徑會解析到 $AGENTS 底下的同名檔案——於是 --help 印的是 ~/.agents 那份的
+# 檔頭，不是正在執行的這份。實測 2026-08-02：在 worktree 裡跑 --help 看不到本檔新增的
+# 選項，而檔案內容明明有。這是既有缺陷，只是在兩份檔頭一致時看不出來。
+#
+# 用 ${BASH_SOURCE[0]:-$0} 而非裸 $0：`bash <name>` 經 PATH 找到腳本時 $0 只是那個
+# name，dirname 得到 "." 而解析錯誤。pwd -P 解掉 symlink。兩者都是本 repo 既有慣例
+# （bin/ci-local:27、bin/phase4-canary-launcher:4）。
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd -P)/$(basename "${BASH_SOURCE[0]:-$0}")"
 
 AGENTS="${AGENTS_HOME:-$HOME/.agents}"
 # 預設放 repo 內的 .worktrees/（gitignored）而不是 ~/.agents-wt：
@@ -28,19 +43,10 @@ die() { printf 'agents-branch: %s\n' "$*" >&2; exit 1; }
 [ -d "$AGENTS/.git" ] || die "$AGENTS 不是 git repo"
 cd "$AGENTS"
 
-case "${1:-}" in
-  ''|-h|--help)
-    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
-    exit 0
-    ;;
-  --list)
-    git worktree list
-    exit 0
-    ;;
-  --done)
-    br="${2:?用法：agents-branch --done <branch>}"
-    wt="$WT_ROOT/$br"
-    [ -d "$wt" ] || die "找不到 worktree：$wt"
+# worktree 移除。--done 與 --merged 共用，所以抽成函式而非複製——這段的三態判斷
+# 是實測踩出來的，複製一份等於未來只修一邊。
+remove_worktree() {  # $1=worktree 路徑
+  local wt="$1" rc=0 err
 
     # 失敗時依「實際留下什麼」判斷下一步——不猜原因。
     #
@@ -54,22 +60,129 @@ case "${1:-}" in
     # `|| rc=$?` 而不是分兩行寫 `err=$(...)` 再 `rc=$?`：本檔開頭是 set -e，賦值中的命令替換
     # 失敗會當場終止整個腳本，rc=$? 永遠執行不到，使用者一個字都看不到。第一版正是這樣壞的，
     # 由 tests/agents-branch.sh 的「必須轉述 git 的失敗」抓出來。
-    rc=0
-    err=$(git worktree remove "$wt" 2>&1) || rc=$?
-    if [ "$rc" -ne 0 ]; then
-      printf 'agents-branch: git worktree remove 回報失敗（exit=%s）：\n%s\n' "$rc" "$err" >&2
-      if [ -d "$wt" ]; then
-        # 目錄還在＝什麼都沒動。未提交變更是最常見原因，但由 git 的訊息說了算。
-        die "worktree 目錄仍在：${wt}。確認上面 git 的原因；若確定要丟棄其中變更，用 git worktree remove --force"
-      fi
-      if git worktree list --porcelain | grep -Fq "worktree $wt"; then
-        # 目錄已消失但登記還在＝半完成。這是沙箱擋住 .git/worktrees/ 刪除時的樣子。
-        die "目錄已移除，但 worktree 登記仍在（${wt}）。跑 git worktree prune 清掉殘留登記；若它同樣回 Operation not permitted，是檔案權限或沙箱擋住 .git/worktrees/，非未提交變更"
-      fi
-      # 目錄沒了、登記也沒了＝其實成功了，只是 git 的回傳碼非零。
-      printf 'agents-branch: 但目錄與登記都已清除，視為完成。\n' >&2
+  err=$(git worktree remove "$wt" 2>&1) || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    printf 'agents-branch: git worktree remove 回報失敗（exit=%s）：\n%s\n' "$rc" "$err" >&2
+    if [ -d "$wt" ]; then
+      # 目錄還在＝什麼都沒動。未提交變更是最常見原因，但由 git 的訊息說了算。
+      die "worktree 目錄仍在：${wt}。確認上面 git 的原因；若確定要丟棄其中變更，用 git worktree remove --force"
     fi
+    if git worktree list --porcelain | grep -Fq "worktree $wt"; then
+      # 目錄已消失但登記還在＝半完成。這是沙箱擋住 .git/worktrees/ 刪除時的樣子。
+      die "目錄已移除，但 worktree 登記仍在（${wt}）。跑 git worktree prune 清掉殘留登記；若它同樣回 Operation not permitted，是檔案權限或沙箱擋住 .git/worktrees/，非未提交變更"
+    fi
+    # 目錄沒了、登記也沒了＝其實成功了，只是 git 的回傳碼非零。
+    printf 'agents-branch: 但目錄與登記都已清除，視為完成。\n' >&2
+  fi
+}
+
+case "${1:-}" in
+  ''|-h|--help)
+    # 印到第一個非註解行為止，不寫死行號。原本是 `sed -n '2,20p'`，而檔頭在某次
+    # 增修後變長，於是它把 `set -euo pipefail` 當說明印了出來（origin/main 的 --help
+    # 至今如此）。寫死的行號需要人記得同步，而沒有任何東西會在它過期時提醒——這正是
+    # c0060dc 從 CI step 名稱移除寫死條數的同一個理由（CONVENTIONS 規則 9）。
+    awk 'NR>1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$SELF"
+    exit 0
+    ;;
+  --list)
+    git worktree list
+    exit 0
+    ;;
+  --done)
+    br="${2:?用法：agents-branch --done <branch>}"
+    wt="$WT_ROOT/$br"
+    [ -d "$wt" ] || die "找不到 worktree：$wt"
+    remove_worktree "$wt"
     printf '已移除 worktree %s（分支 %s 保留）\n' "$wt" "$br"
+    exit 0
+    ;;
+  --merged)
+    # merge 後的完整收尾：worktree → local 分支 → remote 分支。
+    #
+    # 為什麼需要這個模式（2026-08-02，連續四個 PR 都踩到）：
+    # `gh pr merge --delete-branch` 在本 repo 的 worktree 流程下**必定失敗**——
+    # local 分支正被 worktree 佔用，gh 刪不掉它就整個中止，連 remote 也不刪。
+    # 結果是 merge 完成但兩邊分支都留著，每次都要人工補。實測 PR #23/#24/#25/#26
+    # 四次全中。
+    #
+    # 判定「已合併」只認 gh 的 PR 狀態，不用 git 推論：squash merge 會產生新
+    # commit，branch tip 不是 main 的祖先，`merge-base --is-ancestor` 一律回否；
+    # patch-id 也因 squash 而不同。用 git 推論會把「已合併」誤判成「未合併」，
+    # 那還算安全；但反過來若放寬判準去遷就 squash，就會有誤刪未合併分支的風險。
+    # 刪 remote 不可逆（GitHub 有 restore 但要人工），所以判不出來時拒絕，不猜。
+    br="${2:?用法：agents-branch --merged <branch>}"
+
+    command -v gh >/dev/null 2>&1 ||
+      die "--merged 需要 gh 判定 PR 是否已合併；gh 不可用時不猜，請自行確認後手動清理"
+
+    # --jq '.[0]|…' 對空陣列不會回空字串，會回字面 "null null"（實測 rc=0、9 bytes）。
+    # 第一版用 [ -n "$pr_state" ] 判「查無 PR」，那個分支因此永遠不可達，使用者只會
+    # 看到「PR #null 目前是 null」。改用 --jq 'length' 直接問數量，不靠輸出形狀推斷。
+    pr_count=$(gh pr list --head "$br" --state all --json number --jq 'length' 2>/dev/null) ||
+      die "查不到 $br 的 PR 狀態（gh 呼叫失敗）；未確認前不刪任何東西"
+    [ "${pr_count:-0}" -gt 0 ] ||
+      die "$br 沒有對應的 PR；--merged 只處理走過 PR 的分支，直接推 main 的分支請用 --done"
+
+    pr_state=$(gh pr list --head "$br" --state all --json number,state \
+      --jq '.[0] | "\(.number) \(.state)"' 2>/dev/null) ||
+      die "查不到 $br 的 PR 狀態（gh 呼叫失敗）；未確認前不刪任何東西"
+
+    pr_num=${pr_state%% *}
+    pr_status=${pr_state##* }
+    [ "$pr_status" = MERGED ] ||
+      die "PR #$pr_num 目前是 ${pr_status}，不是 MERGED；--merged 只在合併後執行"
+
+    printf 'agents-branch: PR #%s 已 MERGED，開始收尾 %s\n' "$pr_num" "$br" >&2
+
+    # 三態，不是兩態。「目錄不在」有兩種：從來沒有，或是半完成（目錄已刪但 .git/worktrees/
+    # 底下的登記還在——沙箱擋住那層刪除時就長這樣，--done 的錯誤處理特地為它寫過一段）。
+    # 兩者混為一談會印「worktree 無」，那是宣稱一個沒驗證過的狀態，而且下一步的
+    # `git branch -D` 會被殘留登記擋掉，使用者拿到的是 git 的原始錯誤而非可行動的指示。
+    wt="$WT_ROOT/$br"
+    if [ -d "$wt" ]; then
+      remove_worktree "$wt"
+      printf '  worktree  已移除 %s\n' "$wt"
+    elif git worktree list --porcelain | grep -q "^worktree .*/${br}\$"; then
+      # 比對結尾而非完整路徑：macOS 的 $TMPDIR 在 /var，而 git 回報的是解析 symlink
+      # 後的 /private/var，整串 grep -F 永遠不匹配（實測 2026-08-02，本檔第一版就是
+      # 這樣讓殘留登記被讀成「worktree 不存在」）。
+      die "worktree 目錄已不在，但 .git/worktrees/ 的登記仍在（${wt}）。先跑 git worktree prune 清掉殘留登記再重試；未清掉之前 git 會拒絕刪除分支。尚未變更任何東西"
+    else
+      printf '  worktree  無（%s 不存在）\n' "$wt"
+    fi
+
+    # -D 而非 -d：squash merge 後 git 不認為分支已合併，-d 會拒絕。
+    # 安全性由上面的 PR MERGED 判定承擔，不是靠 git 的祖先關係。
+    if git show-ref -q --verify "refs/heads/$br"; then
+      git branch -D "$br" >/dev/null || die "local 分支刪除失敗：$br"
+      printf '  local     已刪 %s\n' "$br"
+    else
+      printf '  local     無（%s 不存在）\n' "$br"
+    fi
+
+    # ls-remote --exit-code 有三種回傳：0=找到、2=沒有這個 ref、128=查詢本身失敗
+    # （網路不通、認證過期、origin 不存在）。第一版寫成 if/else 兩分支，等於把 128
+    # 也讀成「不存在」——網路斷掉時會印「remote 無」然後「收尾完成」rc=0，而 remote
+    # 分支好端端還在。那是宣稱一個沒被驗證過的狀態，正是 --done 那段三態判斷要消滅
+    # 的東西。實測回傳碼：0 / 2 / 128。
+    ls_rc=0
+    git ls-remote --exit-code --heads origin "$br" >/dev/null 2>&1 || ls_rc=$?
+    case "$ls_rc" in
+      0)
+        git push origin --delete "$br" >/dev/null 2>&1 ||
+          die "remote 分支刪除失敗：${br}（local 與 worktree 已清，remote 需手動處理）"
+        printf '  remote    已刪 origin/%s\n' "$br"
+        ;;
+      2)
+        printf '  remote    無（origin/%s 不存在）\n' "$br"
+        ;;
+      *)
+        die "無法查詢 origin 是否有 ${br}（git ls-remote exit=${ls_rc}，可能是網路或認證問題）。local 與 worktree 已清；remote 未確認也未變更，請自行確認"
+        ;;
+    esac
+
+    printf 'agents-branch: %s 收尾完成（PR #%s）\n' "$br" "$pr_num"
     exit 0
     ;;
 esac
@@ -99,5 +212,6 @@ worktree: $wt
   cd $wt
 
 ~/.agents 仍在 $(git rev-parse --abbrev-ref HEAD)，三家 shared skills 讀取來源未變。
-完成後：agents-branch --done $br
+工作暫停（分支還要用）：agents-branch --done $br
+PR 合併後（三樣都清）：agents-branch --merged $br
 EOF
