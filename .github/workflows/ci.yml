@@ -113,17 +113,20 @@ jobs:
         run: shellcheck -S error hooks/*.sh tests/*.sh bin/agents-sync bin/pr-review-gate bin/hook-parity-check bin/ci-local
 
       # 2026-07-26 版本時效稽核（約 4.6M subagent token）修掉 30 個 skill 的死寫法：
-      # 教已移除的 API、不存在的 image tag、已 EOL 的 runtime。這 28 條把那批缺陷的
-      # 複發成本降到零。只掃 skills/——proposals/ 的稽核報告與 attic/ 的歸檔副本必然
-      # 含有這些字串，實測 repo-wide 掃會誤觸 19 條。
-      - name: 版本絆線（28 條死寫法，僅 skills/）
+      # 教已移除的 API、不存在的 image tag、已 EOL 的 runtime。初始 28 條把那批缺陷的
+      # 複發成本降到零，其後持續增補。只掃 skills/——proposals/ 的稽核報告與 attic/ 的
+      # 歸檔副本必然含有這些字串，實測 repo-wide 掃會誤觸 19 條。
+      #
+      # 增補絆線時記得同步下面兩個 step 名稱的條數：它們曾停在 28 而實際已達 45，
+      # 靜默過期了一段時間。（把條數寫進 step 名稱是本 job 的既有慣例，共九個 step 這樣做。）
+      - name: 版本絆線（45 條死寫法，僅 skills/）
         run: bash tests/version-tripwire.sh
 
       # 絆線自身的腐化守衛：對基準線 commit 斷言每條都仍會觸發。
       # 一條在基準線也 0 命中的絆線代表 pattern 已寫壞，它會安靜地永遠通過——
       # 那比沒有絆線更糟，因為它製造被保護的錯覺。（實測踩過一次：把 regex
       # 誤用 grep -F，[;,] 被當字面值而永遠 0 命中。）
-      - name: 版本絆線自我驗證（28 條須全部仍會觸發）
+      - name: 版本絆線自我驗證（45 條須全部仍會觸發）
         run: bash tests/version-tripwire.sh --selftest
 
       # install-hooks.sh 自身可用性。CI **無法**斷言「hooks 已安裝」——那是每台開發機
