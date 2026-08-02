@@ -149,8 +149,11 @@ jobs:
       # delegation 政策的三家一致性。2026-08-02 之前三家寫法不對稱到看不出來：kernel 有
       # [INT-4]，~/.claude/CLAUDE.md 寫 blanket 禁令，~/.codex/AGENTS.md 只提工具名，
       # ~/.copilot/copilot-instructions.md 一條都沒有。症狀是「同一任務三家跑出不同行為」，
-      # 幾乎不可能歸因回設定。runner 沒有 host 入口檔，那部分標 SKIP（同 hook-parity 慣例）。
-      # --selftest 先驗反向斷言真的會觸發——沒有它，blanket 偵測可以整段不執行而仍回綠。
+      # 幾乎不可能歸因回設定。runner 沒有那三個 host 入口檔，直接讀真實路徑會讓 host 半邊整段
+      # SKIP——那正好是本測試唯一存在理由所在的那一半。因此 CI 走 --fixtures：注入合格與
+      # 不合格的假 host 檔，正向組必須 exit 0 且無 host SKIP，反向組必須 exit 非 0。做法與
+      # tests/hook-parity.sh 的 PARITY_COPIES 同型——用 fixture 讓判定邏輯在 runner 上跑完。
+      # --selftest 先驗兩個方向的斷言真的會觸發——沒有它，偵測可以整段不執行而仍回綠。
       - name: delegation 政策三家一致性
         run: |
           bash tests/delegation-policy-parity.sh --selftest

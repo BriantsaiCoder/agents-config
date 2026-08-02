@@ -64,7 +64,7 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 
 本表是 routing 的 single source。`ask-matt` 自述為「a router over the skills in this repo」，實際只涵蓋 22 支 Matt skill 中的 20 支（漏自身與 `resolving-merge-conflicts`）加 `/compact`，完全不含本表的自有與其他 vendored 項：`deps-check`、三支 security、`context7-mcp`、兩支 Microsoft docs、`ui-ux-pro-max`、`sdd`、`auditing-skill-folder`、`web-design-reviewer`、`bug-fix-settlement`、`acquire-codebase-knowledge`。它是 pinned upstream，描述不修；使用者叫它時把它當 Matt subset 的視圖，缺項回本表補齊。
 
-Route 到 `research` 時，background agent 依 [INT-4] 三項條件自主判定；將 findings 寫入 repo Markdown 仍受 S2 authorization，未獲該授權不得落盤。
+Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findings 寫入 repo Markdown 仍受 S2 authorization，未獲該授權不得落盤。
 
 ### Routing continuations
 

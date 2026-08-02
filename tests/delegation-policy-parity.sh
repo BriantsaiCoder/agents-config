@@ -74,7 +74,7 @@ selftest() {
     i=$((i + 1))
   done
 
-  printf 'Delegation 依 [INT-4] 四項條件自主判定（併發 ≤2），符合即直接執行不必先問。\n' > "$scratch/good.md"
+  printf 'Delegation 依 [INT-4] 自主判定（併發 ≤2），符合即直接執行不必先問。\n' > "$scratch/good.md"
   has_autonomy "$scratch/good.md" && ok '正向語彙：合格寫法通過' || ng '正向語彙：合格寫法被誤判'
   has_askfirst "$scratch/good.md" && ng '正向語彙：合格寫法被誤判為先問' || ok '正向語彙：不誤判為先問'
   printf 'Delegation 依 [INT-4]。\n' > "$scratch/thin.md"
@@ -117,7 +117,7 @@ case "${1:-}" in
     # runner 上被真的執行。正向組必須全綠且無 SKIP，反向組必須紅——後者若沒紅，
     # 代表 host 半邊整段沒跑，而那正是本測試存在的理由。
     scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
-    printf 'Delegation 依 shared `dev-workflow` [INT-4] 的四項條件自主判定（可獨立平行 ∧ read-only 或寫入不重疊 ∧ 併發 ≤2 ∧ main context 重驗），符合即直接執行不必先問。\n' \
+    printf 'Delegation 依 shared `dev-workflow` [INT-4]：無條件約束不因授權放寬；滿足約束且併發 ≤2 時自主判定並直接執行，不必先問。\n' \
       > "$scratch/good.md"
     printf '未獲授權時，不使用 subagent。\n' > "$scratch/bad.md"
 
@@ -150,10 +150,11 @@ int4="$(grep -F '[INT-4]' "$KERNEL" | head -1)"
 int4_file="$(mktemp)"; printf '%s\n' "$int4" > "$int4_file"
 trap 'rm -f "$int4_file"' EXIT
 
-# 三項授權條件的關鍵片段逐項在場——條件 (b) 是選言（read-only 或 寫入不重疊），兩邊各釘
-# 一段，所以是 4 個片段對 3 個條件。整句 grep 會在任一項被刪掉時仍然通過，必須拆開驗。
-# 無條件約束（S5 finding H1：第一版把這些降級成「條件」，於是寫入重疊與序列相依
-# 變成明文可授權——舊規則從未開這條路。使用者要改的是「誰決定」不是「允許什麼」）。
+# 逐片段驗，不逐條驗：整句 grep 會在任一項被刪掉時仍然通過，所以下列每個片段各自釘住
+# [INT-4] 的一個承重點——無條件約束三項、以及總量上界。片段數與條文的條數不必相等，
+# 也刻意不在此處寫死數量（條文演進時寫死的數字會靜默失真）。
+# 為什麼釘無條件約束（S5 finding H1）：第一版把它們降級成「條件」，於是寫入重疊與序列
+# 相依變成明文可授權——舊規則從未開這條路。使用者要改的是「誰決定」不是「允許什麼」。
 for cond in '無條件約束' '可獨立平行' '寫入 ownership MUST 不重疊' 'MUST 重驗其回報' '累計 delegation ≤ 6'; do
   case "$int4" in
     *"$cond"*) ok "[INT-4] 含無條件約束／上界片段：$cond" ;;
