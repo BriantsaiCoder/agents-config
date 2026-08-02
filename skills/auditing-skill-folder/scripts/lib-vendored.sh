@@ -57,27 +57,36 @@ vendored_lock_record() {
 # `tests/vendored-detection.sh` asserts both that `.claude/` is ignored AND that any other added
 # file still moves the SHA, so the exclusion cannot quietly widen into a hole.
 vendored_tree_sha256() {
-  local dir="$1" manifest rc entry mode file_sha
+  local dir="$1" manifest rc entry mode file_sha subtree_payload
   [ -d "$dir" ] && [ ! -L "$dir" ] || return 1
   manifest=$(mktemp "${TMPDIR:-/tmp}/vendored-tree.XXXXXX") || return 1
 
   (
+    set -o pipefail
     cd "$dir" || exit 1
-    while IFS= read -r -d '' entry; do
-      if [ -L "$entry" ]; then
-        printf '%s\0%s\0%s\0%s\0' symlink "$entry" 120000 "$(readlink "$entry")"
-      elif [ -d "$entry" ]; then
-        printf '%s\0%s\0%s\0%s\0' directory "$entry" 040000 -
-      elif [ -f "$entry" ]; then
-        mode=100644
-        [ -x "$entry" ] && mode=100755
-        file_sha=$(shasum -a 256 "$entry" | awk '{ print $1 }') || exit 1
-        printf 'file\0%s\0%s\0%s\0' "$entry" "$mode" "$file_sha"
-      else
-        printf 'unsupported vendored payload type: %s\n' "$entry" >&2
-        exit 1
-      fi
-    done < <(find . -mindepth 1 -type d -name .claude -prune -o -print0 | LC_ALL=C sort -z)
+    find . -mindepth 1 -type d -name .claude -prune -o -print0 |
+      LC_ALL=C sort -z |
+      while IFS= read -r -d '' entry; do
+        if [ -L "$entry" ]; then
+          printf '%s\0%s\0%s\0%s\0' symlink "$entry" 120000 "$(readlink "$entry")"
+        elif [ -d "$entry" ]; then
+          # Git does not track empty directories. Keep directory entries only when they contain
+          # payload (excluding pruned harness scratch), so the same commit hashes identically in a
+          # reused worktree and a clean checkout.
+          subtree_payload=$(find "$entry" -type d -name .claude -prune -o ! -type d -print) || exit 1
+          if [ -n "$subtree_payload" ]; then
+            printf '%s\0%s\0%s\0%s\0' directory "$entry" 040000 -
+          fi
+        elif [ -f "$entry" ]; then
+          mode=100644
+          [ -x "$entry" ] && mode=100755
+          file_sha=$(shasum -a 256 "$entry" | awk '{ print $1 }') || exit 1
+          printf 'file\0%s\0%s\0%s\0' "$entry" "$mode" "$file_sha"
+        else
+          printf 'unsupported vendored payload type: %s\n' "$entry" >&2
+          exit 1
+        fi
+      done
   ) > "$manifest"
   rc=$?
   if [ "$rc" -eq 0 ]; then

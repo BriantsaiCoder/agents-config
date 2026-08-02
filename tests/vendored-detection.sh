@@ -141,10 +141,45 @@ tree_hash_clean="$(vendored_tree_sha256 "$d")"
 mkdir -p "$d/.claude/.cc-writes"
 tree_hash_scratch="$(vendored_tree_sha256 "$d")"
 check "harness scratch .claude/ 不改變 tree SHA" "$tree_hash_clean" "$tree_hash_scratch"
+
+# Git 不追蹤空目錄；同一 commit 在不同 checkout 可能保留或移除它。指紋不得因此漂移。
+d=$(mkskill tree-hash-empty-directory)
+tree_hash_without_empty="$(vendored_tree_sha256 "$d")"
+mkdir -p "$d/unused/nested"
+tree_hash_with_empty="$(vendored_tree_sha256 "$d")"
+check "空目錄不改變 tree SHA" "$tree_hash_without_empty" "$tree_hash_with_empty"
+
+# 任何 subtree 掃描錯誤都必須 fail closed，不得被誤當成空目錄。
+d=$(mkskill tree-hash-find-error)
+mkdir -p "$d/find-error"
+printf 'x\n' > "$d/find-error/payload"
+tree_hash_before_find_error="$(vendored_tree_sha256 "$d")"
+find() {
+  [ "${1:-}" = "./find-error" ] && return 7
+  command find "$@"
+}
+vendored_tree_sha256 "$d" >/dev/null 2>&1
+find_error_rc=$?
+unset -f find
+[ "$find_error_rc" -ne 0 ] &&
+  ok "subtree 掃描錯誤 -> tree SHA fail closed" ||
+  bad "subtree 掃描錯誤" "nonzero" "$find_error_rc"
+
+find() {
+  [ "${1:-}" = "." ] && return 7
+  command find "$@"
+}
+vendored_tree_sha256 "$d" >/dev/null 2>&1
+root_find_error_rc=$?
+unset -f find
+[ "$root_find_error_rc" -ne 0 ] &&
+  ok "root 掃描錯誤 -> tree SHA fail closed" ||
+  bad "root 掃描錯誤" "nonzero" "$root_find_error_rc"
+
 # 但 .claude 以外的新增內容仍必須改變指紋——排除範圍不得擴散。
 printf 'x\n' > "$d/extra.md"
 tree_hash_extra="$(vendored_tree_sha256 "$d")"
-[ "$tree_hash_clean" != "$tree_hash_extra" ] &&
+[ "$tree_hash_before_find_error" != "$tree_hash_extra" ] &&
   ok "非 .claude 的新增檔仍改變 tree SHA" ||
   bad "非 .claude 的新增檔仍改變 tree SHA" "different SHA" "$tree_hash_extra"
 

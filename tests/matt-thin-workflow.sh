@@ -231,7 +231,7 @@ rg -q 'UNVERIFIED: current Claude CLI loading semantics' "$AUDIT_TRIGGER_RUNNER"
 ! rg -q 'UNVERIFIED：' "$AUDIT_TRIGGER_EVAL" \
   "$AGENTS/skills/auditing-skill-folder/evals/runners.json" ||
   fail 'Step 2c uses a non-machine-readable UNVERIFIED prefix'
-rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 55 cases' "$AGENTS/vendored-forks.md" ||
+rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 58 cases' "$AGENTS/vendored-forks.md" ||
   fail 'vendored detector regression count is stale'
 ! rg -q 'model invocation metadata only|four steps above' "$AUDIT_VENDORED_GATE" ||
   fail 'auditing-skill-folder carries a stale fork scope or override step count'
