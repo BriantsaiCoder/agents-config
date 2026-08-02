@@ -106,3 +106,161 @@ esac
 
 echo "agents-branch isolated worktree PASS"
 echo "agents-branch --done 失敗訊息 PASS"
+
+# ── --help 印的必須是自己的檔頭 ──────────────────────────────────────
+# 2026-08-02 缺陷：--help 用 `sed -n '…p' "$0"`，而腳本在那之前已 `cd "$AGENTS"`。
+# 用相對路徑呼叫時 $0 於是解析到 $AGENTS 底下的同名檔，--help 印的是別份的檔頭。
+# 兩份內容一致時完全看不出來——實測是在 worktree 裡加了新選項才顯現。
+help_probe() {  # $1=cwd $2=呼叫用的路徑
+  ( cd "$1" && AGENTS_HOME="$REPO" AGENTS_WORKTREE_ROOT="$WT_ROOT" bash "$2" --help 2>&1 )
+}
+# 在 $REPO 裡放一份檔頭不同的同名檔，當作「另一份 checkout」
+mkdir -p "$REPO/bin"
+printf '#!/usr/bin/env bash\n# DECOY-HEADER-MUST-NOT-APPEAR\nset -euo pipefail\n' \
+  > "$REPO/bin/agents-branch"
+
+out=$(help_probe "$ROOT" "bin/agents-branch")
+case "$out" in
+  *DECOY-HEADER-MUST-NOT-APPEAR*)
+    echo "FAIL: --help 印到了 \$AGENTS 底下那份的檔頭（\$0 在 cd 之後解析錯誤）"; exit 1 ;;
+esac
+case "$out" in
+  *'agents-branch --merged'*) ;;
+  *) echo "FAIL: --help 未印出本檔的 --merged 選項（實得前兩行：$(printf '%s' "$out" | head -2 | tr '\n' ' ')）"; exit 1 ;;
+esac
+# 印過頭會把 `set -euo pipefail` 這類程式碼當說明印出來
+case "$out" in
+  *'set -euo pipefail'*) echo "FAIL: --help 印出了程式碼，sed 範圍超出檔頭註解"; exit 1 ;;
+esac
+rm -f "$REPO/bin/agents-branch"
+
+# ── --merged 的 fail-closed 判定 ─────────────────────────────────────
+# 刪 remote 不可逆，所以判不出「已合併」時必須拒絕。三條路徑各驗一次：
+# gh 缺席、查無 PR、PR 非 MERGED。成功路徑另用 mock gh 驗。
+# PATH 只留 FAKEBIN——不能退回系統 PATH，否則「gh 缺席」那條會抓到真的 gh，
+# 測到的就不是缺席行為。代價是腳本需要的每個外部工具都得手動 link 進來。
+FAKEBIN="$TMP/fakebin"; mkdir -p "$FAKEBIN"
+for t in bash git mktemp dirname basename sed grep rm printf; do
+  p=$(command -v "$t" 2>/dev/null) && ln -sf "$p" "$FAKEBIN/$t"
+done
+
+merged_probe() {  # $1=gh 行為(absent|none|"<num> <state>") $2=branch
+  local ghmode="$1" br="$2"
+  if [ "$ghmode" = absent ]; then
+    rm -f "$FAKEBIN/gh"
+  else
+    # 腳本先用 --jq 'length' 問數量，再用 --jq '.[0]|…' 取狀態。mock 依參數分流，
+    # 不能對兩種呼叫回同一個字串——第一版就是這樣，把 "42 OPEN" 餵給數量判斷。
+    # none 模擬「查無 PR」：真 gh 此時 length 回 0（而 .[0] 會回字面 "null null"，
+    # 那正是第一版誤用輸出形狀判斷的原因）。
+    { printf '#!/usr/bin/env bash\n'
+      printf 'case "$*" in\n'
+      if [ "$ghmode" = none ]; then
+        printf '  *"--jq length"*|*length*) printf 0 ;;\n'
+        printf '  *) printf "null null" ;;\n'
+      else
+        printf '  *"--jq length"*|*length*) printf 1 ;;\n'
+        printf '  *) printf %%s "%s" ;;\n' "$ghmode"
+      fi
+      printf 'esac\n'
+    } > "$FAKEBIN/gh"
+    chmod +x "$FAKEBIN/gh"
+  fi
+  ( AGENTS_HOME="$REPO" AGENTS_WORKTREE_ROOT="$WT_ROOT" \
+    PATH="$FAKEBIN" bash "$ROOT/bin/agents-branch" --merged "$br" 2>&1 ) || true
+}
+
+git -C "$REPO" branch nomerge-test 2>/dev/null || true
+
+out=$(merged_probe absent nomerge-test)
+case "$out" in
+  *'gh 不可用'*) ;;
+  *) echo "FAIL: gh 缺席時未拒絕（實得：${out}）"; exit 1 ;;
+esac
+git -C "$REPO" show-ref -q --verify refs/heads/nomerge-test ||
+  { echo "FAIL: gh 缺席時不得刪除分支"; exit 1; }
+
+out=$(merged_probe none nomerge-test)
+case "$out" in
+  *'沒有對應的 PR'*) ;;
+  *) echo "FAIL: 查無 PR 時未拒絕（實得：${out}）"; exit 1 ;;
+esac
+git -C "$REPO" show-ref -q --verify refs/heads/nomerge-test ||
+  { echo "FAIL: 查無 PR 時不得刪除分支"; exit 1; }
+
+out=$(merged_probe "42 OPEN" nomerge-test)
+case "$out" in
+  *'不是 MERGED'*) ;;
+  *) echo "FAIL: PR 未合併時未拒絕（實得：${out}）"; exit 1 ;;
+esac
+git -C "$REPO" show-ref -q --verify refs/heads/nomerge-test ||
+  { echo "FAIL: PR 未合併時不得刪除分支"; exit 1; }
+
+# ── 成功路徑：必須有真 remote 且分支真的未合併，否則測不到東西 ──────
+# 第一版 fixture 沒有 remote、分支又剛好停在 main 的 HEAD，於是兩個 mutation 都能
+# 存活：把 `git push origin --delete` 換成 true 仍綠（沒有 remote 可刪），把 -D 換成
+# -d 也仍綠（git 認為分支已合併）。測不到的斷言等於沒有斷言。
+BARE="$TMP/remote.git"
+git init -q --bare "$BARE"
+git -C "$REPO" remote add origin "$BARE"
+
+# 分支帶自己的 commit → 相對 main 未合併，-d 會拒絕、-D 才成功（squash merge 後的形狀）
+git -C "$REPO" checkout -q -b feat/real-merged
+printf 'work\n' > "$REPO/work.txt"
+git -C "$REPO" add work.txt
+git -C "$REPO" commit -qm work
+git -C "$REPO" push -q origin feat/real-merged
+git -C "$REPO" checkout -q main
+git -C "$REPO" ls-remote --exit-code --heads origin feat/real-merged >/dev/null ||
+  { echo "FAIL: fixture 沒把分支推上 bare remote"; exit 1; }
+
+out=$(merged_probe "42 MERGED" feat/real-merged)
+case "$out" in
+  *'收尾完成'*) ;;
+  *) echo "FAIL: PR MERGED 時未完成收尾（實得：${out}）"; exit 1 ;;
+esac
+git -C "$REPO" show-ref -q --verify refs/heads/feat/real-merged &&
+  { echo "FAIL: PR MERGED 後 local 分支仍在（-d 擋不住未合併分支，須用 -D）"; exit 1; }
+# 直接查 remote 本身，不看訊息——訊息說刪了不等於真的刪了
+git -C "$REPO" ls-remote --exit-code --heads origin feat/real-merged >/dev/null 2>&1 &&
+  { echo "FAIL: PR MERGED 後 remote 分支仍在"; exit 1; }
+case "$out" in
+  *'remote    已刪'*) ;;
+  *) echo "FAIL: 刪了 remote 卻沒如實回報（實得：${out}）"; exit 1 ;;
+esac
+
+# ── ls-remote 查詢失敗必須 fail-closed，不得讀成「remote 不存在」──────
+# --exit-code 回 2 才是「沒有這個 ref」，128 是查詢本身失敗（網路／認證／remote 不存在）。
+# 兩者混為一談時，網路一斷就會印「remote 無」+「收尾完成」rc=0，而分支好端端還在。
+git -C "$REPO" branch feat/ls-fail
+git -C "$REPO" remote set-url origin "$TMP/no-such-remote.git"
+out=$(merged_probe "43 MERGED" feat/ls-fail)
+case "$out" in
+  *'無法查詢 origin'*) ;;
+  *) echo "FAIL: ls-remote 查詢失敗時未 fail-closed（實得：${out}）"; exit 1 ;;
+esac
+case "$out" in
+  *'remote    無'*) echo "FAIL: 查詢失敗被讀成 remote 不存在"; exit 1 ;;
+esac
+git -C "$REPO" remote set-url origin "$BARE"
+
+# ── worktree 登記殘留必須指向 prune，不得報「無」──────────────────
+# 目錄已刪但 .git/worktrees/ 登記還在（沙箱擋住那層刪除時的樣子）。報「worktree 無」
+# 是宣稱沒驗證過的狀態，而且下一步 branch -D 會被殘留登記擋掉。
+git -C "$REPO" branch feat/stale-wt
+AGENTS_HOME="$REPO" AGENTS_WORKTREE_ROOT="$WT_ROOT" \
+  bash "$ROOT/bin/agents-branch" feat/stale-wt >/dev/null
+rm -rf "${WT_ROOT:?}/feat/stale-wt"          # 只刪目錄，登記留著
+out=$(merged_probe "44 MERGED" feat/stale-wt)
+case "$out" in
+  *'git worktree prune'*) ;;
+  *) echo "FAIL: worktree 登記殘留時未指向 prune（實得：${out}）"; exit 1 ;;
+esac
+case "$out" in
+  *'worktree  無'*) echo "FAIL: 登記殘留被讀成 worktree 不存在"; exit 1 ;;
+esac
+git -C "$REPO" show-ref -q --verify refs/heads/feat/stale-wt ||
+  { echo "FAIL: 登記殘留時不得刪除分支"; exit 1; }
+
+echo "agents-branch --help 自我檔頭 PASS"
+echo "agents-branch --merged fail-closed PASS"
