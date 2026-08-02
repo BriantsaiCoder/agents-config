@@ -315,6 +315,47 @@ else
   ng "[T0-3] guard parity checker"
 fi
 
+# 有 pipeline 的 bash 腳本必須有 pipefail（2026-08-02 稽核 Follow-up 2 的機械守護）。
+#
+# 為何是機械守護：稽核當時逐一檢視 12 支無 pipefail 的腳本得出「沒有失敗方向錯誤」，
+# 但那是人工結論，新腳本加入時沒有東西會提醒。follow-up 明寫要兩部分——處理既有的，
+# 以及加這條守護；只做前者等於留下一個靠人記的不變量。
+#
+# 三類豁免，每類都有具體理由，不是便宜行事：
+#   1. POSIX sh（shebang 為 sh 而非 bash）——pipefail 不是 POSIX，dash 直接
+#      「set: Illegal option -o pipefail」中止。本次實測踩到：對 evals/mock-runner.sh
+#      加了 pipefail，macOS 因 /bin/sh 是 bash 3.2 而全綠，ubuntu 的 dash 會讓
+#      Step 2c 從 PASS=122 掉到 PASS=97 FAIL=25。
+#   2. 被 source 的 library——不該設全域 set，正確做法是在需要的 subshell 內設
+#      （lib-vendored.sh 就是這樣）。
+#   3. tests/phase4-canary-harness.sh——被 matt-thin-workflow.sh 用 git diff --quiet
+#      鎖定為歷史產物，不得變更。
+#
+# 「有 pipeline」的判準刻意窄：只認 `| <常見過濾器>`，不認 case pattern 的 |、|| 與
+#  字串裡的 |。寧可漏報也不要因誤判而擋住無關的變更。
+PIPE_USE='\| *(grep|awk|sed|sort|head|tail|tr|wc|jq|rg|cut|xargs|comm|uniq)'
+pipefail_missing=""
+while IFS= read -r sh_file; do
+  head -1 "$sh_file" 2>/dev/null | grep -qE '^#!.*(bash)$' || continue     # 豁免 1
+  case "$sh_file" in
+    */lib-vendored.sh) continue ;;                                          # 豁免 2
+    */phase4-canary-harness.sh) continue ;;                                 # 豁免 3
+  esac
+  grep -qE "$PIPE_USE" "$sh_file" 2>/dev/null || continue
+  # 只認真正的設定行，不認註解或字串裡的 pipefail。第一版用裸 grep -q 'pipefail'，
+  # 於是把 `set -u` 加一行「# 這裡刻意不設 pipefail」就能讓守護 PASS——一支專門抓
+  # 假綠的守護自己就是假綠（2026-08-02 實測，Copilot review 抓到）。
+  grep -qE '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" 2>/dev/null && continue
+  pipefail_missing="$pipefail_missing $sh_file"
+done <<EOF
+$(find "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" -type f 2>/dev/null)
+EOF
+if [ -z "$pipefail_missing" ]; then
+  ok "有 pipeline 的 bash 腳本都有 pipefail"
+else
+  ng "有 pipeline 但缺 pipefail：$(printf '%s' "$pipefail_missing" | tr ' ' '\n' | grep -c .) 支——$pipefail_missing"
+fi
+
 # CI step 名稱不得複述 case 數（CONVENTIONS 規則 9 的下沉）。
 # 為何必須是機械守護而不是 prose：這條規則的內容就是「沒有守護的數字會靜默漂移」，
 # 用一段註解去執行它，等於犯它描述的錯。實測已漂移兩次——版本絆線名稱停在 28 而

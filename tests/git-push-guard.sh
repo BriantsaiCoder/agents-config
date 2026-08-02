@@ -9,7 +9,7 @@
 # 契約：
 #   codex  格式 — deny = stdout JSON(permissionDecision:deny) + exit 0；allow = 無輸出 + exit 0
 #   claude 格式 — deny = exit 2（stderr JSON）；allow = 無 stdout + exit 0
-set -uf
+set -ufo pipefail
 
 GUARD=${GUARD:-"$HOME/.agents/hooks/guard-git-push.sh"}
 JQ="$(command -v jq)"

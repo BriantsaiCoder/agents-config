@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -u
+set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 GATE="$ROOT/bin/pr-review-gate"
@@ -9,7 +9,7 @@ trap 'rm -rf "$FAKEBIN"' EXIT
 
 cat > "$FAKEBIN/gh" <<'EOF'
 #!/usr/bin/env bash
-set -u
+set -uo pipefail
 
 if [[ "$1 $2" == "repo view" ]]; then
   # GH_FAKE_REPO_FAIL：模擬 repo 解析失敗，驗 unavailable() 在 repo 尚未賦值時的輸出。
