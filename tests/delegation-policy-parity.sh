@@ -74,6 +74,17 @@ selftest() {
     i=$((i + 1))
   done
 
+  # SKIP 偵測本身必須會命中，且不能只靠第一個 alternative——BRE/ERE 用錯時，
+  # 「SKIP  Claude」會因為是字面前綴而假性命中，只有第二、三個才有鑑別力。
+  printf 'SKIP  Copilot: 入口檔不在此環境\n' > "$scratch/skip.md"
+  grep -qE 'SKIP  (Claude|Codex|Copilot)' "$scratch/skip.md" \
+    && ok 'SKIP 偵測：非首個 alternative 也命中（alternation 真的生效）' \
+    || ng 'SKIP 偵測：alternation 失效，正向組的 no-SKIP 斷言等於沒跑'
+  printf '一切正常，沒有跳過任何檢查\n' > "$scratch/noskip.md"
+  grep -qE 'SKIP  (Claude|Codex|Copilot)' "$scratch/noskip.md" \
+    && ng 'SKIP 偵測：無 SKIP 的輸入被誤判' \
+    || ok 'SKIP 偵測：無 SKIP 時不誤判'
+
   printf 'Delegation 依 [INT-4] 自主判定（併發 ≤2），符合即直接執行不必先問。\n' > "$scratch/good.md"
   has_autonomy "$scratch/good.md" && ok '正向語彙：合格寫法通過' || ng '正向語彙：合格寫法被誤判'
   has_askfirst "$scratch/good.md" && ng '正向語彙：合格寫法被誤判為先問' || ok '正向語彙：不誤判為先問'
@@ -127,7 +138,9 @@ case "${1:-}" in
     pos_rc=$?
     [ "$pos_rc" -eq 0 ] && ok 'fixture 正向組：exit 0' || {
       sed 's/^/    /' "$scratch/pos.log"; ng "fixture 正向組應 exit 0，實得 $pos_rc"; }
-    grep -q 'SKIP  Claude\|SKIP  Codex\|SKIP  Copilot' "$scratch/pos.log" \
+    # -E 不可省：BRE 的 \| 是 GNU 擴充，原生 BSD grep 會當字面字元，這條斷言就變成
+    # 永遠不觸發而仍回綠——正是本 repo 反覆踩的失效型態。selftest 有一條專門釘住它。
+    grep -qE 'SKIP  (Claude|Codex|Copilot)' "$scratch/pos.log" \
       && ng 'fixture 正向組仍有 host SKIP —— host 判定沒被執行' \
       || ok 'fixture 正向組無 host SKIP —— host 判定確實執行'
 

@@ -148,7 +148,7 @@ lacks "S5 package has no unconditional ignored-file content" 'ignored path 全�
 has "delegation changes who decides, not what is allowed" 'Delegation 的\*\*約束\*\*不變，改變的只有\*\*誰決定\*\*' skills/dev-workflow/SKILL.md
 has "delegation keeps its unconditional constraints" '無條件約束（不因任何授權而放寬）.*可獨立平行.*寫入 ownership MUST 不重疊.*MUST 重驗其回報' skills/dev-workflow/SKILL.md
 has "unconditional constraints are not purchasable with authorization" '無條件約束不在可授權範圍內.*即使取得授權也 MUST NOT 執行' skills/dev-workflow/SKILL.md
-has "delegation stays bounded at two" '併發數 ≤ 2' skills/dev-workflow/SKILL.md
+has "delegation stays bounded at two" '併發(數)?[[:space:]]*≤[[:space:]]*2' skills/dev-workflow/SKILL.md
 has "delegation escalates past the bound" '超出併發或累計上界時 MUST 先取得 user／repo／higher instruction 授權' skills/dev-workflow/SKILL.md
 has "delegation bounds total as well as concurrent" '同一 S 階段內累計 delegation ≤ 6' skills/dev-workflow/SKILL.md
 rule_has "S5 two axes stay read-only and need no extra ask" INT-4 'S5 `code-review` 的 Standards／Spec 兩軸為恰好 2 個 \*\*read-only\*\* review agents.*既有典型，無須另問'
