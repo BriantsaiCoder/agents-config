@@ -22,9 +22,10 @@ Detection is the **union** of five signals because none alone is sufficient — 
   - Consequence you must internalise before judging any row: **a `VND` flag is not proof of foreign authorship.** Resolve the recorded source before deciding editability. For example, `aspnet-api-architect` was removed from the lock after its source proved to be this repository's own initial snapshot; the evidence now lives under `vendored-forks.md` → "Resolved Stage B2 provenance".
 - LICENSE alone missed `design-doc-mermaid`: no LICENSE file at all, upstream was a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README. That skill has since been retired to `attic/`, but it remains the reason this is a union and not a single test.
 - The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker.
-  - **The LICENSE-existence signal is root-only** (`scripts/lib-vendored.sh:124`, `:245` glob `$dir/LICENSE{,.md,.txt}` and `$dir/COPYING`).
+  - **The LICENSE-existence signal is root-only** (the two LICENSE globs in `scripts/lib-vendored.sh`, which expand `$dir/LICENSE{,.md,.txt}` and `$dir/COPYING` and never descend).
     A vendored payload merged *into* a self-owned skill therefore becomes invisible: `vendored_flag skills/vue-best-practices`
-    returns `-` even though `references/vueuse/LICENSE.md` carries an in-tree MIT notice (empirically confirmed 2026-08-02).
+    returns `-` even though that skill carries an in-tree MIT notice one level down, under its vueuse reference directory
+    (empirically confirmed 2026-08-02).
     This is the expensive failure direction per the economics stated below — a false `-` authorises editing someone else's payload.
     Until the scan descends one level into `references/*/`, **check for nested LICENSE files by hand** before judging any skill
     that absorbed another skill's payload.
