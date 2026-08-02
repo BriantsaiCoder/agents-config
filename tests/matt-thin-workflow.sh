@@ -359,6 +359,10 @@ for retired in clarify csharp-developer dotnet-core-expert make-skill-template n
   [ -f "$AGENTS/attic/$retired/SKILL.md" ] ||
     fail "retired skill is not recoverable from attic: $retired"
 done
+[ ! -e "$AGENTS/skills/security-review" ] && [ ! -L "$AGENTS/skills/security-review" ] ||
+  fail 'legacy security-review namespace remains active'
+[ -f "$AGENTS/skills/shared-security-review/SKILL.md" ] ||
+  fail 'shared-security-review namespace is missing'
 for fork in clean-code-dotnet dotnet-test; do
   fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
 done
@@ -409,8 +413,10 @@ done < "$B2_SKILLS_LOCK"
 #   postgresql-optimization/SKILL.md :45 的 ATTACH PARTITION CONCURRENTLY 不是合法語法（PG 14–18
 #                                    的 ATTACH 都不接受該選項），改為 DETACH；同檔 references/
 #                                    partitioning.md 本來就寫對，屬單點筆誤。已加 version-tripwire 絆線。
-#   security-review/SKILL.md         description 補 → security-audit 反向 disambiguator，關掉
+#   shared-security-review/SKILL.md  description 補 → security-audit 反向 disambiguator，關掉
 #                                    Step 2b collision；security-audit 是 VND 不能改，故改自有這側。
+# 2026-08-02 namespace migration 將原 security-review 的八個 payload paths 原子改名，避開
+# Claude/Copilot native identity collision；逐檔 allowlist 保持新增檔 fail-closed。
 # 2026-08-02 READY Batch 2 只放行 handoff 明列的 direct-edit files；init-project-docs 的
 # current-doc reference 修正逐檔列出，避免未審新增檔被 wildcard 靜默放行。
 # 2026-08-02 Batch 4 closure 只再放行已逐檔裁決的 stance/scope/routing trims；其餘 skill
@@ -446,6 +452,7 @@ while IFS= read -r changed; do
     skills/css-ui-best-practices/SKILL.md | \
     skills/css-ui-best-practices/references/design-system-patterns.md | \
     skills/csharp-developer/* | \
+    skills/dependency-security-scan/SKILL.md | \
     skills/deps-check/SKILL.md | \
     skills/deps-check/scripts/deps-check.sh | \
     skills/dev-workflow/* | \
@@ -481,7 +488,20 @@ while IFS= read -r changed; do
     skills/nuget-manager/* | \
     skills/security-review/SKILL.md | \
     skills/security-review/references/changed-file-attack-surface.md | \
+    skills/security-review/references/language-patterns.md | \
     skills/security-review/references/report-format.md | \
+    skills/security-review/references/secret-patterns.md | \
+    skills/security-review/references/vuln-categories.md | \
+    skills/security-review/references/vulnerable-packages.md | \
+    skills/security-review/references/workflow.md | \
+    skills/shared-security-review/SKILL.md | \
+    skills/shared-security-review/references/changed-file-attack-surface.md | \
+    skills/shared-security-review/references/language-patterns.md | \
+    skills/shared-security-review/references/report-format.md | \
+    skills/shared-security-review/references/secret-patterns.md | \
+    skills/shared-security-review/references/vuln-categories.md | \
+    skills/shared-security-review/references/vulnerable-packages.md | \
+    skills/shared-security-review/references/workflow.md | \
     skills/sdd/SKILL.md | \
     skills/testing-library-react-best-practices/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \

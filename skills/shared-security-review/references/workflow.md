@@ -5,7 +5,7 @@ Follow these steps **in order** for every review.
 
 ## Step 1 — Scope Resolution
 
-- If a path was provided (`/security-review src/auth/`), scan only that scope.
+- If a path was provided (`/shared-security-review src/auth/`), scan only that scope.
 - If no path given, scan the **entire project** starting from the root.
 - Identify language(s) and framework(s) (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pom.xml`, `Gemfile`, `composer.json`, etc.).
 - Read `language-patterns.md` to load language-specific vulnerability patterns.

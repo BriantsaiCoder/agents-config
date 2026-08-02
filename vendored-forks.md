@@ -40,9 +40,9 @@ Retired entries stay listed: the `attic/` copy still differs from upstream, so a
   focused requirements-to-design/tasks-to-scaffold rewrite.
 - `dotnet-find-bugs` remains a byte-identical upstream snapshot from
   `ricoisme/vscode-agents@2b1240abad239703d09875acefd7ae42685c88ff`. Its per-file coverage
-  behavior was added to `security-review`, but Claude's same-named owner won the canary namespace
-  and its payload could not be verified; retirement is deferred rather than treating
-  **UNAVAILABLE** as PASS.
+  behavior was added to `shared-security-review`. The former `security-review` identity collided
+  with native host owners, so the shared owner was renamed first; retirement remains deferred
+  until post-migration host canaries complete without treating **UNAVAILABLE** as PASS.
 
 ## clean-code-dotnet
 
@@ -273,6 +273,19 @@ Codex CLI exposes no local skill-list command (**UNAVAILABLE**); its user-only p
 12/12. Live trigger evaluation passed 15/15 measurable new fire/quiet cases; the candidate
 `security-review` case was **UNAVAILABLE** because Claude's same-named built-in won the namespace,
 so `dotnet-find-bugs` remains active and that result was not converted into a false PASS.
+
+**2026-08-02 namespace migration canary:** the self-owned focused reviewer moved to
+`shared-security-review`; no compatibility alias remains. Claude Code 2.1.220 loaded the full
+76-skill candidate corpus and passed 5/5 exact-identity, natural-fire, attack-map, CI-quiet, and
+runtime-quiet cases. The first natural-fire run exposed a `security-audit` collision; one focused
+trigger clause turned that preserved RED case GREEN, and the complete rerun passed. Codex 0.146.0
+and Copilot 1.0.75 still lack a machine-readable named invocation observable here, so both remain
+**UNAVAILABLE**, not PASS. `dotnet-find-bugs` stays active pending a separate archive decision.
+
+Probe from the repository root (Bash or Zsh):
+`skills/auditing-skill-folder/scripts/eval-triggers.sh --runner claude --cases <(jq -c 'select(.skill == "shared-security-review")' skills/auditing-skill-folder/evals/cases.jsonl) --skills skills`.
+Expected output includes `# arm=collision  skills loaded=76  runner=claude` and
+`cases=5  pass=5  fail=0  skipped=0  err=0`.
 
 **`ecpay` — retired to `attic/` 2026-07-25.**
 
