@@ -5,7 +5,7 @@ description: 'Use when writing or reviewing React Testing Library tests — quer
 
 # React Testing Library Best Practices
 
-> **Scope**: this skill covers React + React Testing Library specifically. For Vue component / composable testing, use `vue-best-practices`; for Pinia store testing, use `pinia`. For Vitest configuration / mocking issues regardless of framework, use `vitest`.
+> **Scope**: this skill covers React + React Testing Library specifically. For Vue component, composable, or Pinia store testing, use `vue-best-practices`. For Vitest configuration / mocking issues regardless of framework, use `vitest`.
 
 ## Core Rule
 

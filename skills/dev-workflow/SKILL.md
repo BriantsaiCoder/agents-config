@@ -62,6 +62,8 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 
 Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於已 invoke；命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。
 
+本表是 routing 的 single source。`ask-matt` 自述為「a router over the skills in this repo」，實際只涵蓋 Matt 那 21 支加 `/compact`，不含 `deps-check`、三支 security、`context7-mcp`、兩支 Microsoft docs、`ui-ux-pro-max`、`sdd`、`auditing-skill-folder`、`web-design-reviewer`、`bug-fix-settlement`、`acquire-codebase-knowledge`、`resolving-merge-conflicts`。它是 pinned upstream，描述不修；使用者叫它時把它當 Matt subset 的視圖，缺項回本表補齊。
+
 Route 到 `research` 時，background agent 仍受 [INT-4]；將 findings 寫入 repo Markdown 仍受 S2 authorization。未獲對應授權不得自行 delegate 或落盤。
 
 ### Routing continuations

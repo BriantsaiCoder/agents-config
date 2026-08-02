@@ -1,6 +1,13 @@
 # Vue Debug Symptom Index
 
-Use this as a first-pass map. Verify with the actual component, warning text, and failing flow before editing.
+Use this as a first-pass map. Reproduce the symptom and capture the exact warning text first, match it below, then fix the smallest verified cause and rerun the failing flow. Broaden only when the evidence does not match the first category.
+
+## Three shortcuts that hide the real bug
+
+- Do not patch a hydration mismatch with client-only rendering until you know *which value* differs server vs client.
+- Do not force a rerender with `:key` until you have proven stale component identity is the cause.
+- Do not add a deep watcher by default; first check that the watched source is correct.
+- In Nuxt, keep server-safe code separated from browser-only APIs rather than guarding at the call site after the fact.
 
 ## First Checks By Symptom
 

@@ -231,7 +231,7 @@ rg -q 'UNVERIFIED: current Claude CLI loading semantics' "$AUDIT_TRIGGER_RUNNER"
 ! rg -q 'UNVERIFIED：' "$AUDIT_TRIGGER_EVAL" \
   "$AGENTS/skills/auditing-skill-folder/evals/runners.json" ||
   fail 'Step 2c uses a non-machine-readable UNVERIFIED prefix'
-rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 58 cases' "$AGENTS/vendored-forks.md" ||
+rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 56 cases' "$AGENTS/vendored-forks.md" ||
   fail 'vendored detector regression count is stale'
 ! rg -q 'model invocation metadata only|four steps above' "$AUDIT_VENDORED_GATE" ||
   fail 'auditing-skill-folder carries a stale fork scope or override step count'
@@ -347,13 +347,13 @@ done < "$AGENTS/mattpocock-skills.lock"
 # Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
 [ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
 b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
-[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 6 ] ||
+[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 4 ] ||
   fail 'Stage B2 skill tree lock inventory drifted'
 
 [ ! -e "$AGENTS/skills/video-downloader" ] &&
   [ ! -L "$AGENTS/skills/video-downloader" ] ||
   fail 'retired video-downloader directory still exists'
-for retired in clarify csharp-developer dotnet-core-expert make-skill-template nuget-manager; do
+for retired in clarify csharp-developer dotnet-core-expert dotnet-find-bugs dotnet-test make-skill-template native-feel-cross-platform-desktop nuget-manager pinia vue-debug-guides vueuse-functions; do
   [ ! -e "$AGENTS/skills/$retired" ] && [ ! -L "$AGENTS/skills/$retired" ] ||
     fail "retired skill remains active: $retired"
   [ -f "$AGENTS/attic/$retired/SKILL.md" ] ||
@@ -363,7 +363,7 @@ done
   fail 'legacy security-review namespace remains active'
 [ -f "$AGENTS/skills/shared-security-review/SKILL.md" ] ||
   fail 'shared-security-review namespace is missing'
-for fork in clean-code-dotnet dotnet-test; do
+for fork in clean-code-dotnet; do
   fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
 done
 clean_code_skill="$AGENTS/skills/clean-code-dotnet/SKILL.md"
@@ -438,9 +438,38 @@ done < "$B2_SKILLS_LOCK"
 # current-doc reference 修正逐檔列出，避免未審新增檔被 wildcard 靜默放行。
 # 2026-08-02 Batch 4 closure 只再放行已逐檔裁決的 stance/scope/routing trims；其餘 skill
 # 仍走 fail-closed fallback，避免全目錄 wildcard 把未審變更帶進 live tree。
+# 2026-08-02 consolidation batch（77 → 71）。退役六支走 attic/ 快照，因此用目錄 wildcard；
+# 其餘為承接內容的自有檔，逐檔列出：
+#   dotnet-find-bugs/*                 VND 退役。唯一未遷移項（matching binaries/PDB guard）已寫入
+#                                      dotnet-core-best-practices；11 條 security checklist 與五支
+#                                      runtime 診斷工具在退役當下逐項重驗有更好的 owner。
+#   dotnet-test/*                      VND 退役。真實用量 0（4 次全為 skilleval harness）；可攜的
+#                                      BenchmarkDotNet 程序搬進 dotnet-testing-best-practices。
+#   native-feel-cross-platform-desktop/*  VND 退役，未取出任何內容（使用者確認無跨平台桌面計畫）。
+#   pinia/* vue-debug-guides/* vueuse-functions/*  併入 vue-best-practices。vueuse-functions 是
+#                                      LICENSE-only VND，經使用者明示 override；MIT 姓名標示隨
+#                                      payload 移到 references/vueuse/LICENSE.md。
+#   dotnet-core-best-practices/references/security-performance.md  承接 PDB/symbol 前提。
+#   dotnet-testing-best-practices/{SKILL.md,references/benchmarks.md}  承接 benchmark；description
+#                                      補 run/benchmark trigger，避免 dotnet-test 退役造成能力退化。
+#   vue-best-practices/references/{pinia,vueuse,debugging}/*  承接三支的 reference payload；
+#                                      原 references/pinia.md 是指向已併入 skill 的轉址，一併刪除。
 while IFS= read -r changed; do
   case "$changed" in
     skills/agent-browser/SKILL.md | \
+    skills/dotnet-find-bugs/* | \
+    skills/dotnet-test/* | \
+    skills/native-feel-cross-platform-desktop/* | \
+    skills/pinia/* | \
+    skills/vue-debug-guides/* | \
+    skills/vueuse-functions/* | \
+    skills/dotnet-core-best-practices/references/security-performance.md | \
+    skills/dotnet-testing-best-practices/SKILL.md | \
+    skills/dotnet-testing-best-practices/references/benchmarks.md | \
+    skills/vue-best-practices/references/pinia.md | \
+    skills/vue-best-practices/references/pinia/* | \
+    skills/vue-best-practices/references/vueuse/* | \
+    skills/vue-best-practices/references/debugging/* | \
     skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/step0-vendored-gate.md | \
     skills/auditing-skill-folder/step1-verdict-guide.md | \

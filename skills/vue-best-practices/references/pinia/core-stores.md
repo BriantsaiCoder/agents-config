@@ -5,6 +5,10 @@ description: Defining stores, state, getters, and actions in Pinia
 
 # Pinia Stores
 
+> **Pinia 4 floor.** ESM-only; install `@vue/devtools-api` separately. Peers require Vue
+> `^3.5.11` and TypeScript `>=5.6` when TypeScript is installed.
+> Source: [Pinia v4 changelog](https://github.com/vuejs/pinia/blob/v4/packages/pinia/CHANGELOG.md).
+
 Stores are defined using `defineStore()` with a unique name. Each store has three core concepts: **state**, **getters**, and **actions**.
 
 ## Defining Stores
