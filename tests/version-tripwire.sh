@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# version-tripwire.sh — 版本回歸絆線（skills/ 專用）
+# version-tripwire.sh — 版本回歸絆線
 #
 # 這是回歸測試，不是預測。每一條都對應已用官方文件確認並修掉的版本缺陷；
 # 初始 28 條來自 2026-07-26 稽核（commit 1b3d600 / 3370201 / f3bb004 /
@@ -10,9 +10,25 @@
 #
 # 三個設計決定，每個都有實測理由：
 #
-# 1. 只掃 skills/。~/.agents 的其他路徑本來就合法地含有這些死字串 ——
-#    proposals/ 的稽核報告必須引用它們才能描述修了什麼，attic/ 有 348 個
-#    歸檔的舊 skill 副本。repo-wide grep 會上線第一天全紅。
+# 1. 掃 skills/ bin/ hooks/ .github/，排除 tests/ 與 proposals/。
+#    原本只掃 skills/，理由寫的是「其他路徑本來就合法地含有這些死字串，尤其
+#    attic/ 的 348 個歸檔副本，repo-wide grep 會上線第一天全紅」。2026-08-02
+#    稽核 Follow-up 1 逐目錄實測，推翻了 attic/ 那半句：
+#
+#      hooks/ bin/ .github/ attic/ docs/   0 條
+#      tests/                             33 條（測試檔本身帶 pattern 字面值）
+#      proposals/                          2 條（稽核報告引用死寫法當例子）
+#
+#    假陽性完全不來自 attic/，而是 tests/ 與 proposals/——那兩處含有 pattern 是
+#    它們的職責，不是缺陷。所以正解不是「不擴大」，是「擴大到不含它們的範圍」。
+#    SCAN_DIRS 是 allowlist 不是 denylist：未列出的目錄就不掃，沒有排除機制可找。
+#    未列入的理由——tests/ 納入等於絆線抓自己；proposals/ 與 docs/ 必須能引用死寫法
+#    當反例；attic/ 是 CONVENTIONS 規則 11 的退役物，不再維護。
+#
+#    已知的自我指涉風險：.github/workflows/ci.yml 現在同時被掃，而它正是記錄本絆線
+#    的檔案之一——若哪天在那裡的註解寫出 pattern 字面值，CI 會把自己的說明判成死寫法。
+#    這與 tests/ 被排除的理由同源，差別只在 ci.yml 的守護價值大於該風險。要在那裡引用
+#    死寫法時，寫進 proposals/ 再連結過去。
 #
 # 2. 收緊 pattern，不用檔案豁免清單。多條死字串在 HEAD 仍有命中，但都落在
 #    刻意寫的警語裡（「不要用 X，改用 Y」）。豁免整個檔案會自廢武功 ——
@@ -26,7 +42,7 @@
 #    製造被保護的錯覺。--selftest 就是為了擋這個。
 #
 # 用法:
-#   bash tests/version-tripwire.sh              掃描 skills/，有命中即 FAIL
+#   bash tests/version-tripwire.sh              掃描 SCAN_DIRS 列出的目錄，有命中即 FAIL
 #   bash tests/version-tripwire.sh --selftest   對基準線斷言每條都會觸發
 #
 # 要展示死寫法時的慣例：放進 `//` 或 `#` 註解裡，不要留成裸的一行。
@@ -38,12 +54,32 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." || exit 1
 
 BASE_COMMIT=8d701ca     # 2026-07-26 那輪修復之前的最後一個 commit
-SCAN_DIR=skills
+# 掃描範圍與各目錄的取捨見檔頭設計決定 1。空白分隔，展開時刻意不加引號。
+SCAN_DIRS="skills bin hooks .github"
 
-grep_for() {  # $1=mode  $2=pattern  $3=root
-  case "$1" in
-    F) grep -rnF -e "$2" "$3" 2>/dev/null ;;
-    *) grep -rnE -e "$2" "$3" 2>/dev/null ;;
+# 掃描根目錄必須全部存在，缺一即 fail-fast。
+# 沒有這段的話：grep 對不存在的路徑 exit 2 但 stdout 為空，而呼叫端只看 stdout，
+# 於是「目錄打錯」與「0 命中」無法區分。實測把 SCAN_DIRS 全部改成不存在的名字，
+# 腳本照樣印「45 條絆線全部未觸發」並 exit 0——整支絆線變成本檔開頭批評的那種
+# 「永遠不會紅的絆線」。目錄改名、typo、CI checkout 缺檔都會觸發這條路徑。
+for _d in $SCAN_DIRS; do
+  [ -d "$_d" ] || {
+    printf 'FAIL  掃描目錄不存在：%s（SCAN_DIRS=%s）\n' "$_d" "$SCAN_DIRS" >&2
+    printf '      目錄缺席與 0 命中在 grep 的 stdout 上無法區分，因此這裡直接失敗。\n' >&2
+    exit 1
+  }
+done
+unset _d
+
+grep_for() {  # $1=mode  $2=pattern  $3.. = 一個或多個掃描根目錄
+  # 用 "$@" 而非 "$3"：掃描範圍改成多目錄之後，只取 $3 會讓第二個之後的目錄整個
+  # 被丟掉，而輸出仍是「N 條絆線全部未觸發」——一個看起來正常的假綠。實作時真的
+  # 踩到（2026-08-02），植入死寫法到 hooks/ 也抓不出來才發現。
+  local mode="$1" pat="$2"
+  shift 2
+  case "$mode" in
+    F) grep -rnF -e "$pat" "$@" 2>/dev/null ;;
+    *) grep -rnE -e "$pat" "$@" 2>/dev/null ;;
   esac
 }
 
@@ -55,11 +91,22 @@ if [ "${1:-}" = "--selftest" ]; then
     echo "SKIP  基準線 $BASE_COMMIT 不在本地（CI 需 fetch-depth: 0）"; exit 0
   fi
   tmp=$(mktemp -d) || exit 1
-  git archive "$BASE_COMMIT" "$SCAN_DIR" | tar -x -C "$tmp" || exit 1
+  # 逐一 archive 並容忍個別失敗，至少要成功一個。
+  # 這是為未來的 SCAN_DIRS 增修留的：今天四個目錄在 8d701ca 都存在（git ls-tree 可驗），
+  # 所以這個容忍分支目前不會走到。日後若加入基準線當時還沒有的目錄，沒有它會整支 exit 1
+  # ——而那不是絆線腐化，是 corpus 不存在，兩者不該用同一種失敗表示。
+  # （初版註解寫「.github 是後來才加的」，那是編造的理由，實測推翻。）
+  got=0
+  for d in $SCAN_DIRS; do
+    git archive "$BASE_COMMIT" "$d" 2>/dev/null | tar -x -C "$tmp" 2>/dev/null && got=1
+  done
+  [ "$got" = 1 ] || { echo "FAIL  基準線 $BASE_COMMIT 沒有任何掃描目錄"; exit 1; }
+  scan_roots=""
+  for d in $SCAN_DIRS; do [ -d "$tmp/$d" ] && scan_roots="$scan_roots $tmp/$d"; done
   st_pass=0; st_fail=0
   while IFS=$'\t' read -r mode pat why; do
     [ -n "${mode:-}" ] || continue
-    if [ -n "$(grep_for "$mode" "$pat" "$tmp/$SCAN_DIR")" ]; then
+    if [ -n "$(grep_for "$mode" "$pat" $scan_roots)" ]; then
       st_pass=$((st_pass+1))
     else
       st_fail=$((st_fail+1))
@@ -122,7 +169,7 @@ n=0; bad=0
 while IFS=$'\t' read -r mode pat why; do
   [ -n "${mode:-}" ] || continue
   n=$((n+1))
-  hits=$(grep_for "$mode" "$pat" "$SCAN_DIR")
+  hits=$(grep_for "$mode" "$pat" $SCAN_DIRS)
   if [ -n "$hits" ]; then
     bad=$((bad+1))
     printf 'FAIL  %s\n      pattern [-%s]: %s\n' "$why" "$mode" "$pat"
@@ -177,7 +224,7 @@ E	Serilog\.Sinks\.Elasticsearch|^[[:space:]]*\[new Uri\("https://elastic\.exampl
 TRIPWIRES
 
 if [ "$bad" -eq 0 ]; then
-  printf '%d 條絆線全部未觸發 —— skills/ 無已知死寫法\n' "$n"
+  printf '%d 條絆線全部未觸發 —— %s 無已知死寫法\n' "$n" "$SCAN_DIRS"
 else
   printf '\n%d / %d 條絆線觸發。這些寫法已在 2026-07-26 稽核中判定為死：\n' "$bad" "$n"
   printf '照抄會編譯失敗、build 失敗或測試假綠。修法見 proposals/2026-07-26-doctor-skill-family/00-report.md\n'
