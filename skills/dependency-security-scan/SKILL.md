@@ -1,6 +1,6 @@
 ---
 name: dependency-security-scan
-description: 'Use when adding CI/CD or pre-commit security gates: secret scanning, dependency vulnerability checks, container image scans, SBOM generation, audit dependencies, Docker image scanning, or blocking leaked secrets. Reading code for vulnerabilities (SQLi, XSS, auth flaws) → security-review.'
+description: 'Use when adding CI/CD or pre-commit security gates: secret scanning, dependency vulnerability checks, container image scans, SBOM generation, audit dependencies, Docker image scanning, or blocking leaked secrets. Reading code for vulnerabilities (SQLi, XSS, auth flaws) → shared-security-review.'
 ---
 
 # Dependency & Security Scan

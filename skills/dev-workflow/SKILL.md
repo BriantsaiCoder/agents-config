@@ -47,7 +47,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
 | code review | `code-review` |
 | 高扇入共用介面變更 | MUST 先用 `deps-check` 列出完整 callers |
-| Security | code／diff／path 的 focused data-flow review → `security-review`；使用者明示 whole-codebase adversarial audit／pen-test 且接受持久化 artifacts → `security-audit`；CI／pre-commit／SBOM／container gate → `dependency-security-scan` |
+| Security | code／diff／path 的 focused data-flow review → `shared-security-review`；使用者明示 whole-codebase adversarial audit／pen-test 且接受持久化 artifacts → `security-audit`；CI／pre-commit／SBOM／container gate → `dependency-security-scan` |
 | 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
 | 陌生 repo | `acquire-codebase-knowledge` |
 | primary-source background research／citable Markdown evidence | `research` |

@@ -1,6 +1,6 @@
 ---
-name: security-review
-description: 'Use when scanning code, a branch, or every changed file for security vulnerabilities — injection, exposed secrets, weak crypto, broken auth/access control, insecure dependencies, or business-logic flaws; "is my code secure", "audit this", "map the attack surface". Uses cross-file data-flow reasoning across common languages including C#/.NET. CI/CD gates, SBOM, or container scans → dependency-security-scan. Whole-codebase adversarial audit that persists artifacts → security-audit.'
+name: shared-security-review
+description: 'Use when asked for a focused code security review — "check this repo for SQL injection or XSS", "is my code secure", "map the attack surface" — or to scan a path, branch, or every changed file for injection, exposed secrets, weak crypto, broken auth/access control, insecure dependencies, or business-logic flaws. Uses cross-file data-flow reasoning across common languages including C#/.NET. CI/CD gates, SBOM, or container scans → dependency-security-scan. Whole-codebase adversarial audit that persists artifacts → security-audit.'
 ---
 
 # Security Review
@@ -12,7 +12,7 @@ AI scanner reasoning like a human researcher — data flow, component interactio
 - "Scan / audit / review for security"
 - Injection, secrets, weak crypto, broken auth, IDOR, SSRF
 - Dependencies CVEs, user input → dangerous sinks
-- `/security-review` or `/security-review <path>`
+- `/shared-security-review` or `/shared-security-review <path>`
 
 ## How It Works
 

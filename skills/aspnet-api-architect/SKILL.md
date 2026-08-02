@@ -16,7 +16,7 @@ tools: ['read', 'edit', 'execute', 'search', 'agent/runSubagent']
 
 - ASP.NET／C# implementation 與 review → `dotnet-core-best-practices`
 - MSTest／unit／integration tests → `dotnet-testing-best-practices`
-- focused vulnerability review → `security-review`
+- focused vulnerability review → `shared-security-review`
 - current Microsoft API、SDK、tutorial → `microsoft-docs`／`microsoft-code-reference`
 
 ## Workflow
