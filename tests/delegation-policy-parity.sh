@@ -32,7 +32,9 @@ na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 
 # 單一常數，kernel 與 host 共用（S5 finding N-4）。kernel 寫「併發數 ≤ 2」、host 摘要寫
 # 「併發 ≤2」，兩處各自寫死會讓一邊改措辭時另一邊不紅。容忍「數」與空白，上界必須是 2。
-BOUND_RE='併發(數)?[[:space:]]*≤[[:space:]]*2'
+# 尾端的 ([^0-9]|$) 不可省：沒有後界時「併發 ≤ 20」會命中「≤ 2」，上界被偷偷調高
+# 也照樣綠（Copilot 於 PR #38 指出）。selftest 有一條專門釘住這個。
+BOUND_RE='併發(數)?[[:space:]]*≤[[:space:]]*2([^0-9]|$)'
 
 # 自主授權必須有的正向語彙：既說「自己判定」，也說「不必先問」。
 AUTONOMY_RE='自主判定|自行判定'
@@ -58,9 +60,11 @@ selftest() {
   printf '併發數 ≤ 2\n' > "$scratch/kernel-style.md"
   printf '併發 ≤2\n'    > "$scratch/host-style.md"
   printf '併發數 ≤ 3\n' > "$scratch/wrong-bound.md"
+  printf '併發數 ≤ 20\n' > "$scratch/inflated-bound.md"
   has_bound "$scratch/kernel-style.md" && ok '上界：容忍 kernel 排版' || ng '上界：kernel 排版誤報'
   has_bound "$scratch/host-style.md"   && ok '上界：容忍 host 排版'   || ng '上界：host 排版誤報'
   has_bound "$scratch/wrong-bound.md"  && ng '上界：3 被誤判為合格'   || ok '上界：非 2 時不通過'
+  has_bound "$scratch/inflated-bound.md" && ng '上界：20 被誤判為合格（缺後界）' || ok '上界：20 不通過（後界有效）'
 
   # 這三份是 S5 review 實測第一版會漏掉的現實寫法，全部必須被抓到。
   printf '本 host 一律先詢問使用者後才委派；未經同意不得啟動 task 工具\n' > "$scratch/f1.md"
