@@ -146,6 +146,16 @@ jobs:
       - name: guard parity 檢查器回歸
         run: bash tests/hook-parity.sh
 
+      # delegation 政策的三家一致性。2026-08-02 之前三家寫法不對稱到看不出來：kernel 有
+      # [INT-4]，~/.claude/CLAUDE.md 寫 blanket 禁令，~/.codex/AGENTS.md 只提工具名，
+      # ~/.copilot/copilot-instructions.md 一條都沒有。症狀是「同一任務三家跑出不同行為」，
+      # 幾乎不可能歸因回設定。runner 沒有 host 入口檔，那部分標 SKIP（同 hook-parity 慣例）。
+      # --selftest 先驗反向斷言真的會觸發——沒有它，blanket 偵測可以整段不執行而仍回綠。
+      - name: delegation 政策三家一致性
+        run: |
+          bash tests/delegation-policy-parity.sh --selftest
+          AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/delegation-policy-parity.sh
+
       # 上面三支各驗一半，中間有縫：git-push-guard 驗判定邏輯但只對一份檔案，
       # hook-parity 驗漂移偵測機制但用 fixture，hook-parity-check 驗三份內容一致——
       # 內容一致不等於「deny 路徑走得到」。PR #26 就是這個縫的形狀：protect-files.sh

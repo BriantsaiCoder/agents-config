@@ -145,9 +145,11 @@ has "S5 finding blocks raw package assembly" 'finding.*MUST.*FAIL.*raw.*MUST.*om
 has "S5 package bounds binary and oversized files" 'binary.*256 KiB.*path.*size.*hash|256 KiB.*binary.*path.*size.*hash' "$dirty_review"
 has "S5 package includes safe untracked candidates" '非敏感.*untracked.*ignored.*納入.*review package' "$dirty_review"
 lacks "S5 package has no unconditional ignored-file content" 'ignored path 全文' "$dirty_review"
-has "delegation is bounded by default" 'Delegation.*預設 1.*user.*repo.*higher instruction.*最多 2' skills/dev-workflow/SKILL.md
-rule_has "S5 two read-only review agents are workflow-authorized" INT-4 'S5 `code-review`.*Standards／Spec.*恰好 2 個 read-only review agents.*視為 workflow 已授權'
-rule_has "wayfinder fan-out stays within two per batch" INT-4 '`wayfinder` research fan-out.*每批最多 2 個.*超過須取得額外授權'
+has "delegation is condition-authorized, not ask-authorized" 'Delegation 由\*\*條件\*\*授權.*不由逐次詢問授權' skills/dev-workflow/SKILL.md
+has "delegation stays bounded at two" '併發數 ≤ 2' skills/dev-workflow/SKILL.md
+has "delegation escalates past the bound" '併發 >2.*寫入 ownership 重疊.*序列交棒.*MUST 先取得' skills/dev-workflow/SKILL.md
+rule_has "S5 two axes and wayfinder fan-out need no extra ask" INT-4 'S5 `code-review` 的 Standards／Spec 兩軸與 `wayfinder` research fan-out 每批 2 個是本條的既有典型，無須另問'
+rule_has "delegation cannot bypass authorization gates" INT-4 'MUST NOT 用 delegation 迴避 S2 授權或 \[T0-8\] plan gate'
 rule_has "existing public behavior seam is pre-confirmed" INT-2 '既有 public behavior seam 視為已確認.*只有新增 seam 才需.*確認'
 rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 '\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新增 seam.*micro-refactor.*重跑.*覆寫'
 rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
