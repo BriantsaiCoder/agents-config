@@ -467,9 +467,19 @@ while IFS= read -r changed; do
     skills/dotnet-testing-best-practices/SKILL.md | \
     skills/dotnet-testing-best-practices/references/benchmarks.md | \
     skills/vue-best-practices/references/pinia.md | \
-    skills/vue-best-practices/references/pinia/* | \
-    skills/vue-best-practices/references/vueuse/* | \
-    skills/vue-best-practices/references/debugging/* | \
+    skills/vue-best-practices/references/pinia/advanced-hmr.md | \
+    skills/vue-best-practices/references/pinia/advanced-nuxt.md | \
+    skills/vue-best-practices/references/pinia/advanced-ssr.md | \
+    skills/vue-best-practices/references/pinia/best-practices-outside-component.md | \
+    skills/vue-best-practices/references/pinia/best-practices-testing.md | \
+    skills/vue-best-practices/references/pinia/core-stores.md | \
+    skills/vue-best-practices/references/pinia/features-composables.md | \
+    skills/vue-best-practices/references/pinia/features-composing-stores.md | \
+    skills/vue-best-practices/references/pinia/features-plugins.md | \
+    skills/vue-best-practices/references/pinia/unit-test-vue-pinia-patterns.md | \
+    skills/vue-best-practices/references/vueuse/INDEX.md | \
+    skills/vue-best-practices/references/vueuse/LICENSE.md | \
+    skills/vue-best-practices/references/debugging/INDEX.md | \
     skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/step0-vendored-gate.md | \
     skills/auditing-skill-folder/step1-verdict-guide.md | \
