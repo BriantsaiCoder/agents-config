@@ -18,7 +18,7 @@ jobs:
     steps:
       # fetch-depth: 0 —— version-tripwire 的 --selftest 要對基準線 commit
       # (8d701ca) 斷言每條絆線都真的會觸發，淺 clone 抓不到那個 commit。
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
