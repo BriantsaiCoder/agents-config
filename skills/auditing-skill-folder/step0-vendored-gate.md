@@ -21,11 +21,17 @@ Detection is the **union** of five signals because none alone is sufficient — 
 - `vendored-skills.lock` (repo root, tab-separated: `<basename>`, `source_url`, …) is checked **first** and outranks the rest. It is the general provenance ledger for payloads that carry no in-tree marker at all. Column 2 becomes the OWNER cell.
   - Consequence you must internalise before judging any row: **a `VND` flag is not proof of foreign authorship.** Resolve the recorded source before deciding editability. For example, `aspnet-api-architect` was removed from the lock after its source proved to be this repository's own initial snapshot; the evidence now lives under `vendored-forks.md` → "Resolved Stage B2 provenance".
 - LICENSE alone missed `design-doc-mermaid`: no LICENSE file at all, upstream was a Skilz Marketplace listing (SpillwaveSolutions) declared only in its README. That skill has since been retired to `attic/`, but it remains the reason this is a union and not a single test.
-- The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker. `vueuse-functions` was merged into `vue-best-practices` and retired to `attic/` on 2026-08-02 under an explicit user override; its LICENSE notice moved with the payload to `vue-best-practices/references/vueuse/LICENSE.md`, which is what MIT attribution requires and what a marker-only scan would still miss.
+- The provenance marker alone misses `playwright-best-practices` and `vueuse-functions`: `LICENSE.md`, no marker.
+  - **The LICENSE-existence signal is root-only** (`scripts/lib-vendored.sh:124`, `:245` glob `$dir/LICENSE{,.md,.txt}` and `$dir/COPYING`).
+    A vendored payload merged *into* a self-owned skill therefore becomes invisible: `vendored_flag skills/vue-best-practices`
+    returns `-` even though `references/vueuse/LICENSE.md` carries an in-tree MIT notice (empirically confirmed 2026-08-02).
+    This is the expensive failure direction per the economics stated below — a false `-` authorises editing someone else's payload.
+    Until the scan descends one level into `references/*/`, **check for nested LICENSE files by hand** before judging any skill
+    that absorbed another skill's payload.
 - Both together still missed two skills (2026-07-25, caught by hand, fixed 2026-07-26): `tailwind-v4-shadcn` declares provenance only in `.claude-plugin/plugin.json`, which was not in the scanned file set; `agent-browser` puts its `upstream:` marker in an HTML comment **after** the closing `---`, where the frontmatter-bounded scan had already stopped. Both are now covered — the marker scan reads the whole `SKILL.md`, anchored on `^` / `<!--` / `|`.
 - A pinned upstream set may intentionally keep provenance outside the payload to preserve byte identity. `mattpocock-skills.lock` is the central source/hash/inventory record for that case; an exact basename entry is vendored without adding wrappers or LICENSE copies to each skill.
 
-The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (56 cases, in CI) pins that: every provenance form, both false-positive defences, both lock paths, and the exact `VND` set of `skills/`.
+The union returns every known vendored skill with 0 false positives across the corpus. `tests/vendored-detection.sh` (in CI) pins that: every provenance form, both false-positive defences, both lock paths, and the exact `VND` set of `skills/`. The case count lives only in `vendored-forks.md`, where `tests/matt-thin-workflow.sh` pins it — two unguarded copies is how it drifted to 93-vs-58 while both read as authoritative.
 
 **LICENSE variants signal by existence; README, SKILL, and plugin-manifest files signal only by provenance content.** Plenty of self-owned skills have a `README.md`; `.claude-plugin/plugin.json` is read for its `repository` / `author`, not counted for being there.
 

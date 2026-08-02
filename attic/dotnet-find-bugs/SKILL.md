@@ -9,9 +9,6 @@ tags: [dotnet,csharp,debugging,security,performance]
 ---
 
 # dotnet-find-bugs Skill
-> **Archived 2026-08-02.** The matching-binaries/PDB precondition now lives in
-> `skills/dotnet-core-best-practices/references/security-performance.md`; the per-file
-> attack-surface mapping lives in `skills/shared-security-review/references/`.
 
 短述
 - 角色: 超過 10 年經驗的 .NET / C# 資深開發工程師（Debugging Strategist）
