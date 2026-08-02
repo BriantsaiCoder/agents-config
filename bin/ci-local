@@ -230,6 +230,11 @@ EOF
   ran=$((ran + 1))
   if [ "$rc" -eq 0 ]; then
     printf '[%2d] PASS  %-52s %ss\n' "$total" "$label" "$dur"
+    # PASS 也印最後一行。測試腳本的收尾行帶的是 case 數（「68 PASS / 0 FAIL」、
+    # 「45 條絆線全部未觸發」），那是唯一不會過期的條數來源——step 名稱曾寫死條數，
+    # 實測漂移過兩次（版本絆線 28→45、guard parity 11→13），已於此次一併移除。
+    # 若這裡只在 FAIL 印，條數在本機這個 surface 就完全消失了。
+    printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -1 | sed 's/^/       │ /'
     passed=$((passed + 1))
   else
     printf '[%2d] FAIL  %-52s %ss (exit=%s)\n' "$total" "$label" "$dur" "$rc"

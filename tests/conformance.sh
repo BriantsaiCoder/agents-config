@@ -264,5 +264,20 @@ else
   ng "[T0-3] guard parity checker"
 fi
 
+# CI step 名稱不得複述 case 數（CONVENTIONS 規則 9 的下沉）。
+# 為何必須是機械守護而不是 prose：這條規則的內容就是「沒有守護的數字會靜默漂移」，
+# 用一段註解去執行它，等於犯它描述的錯。實測已漂移兩次——版本絆線名稱停在 28 而
+# 實際 45（9b645c5 更正），guard parity 停在 11 而實際 13（本次發現）。兩次都靜默
+# 通過，因為沒有任何東西在條數變動時提醒你改名稱。條數由各測試腳本的收尾行自報。
+CI_YML="$AGENTS/.github/workflows/ci.yml"
+COUNT_IN_NAME='^[[:space:]]+- name:.*[0-9]+ ?(cases|條|斷言)'
+if [ ! -f "$CI_YML" ]; then
+  skip_check "CI step 名稱不含 case 數（$CI_YML 不存在）"
+elif ! grep -qE "$COUNT_IN_NAME" "$CI_YML"; then
+  ok "CI step 名稱不含 case 數"
+else
+  ng "CI step 名稱複述 case 數（會靜默漂移）：$(grep -cE "$COUNT_IN_NAME" "$CI_YML") 處"
+fi
+
 printf '\n%d PASS / %d FAIL / %d SKIP\n' "$pass" "$fail" "$skipped"
 [ "$fail" -eq 0 ]

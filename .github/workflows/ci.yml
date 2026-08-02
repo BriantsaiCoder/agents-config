@@ -16,6 +16,12 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
+      # step 名稱不寫 case 數，這條規則由 tests/conformance.sh 機械守護（規則 9 下沉）。
+      # 曾經九個 step 把條數寫進名稱，實測漂移過兩次且都靜默通過：版本絆線停在 28 而
+      # 實際 45（9b645c5 更正），guard parity 停在 11 而實際 13。沒有任何東西會在條數
+      # 變動時提醒你改名稱，所以它只會愈來愈不準。條數由各腳本收尾行自報（「N PASS /
+      # 0 FAIL」等），CI log 直接可見，bin/ci-local 也會印出該行。
+      #
       # fetch-depth: 0 —— version-tripwire 的 --selftest 要對基準線 commit
       # (8d701ca) 斷言每條絆線都真的會觸發，淺 clone 抓不到那個 commit。
       - uses: actions/checkout@v7
@@ -43,20 +49,20 @@ jobs:
 
       # [T0-3] force-push guard 回歸。2026-07-25 實測過五個破口
       # （--all / --mirror / 多 refspec / -fu 捆綁 / 完整路徑），全部在此覆蓋。
-      - name: guard 雙格式回歸（68 cases）
+      - name: guard 雙格式回歸
         run: GUARD="$GITHUB_WORKSPACE/hooks/guard-git-push.sh" bash tests/git-push-guard.sh
 
       # lib-vendored.sh 是「可否原地編輯第三方 skill」的唯一機械判準。2026-07-25 它漏判
       # 6 個 vendored skill 中的 2 個，其中一個的漏判直接導致一次未察覺的 in-place edit。
       # false negative 才是危險方向：假 VND 只成本一次人工確認，假 "-" 授權改別人的 skill。
-      - name: vendored 偵測回歸（58 cases）
+      - name: vendored 偵測回歸
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/vendored-detection.sh
 
       # Step 2 description linter 的雙語分類。2026-08-01 之前它只認英文，任何 zh-TW
       # description 只能落到 "?"（UNASSESSED），永遠不可能得 YES。危險方向是只補 GOOD 側：
       # 那會把「必須人工讀」變成「靜默通過」。這組測試把 TRAP-first 的落地方向釘死，
       # 並保留一個 fixture 證明 zh-TW 的 "?" 桶仍然可達。
-      - name: description linter 雙語回歸（22 cases）
+      - name: description linter 雙語回歸
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/description-lint.sh
 
       # Step 2c 觸發評測的計分邏輯。這是唯一會花真實 rate-limit 額度的稽核步驟，所以它的
@@ -72,14 +78,14 @@ jobs:
       # 段落只算 1 個 word——那不是誤差而是整道閘對一整類 skill 失效。修法是加 CJK 字元計數
       # 而非換算法：無 CJK 的檔 effective 恆等於 wc -w，英文行為完全不變。另含防復發守衛：
       # 任何宣告的 tier 若在真實語料上 0 命中即 FAIL（舊的 150/200 兩層匹配 0/95 個 skill）。
-      - name: 字數預算回歸（30 cases，含 CJK 與死 tier）
+      - name: 字數預算回歸（含 CJK 與死 tier）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/word-budget.sh
 
       # bin/ci-local 是「在本機跑 CI 跑的東西」的單一入口，步驟清單由本檔解析而來。一個永遠
       # 回綠的 CI 包裝器比沒有更糟——它讓「本機驗過了」變成噪音，而那正是它要消滅的問題。
       # 這組 selftest 用假 workflow 釘死失敗語意，其中最重要的是「本機缺 CI 會安裝的工具算
       # FAIL 不算 SKIP」：缺工具的失敗方向是假綠（反向斷言整段不跑仍回 PASS）。
-      - name: ci-local 失敗語意 selftest（14 斷言）
+      - name: ci-local 失敗語意 selftest
         run: bash bin/ci-local --selftest
 
       - name: Matt workflow carrier contracts
@@ -98,13 +104,13 @@ jobs:
       - name: agents-branch portable isolation
         run: bash tests/agents-branch.sh
 
-      - name: PR review gate 回歸（12 cases）
+      - name: PR review gate 回歸
         run: bash tests/pr-review-gate.sh
 
       # parity 本身只能在本機比（runner 沒有 ~/.claude / ~/.codex），但 parity 檢查器的
       # 邏輯可以在 CI 驗——含「exec bit 存在」這條：呼叫端用 [ -x ] 判斷，非 executable
       # 等於防線靜默失效（2026-07-30 實測過的缺陷）。
-      - name: guard parity 檢查器回歸（11 cases）
+      - name: guard parity 檢查器回歸
         run: bash tests/hook-parity.sh
 
       # guard 是承載安全判定的 shell；-S error 只抓確定性 bug 不抓風格。
@@ -116,17 +122,14 @@ jobs:
       # 教已移除的 API、不存在的 image tag、已 EOL 的 runtime。初始 28 條把那批缺陷的
       # 複發成本降到零，其後持續增補。只掃 skills/——proposals/ 的稽核報告與 attic/ 的
       # 歸檔副本必然含有這些字串，實測 repo-wide 掃會誤觸 19 條。
-      #
-      # 增補絆線時記得同步下面兩個 step 名稱的條數：它們曾停在 28 而實際已達 45，
-      # 靜默過期了一段時間。（把條數寫進 step 名稱是本 job 的既有慣例，共九個 step 這樣做。）
-      - name: 版本絆線（45 條死寫法，僅 skills/）
+      - name: 版本絆線（死寫法掃描，僅 skills/）
         run: bash tests/version-tripwire.sh
 
       # 絆線自身的腐化守衛：對基準線 commit 斷言每條都仍會觸發。
       # 一條在基準線也 0 命中的絆線代表 pattern 已寫壞，它會安靜地永遠通過——
       # 那比沒有絆線更糟，因為它製造被保護的錯覺。（實測踩過一次：把 regex
       # 誤用 grep -F，[;,] 被當字面值而永遠 0 命中。）
-      - name: 版本絆線自我驗證（45 條須全部仍會觸發）
+      - name: 版本絆線自我驗證（每條須仍會觸發）
         run: bash tests/version-tripwire.sh --selftest
 
       # install-hooks.sh 自身可用性。CI **無法**斷言「hooks 已安裝」——那是每台開發機
