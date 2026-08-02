@@ -154,7 +154,7 @@ jobs:
       - name: delegation 政策三家一致性
         run: |
           bash tests/delegation-policy-parity.sh --selftest
-          AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/delegation-policy-parity.sh
+          AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/delegation-policy-parity.sh --fixtures
 
       # 上面三支各驗一半，中間有縫：git-push-guard 驗判定邏輯但只對一份檔案，
       # hook-parity 驗漂移偵測機制但用 fixture，hook-parity-check 驗三份內容一致——

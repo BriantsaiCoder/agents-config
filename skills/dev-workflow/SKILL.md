@@ -21,7 +21,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 - [INT-1] push／open PR／merge／final closeout MUST 只在 S4、S5 適用 gate PASS 後執行。觸發：任一收尾動作。例外：SKIPPED／UNAVAILABLE 須附理由或 probe。驗證：S4/S5 ledger 與 evidence 齊備。
 - [INT-2] MUST 在 fix 前先有 failing regression test（RED→GREEN）；既有 public behavior seam 視為已確認，只有新增 seam 才需另向使用者確認。觸發：BUGFIX 或改既有 behavior。例外：無可測 seam 時記錄架構問題，fix 後交接 `codebase-design`。驗證：RED evidence 早於 fix。
 - [INT-3] 命中 [T0-8] 時 MUST 停在 S2 等明確核准；auto／autopilot 不豁免。觸發：將改檔且屬 plan-first／中高風險。例外：未命中時可引用 user 的 change／build／fix 原句標 SKIPPED。驗證：核准原句或 SKIPPED evidence。
-- [INT-4] Delegation 由**條件**授權，不由逐次詢問授權。四項同時成立即視為已授權，agent MUST 自行判定並執行，MUST NOT 為此停下發問：(a) 各分支為可獨立平行的實質工作，非序列相依；(b) 全部 read-only，或彼此的寫入 ownership 不重疊；(c) 併發數 ≤ 2；(d) main context 會重驗其回報。任一項不成立即回到明示授權——併發 >2、寫入 ownership 重疊、或需跨 agent 序列交棒，MUST 先取得 user／repo／higher instruction 授權，未獲授權標 SKIPPED。S5 `code-review` 的 Standards／Spec 兩軸與 `wayfinder` research fan-out 每批 2 個是本條的既有典型，無須另問。Subagent 回報不是完成證據，main context MUST 重驗。MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate——被委派的工作本身命中那些 gate 時，gate 仍先適用。觸發：任何 delegation。例外：無。驗證：四項條件的判定 + scope 清單 + main-context probe。
+- [INT-4] Delegation 的**約束**不變，改變的只有**誰決定**。無條件約束（不因任何授權而放寬）：只用於可獨立平行的實質工作，非序列相依；併發 subagent 的寫入 ownership MUST 不重疊；main context MUST 重驗其回報，subagent 回報不是完成證據。**授權方式**改為條件式：上述約束全部成立，且併發數 ≤ 2、同一 S 階段內累計 delegation ≤ 6 時，視為已授權，agent MUST 自行判定並執行，MUST NOT 為此停下發問——2 是自主上限也是預設，本條刻意取代舊規則的「預設 1、明示才到 2」。超出併發或累計上界時 MUST 先取得 user／repo／higher instruction 授權，未獲授權標 SKIPPED；**無條件約束不在可授權範圍內**——寫入重疊或序列相依的 delegation 即使取得授權也 MUST NOT 執行，改為序列化或合併成單一 agent。條件判定本身模糊時仍依 [T0-5] 停下發問。S5 `code-review` 的 Standards／Spec 兩軸為恰好 2 個 **read-only** review agents，與 `wayfinder` research fan-out 每批 2 個，是本條的既有典型，無須另問。MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate——被委派的工作本身命中那些 gate 時，gate 仍先適用。觸發：任何 delegation。例外：無。驗證：無條件約束的逐項判定 + 併發與單階段累計數 + scope 清單 + main-context probe。
 - [INT-5] `setup-matt-pocock-skills` 只有使用者明示才可執行；先讀 repo `docs/agents/issue-tracker.md`，不存在才讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：Matt skill 需要 tracker contract。例外：無。驗證：contract 存在或引用使用者 setup 原句。
 - [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
 - [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 由 model 自動 invoke 或假裝已 invoke；S0 只能推薦下一個 host-specific command，並等待使用者明示啟動。觸發：route 命中 user-only skill。例外：無。驗證：skill frontmatter + 使用者 invocation 原句。
@@ -64,7 +64,7 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 
 本表是 routing 的 single source。`ask-matt` 自述為「a router over the skills in this repo」，實際只涵蓋 22 支 Matt skill 中的 20 支（漏自身與 `resolving-merge-conflicts`）加 `/compact`，完全不含本表的自有與其他 vendored 項：`deps-check`、三支 security、`context7-mcp`、兩支 Microsoft docs、`ui-ux-pro-max`、`sdd`、`auditing-skill-folder`、`web-design-reviewer`、`bug-fix-settlement`、`acquire-codebase-knowledge`。它是 pinned upstream，描述不修；使用者叫它時把它當 Matt subset 的視圖，缺項回本表補齊。
 
-Route 到 `research` 時，background agent 仍受 [INT-4]；將 findings 寫入 repo Markdown 仍受 S2 authorization。未獲對應授權不得自行 delegate 或落盤。
+Route 到 `research` 時，background agent 依 [INT-4] 三項條件自主判定；將 findings 寫入 repo Markdown 仍受 S2 authorization，未獲該授權不得落盤。
 
 ### Routing continuations
 
@@ -150,7 +150,7 @@ Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocat
 - plan = `--mode plan`；todo = update_todo；子代理 = `task` 工具。
 - user-only skill command = `/<skill-name>`。
 - 命中 [T0-8] 時，非 plan mode 必須先提出計畫並取得核准。
-- S5 適用且 working tree dirty 時，預設 1 個 `task` review current package；兩軸獨立且平行有實益時，依 [INT-4] 增至 2 個；clean／fixed-point review 才執行 `code-review`。
+- S5 適用且 working tree dirty 時，依 [INT-4] 直接開 2 個 read-only `task` 分跑兩軸——兩軸是該條列名的既有典型，不需先判斷「是否有實益」；clean／fixed-point review 才執行 `code-review`。
 - Copilot user-level hooks 已配置於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
 - 子代理沿用模型預設 effort；僅 hard debugging、security、migration 或高風險 review 升 `high`，`xhigh`／`max` 需量測證明收益。
 
