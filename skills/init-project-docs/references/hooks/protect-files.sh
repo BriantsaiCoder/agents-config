@@ -54,7 +54,7 @@ check_protected() {
   local f="$1" pattern
   for pattern in "${PROTECTED_PATTERNS[@]}"; do
     if [[ "$f" =~ $pattern ]]; then
-      hook_block "敏感檔案不可編輯：$f（若確定要改，先移除 protect-files.sh 內對應 pattern）"
+      hook_block "敏感檔案不可編輯：${f}（若確定要改，先移除 protect-files.sh 內對應 pattern）"
     fi
   done
 }

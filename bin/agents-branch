@@ -60,11 +60,11 @@ case "${1:-}" in
       printf 'agents-branch: git worktree remove 回報失敗（exit=%s）：\n%s\n' "$rc" "$err" >&2
       if [ -d "$wt" ]; then
         # 目錄還在＝什麼都沒動。未提交變更是最常見原因，但由 git 的訊息說了算。
-        die "worktree 目錄仍在：$wt。確認上面 git 的原因；若確定要丟棄其中變更，用 git worktree remove --force"
+        die "worktree 目錄仍在：${wt}。確認上面 git 的原因；若確定要丟棄其中變更，用 git worktree remove --force"
       fi
       if git worktree list --porcelain | grep -Fq "worktree $wt"; then
         # 目錄已消失但登記還在＝半完成。這是沙箱擋住 .git/worktrees/ 刪除時的樣子。
-        die "目錄已移除，但 worktree 登記仍在（$wt）。跑 git worktree prune 清掉殘留登記；若它同樣回 Operation not permitted，是檔案權限或沙箱擋住 .git/worktrees/，非未提交變更"
+        die "目錄已移除，但 worktree 登記仍在（${wt}）。跑 git worktree prune 清掉殘留登記；若它同樣回 Operation not permitted，是檔案權限或沙箱擋住 .git/worktrees/，非未提交變更"
       fi
       # 目錄沒了、登記也沒了＝其實成功了，只是 git 的回傳碼非零。
       printf 'agents-branch: 但目錄與登記都已清除，視為完成。\n' >&2

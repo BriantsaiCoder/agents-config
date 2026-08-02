@@ -254,6 +254,57 @@ bak_count="$(find "$AGENTS" -name '*.bak*' \
   ok "no manual .bak under ~/.agents" ||
   ng "manual .bak found under ~/.agents: $bak_count"
 
+# $var 緊接非 ASCII 時 bash 會把後續 byte 吃進變數名，set -u 下變成
+# "out?: unbound variable"。2026-08-02 實測 15 個字元（）（「」，。：；、？！　─ ” ’）
+# 全部命中，不限於全形括號——這個 repo 的 shell 腳本以 zh-TW 寫訊息，是高頻寫法。
+#
+# 為何不能靠 shellcheck：它的 parser 把「變數後直接接全形字元」讀成變數加文字，與
+# bash 實際行為不同，-S style 也是 0 訊息，CI 的 shellcheck step 永遠不會紅（同日實測）。
+# 本註解刻意不寫出該字面寫法，否則會被下面這條 rg 抓到自己。
+#
+# 危險方向是靜默：這類寫法多半落在失敗分支，平時不觸發；一旦觸發，set -u 會用
+# unbound variable 取代該印的診斷訊息——剛好在最需要診斷時把它吃掉。實例：
+# protect-files.sh 的 hook_block 因此在 exit 2（deny）之前就 abort，敏感檔案保護
+# fail open（實測 exit 1 而非 2，2026-08-02 修復）。
+#
+# 缺 rg 是 FAIL 不是 SKIP：bin/ci-local 檔頭記著這個 repo 踩過的教訓——「缺工具的
+# 失敗方向是假綠，比報錯危險」。本檔其餘 rg 呼叫也都沒有保護，SKIP 會在同一支腳本
+# 裡對同一個工具擺出兩套標準。
+VARNAME_PAT='\$[a-zA-Z_][a-zA-Z0-9_]*\P{ASCII}'
+if ! command -v rg >/dev/null 2>&1; then
+  ng "shell 變數名檢查需要 rg，但 rg 不可用（缺工具的失敗方向是假綠）"
+else
+  # canary：pattern 寫壞就永遠是綠的。fixture 同時驗正向抓得到與反向不誤報，且與
+  # 實掃共用同一個 VARNAME_PAT，改壞 pattern 這裡會先紅。fixture 用 mktemp 不放 tests/：
+  # 後者會被下面的實掃掃到。全形字元用 printf octal 組出來，不寫字面，同理。
+  canary_dir="$(mktemp -d)" || canary_dir=""
+  if [ -n "$canary_dir" ]; then
+    fw="$(printf '\357\274\211')"
+    printf 'echo "x$v%sy"\n' "$fw" > "$canary_dir/bad.sh"
+    printf 'echo "x${v}%sy"\n' "$fw" > "$canary_dir/good.sh"
+    canary_bad="$(rg -cP "$VARNAME_PAT" "$canary_dir/bad.sh" 2>/dev/null || echo 0)"
+    canary_good="$(rg -cP "$VARNAME_PAT" "$canary_dir/good.sh" 2>/dev/null || echo 0)"
+    rm -rf "$canary_dir"
+    if [ "$canary_bad" = 1 ] && [ "$canary_good" = 0 ]; then
+      ok "shell 變數名 pattern canary"
+    else
+      ng "shell 變數名 pattern canary 失效（bad=$canary_bad 應 1、good=$canary_good 應 0）"
+    fi
+  else
+    ng "shell 變數名 pattern canary 無法建立 fixture"
+  fi
+
+  # 掃 repo 內所有放 shell 腳本的目錄。skills/ 有 21 支，第一版漏掉——PASS 訊息因此
+  # 在說謊，直到 2026-08-02 的 review 抓出 protect-files.sh 的 fail-open。
+  # attic/ 是 CONVENTIONS 規則 11 的退役物，不掃。
+  varname_hits="$(rg -cP "$VARNAME_PAT" \
+    "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" 2>/dev/null |
+    awk -F: '{s+=$2} END{print s+0}')"
+  [ "$varname_hits" = 0 ] &&
+    ok "shell 變數名後未緊接非 ASCII" ||
+    ng "shell 變數名後緊接非 ASCII（bash 會吃進變數名，須改 \${var}）：$varname_hits 處"
+fi
+
 # 缺檔時 SKIP 不 FAIL：$AGENTS 可能是還沒有這支 test 的舊 checkout（本分支 merge 前的
 # live ~/.agents 就是），那不是合規缺陷。存在則必須通過。
 if [ ! -x "$AGENTS/tests/hook-parity.sh" ]; then

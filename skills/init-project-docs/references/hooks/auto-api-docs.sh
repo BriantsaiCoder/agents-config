@@ -39,5 +39,5 @@ if [[ -f "$PROJECT_ROOT/package.json" ]] && command -v npm >/dev/null 2>&1; then
 fi
 
 # 否則：提醒手動同步
-echo "API 路由檔已變更（$HOOK_FILE）— 請確認 docs/ARCHITECTURE.md 的路由總覽表與 docs/FEATURES.md 是否需同步更新。"
+echo "API 路由檔已變更（${HOOK_FILE}）— 請確認 docs/ARCHITECTURE.md 的路由總覽表與 docs/FEATURES.md 是否需同步更新。"
 exit 0

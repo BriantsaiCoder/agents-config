@@ -311,7 +311,7 @@ rg -q 'GREEN.*micro-refactor|micro-refactor.*GREEN' "$KERNEL" ||
 if rg -n 'superpowers:' "$AGENTS/skills" >/dev/null; then
   fail 'active shared skills still reference Superpowers'
 fi
-# 2026-07-30：掃描目標從 $AGENTS/core/routing.md 改為 $KERNEL（dev-workflow SKILL.md）。
+# 2026-07-30：掃描目標從 $AGENTS/core/routing.md 改為 ${KERNEL}（dev-workflow SKILL.md）。
 # core/ 三家 runtime 都不讀，已退役至 attic/core/；active routing 的真正本是
 # kernel 的 S0 ROUTE 表。
 if rg -n 'mp-(diagnose|grill-with-docs|improve-codebase-architecture|tdd)' \
@@ -475,7 +475,9 @@ while IFS= read -r changed; do
     skills/init-project-docs/SKILL.md | \
     skills/init-project-docs/references/README.md | \
     skills/init-project-docs/references/agents/copilot/README.md | \
+    skills/init-project-docs/references/hooks/auto-api-docs.sh | \
     skills/init-project-docs/references/hooks/codex/README.md | \
+    skills/init-project-docs/references/hooks/protect-files.sh | \
     skills/init-project-docs/references/host-matrix.md | \
     skills/init-project-docs/references/settings-templates/copilot/README.md | \
     skills/make-skill-template/* | \
