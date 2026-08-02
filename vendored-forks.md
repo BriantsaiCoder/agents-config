@@ -280,7 +280,19 @@ so `dotnet-find-bugs` remains active and that result was not converted into a fa
 runtime-quiet cases. The first natural-fire run exposed a `security-audit` collision; one focused
 trigger clause turned that preserved RED case GREEN, and the complete rerun passed. Codex 0.146.0
 and Copilot 1.0.75 still lack a machine-readable named invocation observable here, so both remain
-**UNAVAILABLE**, not PASS. `dotnet-find-bugs` stays active pending a separate archive decision.
+**UNAVAILABLE**, not PASS. At this gate, `dotnet-find-bugs` stayed active pending the separate
+archive decision recorded below.
+
+**2026-08-02 post-migration retirement gate:** a temporary A/B corpus pinned to `main@c77d29f`
+contained 76 current skills in A and a byte-identical 75-skill B with only `dotnet-find-bugs/`
+omitted. B kept `shared-security-review`, `dotnet-core-best-practices`, `diagnosing-bugs`, and
+`code-review`; 469 relative references passed. The gate failed before model-quality scoring:
+the original still uniquely warns that accurate stack analysis may require matching binaries/PDBs.
+That non-empty unique-behavior inventory is the decisive Step 6 failure. Complete removal also
+changes the public route from explicit identity present (`1`) to absent (`0`); this is recorded as
+an expected compatibility impact, not scored circularly as a deletion regression. Codex and Copilot
+named invocation remain **UNAVAILABLE**. Final verdict: **retain active**; no archive or live mutation
+was performed, and model turns were skipped after the decisive unique-value failure.
 
 Probe from the repository root (Bash or Zsh):
 `skills/auditing-skill-folder/scripts/eval-triggers.sh --runner claude --cases <(jq -c 'select(.skill == "shared-security-review")' skills/auditing-skill-folder/evals/cases.jsonl) --skills skills`.
@@ -505,10 +517,11 @@ without restoring its 28 negative alias lists.
 
 `SKILL.md` is 442 words against the 500-word budget.
 
-**Reported upstream.** The description-mechanic correction (6 sites) is tracked in
-`mattpocock/skills#714`. If accepted upstream, drop that row here and take the correction back via
-wholesale replacement rather than carrying it as a fork. The frontmatter description is the
-opposite: house-authored, so upstream has nothing to fix.
+**Historical upstream report.** The description-mechanic correction (6 sites) was reported in
+`mattpocock/skills#714`, then closed at the user's request on 2026-08-02; no upstream follow-up is
+pending. If a future upstream refresh independently absorbs the fix, drop that row here and take
+the correction back via wholesale replacement rather than carrying it as a fork. The frontmatter
+description is the opposite: house-authored, so upstream has nothing to fix.
 
 ### Re-merge procedure (when upstream moves)
 

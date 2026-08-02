@@ -81,7 +81,7 @@ shellcheck -S error （hooks/ tests/ bin/）CLEAN
 - Claude Code 2.1.220 真實 canary 在 95 個 candidate skills 同時載入下為 2/2 PASS：單一 skill authoring 問題由 `writing-great-skills` 勝出；whole-folder keep/trim/delete/migrate 問題由 `auditing-skill-folder` 勝出。無 retry、無錯誤 case。
 - `tests/matt-thin-workflow.sh` 新增 scope、tier、五訊號與 linter language-contract regression checks。
 
-## 未做
+## 歷史外部狀態（非建議／非待辦）
 
 - 原調教已 commit 至 `main`；本文件以 `bc7dd87` 為 closeout baseline。
-- **未向上游回報 B2。** 那是對外動作，需另外授權。
+- B2 曾由 `BriantsaiCoder` 回報為 [`mattpocock/skills#714`](https://github.com/mattpocock/skills/issues/714)，並依使用者指示於 2026-08-02 關閉。此列只修正舊 closeout 的歷史事實；沒有待執行的 upstream follow-up。若 upstream 日後自行吸收，再依 `vendored-forks.md` 的 re-merge procedure 處理 local delta。
