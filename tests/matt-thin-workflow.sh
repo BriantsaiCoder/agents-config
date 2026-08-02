@@ -343,7 +343,7 @@ done < "$AGENTS/mattpocock-skills.lock"
 # scripts/lint-descriptions.sh 於 2026-08-01 加入：Step 2 linter 補上 zh-TW 分類（TRAP 側
 # 先落地，見該檔 SCOPE 段）。auditing-skill-folder 是 house skill、vendored_flag 判為 "-"，
 # 同資料夾的 SKILL.md 與 scripts/lib-vendored.sh 早已在此列。變更由 tests/description-lint.sh
-# 守護；2026-08-02 corpus 為 76 個 active skill（退役前為 81）。
+# 守護；2026-08-02 corpus 為 77 個 active skill（退役前為 81）。
 # Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
 [ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
 b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
@@ -389,6 +389,23 @@ fork_recorded web-design-reviewer ||
   fail 'web-design-reviewer thin fork is not recorded'
 fork_recorded playwright-best-practices ||
   fail 'playwright-best-practices curated fork is not recorded'
+fork_recorded ui-ux-pro-max ||
+  fail 'ui-ux-pro-max portability fork is not recorded'
+uiux_skill="$AGENTS/skills/ui-ux-pro-max/SKILL.md"
+[ -f "$uiux_skill" ] || fail 'ui-ux-pro-max shared entrypoint is missing'
+uiux_words="$(wc -w < "$uiux_skill" | tr -d ' ')"
+[ "$uiux_words" -le 500 ] ||
+  fail "ui-ux-pro-max entrypoint exceeds 500 words: $uiux_words"
+! rg -q 'CLAUDE_PLUGIN_ROOT' "$AGENTS/skills/ui-ux-pro-max" ||
+  fail 'ui-ux-pro-max still contains a Claude-only runtime path'
+rg -Fq '$HOME/.agents/skills/ui-ux-pro-max/scripts/search.py' "$uiux_skill" ||
+  fail 'ui-ux-pro-max shared runtime path is missing'
+rg -q 'stack skills own implementation.*web-design-reviewer owns rendered-page QA' "$uiux_skill" ||
+  fail 'ui-ux-pro-max ownership boundary drifted'
+! rg -q 'reviewing UI|implementing navigation|creating/refactoring UI components' "$uiux_skill" ||
+  fail 'ui-ux-pro-max broad implementation/review triggers returned'
+rg -q '新 UI.*ui-ux-pro-max' "$AGENTS/skills/dev-workflow/SKILL.md" ||
+  fail 'dev-workflow lost UI design routing'
 while IFS=$'\t' read -r skill expected_tree_sha; do
   case "$skill" in \#*|"") continue ;; esac
   actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"

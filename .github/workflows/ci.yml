@@ -86,6 +86,11 @@ jobs:
       - name: vendored 偵測回歸
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/vendored-detection.sh
 
+      - name: ui-ux-pro-max core 回歸
+        run: |
+          python3 -B skills/ui-ux-pro-max/scripts/validate_data.py
+          python3 -B -m unittest discover -s skills/ui-ux-pro-max/scripts/tests -v
+
       # Step 2 description linter 的雙語分類。2026-08-01 之前它只認英文，任何 zh-TW
       # description 只能落到 "?"（UNASSESSED），永遠不可能得 YES。危險方向是只補 GOOD 側：
       # 那會把「必須人工讀」變成「靜默通過」。這組測試把 TRAP-first 的落地方向釘死，

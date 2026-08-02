@@ -53,6 +53,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | primary-source background research／citable Markdown evidence | `research` |
 | current library／framework／SDK／API／CLI／cloud lookup | `context7-mcp` |
 | Microsoft concepts／tutorial／config；API signature／SDK sample | 前者 `microsoft-docs`；後者 `microsoft-code-reference` |
+| 新 UI／redesign／缺少 visual direction | `ui-ux-pro-max`；再交給 host:codex-only Product Design ideation 或 host:claude-only frontend-design |
 | 單檔且 ≤3 tasks 的低風險 change | `sdd` |
 | 單一 skill behavior／invocation／description／pruning（skill scaffolding 由 host creator 負責） | `writing-great-skills` |
 | skill folder keep／trim／delete／migrate 稽核 | `auditing-skill-folder`；verdict 不授權修改 |
@@ -72,6 +73,13 @@ Route 到 `research` 時，background agent 仍受 [INT-4]；將 findings 寫入
 - Skill audit finding 要求修改時先跑 vendored gate；`VND` 只回報、整體替換或移除，self-owned 才進 S2。
 - 使用者明示要換 session、交接或讓另一個 agent 接手時，`handoff` 只橋接仍未進入 spec、ticket 或 wayfinder map 的重要 context；需要時依 [INT-7] 推薦 host-specific command 並等待使用者啟動。
 - Agent 因 blocker 或 session 邊界必須停止且工作未完成時，若仍有未落盤的重要 context，將 `handoff` 列為唯一 next action；已有 canonical artifact 時只引用、不重複內容。一般 context compaction、任務已完成或只是內容很長 MUST NOT 觸發 `handoff`；same-conversation `/compact` 也 MUST NOT 觸發 `handoff`。
+
+### UI/Web design continuation
+
+- 新 UI／redesign 且沒有 URL、Figma、screenshot 或 mockup：先用 `ui-ux-pro-max` 產生 design-system guidance，再由 host ideation 能力提出恰好 3 個 visual directions；使用者選定後才寫 code。
+- 已有 visual target：略過 ideation，保留該 target 與 repo 現行 design system 為 source of truth。
+- 小型既有 UI 變更：預設不跑完整 design-system generation；只有現行規範留白時才做 targeted lookup。
+- 實作交給對應 stack skill；visual asset 需要時才用 host image tools；完成後依 S4 留 browser evidence，並由 `web-design-reviewer` 做 rendered-page QA。
 
 ## S2 AUTHORIZE
 

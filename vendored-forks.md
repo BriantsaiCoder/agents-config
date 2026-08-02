@@ -21,6 +21,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Active** |
 | `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
+| `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; tree SHA-256 `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21` | **Active** |
 | `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-02 — preserve the opt-in decision workflow and add the minimal under-specified/clarify trigger needed to absorb retired `clarify`; payload SHA-256 `a9f97fa0cb597c21ec4beedbb3cce6670f9f48835bd032a3d8605c34c5d70dd2` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
@@ -112,6 +113,55 @@ BenchmarkDotNet baseline/statistics procedure. The full local payload and tree a
    canonical testing skill still omits benchmark interpretation.
 3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
    `tests/matt-thin-workflow.sh`.
+
+---
+
+## ui-ux-pro-max
+
+**Decision (2026-08-02): vendor the complete offline core as a recorded portability and security fork.**
+
+The core keeps the upstream data, search engine, references, tests, and MIT license. The full plugin
+suite is deliberately excluded: its six sibling skills overlap existing shared/host capabilities,
+and its global installer would create additional trigger owners outside this repository's routing.
+
+Five local changes are intentionally small:
+
+1. Replace the 1,805-word Claude-specific entrypoint with a 383-word shared router using
+   `$HOME/.agents/skills/ui-ux-pro-max`; stack skills own implementation and
+   `web-design-reviewer` owns rendered-page QA.
+2. Surface missing/corrupt search data as errors instead of plausible defaults, and reject
+   non-positive result limits at the API and CLI boundaries.
+3. Refuse persistence through symlinked managed paths, preserve existing Master/page files unless
+   `--force` is explicit, and allow either missing target to be created independently.
+4. Correct persisted relative links so Master points to `pages/` and page overrides point to
+   `../MASTER.md`.
+5. Suppress Python bytecode in shipped entrypoints and documented commands so normal use cannot
+   mutate the pinned vendored tree or invalidate its fingerprints.
+
+Upstream-only trailing whitespace in `design_system.py` is normalized mechanically so the shared
+repository's diff check remains clean.
+
+Approved tree SHA-256: `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Fetch the new `.claude/skills/ui-ux-pro-max` tree and verify its license and runtime dependency
+   boundary before replacing the pinned payload.
+2. Reapply only the thin shared router, fail-loud search/limit validation, persistence safety,
+   relative-link corrections, and bytecode suppression that upstream still lacks; never run the
+   global installer or import sibling skills as part of this update.
+3. Run `validate_data.py`, the bundled unittest suite, relative-reference checks,
+   `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, and `bin/ci-local`.
+4. Recompute payload/tree fingerprints and update this section plus `vendored-skills.lock`.
+
+### Rollback
+
+1. Revert the installation commit so the core payload, routing, CI step, provenance lock, and fork
+   record are removed together.
+2. Run `bin/agents-sync --bootstrap` followed by `bin/agents-sync --doctor`; this removes the stale
+   Claude symlink while Codex and Copilot immediately return to the remaining shared tree.
+3. Start fresh host sessions and verify `ui-ux-pro-max` is absent. If a host has no resolver/list
+   command, record `UNAVAILABLE` with that probe instead of claiming PASS.
 
 ---
 
