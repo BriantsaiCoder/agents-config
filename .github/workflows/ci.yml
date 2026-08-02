@@ -113,6 +113,20 @@ jobs:
       - name: guard parity 檢查器回歸
         run: bash tests/hook-parity.sh
 
+      # 上面三支各驗一半，中間有縫：git-push-guard 驗判定邏輯但只對一份檔案，
+      # hook-parity 驗漂移偵測機制但用 fixture，hook-parity-check 驗三份內容一致——
+      # 內容一致不等於「deny 路徑走得到」。PR #26 就是這個縫的形狀：protect-files.sh
+      # 的 hook_block 因變數展開在它執行前就 abort，deny 路徑其實走不到，而所有既有
+      # 測試都是綠的。這兩支補的是行為層：餵它 deny 輸入，斷言真的被擋。
+      #
+      # runner 沒有 ~/.claude / ~/.codex，host 副本那部分會標 SKIP（非合規缺陷，
+      # 見 bin/hook-parity-check 檔頭 L16）；repo 正本必跑。
+      - name: guard deny 路徑可達性
+        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/guard-push-reachability.sh
+
+      - name: protect-files deny 路徑可達性
+        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/protect-files-reachability.sh
+
       # guard 是承載安全判定的 shell；-S error 只抓確定性 bug 不抓風格。
       # skills/auditing-skill-folder/scripts/*.sh 不在此列——上面那條測試是它的守護。
       - name: shellcheck（hooks / tests / bin）
