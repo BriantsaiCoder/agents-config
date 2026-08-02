@@ -39,6 +39,16 @@ if [ "${1:-}" = --selftest ]; then
   has_blanket "$scratch/conditional.md" \
     && ng 'selftest: 條件式寫法被誤判為 blanket' \
     || ok 'selftest: 條件式寫法不誤判'
+  printf '併發數 ≤ 2\n' > "$scratch/kernel-style.md"
+  printf '併發 ≤2\n' > "$scratch/host-style.md"
+  for f in kernel-style host-style; do
+    grep -Eq '併發(數)?[[:space:]]*≤[[:space:]]*2' "$scratch/$f.md" \
+      && ok "selftest: 上界摘要容忍 $f 排版" \
+      || ng "selftest: 上界摘要對 $f 排版誤報"
+  done
+  grep -Eq '併發(數)?[[:space:]]*≤[[:space:]]*2' <(printf '併發數 ≤ 3\n') \
+    && ng 'selftest: 上界 3 被誤判為合格' \
+    || ok 'selftest: 上界非 2 時不通過'
   printf '%d PASS / %d FAIL / %d SKIP\n' "$pass" "$fail" "$skip"
   [ "$fail" -eq 0 ]
   exit
@@ -49,7 +59,8 @@ fi
 int4="$(grep -F '[INT-4]' "$KERNEL" | head -1)"
 [ -n "$int4" ] || { printf 'FAIL: [INT-4] not found in kernel\n' >&2; exit 1; }
 
-# 四項條件逐項在場。整句 grep 會在任一項被刪掉時仍然通過，所以拆開驗。
+# 四項條件的關鍵片段逐項在場——條件 (b) 是選言（read-only 或 寫入不重疊），兩邊各釘一段，
+# 所以是 5 個片段對 4 個條件。整句 grep 會在任一項被刪掉時仍然通過，所以必須拆開驗。
 for cond in '可獨立平行' 'read-only' '寫入 ownership 不重疊' '併發數 ≤ 2' 'main context 會重驗'; do
   case "$int4" in
     *"$cond"*) ok "[INT-4] 含條件：$cond" ;;
@@ -84,7 +95,9 @@ check_host() {
   grep -Fq '[INT-4]' "$file" \
     && ok "$label 指向 [INT-4]" \
     || ng "$label 未指向 [INT-4]（三家會各自漂移）"
-  grep -Fq '併發 ≤2' "$file" \
+  # 排版容忍：kernel 寫「併發數 ≤ 2」，host 摘要寫「併發 ≤2」。釘死任一種都會讓另一種
+  # 正確寫法誤報 FAIL（Copilot 於 PR #36 指出）。放寬「數」與空白，但仍要求關鍵詞與上界。
+  grep -Eq '併發(數)?[[:space:]]*≤[[:space:]]*2' "$file" \
     && ok "$label 帶四項條件摘要" \
     || ng "$label 缺四項條件摘要"
   has_blanket "$file" \
