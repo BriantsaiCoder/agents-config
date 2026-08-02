@@ -167,9 +167,15 @@ jobs:
 
       # 2026-07-26 版本時效稽核（約 4.6M subagent token）修掉 30 個 skill 的死寫法：
       # 教已移除的 API、不存在的 image tag、已 EOL 的 runtime。初始 28 條把那批缺陷的
-      # 複發成本降到零，其後持續增補。只掃 skills/——proposals/ 的稽核報告與 attic/ 的
-      # 歸檔副本必然含有這些字串，實測 repo-wide 掃會誤觸 19 條。
-      - name: 版本絆線（死寫法掃描，僅 skills/）
+      # 複發成本降到零，其後持續增補。
+      #
+      # 掃描範圍 2026-08-02 由 skills/ 擴為 skills/ bin/ hooks/ .github/（稽核
+      # Follow-up 1）。原本這裡寫「proposals/ 的稽核報告與 attic/ 的歸檔副本必然含有
+      # 這些字串，實測 repo-wide 掃會誤觸 19 條」——逐目錄實測推翻了兩處：attic/ 是
+      # 0 條，repo-wide 實際 33 條而非 19。假陽性全來自 tests/（pattern 自身的字面值）
+      # 與 proposals/（報告引用死寫法當反例），那兩個排除即可，其餘可安全納入。
+      # 詳見 tests/version-tripwire.sh 檔頭設計決定 1。
+      - name: 版本絆線（死寫法掃描）
         run: bash tests/version-tripwire.sh
 
       # 絆線自身的腐化守衛：對基準線 commit 斷言每條都仍會觸發。
