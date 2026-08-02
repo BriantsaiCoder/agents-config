@@ -392,8 +392,11 @@ done < "$B2_SKILLS_LOCK"
 #                                    partitioning.md 本來就寫對，屬單點筆誤。已加 version-tripwire 絆線。
 #   security-review/SKILL.md         description 補 → security-audit 反向 disambiguator，關掉
 #                                    Step 2b collision；security-audit 是 VND 不能改，故改自有這側。
+# 2026-08-02 READY Batch 2 只放行 handoff 明列的 direct-edit files；init-project-docs 的
+# current-doc reference 修正逐檔列出，避免未審新增檔被 wildcard 靜默放行。
 while IFS= read -r changed; do
   case "$changed" in
+    skills/agent-browser/SKILL.md | \
     skills/auditing-skill-folder/SKILL.md | \
     skills/auditing-skill-folder/step0-vendored-gate.md | \
     skills/auditing-skill-folder/step1-verdict-guide.md | \
@@ -409,6 +412,7 @@ while IFS= read -r changed; do
     skills/auditing-skill-folder/scripts/eval-triggers.sh | \
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/auditing-skill-folder/scripts/lint-descriptions.sh | \
+    skills/auth-implementation-patterns/SKILL.md | \
     skills/bug-fix-settlement/SKILL.md | \
     skills/clarify/* | \
     skills/aspnet-api-architect/SKILL.md | \
@@ -436,16 +440,24 @@ while IFS= read -r changed; do
     skills/ef-core-best-practices/SKILL.md | \
     skills/ef-core-best-practices/references/rules-expanded.md | \
     skills/ef-core-best-practices/references/working-patterns.md | \
+    skills/init-project-docs/SKILL.md | \
+    skills/init-project-docs/references/README.md | \
+    skills/init-project-docs/references/agents/copilot/README.md | \
+    skills/init-project-docs/references/hooks/codex/README.md | \
+    skills/init-project-docs/references/host-matrix.md | \
+    skills/init-project-docs/references/settings-templates/copilot/README.md | \
     skills/make-skill-template/* | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
     skills/mp-tdd/* | \
+    skills/nuxt/SKILL.md | \
     skills/postgresql-optimization/SKILL.md | \
     skills/nuget-manager/* | \
     skills/security-review/SKILL.md | \
     skills/security-review/references/changed-file-attack-surface.md | \
     skills/security-review/references/report-format.md | \
+    skills/sdd/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/SKILL.md | \
     skills/vue-best-practices/references/rules-expanded.md | \

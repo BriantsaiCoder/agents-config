@@ -83,6 +83,11 @@ has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' skills
 has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.md
 has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md
 has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
+has "primary-source research routes to research" 'primary-source.*citable Markdown.*`research`' skills/dev-workflow/SKILL.md
+has "current product docs route to context7" 'library.*framework.*SDK.*API.*CLI.*cloud.*`context7-mcp`' skills/dev-workflow/SKILL.md
+has "Microsoft concepts route to microsoft-docs" 'Microsoft.*concepts.*tutorial.*config.*`microsoft-docs`' skills/dev-workflow/SKILL.md
+has "Microsoft signatures route to code reference" 'API signature.*SDK sample.*`microsoft-code-reference`' skills/dev-workflow/SKILL.md
+has "research stays inside delegation and persistence gates" 'Route 到 `research`.*background agent.*\[INT-4\].*Markdown.*S2 authorization' skills/dev-workflow/SKILL.md
 has "high-fan-in changes route to deps-check" '高扇入.*`deps-check`.*callers' skills/dev-workflow/SKILL.md
 has "focused security routes to security-review" 'focused.*`security-review`' skills/dev-workflow/SKILL.md
 has "heavy security audit is explicit and artifact-aware" '明示.*artifacts.*`security-audit`' skills/dev-workflow/SKILL.md
@@ -144,6 +149,7 @@ has "delegation is bounded by default" 'Delegation.*預設 1.*user.*repo.*higher
 rule_has "S5 two read-only review agents are workflow-authorized" INT-4 'S5 `code-review`.*Standards／Spec.*恰好 2 個 read-only review agents.*視為 workflow 已授權'
 rule_has "wayfinder fan-out stays within two per batch" INT-4 '`wayfinder` research fan-out.*每批最多 2 個.*超過須取得額外授權'
 rule_has "existing public behavior seam is pre-confirmed" INT-2 '既有 public behavior seam 視為已確認.*只有新增 seam 才需.*確認'
+rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 '\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新增 seam.*micro-refactor.*重跑.*覆寫'
 rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
 rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md

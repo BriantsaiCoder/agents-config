@@ -1,6 +1,6 @@
 ---
 name: nuxt
-description: Use when working with Nuxt 3 / 4 apps — file-based routing, server routes, Nitro, useFetch/useAsyncData/$fetch, middleware, runtime config, SSR/hydration, modules, layers, hybrid rendering. Apply even when user just says "hydration mismatch", "server route 500", "data fetched twice", or "env not loading on prod" without naming Nuxt.
+description: 'Nuxt 3/4 app/server framework work: file routing, Nitro/server routes, useFetch/useAsyncData/$fetch, middleware, runtime config, modules/layers, or SSR/SSG/hybrid rendering. Exclude runtime reactivity/hydration bugs → vue-debug-guides, component-only patterns → vue-best-practices, and store-only work → pinia.'
 ---
 
 # Nuxt

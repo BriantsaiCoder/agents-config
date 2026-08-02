@@ -134,7 +134,7 @@ if [ -d "$LIVE" ] && [ -r "$LIVE/dev-workflow/SKILL.md" ]; then
   echo "── 真實語料：5 個 zh-TW skill ──"
   OUT=$(bash "$SCRIPT" "$LIVE" 2>/dev/null)
   check "live dev-workflow: S0…S6 phase 列舉 -> YES"      "YES" "$(flag_of dev-workflow)"
-  check "live sdd: 提案→實作→選用歸檔 -> YES"             "YES" "$(flag_of sdd)"
+  check "live sdd: trigger-led small-scope route -> -"          "-"   "$(flag_of sdd)"
   check "live aspnet-api-architect: 祈使串列 -> YES"       "YES" "$(flag_of aspnet-api-architect)"
   check "live deps-check: 當使用者…觸發關鍵字 -> -"        "-"   "$(flag_of deps-check)"
   check "live bug-fix-settlement: …之後觸發 -> -"          "-"   "$(flag_of bug-fix-settlement)"

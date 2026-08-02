@@ -1,28 +1,11 @@
 ---
 name: sdd
-description: 輕量規格驅動開發（提案→實作→選用歸檔），適合單一 target file／單一行為／≤3 個 actionable tasks 的小需求。先在 session 寫清楚計畫並取得確認，repo plan file 僅在核准後按需持久化；需求模糊、跨模組或命中風險攔截時走 dev-workflow HEAVY 路。
+description: 適用於單一 target file、單一行為、≤3 個 actionable tasks 且未命中風險 gate 的小功能、明確 bug 或局部重構；需求模糊、跨模組、public API、schema 或 deployment pipeline 改走 dev-workflow。
 ---
 
 # sdd — 輕量規格驅動開發
 
-核心規矩只有一條：**動手寫程式之前，先在 session 內把要做什麼寫清楚。** 寫完讓使用者確認，同意了才開始寫；持久化 plan file 不是核准前置條件。
-
-這是 **dev-workflow S0 決策表的 LIGHT tier 規格**：給「單一 target file / 單一行為 / ≤3 個 actionable tasks，且未命中風險攔截」的小需求。
-
-## 何時用 sdd（vs 升級 HEAVY tier）
-
-- **適合 sdd（LIGHT）**：加一個小功能、修一個明確的 bug、一段小重構。
-- **應升級到 dev-workflow HEAVY 路**：需求模糊需要拷問、target files >1、actionable tasks >3、跨模組 / 架構性變更、或命中 [T0-6] / [T1-1] / public API / schema / deploy pipeline。
-- LIGHT 條件無法機械確認時直接走 HEAVY；不必只為 tier 選擇停下問使用者。
-
-## 開發紀律
-
-- 一次只做一個需求；不要一個對話想把所有功能做完。
-- 不要自己加沒被要求的功能，也不要過度設計（遵守 ponytail / Push back 精神）。
-- 沒把握的地方就問，不要用猜的。
-- 動手前先看專案裡有沒有現成的東西可重用，不要重複造輪子。
-
----
+本 skill 只定義 proposal → implementation → optional archive 三階段；routing、authorization、risk、RED→GREEN 與 S4–S6 一律以 [dev-workflow](../dev-workflow/SKILL.md) 為準。
 
 ## 階段判定
 
@@ -46,7 +29,7 @@ description: 輕量規格驅動開發（提案→實作→選用歸檔），適�
    - `## 影響範圍`：大概會碰到哪些檔案（新增的、要改的）
 4. 在 host todo 或同一 session artifact 拆出可追蹤的小步驟：
    - 每條小到 1 小時內可做完。
-   - 整份不超過 3 條；超過直接升 dev-workflow HEAVY。
+   - 整份不超過 3 條；超過即退出 sdd，回 dev-workflow 重新 route。
 5. 加入 `## 驗收條件`，用白話「情境」句描述「做完後應該長怎樣」，例：
    - 情境：當使用者點擊「新增」按鈕，就把輸入框的文字加到清單最下面
    - 情境：當輸入框是空的就按新增，就不新增，並提示「請先輸入內容」

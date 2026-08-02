@@ -72,41 +72,38 @@ docs/  README  ARCHITECTURE  DEVELOPMENT  FEATURES  TESTING  CHANGELOG
 
 ## Phase 2: Settings
 
-Settings file + format per `references/host-matrix.md` (Claude → JSON, Codex → TOML, Copilot → no Claude-style repo permissions/sandbox settings). Update only after showing the diff. Settings are **incremental** — merge permission/sandbox/network/hooks entries, never replace.
+先讀取共用的 stack/template catalog `references/README.md`，再從 `references/host-matrix.md` 查每個 target host 的 destination、schema、merge strategy 與 current feature boundary。
 
-- **Claude (JSON):** use `scripts/merge-settings.py` (just point it at the right path).
-- **Codex (TOML):** no script — merge with your own Edit tool into the TOML blocks host-matrix specifies; show diff first.
-- **Copilot:** no Claude-style repo permissions/sandbox settings file; if a Claude template contains `deny` entries, convert them to a portable project guard hook per `references/settings-templates/copilot/README.md`.
-
-Templates: Claude → `references/settings-templates/claude/<stack>.json` (pick `settings_template` + `settings_addons` from `detect-stack.sh`); Codex → `references/settings-templates/codex/README.md`; Copilot → `references/settings-templates/copilot/README.md`.
+- 寫入前先顯示 diff；settings 一律增量合併並保留未知或使用者自訂的 keys。
+- 只使用 Phase 0 evidence 選出的 template（`settings_template` + `settings_addons`）。
+- 依 matrix 做 host-specific conversion；不同 host format 不可直接互換。
 
 ## Phase 3: Baseline Files
 
-Offer when missing: `.gitignore` (always ignore `.claude/settings.local.json`, `.env*`), `.editorconfig`, `.env.example` (keys only), `CONTRIBUTING.md`/`SECURITY.md` (OSS/requested), `.github/workflows/ci.yml`. No `git init` / baseline commit without approval.
+缺少時提供：`.gitignore`（一律忽略 `.claude/settings.local.json`、`.github/copilot/settings.local.json`、`.env*`）、`.editorconfig`、只含 keys 的 `.env.example`、OSS／明示要求時的 `CONTRIBUTING.md`／`SECURITY.md`，以及 `.github/workflows/ci.yml`。未獲核准不得執行 `git init` 或 baseline commit。
 
 ## Phase 4–6: Rules / Hooks / Agents
 
-Show each catalog as a **multi-select list**; mark Phase 0-recommended items, user picks. Per-item metadata lives in reference file headers. Destination paths/formats per `references/host-matrix.md`.
+從 `references/README.md` 載入共用 Rules／Hooks／Agents catalogs；target-host destination、conversion 與建議標記一律讀 `references/host-matrix.md`。
 
-For Codex targets, show the **full catalog**. Do not hide or omit non-recommended items. Mark every item as `Recommended`, `Optional`, or `Not recommended`, with one concise reason from Phase 0 evidence. Recommendation markers are advisory only: the user may select any catalog item, including `Not recommended` items, and current-turn user selection wins.
+每個 catalog 都以 **multi-select list** 顯示。Codex target 必須列出全部項目，並依 Phase 0 evidence 標成 `Recommended`、`Optional` 或 `Not recommended`，每項附一個理由。標記僅供建議；本輪使用者選擇優先。
 
-- **Rules** (`references/rules/`): `api-design`, `db-access`, `frontend`, `observability`, `testing` (path-scoped — set `paths:` to Phase 0 globs, delete the placeholder comment, else never matches); `git-commit`, `security` (global, leave as-is). Rule **content is host-neutral**. Routing: Claude → `.claude/rules/*.md`; Copilot → `.github/instructions/<name>.instructions.md` (`paths:`→`applyTo:`) or fold into `copilot-instructions.md`; **Codex has no path-scoping** → fold rule content into `AGENTS.md` sections.
-- **Hooks** (`references/hooks/`): `protect-files` (擋敏感檔), `auto-format` (編輯後格式化), `run-tests` (編輯後跑測試), `auto-api-docs` (路由檔變更後同步文件), `compact-reminder` (compact 後重注規則), `notify` (等待/完成通知). The `.sh` scripts are **shared across hosts** (a host-agnostic input shim at the top normalizes each host's env/stdin). Only the **registration** differs — use `references/hooks/{claude,codex,copilot}/` templates. Codex hook matcher is a tool-name regex per current Codex docs, not a command prefix. Need `chmod +x` + settings edits — confirm first.
-- **Agents** (`references/agents/`): `code-reviewer`, `debug-expert`, `security-auditor`, `refactor-assistant` (opus); `doc-writer`, `test-runner`, `git-commit` (sonnet). Claude → `.claude/agents/*.md` (use `.md` as-is); Copilot → `.github/agents/*.agent.md` (convert frontmatter/tools per `references/agents/copilot/README.md`); Codex → `.codex/agents/*.toml` for repo-specific agents, or `~/.codex/agents/*.toml` only when the user explicitly requests global agents (convert per `references/agents/codex/README.md`).
-
-Codex recommendation markers:
-
-- **Rules:** mark `api-design` as `Recommended` when API routes are present; `db-access` when DB/SQL/data-access code is present; `testing` when tests exist; `security` when auth, admin, secrets, payment-like env, or sensitive config appears. Still list every other rule and mark it `Optional` or `Not recommended` with a reason.
-- **Hooks:** mark `protect-files` as `Recommended` by default; `run-tests` when a test script exists; `auto-api-docs` when an OpenAPI / Swagger / API-doc script exists; `auto-format` only when formatter or lint tooling is present. Still list `compact-reminder` and `notify` as appropriate for session UX / long-doc workflows.
-- **Agents:** mark `code-reviewer` as a general repo baseline; `test-runner` when tests exist; `security-auditor` when auth, admin, secrets, or payment-like surfaces appear. Mark `debug-expert`, `refactor-assistant`, `doc-writer`, and `git-commit` from current task intent and repo state, but still show them.
+只建立使用者選取的項目。變更 executable bit 或 settings／hook registration 前先詢問；既有檔採增量合併，host-neutral content 與 host adapter 分開維護。
 
 ## Phase 7: Summary
 
-Report: files created/updated, why, skipped phases, verification, follow-ups.
+回報建立／更新的檔案、原因、略過的 phases、驗證結果與 follow-ups。
 
 ## Validation
 
-Before reporting done: Operating Rules held, inclusion test applied, settings/hooks/agents reference real paths, no rule keeps a `{偵測到的…}` placeholder. Host check: every host-specific file lands at its `host-matrix.md` path in the right format (no `.claude/` paths leaked into a Codex/Copilot run); Codex TOML is valid and uses current `hooks` / subagent keys; Codex rules folded into `AGENTS.md`; Copilot rules use `.github/instructions/*.instructions.md` with `applyTo:`; Copilot agents use `.agent.md` plus Copilot tool ids; Copilot thin adapter avoids duplicating `AGENTS.md` content when both files are generated. For Codex full init / refresh, Phase 7 must report selected Phase 4–6 items, "use recommended", or the explicit current-turn opt-out; otherwise status is pending catalog confirmation.
+回報完成前逐項檢查：
+
+- [ ] Operating Rules 已遵守、inclusion test 已套用，且沒有未解析的 `{偵測到的…}` placeholder。
+- [ ] 每個產出 reference 都能解析到真實路徑；不得把某 host 的 filename、tool 或 config key 洩漏到另一 host。
+- [ ] JSON／TOML／YAML artifacts 均可 parse；settings／hooks／agents 使用 current `host-matrix.md` schema。
+- [ ] Rules 保留 target-host scoping：Claude `paths:`、Copilot `applyTo:`、Codex content 併入 `AGENTS.md`。
+- [ ] 用 fresh target-host session inventory 驗證產出的 hooks 與 agents；blocking hook 另跑一個 safe negative canary。
+- [ ] Phase 7 已記錄 Phase 4–6 selection、`use recommended` 或本輪明示 opt-out；否則狀態維持 pending confirmation。
 
 ## See also
 

@@ -2,14 +2,14 @@
 
 Codex CLI 的 hooks 可註冊在 `.codex/config.toml`（專案）或 `~/.codex/config.toml`（全域）的 inline TOML，也可由 Codex hooks JSON 載入。事件名 PascalCase（`PreToolUse`、`PostToolUse`、`SessionStart`、`Stop` 等）。**不**提供逐 hook 實體 TOML 檔——格式差異由本指南即時轉換。
 
-> Schema 已查證（2026-05，OpenAI Codex 官方 docs）。套用前建議以本機 `codex` 版本 docs 比對，鍵名隨版本可能微調。
+> Schema 已查證（2026-08-02，OpenAI Codex 官方 docs）。套用前仍以本機 `codex` 版本 docs 比對，鍵名可能隨版本微調。
 
 ## 重要差異 — matcher 語意
 
 Codex 的 hook `matcher` 是 **regex 字串**：
 
 - `PreToolUse` / `PostToolUse` / `PermissionRequest`：比對 tool name。可用 `^Bash$`、`^apply_patch$`、`Edit|Write`、或 MCP tool name regex。
-- `SessionStart`：比對 start source，常見為 `startup|resume|clear`。
+- `SessionStart`：比對 start source，常見為 `startup|resume|clear|compact`。
 - `UserPromptSubmit` / `Stop`：目前不支援 matcher；設定了也會被忽略。
 - 省略 `matcher`、空字串、或 `"*"` 代表所有支援事件都觸發。
 
@@ -45,7 +45,7 @@ command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/auto-api-docs.sh"
 statusMessage = "Checking API docs"
 
 [[hooks.SessionStart]]
-matcher = "startup|resume|clear"
+matcher = "startup|resume|clear|compact"
 [[hooks.SessionStart.hooks]]
 type = "command"
 command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/compact-reminder.sh"'

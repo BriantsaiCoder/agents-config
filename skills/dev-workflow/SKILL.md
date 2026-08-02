@@ -26,6 +26,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 - [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
 - [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 由 model 自動 invoke 或假裝已 invoke；S0 只能推薦下一個 host-specific command，並等待使用者明示啟動。觸發：route 命中 user-only skill。例外：無。驗證：skill frontmatter + 使用者 invocation 原句。
 - [INT-8] 已列出且經核准的多項工作 MUST 逐項執行至清單完成，不得每項完成即停下等待確認；只有命中 [T0-5] 模糊、[T0-8]／[INT-3] plan gate，或需使用者裁決的取捨才可中斷，中斷時只問該一項。清單外的新發現 MUST 只分列 follow-up，未確認不得實作。觸發：單次任務含 ≥2 個已核准項目。例外：無。驗證：回覆為單次彙總（各項 status + evidence），非逐項往返。
+- [INT-9] Kernel route 到 [tdd](../tdd/SKILL.md) 時 MUST 以 [INT-2] 視既有 public behavior seam 為已確認，只有新增 seam 才需先向使用者確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。本條覆寫該 upstream skill 的逐 seam 重問與「refactor 不在 loop」敘述。觸發：任何由本 kernel 管理的 tdd cycle。例外：無。驗證：seam state + RED／GREEN／retest evidence。
 
 退役 ID 殼標記（CONVENTIONS 規則 3：ID 永不重編、永不回收，舊 transcript 與 commit message 可能仍引用）：`[R-1 DEPRECATED→INT-1 2026-07]`、`[R-2 DEPRECATED→INT-2 2026-07]`。兩者原定義於 `core/routing.md`，該檔 2026-07-30 退役至 `attic/core/`；條文語意由上方 [INT-1]／[INT-2] 逐項承接。
 
@@ -49,6 +50,9 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | Security | code／diff／path 的 focused data-flow review → `security-review`；使用者明示 whole-codebase adversarial audit／pen-test 且接受持久化 artifacts → `security-audit`；CI／pre-commit／SBOM／container gate → `dependency-security-scan` |
 | 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
 | 陌生 repo | `acquire-codebase-knowledge` |
+| primary-source background research／citable Markdown evidence | `research` |
+| current library／framework／SDK／API／CLI／cloud lookup | `context7-mcp` |
+| Microsoft concepts／tutorial／config；API signature／SDK sample | 前者 `microsoft-docs`；後者 `microsoft-code-reference` |
 | 單檔且 ≤3 tasks 的低風險 change | `sdd` |
 | 單一 skill behavior／invocation／description／pruning（skill scaffolding 由 host creator 負責） | `writing-great-skills` |
 | skill folder keep／trim／delete／migrate 稽核 | `auditing-skill-folder`；verdict 不授權修改 |
@@ -56,6 +60,8 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
 Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於已 invoke；命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。
+
+Route 到 `research` 時，background agent 仍受 [INT-4]；將 findings 寫入 repo Markdown 仍受 S2 authorization。未獲對應授權不得自行 delegate 或落盤。
 
 ### Routing continuations
 
@@ -83,7 +89,7 @@ Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於
 
 `implement` 必須先進 isolated worktree／branch，依 `tdd` 做 one-test→one-implementation vertical slices；`implement` 在 current/main 上 commit 是禁止的（MUST NOT），且完成後必須返回 S4 → S5 → S6。Delegation 依 [INT-4]。
 
-每輪 GREEN 後只允許一個不改 behavior 的 micro-refactor，並立即重跑當輪 test；wide／structural refactor 留到獨立核准 change 或 S5 finding，RED 時不得 refactor。
+`tdd` cycle 套 [INT-9]；wide／structural refactor 留到獨立核准 change 或 S5 finding，RED 時不得 refactor。
 
 ## S4 VERIFY
 

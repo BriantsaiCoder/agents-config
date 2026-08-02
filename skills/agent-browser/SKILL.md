@@ -12,14 +12,13 @@ Chrome/Chromium 自動化 CLI（CDP，無 Playwright/Puppeteer 依賴）。無�
 
 ## 權威來源：指令說明從 CLI 取，不從本檔
 
-上游明示 *"serves bundled skill content that always matches the installed CLI version. Agents should use this to get current instructions rather than relying on cached copies."* 所以要完整指令、旗標、workflow 食譜時跑：
+上游的 `agent-browser skills --help` 明示 bundled content 會匹配已安裝的 CLI 版本。執行前先取 current core：
 
 ```bash
-agent-browser skills get core          # 核心指南（~25KB）
-agent-browser skills get core --full   # 加 references/ + templates/（~100KB）
+agent-browser skills get core
 ```
 
-`--full` 帶出 auth vault、session 持久化、snapshot/ref 深入、trust boundaries、profiling、影片錄製、proxy、WebGPU 與三支起手 shell script。**先取版本相符的內容再動手，不要憑記憶或本檔湊指令。**
+可用 bundles、references/templates 與 flags 以 `agent-browser skills --help` 為準。**先取版本相符的內容再動手，不要憑記憶或本檔湊指令。**
 
 本目錄的 `references/` 與 `templates/` 是同一份上游內容的快取副本，只在 CLI 不可用時當離線退路；兩者衝突時以 CLI 輸出為準。
 
@@ -43,19 +42,12 @@ agent-browser snapshot -i       # 4. 頁面一變就重新快照
 
 ## 超出瀏覽器網頁時換專項 skill
 
-```bash
-agent-browser skills list                    # electron / slack / dogfood / vercel-sandbox / agentcore
-agent-browser skills get <name>
-```
+目前語法與可用專項 skill：`agent-browser skills --help`。
 
 Electron 桌面 app（VS Code / Slack / Discord / Figma）、Slack 工作區、探索式 QA bug hunt、Vercel Sandbox microVM、AWS Bedrock AgentCore 各有專屬 skill。
 
 ## 裝不起來或指令行為異常
 
-```bash
-agent-browser doctor            # env / Chrome / daemon / config / provider / network / 啟動測試
-agent-browser doctor --quick    # 本機快檢
-agent-browser doctor --fix      # 含破壞性修復（重裝 Chrome、清舊 state）
-```
+目前診斷／修復 flags：`agent-browser doctor --help`；`--fix` 需破壞性操作授權。
 
 `Unknown command`、`Failed to connect`、升級後版本不符、找不到 Chrome —— 先跑 `doctor` 再查其他。

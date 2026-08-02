@@ -1,12 +1,13 @@
 # Copilot CLI 設定範本 — 為何不用 Claude-style settings 範本
 
-Claude 的 `.claude/settings.json` 用 `permissions.allow/deny` + `sandbox.network.allowedDomains` 做專案層的工具放行與沙箱網路控制。**Copilot CLI 沒有對等的專案 permissions/sandbox 設定檔**：
+Claude 的 `.claude/settings.json` 用 `permissions.allow/deny` + `sandbox.network.allowedDomains` 做專案層的工具放行與沙箱網路控制。Copilot CLI 有 `.github/copilot/settings.json` 與個人 override `.github/copilot/settings.local.json`，但只接受官方限定的 supported keys，**沒有對等的專案 permissions/sandbox schema**：
 
-- `~/.copilot/settings.json` 屬於 home dir 使用者設定；`copilot help config` 顯示其中可包含 `hooks` 等鍵，但這不是可攜的專案 permissions/sandbox policy。
+- `.github/copilot/settings.json` 可 commit；`.github/copilot/settings.local.json` 必須 gitignore，兩者都只寫官方 supported keys。
+- `~/.copilot/settings.json` 屬於 home dir 使用者設定，不是可攜的專案 permissions/sandbox policy。
 - 工具放行/封鎖走 `--allow-tool` / `--deny-tool` flag(per-session,不持久化到 repo)或互動式核准。
 - `trustedFolders` 由 CLI 自管,不該手動寫。
 
-因此 init-project-docs 在 Copilot host 下,**Phase 2「設定」改以 `.github/hooks/*.json` 的 `preToolUse` hook 落地**——這是能 commit 進 repo、跨 session 生效的專案層強制點。
+因此 Copilot host 的 Phase 2 先增量更新 `.github/copilot/settings.json`／`.github/copilot/settings.local.json` 中官方支援的 keys；Claude-style `deny`／sandbox mapping 才改以 `.github/hooks/*.json` 的 `preToolUse` hook 落地。
 
 ## Claude settings → Copilot 產物對照
 
@@ -17,7 +18,7 @@ Claude 的 `.claude/settings.json` 用 `permissions.allow/deny` + `sandbox.netwo
 | `sandbox.network.allowedDomains[]` | 無對等專案設定;若使用者要全域放行 URL 抓取,可在 `~/.copilot/settings.json` 加 `allowedUrls`,但這非沙箱網路、且屬全域 → 僅作為「告知使用者」的建議,不自動寫 |
 | `sandbox.enabled` / `autoAllowBashIfSandboxed` | Copilot CLI 內建沙箱,無 repo 設定鍵 → 略過 |
 
-結論:Copilot host 下 Phase 2 實際只產**一支 guard hook**,把各 stack `claude/<stack>.json` 的 `deny` 清單(含 `docker-addon.json`)合併為一份指令黑名單。
+結論：Phase 2 可能同時更新 supported settings 與 guard hook；只有各 stack `claude/<stack>.json` 的 `deny` 清單（含 `docker-addon.json`）會合併成一份指令黑名單。
 
 ## Worked example — `.github/hooks/guard-commands.json`
 

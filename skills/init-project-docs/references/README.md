@@ -82,7 +82,7 @@
 |------|------|------|
 | [`settings-templates/claude/*.json`](./settings-templates/claude/) | Claude Code | 12 個 stack 的 `.claude/settings.json` 片段正本 |
 | [`settings-templates/codex/README.md`](./settings-templates/codex/README.md) | Codex CLI | Claude JSON → `.codex/config.toml`（TOML）轉換指南 + worked example |
-| [`settings-templates/copilot/README.md`](./settings-templates/copilot/README.md) | Copilot CLI | Copilot 無 Claude-style 專案 permissions/sandbox 設定檔 → 改以 `.github/hooks/guard-commands.json`（`preToolUse` guard hook）落地 deny 清單 |
+| [`settings-templates/copilot/README.md`](./settings-templates/copilot/README.md) | Copilot CLI | `.github/copilot/settings.json`／`.github/copilot/settings.local.json` 只寫 supported keys；Claude-style deny／sandbox mapping 改以 `.github/hooks/guard-commands.json` 落地 |
 
 `claude/` 下 12 個 `.json`：
 

@@ -142,6 +142,70 @@ rc=$?
   ok "protect-files apply_patch(.env) fail-closed" ||
   ng "protect-files apply_patch(.env) allowed"
 
+init_docs="$AGENTS/skills/init-project-docs/SKILL.md"
+catalog_index="$AGENTS/skills/init-project-docs/references/README.md"
+host_matrix="$AGENTS/skills/init-project-docs/references/host-matrix.md"
+codex_hooks="$AGENTS/skills/init-project-docs/references/hooks/codex/README.md"
+copilot_agents="$AGENTS/skills/init-project-docs/references/agents/copilot/README.md"
+copilot_settings="$AGENTS/skills/init-project-docs/references/settings-templates/copilot/README.md"
+
+if rg -Fq '`.github/copilot/settings.json`' "$host_matrix" &&
+   rg -Fq '`.github/copilot/settings.local.json`' "$host_matrix" &&
+   rg -Fq '`.github/copilot/settings.json`' "$catalog_index" &&
+   rg -Fq '`.github/copilot/settings.local.json`' "$catalog_index"; then
+  ok "init-project-docs knows Copilot repository／local settings"
+else
+  ng "init-project-docs Copilot repository／local settings are stale"
+fi
+
+if rg -Fq 'startup\|resume\|clear\|compact' "$host_matrix" &&
+   rg -Fq 'startup|resume|clear|compact' "$codex_hooks"; then
+  ok "init-project-docs Codex SessionStart sources are current"
+else
+  ng "init-project-docs Codex SessionStart misses compact"
+fi
+
+copilot_aliases_current=1
+for alias in read edit search execute; do
+  rg -Fq "\`$alias\`" "$copilot_agents" || copilot_aliases_current=0
+done
+if [ "$copilot_aliases_current" -eq 1 ] &&
+   ! rg -q 'search/codebase|edit/editFiles|runCommands|execute/createAndRunTask' "$copilot_agents"; then
+  ok "init-project-docs Copilot agent aliases are canonical"
+else
+  ng "init-project-docs Copilot agent aliases are stale"
+fi
+
+if ! rg -Fq 'Codex recommendation markers:' "$init_docs" &&
+   rg -Fq '## Phase 4–6 建議標記' "$host_matrix"; then
+  ok "init-project-docs host markers have one owner"
+else
+  ng "init-project-docs host markers are duplicated or misplaced"
+fi
+
+if rg -Fq 'references/README.md' "$init_docs" &&
+   rg -q '^- \[ \]' "$init_docs"; then
+  ok "init-project-docs uses shared catalogs and validation checklist"
+else
+  ng "init-project-docs catalog／validation hierarchy is incomplete"
+fi
+
+if rg -Fq '`.github/copilot/settings.json`' "$copilot_settings" &&
+   rg -q '限定|supported keys' "$copilot_settings" &&
+   rg -Fq 'Phase 2 先增量更新' "$copilot_settings" &&
+   ! rg -Fq 'Phase 2 實際只產' "$copilot_settings"; then
+  ok "init-project-docs Copilot settings boundary is current"
+else
+  ng "init-project-docs Copilot settings boundary is stale"
+fi
+
+if rg -Fq '先讀取共用的 stack/template catalog' "$init_docs" &&
+   rg -Fq '## Phase 4–6 建議標記' "$host_matrix"; then
+  ok "init-project-docs new workflow prose is zh-TW"
+else
+  ng "init-project-docs new workflow prose is not zh-TW"
+fi
+
 claimed="$(sed -n '1p' "$AGENTS/CONVENTIONS.md" | grep -oE '[0-9]+ 條' | grep -oE '[0-9]+' | head -1)"
 actual="$(grep -c '^## [0-9]' "$AGENTS/CONVENTIONS.md")"
 [ -n "$claimed" ] && [ "$claimed" = "$actual" ] &&

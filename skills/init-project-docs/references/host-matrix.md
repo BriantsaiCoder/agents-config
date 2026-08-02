@@ -4,7 +4,16 @@
 
 > 版本敏感：Codex hooks / subagents / config 與 Copilot instruction surfaces 會變動。實際套用 Phase 2/5/6 前，先查官方 docs 或本機 CLI help；若與本表不一致，以官方 docs / local schema 為準並回報差異。
 
+> 最近重驗：2026-08-02（Claude Code 2.1.220、Codex CLI 0.146.0、GitHub Copilot CLI 1.0.75）。
+
 > 重要事實（2026-05 查證）：Claude Code **不**原生讀 `AGENTS.md`（GitHub issue #6235 未實作），只讀 `CLAUDE.md`。因此每個 host 必須產自己的原生指令檔，不能靠單一 `AGENTS.md` 通吃。
+
+套用前的 current-doc revalidation：
+
+- [ ] 記錄 Claude Code、Codex CLI、Copilot CLI 的本機版本。
+- [ ] 對照三者官方 config、hooks、custom agents 文件；若 schema 漂移，先更新本表與範本。
+- [ ] 解析所有要寫出的 JSON / TOML / YAML fixture。
+- [ ] 用 fresh session inventory 驗證 hooks / agents；blocking hook 再跑一個 safe negative canary。
 
 ## 產物對照表
 
@@ -12,11 +21,11 @@
 |------|-------------|-----------|--------------------|
 | 指令檔（專案） | `CLAUDE.md` | `AGENTS.md` | `.github/copilot-instructions.md`；Copilot CLI 也會讀 `AGENTS.md` |
 | 指令檔（全域） | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/copilot-instructions.md` |
-| 設定檔（專案） | `.claude/settings.json`（JSON） | `.codex/config.toml`（TOML） | **無 Claude-style permissions/sandbox 對等檔** — 專案層控制走 `.github/hooks/`、`.github/agents/`、`.github/instructions/`、`.github/copilot-instructions.md` |
+| 設定檔（專案） | `.claude/settings.json`（JSON） | `.codex/config.toml`（TOML） | `.github/copilot/settings.json`（僅限官方 supported keys，無 Claude-style permissions/sandbox parity）；個人專案 override 為 `.github/copilot/settings.local.json`，必須 gitignore |
 | 設定檔（全域） | `~/.claude/settings.json` | `~/.codex/config.toml` | `~/.copilot/settings.json`（home dir 使用者設定；專案可攜 hooks 走 `.github/hooks/*.json`） |
 | hooks 註冊位置 | `.claude/settings.json` 的 `hooks` 物件（JSON） | `.codex/config.toml` 的 `[[hooks.<Event>]]` inline TOML；也可由 Codex hooks JSON 載入 | `.github/hooks/*.json`（JSON，`version: 1` + `hooks` 物件） |
 | hook 事件名 | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`Notification`、`Stop` | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`UserPromptSubmit`、`Stop`、`PermissionRequest` | camelCase：`preToolUse`、`postToolUse`、`sessionStart`、`preCompact`、`notification`、`agentStop` 等（payload 內 `hook_event_name` 仍 PascalCase） |
-| hook matcher | `matcher` 欄位，正則比對工具名（如 `Edit\|Write`） | `matcher` 欄位，regex；`PreToolUse` / `PostToolUse` / `PermissionRequest` 比對工具名（`Bash`、`apply_patch`、MCP tool 等），`SessionStart` 比對 `startup\|resume\|clear`；省略則全事件觸發 | `matcher` 欄位，正則比對工具名；Copilot tool id 版本敏感，未實測時優先省略 matcher，讓腳本由 payload 判斷 |
+| hook matcher | `matcher` 欄位，正則比對工具名（如 `Edit\|Write`） | `matcher` 欄位，regex；`PreToolUse` / `PostToolUse` / `PermissionRequest` 比對工具名（`Bash`、`apply_patch`、MCP tool 等），`SessionStart` 比對 `startup\|resume\|clear\|compact`；省略則全事件觸發 | `matcher` 欄位，正則比對工具名；Copilot tool id 版本敏感，未實測時優先省略 matcher，讓腳本由 payload 判斷 |
 | agents | `.claude/agents/*.md`（MD + YAML frontmatter） | `.codex/agents/*.toml`（project）或 `~/.codex/agents/*.toml`（personal/global） | `.github/agents/*.agent.md`（MD + YAML frontmatter；tools 需轉為 Copilot tool ids） |
 | rules（path-scoped） | `.claude/rules/*.md` + frontmatter `paths:` glob | 無 path-scoping → 併入 `AGENTS.md` 分節 | `.github/instructions/**/*.instructions.md`（`applyTo:` glob）或併入 `copilot-instructions.md` |
 | skill 目錄 | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） |
@@ -60,11 +69,11 @@ proposed_target_hosts=<host list>
 
 ## 設定檔 schema 對照（Phase 2 用）
 
-Claude 走 JSON、Codex 走 TOML、Copilot 無 Claude-style repo permissions/sandbox settings，專案層強制點改走 hook JSON。權限模型概念相近，但鍵名與落地位置不同：
+Claude 走 JSON、Codex 走 TOML。Copilot 有限定 supported keys 的 repository/local settings，但沒有 Claude-style repo permissions/sandbox parity；專案層強制點仍走 hook JSON。權限模型概念相近，但鍵名與落地位置不同：
 
-> 已查證（2026-05，OpenAI Codex docs / GitHub Copilot docs）。Codex 的 `approval_policy` 值為 `"untrusted"` / `"on-request"` / `"never"` 或 granular 物件；`sandbox_mode` 值為 `"read-only"` / `"workspace-write"` / `"danger-full-access"`。
+> 已查證（2026-08-02，OpenAI Codex docs / GitHub Copilot docs）。Codex 的 `approval_policy` 值為 `"untrusted"` / `"on-request"` / `"never"` 或 granular 物件；`sandbox_mode` 值為 `"read-only"` / `"workspace-write"` / `"danger-full-access"`。
 >
-> **重要差異**：Copilot CLI **無 Claude-style 專案層 sandbox/permissions 設定檔**。`~/.copilot/settings.json` 是 home dir 設定；Copilot 的工具放行/封鎖走 `--allow-tool`/`--deny-tool` flag（per-session）、互動核准，或 `preToolUse` hook 回 `deny`。`copilot help config` 顯示 hooks 可作為設定項，但為了讓專案規則可 commit、可攜且不寫入使用者 home，Copilot 的「Phase 2 設定」仍改以 `.github/hooks/*.json` 的 `preToolUse` hook 落地（見 `references/settings-templates/copilot/README.md`）。
+> **重要差異**：Copilot CLI 的 `.github/copilot/settings.json` 與 `.github/copilot/settings.local.json` 只接受官方列出的 repository keys，沒有專案層 sandbox/permissions parity。工具放行/封鎖走 `--allow-tool`/`--deny-tool` flag（per-session）、互動核准，或 `preToolUse` hook 回 `deny`。需要可 commit、跨 session 的專案 guard 時，仍以 `.github/hooks/*.json` 落地（見 `references/settings-templates/copilot/README.md`）。
 
 | 概念 | Claude Code | Codex CLI | Copilot CLI |
 |------|-------------|-----------|-------------|
@@ -84,7 +93,7 @@ Claude 走 JSON、Codex 走 TOML、Copilot 無 Claude-style repo permissions/san
 
 - **Claude（JSON）**：用 `scripts/merge-settings.py`，對 `allow`/`deny`/`allowedDomains` 聯集去重、`hooks` 以 matcher 為鍵合併，不覆蓋使用者既有鍵。
 - **Codex（TOML）**：不進 Python 腳本（避免引入 `tomlkit` 依賴）。由執行中的 agent 用自身 Edit 工具，依本表指定的 TOML 區塊做增量合併，且**先顯示 diff 再寫入**。
-- **Copilot**：不產 Claude-style repo settings；Phase 2 改為產出 `.github/hooks/*.json`（見 hooks 階段），既有 hook 檔以新檔並存、不覆蓋。
+- **Copilot**：增量更新 `.github/copilot/settings.json` 的 supported keys；個人 override 寫 `.github/copilot/settings.local.json` 並 gitignore。Claude-style deny/sandbox 轉成 `.github/hooks/*.json`，既有 hook 檔以新檔並存、不覆蓋。
 
 ## agents frontmatter 對照（Phase 6）
 
@@ -94,9 +103,15 @@ Claude 與 Copilot 共用同一批 `references/agents/*.md`，套用時調整 fr
 |------|-------------|-------------|
 | `name` | 必填 | 必填 |
 | `description` | 必填 | 必填 |
-| `tools` | 逗號分隔工具名 | Copilot tool ids 陣列或清單（如 `search/codebase`、`edit/editFiles`、`runCommands`；依 `references/agents/copilot/README.md` 轉換） |
+| `tools` | 逗號分隔工具名 | canonical aliases 陣列或清單：`read`、`edit`、`search`、`execute`，需要時再加 `agent`、`web`、`todo`；依 `references/agents/copilot/README.md` 轉換 |
 | `model` | `opus` / `sonnet` / `haiku` | Copilot 模型 id（跑 `copilot /model` 或看帳號設定取當前可用 id；模型 id 隨帳號與時間變動，勿沿用任何文件內的範例字串） |
 | `target` | —（不需要） | 選填，指定適用範圍 |
 | `user-invocable` | —（不需要） | 選填，是否可由使用者直接呼叫 |
 
 Codex agents 為 TOML（custom agent 的 `developer_instructions` + optional model/config），格式差異大 → 用 `references/agents/codex/README.md` 轉換。Repo-specific agent 寫入 `.codex/agents/`；只有使用者明確要求全域 reuse 時才寫入 `~/.codex/agents/`。
+
+## Phase 4–6 建議標記
+
+- **Rules：**有 API routes 時建議 `api-design`；有 DB／SQL／data-access code 時建議 `db-access`；有 tests 時建議 `testing`；出現 auth、admin、secrets、payment-like env 或 sensitive config 時建議 `security`。
+- **Hooks：**預設建議 `protect-files`；有 test script 時建議 `run-tests`；有 OpenAPI／Swagger／API-doc script 時建議 `auto-api-docs`；只有存在 formatter 或 lint tooling 時才建議 `auto-format`。`compact-reminder` 與 `notify` 仍須列出，供 session UX／長文件流程選用。
+- **Agents：**一般 baseline 建議 `code-reviewer`；有 tests 時建議 `test-runner`；出現 auth、admin、secrets 或 payment-like surfaces 時建議 `security-auditor`。其餘 agents 依本輪 intent 與 repo evidence 標記，但 Codex 仍須顯示完整 catalog。

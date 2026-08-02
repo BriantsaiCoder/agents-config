@@ -53,4 +53,4 @@ Read reference before implementing — flow details, claim names, timing windows
 
 ## Notes
 
-Prefer framework's official auth extension points over custom middleware — re-implementing session/CSRF/PKCE is the top auth CVE source. CLAUDE.md default: **JWT in httpOnly cookie**, public endpoints explicit, no tokens in `localStorage`.
+Prefer framework's official auth extension points over custom middleware — re-implementing session/CSRF/PKCE is the top auth CVE source.
