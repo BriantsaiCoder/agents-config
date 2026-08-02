@@ -15,6 +15,34 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    # locale baseline 釘死為 C.UTF-8。2026-08-02 稽核
+    # （proposals/2026-08-02-shell-hook-audit/）發現這裡原本沒有立場：runner 預設值
+    # 變動會改變一整類缺陷會不會在 CI 發作，而沒有東西會在它改變時提醒。
+    #
+    # 三個候選各自的實測行為（bash 3.2.57，2026-08-02）：
+    #
+    #                  多位元組語意          排序 collation
+    #   C              無（缺陷不重現）      A B a b（確定性）
+    #   C.UTF-8        有（缺陷會重現）      A B a b（確定性）
+    #   en_US.UTF-8    有（缺陷會重現）      a A b B（locale-specific）
+    #
+    # 「多位元組語意」指的是 `$var` 緊接非 ASCII 時 bash 會不會把後續 byte 吃進
+    # 變數名——那正是 PR #26 那個 hook fail-open 的成因。釘 C 會讓 CI 對整類缺陷
+    # 失明，釘 en_US.UTF-8 則把 locale-specific 排序帶進來，兩者都有代價。
+    # C.UTF-8 同時拿到確定性排序與 UTF-8 語意，是唯一沒有取捨的選項。
+    #
+    # 本 baseline 不影響既有慣例：repo 內十餘處 per-command `LC_ALL=C` 前綴
+    # （sort 的確定性、wc -w 與 tr 的位元組級處理）會覆蓋 job-level 設定。
+    # tests/word-budget.sh 更明確測三種 locale 下結果一致，不依賴本設定。
+    #
+    # 實測三種 baseline 下 bin/ci-local 都是
+    # TOTAL=23  RAN=19  PASS=19  FAIL=0  SKIPPED=4
+    # 所以這個選擇不改變當前任何測試的結果——依據是哪個立場站得住，不是哪個能過。
+    env:
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
+
     steps:
       # step 名稱不寫 case 數，這條規則由 tests/conformance.sh 機械守護（規則 9 下沉）。
       # 曾經九個 step 把條數寫進名稱，實測漂移過兩次且都靜默通過：版本絆線停在 28 而
