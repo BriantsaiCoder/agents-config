@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [INT-4] 的自主授權條件，與三個 host 入口檔的一致性。
+# [INT-4] 的自主 delegation 條件，與三個 host 入口檔的一致性。
 #
 # 為什麼存在（2026-08-02）：delegation 政策原本三家寫法不對稱到看不出來——kernel 有 9 處
 # [INT-4]，~/.claude/CLAUDE.md 寫「未獲授權不使用 subagent」（blanket 禁令），
@@ -30,11 +30,9 @@ ok()   { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng()   { printf '  FAIL  %s\n' "$1" >&2; fail=$((fail + 1)); }
 na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 
-# 單一常數，kernel 與 host 共用（S5 finding N-4）。kernel 寫「併發數 ≤ 2」、host 摘要寫
-# 「併發 ≤2」，兩處各自寫死會讓一邊改措辭時另一邊不紅。容忍「數」與空白，上界必須是 2。
-# 尾端的 ([^0-9]|$) 不可省：沒有後界時「併發 ≤ 20」會命中「≤ 2」，上界被偷偷調高
-# 也照樣綠（Copilot 於 PR #38 指出）。selftest 有一條專門釘住這個。
-BOUND_RE='併發(數)?[[:space:]]*≤[[:space:]]*2([^0-9]|$)'
+# 固定數量／時機限制不得回流。host/runtime 的非數值容量敘述是技術事實，不屬於此類。
+COUNT_RE='([0-9一二兩三四五六七八九十]+|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en)'
+FIXED_LIMIT_RE="((併發(數)?|累計 delegation|單一 S 階段|同一 S 階段|parallel[[:space:]]+agents?|sub-?agents?([[:space:]]+(數量|count))?)[^。]{0,50}(≤|≥|<=|>=|<|>|最多|上限(為)?)[[:space:]]*${COUNT_RE}|(最多(使用)?|不得超過|上限(為)?)[^。]{0,20}${COUNT_RE}[[:space:]]*(個)?[[:space:]]*(sub-?agents?|agents?|tasks?)|(sub-?agents?|agents?|tasks?)(數量)?[^。]{0,20}(上限(為)?|最多|≤|≥|<=|>=|<|>)[[:space:]]*${COUNT_RE}|恰好[[:space:]]*${COUNT_RE}[[:space:]]*個[^。]{0,30}(agent|subagent)|每批[[:space:]]*${COUNT_RE}[[:space:]]*個|直接開[[:space:]]*${COUNT_RE}[[:space:]]*個|at[[:space:]]+most[[:space:]]+${COUNT_RE}[[:space:]]+(sub-?agents?|agents?|tasks?)|(S[0-9]+|每次|任何實質任務|所有實質任務)[^。]{0,60}(一律|必須|MUST|直接)[^。]{0,40}(spawn|啟動|委派|開啟|使用[^。]{0,12}(subagent|agent|task)))"
 
 # 自主授權必須有的正向語彙：既說「自己判定」，也說「不必先問」。
 AUTONOMY_RE='自主判定|自行判定'
@@ -43,13 +41,10 @@ NOASK_RE='不必先問|無須另問|MUST NOT 為此停下發問|不得為此停�
 # 先問語彙——政策被改回「每次問人」的各種寫法，含英文與同義動詞。
 ASKFIRST_RE='先詢問|須經同意|需經同意|一律.*(先問|詢問)|未(經|獲).*(授權|同意).{0,60}(不得|不可|禁止|MUST NOT)|(不得|不可|禁止|MUST NOT).{0,60}(subagent|sub-agent|子代理|委派|delegate|開子|平行代理)|[Nn]ever use (sub-?agents?|delegation)|without.*(approval|permission)|ask.*(first|before).*(delegat|subagent)|禁用.*(subagent|子代理)|先取得.*(同意|授權)|必須.*(同意|授權).{0,20}才'
 
-has_bound()    { grep -Eq "$BOUND_RE" "$1"; }
-has_autonomy() { grep -Eq "$AUTONOMY_RE" "$1" && grep -Eq "$NOASK_RE" "$1"; }
+has_fixed_limit() { grep -Eq "$FIXED_LIMIT_RE" "$1"; }
+has_autonomy()    { grep -Eq "$AUTONOMY_RE" "$1" && grep -Eq "$NOASK_RE" "$1"; }
 
-# 先問語彙偵測必須逐行、且跳過同一行帶自主語彙的句子。正確的政策**本來就**含
-# 「超出上界時 MUST 先取得授權」這種升級路徑——它與「一律先問」的差別不在詞彙而在
-# 同一句是否同時宣告自主授權。不做這個排除，kernel 自己的升級條款就會被誤判成 blanket
-# 禁令（實測 2026-08-02：加寬樣式後 kernel 立刻自我誤報）。
+# 先問語彙偵測逐行、且跳過同一行帶自主語彙的句子，避免「不必先問」被反向誤判。
 has_askfirst() {
   grep -Ev "$AUTONOMY_RE" "$1" | grep -Eq "$ASKFIRST_RE"
 }
@@ -57,14 +52,28 @@ has_askfirst() {
 selftest() {
   local scratch; scratch="$(mktemp -d)"
 
-  printf '併發數 ≤ 2\n' > "$scratch/kernel-style.md"
-  printf '併發 ≤2\n'    > "$scratch/host-style.md"
-  printf '併發數 ≤ 3\n' > "$scratch/wrong-bound.md"
-  printf '併發數 ≤ 20\n' > "$scratch/inflated-bound.md"
-  has_bound "$scratch/kernel-style.md" && ok '上界：容忍 kernel 排版' || ng '上界：kernel 排版誤報'
-  has_bound "$scratch/host-style.md"   && ok '上界：容忍 host 排版'   || ng '上界：host 排版誤報'
-  has_bound "$scratch/wrong-bound.md"  && ng '上界：3 被誤判為合格'   || ok '上界：非 2 時不通過'
-  has_bound "$scratch/inflated-bound.md" && ng '上界：20 被誤判為合格（缺後界）' || ok '上界：20 不通過（後界有效）'
+  printf '併發數 ≤ 2\n' > "$scratch/concurrency-limit.md"
+  printf '同一 S 階段內累計 delegation ≤ 6\n' > "$scratch/stage-limit.md"
+  printf 'S5 直接開 2 個 read-only task\n' > "$scratch/fixed-fanout.md"
+  printf 'S5 一律啟動 subagent\n' > "$scratch/fixed-timing.md"
+  printf '最多使用 2 個 subagent\n' > "$scratch/max-count.md"
+  printf '最多使用兩個 subagent\n' > "$scratch/max-count-zh.md"
+  printf 'subagent 上限 2\n' > "$scratch/subagent-cap.md"
+  printf 'parallel agents <= 2\n' > "$scratch/parallel-cap.md"
+  printf 'S5 must use at most two subagents\n' > "$scratch/english-max.md"
+  printf '不得設定固定 fan-out\n' > "$scratch/negative-policy.md"
+  printf '不設 user-authored 固定數量、併發或階段限制；host/runtime 容量仍適用。\n' > "$scratch/runtime-capacity.md"
+  has_fixed_limit "$scratch/concurrency-limit.md" && ok '固定限制：併發上界被抓到' || ng '固定限制：漏掉併發上界'
+  has_fixed_limit "$scratch/stage-limit.md" && ok '固定限制：階段累計上界被抓到' || ng '固定限制：漏掉階段累計上界'
+  has_fixed_limit "$scratch/fixed-fanout.md" && ok '固定限制：固定 fan-out 被抓到' || ng '固定限制：漏掉固定 fan-out'
+  has_fixed_limit "$scratch/fixed-timing.md" && ok '固定限制：強制使用時機被抓到' || ng '固定限制：漏掉強制使用時機'
+  has_fixed_limit "$scratch/max-count.md" && ok '固定限制：最多使用 N 個被抓到' || ng '固定限制：漏掉最多使用 N 個'
+  has_fixed_limit "$scratch/max-count-zh.md" && ok '固定限制：中文「兩個」被抓到' || ng '固定限制：漏掉中文「兩個」'
+  has_fixed_limit "$scratch/subagent-cap.md" && ok '固定限制：subagent 上限被抓到' || ng '固定限制：漏掉 subagent 上限'
+  has_fixed_limit "$scratch/parallel-cap.md" && ok '固定限制：parallel agents cap 被抓到' || ng '固定限制：漏掉 parallel agents cap'
+  has_fixed_limit "$scratch/english-max.md" && ok '固定限制：英文拼字上界被抓到' || ng '固定限制：漏掉英文拼字上界'
+  has_fixed_limit "$scratch/negative-policy.md" && ng '固定限制：誤判禁止固定 fan-out 的政策' || ok '固定限制：不誤判禁止固定 fan-out 的政策'
+  has_fixed_limit "$scratch/runtime-capacity.md" && ng '固定限制：誤判非數值 runtime capacity' || ok '固定限制：不誤判 runtime capacity'
 
   # 這三份是 S5 review 實測第一版會漏掉的現實寫法，全部必須被抓到。
   printf '本 host 一律先詢問使用者後才委派；未經同意不得啟動 task 工具\n' > "$scratch/f1.md"
@@ -89,9 +98,10 @@ selftest() {
     && ng 'SKIP 偵測：無 SKIP 的輸入被誤判' \
     || ok 'SKIP 偵測：無 SKIP 時不誤判'
 
-  printf 'Delegation 依 [INT-4] 自主判定（併發 ≤2），符合即直接執行不必先問。\n' > "$scratch/good.md"
+  printf 'Delegation 依 [INT-4] 自主判定是否、何時及使用多少 subagent，不設固定數量或階段限制，符合即直接執行不必先問。\n' > "$scratch/good.md"
   has_autonomy "$scratch/good.md" && ok '正向語彙：合格寫法通過' || ng '正向語彙：合格寫法被誤判'
   has_askfirst "$scratch/good.md" && ng '正向語彙：合格寫法被誤判為先問' || ok '正向語彙：不誤判為先問'
+  has_fixed_limit "$scratch/good.md" && ng '正向語彙：合格寫法被誤判為固定限制' || ok '正向語彙：無固定限制'
   printf 'Delegation 依 [INT-4]。\n' > "$scratch/thin.md"
   has_autonomy "$scratch/thin.md" && ng '正向語彙：只提 [INT-4] 就算過（太寬）' || ok '正向語彙：只提 [INT-4] 不足'
 
@@ -107,9 +117,9 @@ check_host() {
   grep -Fq '[INT-4]' "$file" \
     && ok "$label 指向 [INT-4]" \
     || ng "$label 未指向 [INT-4]（三家會各自漂移）"
-  has_bound "$file" \
-    && ok "$label 帶併發上界" \
-    || ng "$label 缺併發上界"
+  has_fixed_limit "$file" \
+    && ng "$label 仍含固定數量／時機限制" \
+    || ok "$label 無固定數量／時機限制"
   has_autonomy "$file" \
     && ok "$label 有自主授權語彙" \
     || ng "$label 缺自主授權語彙（只指向 [INT-4] 不足以覆寫 host 自己的預設）"
@@ -132,7 +142,7 @@ case "${1:-}" in
     # runner 上被真的執行。正向組必須全綠且無 SKIP，反向組必須紅——後者若沒紅，
     # 代表 host 半邊整段沒跑，而那正是本測試存在的理由。
     scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
-    printf 'Delegation 依 shared `dev-workflow` [INT-4]：無條件約束不因授權放寬；滿足約束且併發 ≤2 時自主判定並直接執行，不必先問。\n' \
+    printf 'Delegation 依 shared `dev-workflow` [INT-4]：無條件約束不變；AI 自主判定是否、何時及使用多少 subagent，不設固定數量／時機限制，直接執行不必先問。\n' \
       > "$scratch/good.md"
     printf '未獲授權時，不使用 subagent。\n' > "$scratch/bad.md"
 
@@ -168,29 +178,33 @@ int4_file="$(mktemp)"; printf '%s\n' "$int4" > "$int4_file"
 trap 'rm -f "$int4_file"' EXIT
 
 # 逐片段驗，不逐條驗：整句 grep 會在任一項被刪掉時仍然通過，所以下列每個片段各自釘住
-# [INT-4] 的一個承重點——無條件約束三項、以及總量上界。片段數與條文的條數不必相等，
-# 也刻意不在此處寫死數量（條文演進時寫死的數字會靜默失真）。
+# [INT-4] 的一個承重點——無條件約束三項，以及由 AI 決定 delegation 的時機與數量。
 # 為什麼釘無條件約束（S5 finding H1）：第一版把它們降級成「條件」，於是寫入重疊與序列
 # 相依變成明文可授權——舊規則從未開這條路。使用者要改的是「誰決定」不是「允許什麼」。
-for cond in '無條件約束' '可獨立平行' '寫入 ownership MUST 不重疊' 'MUST 重驗其回報' '累計 delegation ≤ 6'; do
+for cond in '無條件約束' '可獨立平行' '寫入 ownership MUST 不重疊' 'MUST 重驗其回報' '何時委派、subagent 數量與是否平行 MUST 由 AI 自主判定'; do
   case "$int4" in
-    *"$cond"*) ok "[INT-4] 含無條件約束／上界片段：$cond" ;;
-    *) ng "[INT-4] 缺無條件約束／上界片段：$cond" ;;
+    *"$cond"*) ok "[INT-4] 含核心片段：$cond" ;;
+    *) ng "[INT-4] 缺核心片段：$cond" ;;
   esac
 done
 case "$int4" in
   *'無條件約束不在可授權範圍內'*) ok '[INT-4] 明示無條件約束不可被授權繞過' ;;
   *) ng '[INT-4] 未擋住「取得授權就能寫入重疊／序列相依」的路徑' ;;
 esac
-has_bound "$int4_file" && ok '[INT-4] 含併發上界' || ng '[INT-4] 缺併發上界'
+has_fixed_limit "$int4_file" && ng '[INT-4] 仍含固定數量／時機限制' || ok '[INT-4] 無固定數量／時機限制'
+
+case "$int4" in
+  *'host/runtime 可用容量仍是技術上限'*) ok '[INT-4] 保留 runtime 技術容量約束' ;;
+  *) ng '[INT-4] 未區分自主 policy 與 runtime 技術容量' ;;
+esac
 
 case "$int4" in
   *'MUST NOT 為此停下發問'*) ok '[INT-4] 明示不得為 delegation 停下發問' ;;
   *) ng '[INT-4] 未明示不得為 delegation 停下發問' ;;
 esac
 
-# 放寬控制的同時，四條安全不變量必須留著。
-for inv in '未獲授權標 SKIPPED' '回報不是完成證據' '迴避 S2 授權或 [T0-8] plan gate' '依 [T0-5] 停下發問'; do
+# 放寬控制的同時，三條安全不變量必須留著。
+for inv in '回報不是完成證據' '迴避 S2 授權或 [T0-8] plan gate' '依 [T0-5] 停下發問'; do
   if grep -Fq "$inv" "$int4_file"; then
     ok "[INT-4] 保留不變量：$inv"
   else
@@ -198,11 +212,10 @@ for inv in '未獲授權標 SKIPPED' '回報不是完成證據' '迴避 S2 授�
   fi
 done
 
-# S5 兩軸的 read-only 限定不得再度脫落（S5 finding W-3：第一版改寫時它連同釘住它的
-# 斷言一起消失，reviewer agent 因此可在無額外授權下取得寫入權）。
+# S5 review agent 的 read-only 限定不得再度脫落；是否使用及數量則由 AI 判定。
 case "$int4" in
-  *'read-only** review agents'*|*'read-only review agents'*) ok '[INT-4] S5 兩軸仍限定 read-only' ;;
-  *) ng '[INT-4] S5 兩軸遺失 read-only 限定' ;;
+  *'如使用 review agents，MUST 為 read-only'*) ok '[INT-4] S5 review agents 仍限定 read-only' ;;
+  *) ng '[INT-4] S5 review agents 遺失 read-only 限定' ;;
 esac
 
 has_askfirst "$KERNEL" && ng 'kernel 含先問／禁止 delegation 語彙' || ok 'kernel 無先問語彙'

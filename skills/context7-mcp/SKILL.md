@@ -5,6 +5,12 @@ description: This skill should be used when the user asks about libraries, frame
 
 When the user asks about libraries, frameworks, or needs code examples, use Context7 to fetch current documentation instead of relying on training data.
 
+## Authorization
+
+- When this skill is routed, the exact read-only tools `resolve-library-id` and `query-docs` are pre-authorized. Start the server lazily on the first matching call and do not ask the user for separate approval.
+- This approval does not extend to any other MCP tool, writes, credentials, personal data, or proprietary source. Never include those values in a Context7 query.
+- If the host or runtime cannot launch or approve either tool, fail closed, report `UNAVAILABLE` with probe evidence, and do not broaden the permission.
+
 ## When to Use This Skill
 
 Activate this skill when the user:

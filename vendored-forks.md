@@ -29,6 +29,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
+| `code-review` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs and add the within-axis filter pass they defer to, per [S5-4]; tree SHA-256 `4118f3492ff9df3f0a58cb8f8bc0de6176d4e8116f8edf75d50844a8e19fe9ae` | **Active** |
 
 <!-- fork-index:end -->
 
@@ -278,15 +279,15 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 
 ---
 
-## Pinned Matt set — 18 unmodified + 4 recorded forks
+## Pinned Matt set — 17 unmodified + 5 recorded forks
 
 **`mattpocock/skills` stable 22 — active, pinned 2026-07-27.**
 
 - Source: `https://github.com/mattpocock/skills.git` at `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
 - Selection: `.claude-plugin/plugin.json` SHA-256 `e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba`.
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
-- The 18 entries other than `diagnosing-bugs`, `grilling`, `handoff`, and `writing-great-skills` are byte-for-byte upstream and immutable.
-- The four recorded forks have exact payload fingerprints and re-merge procedures below.
+- The 17 entries other than `code-review`, `diagnosing-bugs`, `grilling`, `handoff`, and `writing-great-skills` are byte-for-byte upstream and immutable.
+- The five recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
 ## Hybrid — house wrapper over vendored payload
@@ -396,6 +397,32 @@ Expected output includes `# arm=collision  skills loaded=76  runner=claude` and
 - Removed on user instruction while trimming the resident skill listing. Wholesale removal is legal under the vendored gate — what is forbidden is editing in place.
 - Cost it was carrying: 319 chars of name+description in every session's skill listing (2.9MB / 295 files on disk, which cost nothing resident).
 - **Restore when**: a project actually integrates ECPay 金流 / 電子發票 / 物流. The knowledge is 綠界-specific and not model-stable — 12-language CheckMacValue / AES vectors, ECPG vs ecpayment dual-domain traps, per-service test MerchantIDs. Nothing else in `skills/` covers it.
+
+---
+
+## code-review
+
+**Decision (2026-08-03): remove the sub-agent output cap, and give the aggregate step the filter the briefs now defer to.**
+
+Step 4's two sub-agent briefs both ended `Under 400 words.` A reviewer follows an output cap
+literally and reports less, so the cap suppressed recall inside the sub-agent — and step 5's
+no-merge/no-rerank rule meant nothing downstream could recover what a sub-agent had already
+dropped. The local change replaces the cap in both briefs with report-everything plus per-finding
+severity and confidence, and adds one paragraph to step 5 defining the within-axis filter those
+briefs point at (order by severity/confidence; disclose anything dropped). The cross-axis
+separation — the reason the skill has two axes at all — is deliberately untouched, and [S5-4] in
+`skills/dev-workflow/SKILL.md` states that it does not override it.
+
+Approved tree SHA-256: `4118f3492ff9df3f0a58cb8f8bc0de6176d4e8116f8edf75d50844a8e19fe9ae`.
+Driving rule: `[S5-4]` in `skills/dev-workflow/SKILL.md`.
+
+On upstream update, drop this fork if the new step-4 briefs carry no output cap and step 5 already
+defines a within-axis filter; otherwise reapply both edits — delete any word/finding-count limit
+from every sub-agent brief, keep the report-everything + severity/confidence wording, and re-add
+the within-axis filter paragraph to the aggregate step — then recompute the tree fingerprint with
+`vendored_tree_sha256 skills/code-review` and update both this section and the index row. If
+upstream renumbers the steps, re-anchor on the brief text and the `## Standards` / `## Spec`
+aggregate headings rather than the step numbers.
 
 ---
 

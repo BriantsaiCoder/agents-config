@@ -21,11 +21,11 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 - [INT-1] push／open PR／merge／final closeout MUST 只在 S4、S5 適用 gate PASS 後執行。觸發：任一收尾動作。例外：SKIPPED／UNAVAILABLE 須附理由或 probe。驗證：S4/S5 ledger 與 evidence 齊備。
 - [INT-2] MUST 在 fix 前先有 failing regression test（RED→GREEN）；既有 public behavior seam 視為已確認，只有新增 seam 才需另向使用者確認。觸發：BUGFIX 或改既有 behavior。例外：無可測 seam 時記錄架構問題，fix 後交接 `codebase-design`。驗證：RED evidence 早於 fix。
 - [INT-3] 命中 [T0-8] 時 MUST 停在 S2 等明確核准；auto／autopilot 不豁免。觸發：將改檔且屬 plan-first／中高風險。例外：未命中時可引用 user 的 change／build／fix 原句標 SKIPPED。驗證：核准原句或 SKIPPED evidence。
-- [INT-4] Delegation 的**約束**不變，改變的只有**誰決定**。無條件約束（不因任何授權而放寬）：只用於可獨立平行的實質工作，非序列相依；併發 subagent 的寫入 ownership MUST 不重疊；main context MUST 重驗其回報，subagent 回報不是完成證據。**授權方式**改為條件式：上述約束全部成立，且併發數 ≤ 2、同一 S 階段內累計 delegation ≤ 6 時，視為已授權，agent MUST 自行判定並執行，MUST NOT 為此停下發問——2 是自主上限也是預設，本條刻意取代舊規則的「預設 1、明示才到 2」。超出併發或累計上界時 MUST 先取得 user／repo／higher instruction 授權，未獲授權標 SKIPPED；**無條件約束不在可授權範圍內**——寫入重疊或序列相依的 delegation 即使取得授權也 MUST NOT 執行，改為序列化或合併成單一 agent。條件判定本身模糊時仍依 [T0-5] 停下發問。S5 `code-review` 的 Standards／Spec 兩軸為恰好 2 個 **read-only** review agents，與 `wayfinder` research fan-out 每批 2 個，是本條的既有典型，無須另問。MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate——被委派的工作本身命中那些 gate 時，gate 仍先適用。觸發：任何 delegation。例外：無。驗證：無條件約束的逐項判定 + 併發與單階段累計數 + scope 清單 + main-context probe。
+- [INT-4] Delegation 的**約束**不變，改變的只有**誰決定**。任何 delegation 機制只在工作可獨立平行且預期能實質改善品質或 wall-clock time 時使用；是否委派、何時委派、subagent 數量與是否平行 MUST 由 AI 自主判定並直接執行，MUST NOT 為此停下發問。不得設定 user-authored 的固定數量、併發、累計或 S 階段限制；host/runtime 可用容量仍是技術上限。無條件約束（不因任何授權而放寬）：序列相依工作 MUST 序列化或合併；併發 subagent 的寫入 ownership MUST 不重疊；main context MUST 重驗其回報，subagent 回報不是完成證據；**無條件約束不在可授權範圍內**，即使取得授權也 MUST NOT 執行衝突工作。S5 Standards／Spec outcomes 與 downstream research coverage 在各自 gate 命中時仍須完成；如使用 review agents，MUST 為 read-only，數量與批次由 AI 決定。下游 skill 的固定 spawn 時機／數量一律由本條覆寫為 advisory choreography；coverage、outcome 與 independence requirements 保留。MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate，被委派工作仍套用原 gate；條件模糊時依 [T0-5] 停下發問。觸發：任何 delegation。例外：host/runtime 技術容量與 higher-priority instructions。驗證：scope 可獨立平行 + 寫入 ownership 不重疊 + main-context probe + policy 無固定數量／時機／階段限制。
 - [INT-5] `setup-matt-pocock-skills` 只有使用者明示才可執行；先讀 repo `docs/agents/issue-tracker.md`，不存在才讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：Matt skill 需要 tracker contract。例外：無。驗證：contract 存在或引用使用者 setup 原句。
 - [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
 - [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 由 model 自動 invoke 或假裝已 invoke；S0 只能推薦下一個 host-specific command，並等待使用者明示啟動。觸發：route 命中 user-only skill。例外：無。驗證：skill frontmatter + 使用者 invocation 原句。
-- [INT-8] 已列出且經核准的多項工作 MUST 逐項執行至清單完成，不得每項完成即停下等待確認；只有命中 [T0-5] 模糊、[T0-8]／[INT-3] plan gate，或需使用者裁決的取捨才可中斷，中斷時只問該一項。清單外的新發現 MUST 只分列 follow-up，未確認不得實作。觸發：單次任務含 ≥2 個已核准項目。例外：無。驗證：回覆為單次彙總（各項 status + evidence），非逐項往返。
+- [INT-8] 已列出且經核准的多項工作 MUST 逐項執行至清單完成，不得每項完成即停下等待確認；使用者以「全部做完」「依照建議執行」「自行處理」等 blanket authorization 核准時，只涵蓋該原句之前已明列的 scope／編號項目。只有命中 [T0-5] 模糊、[T0-8]／[INT-3] plan gate，或需使用者裁決的取捨才可中斷，中斷時只問該一項；後續新發現 MUST 只分列清單外 follow-up，未確認不得實作。觸發：單次任務含 ≥2 個已核准項目。例外：無。驗證：核准原句早於 scope 清單外的新發現 + 回覆為單次彙總（各項 status + evidence），非逐項往返。
 - [INT-9] Kernel route 到 [tdd](../tdd/SKILL.md) 時 MUST 以 [INT-2] 視既有 public behavior seam 為已確認，只有新增 seam 才需先向使用者確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。本條覆寫該 upstream skill 的逐 seam 重問與「refactor 不在 loop」敘述。觸發：任何由本 kernel 管理的 tdd cycle。例外：無。驗證：seam state + RED／GREEN／retest evidence。
 
 退役 ID 殼標記（CONVENTIONS 規則 3：ID 永不重編、永不回收，舊 transcript 與 commit message 可能仍引用）：`[R-1 DEPRECATED→INT-1 2026-07]`、`[R-2 DEPRECATED→INT-2 2026-07]`。兩者原定義於 `core/routing.md`，該檔 2026-07-30 退役至 `attic/core/`；條文語意由上方 [INT-1]／[INT-2] 逐項承接。
@@ -114,6 +114,7 @@ Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findi
 - [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
 - [S5-2] Working tree dirty review MUST 在讀任何 raw diff 前完成 `references/dirty-review-package.md`；任一 finding 即 FAIL。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
 - [S5-3] S5 的 review agent prompt MUST 含 house over-engineering baseline 兩條全文，不論 reviewer 型別（`code-review` 的 Standards 軸、`dotnet-code-reviewer` 等專屬 agent、或 `references/reviewer-template.md` 泛用 prompt 皆適用）：**Reinvented Stdlib** — 手刻標準庫或平台已提供的功能 → 指名該 API 取代；**Redundant Dependency** — 為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。兩條為 judgement call，documented repo standard 覆寫之。補這兩條是因為 Preflight ledger 的 Self-simplification 只做自檢，無獨立視角。觸發：進入 S5 且 review 非 SKIPPED。例外：無。驗證：review agent prompt 含該兩條全文。
+- [S5-4] Review agent prompt MUST NOT 設 word count、字數或 finding 數量上限，MUST NOT 指示 reviewer「只報高嚴重度」「保守回報」「避免誤報」或在回報前自行丟棄項目。MUST 指示 reviewer 回報所有命中項（含 nitpick 與 `question:`）並逐條標 severity 與 confidence；篩選與排序由 main context 在 aggregate 階段以獨立 pass 完成，且**只在單一軸內進行**——跨軸不合併、不重排，該分離由 `skills/code-review/SKILL.md` 第 5 步定義，本條不覆寫之。理由：severity／數量過濾會壓低 recall（review-policy audit, 2026-08-02）。本條覆寫 `skills/code-review/SKILL.md`、`references/reviewer-template.md` 與 host agent 定義中相衝突的字數或過濾指示。觸發：組裝任何 review agent prompt。例外：無。驗證：prompt 內無字數／數量上限字樣，且含「全部回報、下游過濾」指示。
 - 各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
 - Spec 不存在可標 SKIPPED；缺 reviewer capability 必須附 UNAVAILABLE probe，不得假裝自審等價。
 - Actionable finding 回 implementation；bug finding 先補 RED test（[INT-2]）。Delegation 依 [INT-4]。
@@ -135,7 +136,7 @@ Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocat
 
 - plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent。
 - user-only skill command = `/<skill-name>`。
-- S5 適用時，`code-review` 的 Standards／Spec 可在 [INT-4] 上限內平行；`uiux-reviewer` 是 Claude-only。
+- S5 適用時，Standards／Spec outcomes 仍須覆蓋；是否平行與 subagent 數量由 AI 依 [INT-4] 自主決定，review agent 保持 read-only；`uiux-reviewer` 是 Claude-only。
 
 ### Codex
 
@@ -150,7 +151,7 @@ Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocat
 - plan = `--mode plan`；todo = update_todo；子代理 = `task` 工具。
 - user-only skill command = `/<skill-name>`。
 - 命中 [T0-8] 時，非 plan mode 必須先提出計畫並取得核准。
-- S5 適用且 working tree dirty 時，依 [INT-4] 直接開 2 個 read-only `task` 分跑兩軸——兩軸是該條列名的既有典型，不需先判斷「是否有實益」；clean／fixed-point review 才執行 `code-review`。
+- S5 適用且 working tree dirty 時，依 [INT-4] 由 AI 自主決定是否、何時及使用多少 read-only `task` 完成 Standards／Spec outcomes；clean／fixed-point review 才執行 `code-review`。
 - Copilot user-level hooks 已配置於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
 - 子代理沿用模型預設 effort；僅 hard debugging、security、migration 或高風險 review 升 `high`，`xhigh`／`max` 需量測證明收益。
 

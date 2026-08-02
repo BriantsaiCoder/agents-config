@@ -85,6 +85,9 @@ has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.m
 has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
 has "primary-source research routes to research" 'primary-source.*citable Markdown.*`research`' skills/dev-workflow/SKILL.md
 has "current product docs route to context7" 'library.*framework.*SDK.*API.*CLI.*cloud.*`context7-mcp`' skills/dev-workflow/SKILL.md
+has "context7 pre-authorizes only its two read-only tools" 'resolve-library-id.*query-docs.*pre-authorized' skills/context7-mcp/SKILL.md
+has "context7 starts lazily without a separate prompt" 'lazily.*do not ask the user' skills/context7-mcp/SKILL.md
+has "context7 permission failure stays fail-closed" 'fail closed.*UNAVAILABLE.*do not broaden' skills/context7-mcp/SKILL.md
 has "Microsoft concepts route to microsoft-docs" 'Microsoft.*concepts.*tutorial.*config.*`microsoft-docs`' skills/dev-workflow/SKILL.md
 has "Microsoft signatures route to code reference" 'API signature.*SDK sample.*`microsoft-code-reference`' skills/dev-workflow/SKILL.md
 has "research stays inside delegation and persistence gates" 'Route 到 `research`.*background agent.*\[INT-4\].*Markdown.*S2 authorization' skills/dev-workflow/SKILL.md
@@ -146,23 +149,28 @@ has "S5 package bounds binary and oversized files" 'binary.*256 KiB.*path.*size.
 has "S5 package includes safe untracked candidates" '非敏感.*untracked.*ignored.*納入.*review package' "$dirty_review"
 lacks "S5 package has no unconditional ignored-file content" 'ignored path 全文' "$dirty_review"
 has "delegation changes who decides, not what is allowed" 'Delegation 的\*\*約束\*\*不變，改變的只有\*\*誰決定\*\*' skills/dev-workflow/SKILL.md
-has "delegation keeps its unconditional constraints" '無條件約束（不因任何授權而放寬）.*可獨立平行.*寫入 ownership MUST 不重疊.*MUST 重驗其回報' skills/dev-workflow/SKILL.md
+has "delegation requires independently parallel scope" '任何 delegation 機制只在工作可獨立平行.*使用' skills/dev-workflow/SKILL.md
+has "delegation keeps its unconditional constraints" '無條件約束（不因任何授權而放寬）.*序列相依.*寫入 ownership MUST 不重疊.*MUST 重驗其回報' skills/dev-workflow/SKILL.md
 has "unconditional constraints are not purchasable with authorization" '無條件約束不在可授權範圍內.*即使取得授權也 MUST NOT 執行' skills/dev-workflow/SKILL.md
-has "delegation stays bounded at two" '併發(數)?[[:space:]]*≤[[:space:]]*2([^0-9]|$)' skills/dev-workflow/SKILL.md
-has "delegation escalates past the bound" '超出併發或累計上界時 MUST 先取得 user／repo／higher instruction 授權' skills/dev-workflow/SKILL.md
-has "delegation bounds total as well as concurrent" '同一 S 階段內累計 delegation ≤ 6' skills/dev-workflow/SKILL.md
-rule_has "S5 two axes stay read-only and need no extra ask" INT-4 'S5 `code-review` 的 Standards／Spec 兩軸為恰好 2 個 \*\*read-only\*\* review agents.*既有典型，無須另問'
+has "AI decides delegation timing and count" '是否委派、何時委派、subagent 數量與是否平行 MUST 由 AI 自主判定' skills/dev-workflow/SKILL.md
+has "delegation has no user-authored fixed limits" '不得設定 user-authored 的固定數量、併發、累計或 S 階段限制' skills/dev-workflow/SKILL.md
+has "runtime capacity remains a technical bound" 'host/runtime 可用容量仍是技術上限' skills/dev-workflow/SKILL.md
+rule_has "S5 review agents stay read-only while AI chooses usage" INT-4 'S5 Standards／Spec outcomes.*如使用 review agents，MUST 為 read-only，數量與批次由 AI 決定'
+rule_has "downstream fixed choreography is advisory" INT-4 '下游 skill 的固定 spawn 時機／數量一律由本條覆寫為 advisory choreography.*coverage、outcome 與 independence requirements 保留'
 rule_has "delegation cannot bypass authorization gates" INT-4 'MUST NOT 用 delegation 迴避 S2 授權或 \[T0-8\] plan gate'
 rule_has "existing public behavior seam is pre-confirmed" INT-2 '既有 public behavior seam 視為已確認.*只有新增 seam 才需.*確認'
 rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 '\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新增 seam.*micro-refactor.*重跑.*覆寫'
 rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
 rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
+rule_has "S5 reports all findings with severity and confidence" S5-4 'MUST NOT 設 word count.*回報所有命中項.*severity.*confidence'
+rule_has "S5 aggregate stays within one review axis" S5-4 '只在單一軸內進行.*跨軸不合併、不重排'
+has "reviewer template carries the complete-report contract" '全部回報、下游過濾.*不設字數或條數上限.*確信度.*高／中／低' skills/dev-workflow/references/reviewer-template.md
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
 has "skill changes require invocation canaries" 'Skill change.*frontmatter.*relative references.*positive/negative.*trigger canary' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' skills/dev-workflow/SKILL.md
-has "Copilot S5 handles dirty reviews" 'working tree dirty 時，依 \[INT-4\] 直接開 2 個 read-only `task`' skills/dev-workflow/SKILL.md
+has "Copilot S5 delegates dirty reviews adaptively" 'working tree dirty 時，依 \[INT-4\] 由 AI 自主決定是否、何時及使用多少 read-only `task`' skills/dev-workflow/SKILL.md
 has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' skills/dev-workflow/SKILL.md
-lacks "S5 has no unconditional fixed fan-out" '固定 fan-out|S5.*同一 response.*兩個|Standards.*Spec.*各.*(一|1)個.*task' skills/dev-workflow/SKILL.md
+lacks "delegation has no fixed numeric or stage fan-out" '併發(數)?[[:space:]]*≤[[:space:]]*[0-9]+|累計 delegation[[:space:]]*≤[[:space:]]*[0-9]+|恰好[[:space:]]*[0-9]+[[:space:]]*個.*agent|每批[[:space:]]*[0-9]+[[:space:]]*個|直接開[[:space:]]*[0-9]+[[:space:]]*個|固定 fan-out' skills/dev-workflow/SKILL.md
 has "host resolver derives the user-only count" 'expected_user_only_count=.*0' tests/host-skill-resolver.sh
 lacks "host resolver has no hard-coded user-only count" '13/13|-eq 13' tests/host-skill-resolver.sh
 has "host resolver compares complete skill directories" 'diff -qr.*skill_path.*AGENTS/skills' tests/host-skill-resolver.sh

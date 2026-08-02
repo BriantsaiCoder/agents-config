@@ -296,7 +296,35 @@ actual_handoff_sha="$(shasum -a 256 "$HANDOFF" | awk '{ print $1 }')"
 [ "$actual_handoff_sha" = "$expected_handoff_sha" ] ||
   fail 'handoff payload differs from the recorded fork fingerprint'
 
-rg -q '18 unmodified.*4 recorded forks' "$AGENTS/vendored-forks.md" ||
+# code-review 是 recorded fork（2026-08-03，[S5-4] 移除 sub-agent 輸出上限）。fork_recorded 只是
+# 布林；沒有下面這段指紋斷言，一次 Matt set 全量重拉會把 `Under 400 words` 悄悄還原且三支測試全綠。
+# 用 tree 而非 payload：這支 skill 是 SKILL.md + agents/openai.yaml 兩檔，payload 只雜湊前者。
+CODE_REVIEW_DIR="$AGENTS/skills/code-review"
+fork_recorded code-review ||
+  fail 'code-review fork is not recorded inside the fork index'
+expected_code_review_tree_sha="$(
+  sed -n '/^## code-review$/,/^---$/p' "$AGENTS/vendored-forks.md" |
+    sed -n 's/.*tree SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p'
+)"
+[ -n "$expected_code_review_tree_sha" ] ||
+  fail 'code-review fork record lacks an approved tree SHA-256'
+indexed_code_review_tree_sha="$(
+  sed -n '/^| `code-review` |/s/.*tree SHA-256 `\([a-f0-9]\{64\}\)`.*/\1/p' \
+    "$AGENTS/vendored-forks.md"
+)"
+[ "$indexed_code_review_tree_sha" = "$expected_code_review_tree_sha" ] ||
+  fail 'code-review fork index and detailed fingerprint disagree'
+actual_code_review_tree_sha="$(vendored_tree_sha256 "$CODE_REVIEW_DIR")"
+[ "$actual_code_review_tree_sha" = "$expected_code_review_tree_sha" ] ||
+  fail 'code-review tree differs from the recorded fork fingerprint'
+# 這兩條刻意用 POSIX grep 而非 rg：本檔 73 條 rg 斷言都是 `|| fail`，缺 rg 會響亮失敗；反向斷言
+# 寫成 `rg -q … && fail` 時缺 rg 反而靜默通過（CI 曾因此假綠）。負向檢查一律用必然存在的 grep。
+[ "$(grep -cF 'the caller filters' "$CODE_REVIEW_DIR/SKILL.md")" -eq 2 ] ||
+  fail 'code-review: both sub-agent briefs must defer filtering to the caller ([S5-4])'
+grep -qF 'Under 400 words' "$CODE_REVIEW_DIR/SKILL.md" &&
+  fail 'code-review sub-agent brief still carries an output cap ([S5-4])'
+
+rg -q '17 unmodified.*5 recorded forks' "$AGENTS/vendored-forks.md" ||
   fail 'Matt set summary does not distinguish all recorded forks'
 
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
