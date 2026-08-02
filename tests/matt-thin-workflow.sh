@@ -231,7 +231,7 @@ rg -q 'UNVERIFIED: current Claude CLI loading semantics' "$AUDIT_TRIGGER_RUNNER"
 ! rg -q 'UNVERIFIED：' "$AUDIT_TRIGGER_EVAL" \
   "$AGENTS/skills/auditing-skill-folder/evals/runners.json" ||
   fail 'Step 2c uses a non-machine-readable UNVERIFIED prefix'
-rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 65 cases' "$AGENTS/vendored-forks.md" ||
+rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 55 cases' "$AGENTS/vendored-forks.md" ||
   fail 'vendored detector regression count is stale'
 ! rg -q 'model invocation metadata only|four steps above' "$AUDIT_VENDORED_GATE" ||
   fail 'auditing-skill-folder carries a stale fork scope or override step count'
@@ -343,19 +343,27 @@ done < "$AGENTS/mattpocock-skills.lock"
 # scripts/lint-descriptions.sh 於 2026-08-01 加入：Step 2 linter 補上 zh-TW 分類（TRAP 側
 # 先落地，見該檔 SCOPE 段）。auditing-skill-folder 是 house skill、vendored_flag 判為 "-"，
 # 同資料夾的 SKILL.md 與 scripts/lib-vendored.sh 早已在此列。變更由 tests/description-lint.sh
-# 守護，並實測全 81 個 skill 僅 5 個 zh-TW description 改變分類、76 個英文 0 變動。
+# 守護；2026-08-02 corpus 為 76 個 active skill（退役前為 81）。
 # Lock 定義經審核後的 Stage B2 目錄集合與完整 tree（含 mode 與 symlink）。
 [ -r "$B2_SKILLS_LOCK" ] || fail 'Stage B2 skill tree lock missing'
 b2_skills="$(awk -F '\t' '$0 !~ /^#/ && NF == 2 { print $1 }' "$B2_SKILLS_LOCK" | LC_ALL=C sort)"
-[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 11 ] ||
+[ "$(printf '%s\n' "$b2_skills" | grep -c .)" -eq 6 ] ||
   fail 'Stage B2 skill tree lock inventory drifted'
 
 [ ! -e "$AGENTS/skills/video-downloader" ] &&
   [ ! -L "$AGENTS/skills/video-downloader" ] ||
   fail 'retired video-downloader directory still exists'
-for fork in clean-code-dotnet dotnet-core-expert dotnet-test; do
+for retired in clarify csharp-developer dotnet-core-expert make-skill-template nuget-manager; do
+  [ ! -e "$AGENTS/skills/$retired" ] && [ ! -L "$AGENTS/skills/$retired" ] ||
+    fail "retired skill remains active: $retired"
+  [ -f "$AGENTS/attic/$retired/SKILL.md" ] ||
+    fail "retired skill is not recoverable from attic: $retired"
+done
+for fork in clean-code-dotnet dotnet-test; do
   fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
 done
+fork_recorded web-design-reviewer ||
+  fail 'web-design-reviewer thin fork is not recorded'
 fork_recorded playwright-best-practices ||
   fail 'playwright-best-practices curated fork is not recorded'
 while IFS=$'\t' read -r skill expected_tree_sha; do
@@ -402,6 +410,7 @@ while IFS= read -r changed; do
     skills/auditing-skill-folder/scripts/lib-vendored.sh | \
     skills/auditing-skill-folder/scripts/lint-descriptions.sh | \
     skills/bug-fix-settlement/SKILL.md | \
+    skills/clarify/* | \
     skills/aspnet-api-architect/SKILL.md | \
     skills/aspnet-api-architect/templates/design.md | \
     skills/aspnet-api-architect/templates/tasks.md | \
@@ -410,23 +419,33 @@ while IFS= read -r changed; do
     skills/context7-mcp/* | \
     skills/css-ui-best-practices/SKILL.md | \
     skills/css-ui-best-practices/references/design-system-patterns.md | \
+    skills/csharp-developer/* | \
     skills/deps-check/SKILL.md | \
     skills/deps-check/scripts/deps-check.sh | \
     skills/dev-workflow/* | \
     skills/dapper-best-practices/SKILL.md | \
     skills/dapper-best-practices/references/rules-expanded.md | \
+    skills/dotnet-core-best-practices/SKILL.md | \
+    skills/dotnet-core-best-practices/references/architecture-di.md | \
+    skills/dotnet-core-best-practices/references/configuration-hosting.md | \
+    skills/dotnet-framework-best-practices/SKILL.md | \
+    skills/dotnet-framework-best-practices/references/configuration-hosting.md | \
     skills/dotnet-winforms-best-practices/SKILL.md | \
     skills/dotnet-winforms-best-practices/references/code-patterns.md | \
     skills/dotnet-winforms-best-practices/references/layout-design.md | \
     skills/ef-core-best-practices/SKILL.md | \
     skills/ef-core-best-practices/references/rules-expanded.md | \
     skills/ef-core-best-practices/references/working-patterns.md | \
+    skills/make-skill-template/* | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
     skills/mp-tdd/* | \
     skills/postgresql-optimization/SKILL.md | \
+    skills/nuget-manager/* | \
     skills/security-review/SKILL.md | \
+    skills/security-review/references/changed-file-attack-surface.md | \
+    skills/security-review/references/report-format.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/SKILL.md | \
     skills/vue-best-practices/references/rules-expanded.md | \

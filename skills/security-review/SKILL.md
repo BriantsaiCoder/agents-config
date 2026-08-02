@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: 'Use when scanning code or a codebase for security vulnerabilities — SQL injection, XSS, command injection, exposed secrets / API keys, weak crypto, broken auth or access control, insecure dependencies, business-logic flaws; "is my code secure", "audit this", "check for vulnerabilities". Data-flow reasoning, not pattern-matching, across JS/TS/Python/Java/PHP/Go/Ruby/Rust. CI/CD or pre-commit gates, SBOM, container scans → dependency-security-scan. Whole-codebase adversarial audit or pen-test that persists artifacts → security-audit.'
+description: 'Use when scanning code, a branch, or every changed file for security vulnerabilities — injection, exposed secrets, weak crypto, broken auth/access control, insecure dependencies, or business-logic flaws; "is my code secure", "audit this", "map the attack surface". Uses cross-file data-flow reasoning across common languages including C#/.NET. CI/CD gates, SBOM, or container scans → dependency-security-scan. Whole-codebase adversarial audit that persists artifacts → security-audit.'
 ---
 
 # Security Review
@@ -25,7 +25,10 @@ AI scanner reasoning like a human researcher — data flow, component interactio
 
 ## Workflow
 
-8-step in `references/workflow.md`: Scope → Dependencies → Secrets → Vulnerability Scan → Cross-File Flow → Self-Verify → Report → Patches.
+For a branch/diff review, first account for every changed file with
+`references/changed-file-attack-surface.md`. Then follow the 8 steps in
+`references/workflow.md`: Scope → Dependencies → Secrets → Vulnerability Scan →
+Cross-File Flow → Self-Verify → Report → Patches.
 
 ## Severity Guide
 
@@ -55,3 +58,4 @@ AI scanner reasoning like a human researcher — data flow, component interactio
 - `references/language-patterns.md` — Express / React / Next / Django / Flask / FastAPI / Spring / PHP / Go / Rails / Rust
 - `references/vulnerable-packages.md` — npm / pip / Maven / Rubygems / Cargo / Go CVE watchlist
 - `references/report-format.md` — structured output template
+- `references/changed-file-attack-surface.md` — exhaustive internal coverage ledger for branch/diff reviews

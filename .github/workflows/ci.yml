@@ -49,7 +49,7 @@ jobs:
       # lib-vendored.sh 是「可否原地編輯第三方 skill」的唯一機械判準。2026-07-25 它漏判
       # 6 個 vendored skill 中的 2 個，其中一個的漏判直接導致一次未察覺的 in-place edit。
       # false negative 才是危險方向：假 VND 只成本一次人工確認，假 "-" 授權改別人的 skill。
-      - name: vendored 偵測回歸（93 cases）
+      - name: vendored 偵測回歸（55 cases）
         run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/vendored-detection.sh
 
       # Step 2 description linter 的雙語分類。2026-08-01 之前它只認英文，任何 zh-TW

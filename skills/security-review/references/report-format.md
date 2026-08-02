@@ -157,6 +157,22 @@ Apply this patch? (Review first — AI-generated patches may need adjustment)
 
 ---
 
+### Changed-file Coverage Ledger
+
+For branch/diff reviews only, append one row per changed file after the
+category-grouped findings. This is coverage evidence, not a second findings
+list.
+
+| Path | Disposition | Boundary summary | Finding refs |
+|---|---|---|---|
+| `src/example.cs` | mapped | HTTP input → database write | `SEC-2` |
+| `docs/readme.md` | no attack surface | documentation only | — |
+| `generated/client.cs` | skipped: generated | generated from reviewed schema | — |
+
+Reconcile and print `mapped + no attack surface + skipped with reason = changed-file total`.
+
+---
+
 ### Footer
 
 ```

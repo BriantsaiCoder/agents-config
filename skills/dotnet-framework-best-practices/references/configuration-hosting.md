@@ -439,3 +439,16 @@ public class OrderProcessorService : ServiceBase
 - Use `CancellationToken` for graceful shutdown; avoid `Thread.Abort`.
 - Log service start, stop, and configuration values at startup for diagnostics.
 - Set up service recovery options (restart on failure) via Topshelf or `sc.exe failurereset`.
+
+---
+
+## Legacy NuGet (`packages.config`)
+
+For non-SDK .NET Framework projects, do not apply the SDK-style CPM workflow.
+Use the repository's existing NuGet tooling (`nuget.exe`, Visual Studio Package
+Manager, or the solution's wrapper) and keep `packages.config`, project
+references, and any checked-in `packages/` convention consistent. Verify the
+exact package/version on the configured source, restore the solution, then
+build its legacy target. On failure, revert only this task's package edit and
+preserve pre-existing dirty changes. Convert to `PackageReference` only as a
+separately authorized migration.

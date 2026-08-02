@@ -18,10 +18,11 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream assessed at `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-07-31 — preserve the imported agent-skill adaptation; tree SHA-256 `7e53e673348379b72f76c7a85c3c199720ddd09e4b963c85092a03eefa054408` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `diagnosing-bugs` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
-| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-01 — retain the imported Controllers/templates variant, obsolete Compose fix, and correct `templates/task.md` to the shipped `templates/tasks.md`; tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Active** |
+| `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `435a220786ad2ef6c8023111330cd4d822717af241952c6d404160a3acb07bae` | **Active** |
 | `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
-| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-29 — explicit opt-in defaults for low-risk reversible decisions, mandatory exception pauses, and final confirmation; payload SHA-256 `851f1b633caa9ea97f8fa39b227317382822163ec83ad2cdeb6dd48d626aab55` | **Active** |
+| `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
+| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-02 — preserve the opt-in decision workflow and add the minimal under-specified/clarify trigger needed to absorb retired `clarify`; payload SHA-256 `a9f97fa0cb597c21ec4beedbb3cce6670f9f48835bd032a3d8605c34c5d70dd2` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
@@ -37,9 +38,11 @@ Retired entries stay listed: the `attic/` copy still differs from upstream, so a
   tracked snapshot (`44c7fd0`, authored by BriantsaiCoder), while a 2026-08-01 GitHub code search
   found zero copies outside BriantsaiCoder repositories. Its lock rows were removed before the
   focused requirements-to-design/tasks-to-scaffold rewrite.
-- `dotnet-find-bugs` is a byte-identical upstream snapshot from
-  `ricoisme/vscode-agents@2b1240abad239703d09875acefd7ae42685c88ff`; the generic lock now names
-  that source instead of this repository's import commit.
+- `dotnet-find-bugs` remains a byte-identical upstream snapshot from
+  `ricoisme/vscode-agents@2b1240abad239703d09875acefd7ae42685c88ff`. Its per-file coverage
+  behavior was added to `security-review`, but Claude's same-named owner won the canary namespace
+  and its payload could not be verified; retirement is deferred rather than treating
+  **UNAVAILABLE** as PASS.
 
 ## clean-code-dotnet
 
@@ -59,23 +62,20 @@ checkout. Its exact payload and tree are pinned in `vendored-skills.lock`.
 
 ## dotnet-core-expert
 
-**Decision (2026-07-31): accept the Stage B2 imported snapshot as a recorded fork.**
+**Decision (2026-08-02): retire the recorded fork to `attic/dotnet-core-expert`.**
 
-The imported payload already differs from current `Jeffallan/claude-skills` in its Controllers
-guidance, workflow, and templates. This decision preserves that existing local variant, removes
-one obsolete Compose top-level `version`, and fixes two references to the shipped `tasks.md`
-template. The complete local payload and tree fingerprints are pinned in `vendored-skills.lock`.
+The imported payload differs from upstream in its Controllers guidance, workflow, and templates.
+Its unique portable CQRS/MediatR rules now live in
+`dotnet-core-best-practices/references/architecture-di.md`; Controllers, auth, EF Core, deployment,
+and templates already have narrower owners. The archived copy preserves the full fork and history.
 
-### Re-merge procedure (when upstream moves)
+### Restore procedure
 
-1. Compare the full upstream `skills/dotnet-core-expert/` tree against the Stage B2 snapshot
-   `7080450715c0e5f264e19ab60a48da9c4437c0af`.
-2. Decide explicitly whether to retain the local Controllers/templates variant or replace it
-   wholesale with upstream; do not mix the trees silently.
-3. If retaining the fork, reapply removal of the obsolete Compose top-level `version` only when
-   upstream still contains it.
-4. Recompute both fingerprints in `vendored-skills.lock` and this record, then run
-   `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, and `tests/version-tripwire.sh`.
+1. `git mv attic/dotnet-core-expert skills/dotnet-core-expert`.
+2. Restore its prior rows in `stage-b2-skills.lock` and `vendored-skills.lock`, set the index status
+   to Active, and reassess overlap with the canonical .NET skills.
+3. Recompute fingerprints and run `tests/vendored-detection.sh`,
+   `tests/matt-thin-workflow.sh`, and `tests/version-tripwire.sh`.
 
 ---
 
@@ -96,6 +96,26 @@ BenchmarkDotNet baseline/statistics procedure. The full local payload and tree a
    canonical testing skill still omits benchmark interpretation.
 3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
    `tests/matt-thin-workflow.sh`.
+
+---
+
+## web-design-reviewer
+
+**Decision (2026-08-02): retain the unique visual repair loop as a recorded thin fork.**
+
+The upstream payload mixed generic visual checklists, framework-specific snippets, browser details,
+and release verification into a 3,586-word skill. Those concerns already belong to
+`css-ui-best-practices`, `playwright-best-practices`, and `frontend-release-verification`. The fork
+keeps only rendered-element reverse lookup, authorization-aware source repair, same-viewport
+before/after evidence, shared-CSS regression checks, and the three-attempt stop condition.
+
+### Re-merge procedure (when upstream moves)
+
+1. Compare behavior, not file count, against the assessed upstream revision.
+2. Pull only new visual-to-source failure shields absent from the thin loop; keep generic CSS,
+   framework, accessibility, browser, and release procedures with their canonical owners.
+3. Recompute payload/tree fingerprints and run trigger, relative-reference, word-budget, and
+   vendored-detection gates.
 
 ---
 
@@ -212,13 +232,31 @@ byte-identical Stage B2 vendored payload. Their rows were deleted from `vendored
 | `github-issues` | github/awesome-copilot | **Non-functional here**: `SKILL.md:8` requires `@modelcontextprotocol/server-github` and its body calls `mcp__github__*`; none of the three hosts has a github MCP server configured (verified in `~/.codex/config.toml`, `~/.copilot/mcp-config.json`, and the Claude tool surface). GitHub work here goes through the `gh` CLI |
 | `webapp-testing` | github/awesome-copilot | Superseded: `playwright-best-practices/references/python-tooling.md:5` already records "Merged from: `webapp-testing`", and `agent-browser` covers browser control |
 
-**Restore any of them with**: `git checkout <commit-before-removal> -- skills/<name>`, then re-add its
-row to both lock files. `tests/vendored-detection.sh` and `tests/matt-thin-workflow.sh` carry
-inventory counts (12) and a regression-case count (65) that must be bumped back in step.
+For those 13 removals, the Step 6 A/B canary was not run: their 2026-08-01 audit was read-only,
+and the user authorised removal directly on domain-scope grounds rather than usage telemetry.
 
-**Step 6 A/B canary was not run** — the audit that produced this list was read-only. Removal was
-authorised directly by the user on 2026-08-01 on domain-scope grounds, not on usage telemetry
-(no unified Claude/Codex/Copilot usage signal exists).
+**4 skills — archived unchanged on 2026-08-02 after behavior-preserving consolidation.**
+
+| Skill | Upstream | Why archived |
+|---|---|---|
+| `clarify` | team-attention/plugins-for-claude-natives | Requirement clarification already routes through `grilling` plus the global ambiguity stop gate; keeping both created competing interviews |
+| `csharp-developer` | Jeffallan/claude-skills | General C# is covered by the modern/legacy .NET owners; its remaining Blazor/MAUI/SignalR persona is outside the owner's declared technology scope |
+| `make-skill-template` | github/awesome-copilot | All three hosts expose a native skill creator, so a fourth template owner only creates drift |
+| `nuget-manager` | github/awesome-copilot | SDK-style NuGet/CPM is already covered by `dotnet-core-best-practices`; a thin `packages.config` branch was added to `dotnet-framework-best-practices` |
+
+**Restore any of them with**: `git checkout <commit-before-removal> -- skills/<name>`, then re-add its
+row to both lock files. For the four tracked attic copies above, prefer
+`git mv attic/<name> skills/<name>`. Update the exact inventory and regression tripwires in
+`tests/vendored-detection.sh` and `tests/matt-thin-workflow.sh` in the same change.
+
+**2026-08-02 candidate canary:** after deferring `dotnet-find-bugs` retirement, Claude scratch
+bootstrap/doctor resolves 76/76 active links, with zero retired identities and all replacement
+owners present (**PASS**). Copilot resolves 76 candidate personal skills, zero retired identities,
+one retained `dotnet-find-bugs`, and all replacement owners (**PASS**). The
+Codex CLI exposes no local skill-list command (**UNAVAILABLE**); its user-only policy check passed
+12/12. Live trigger evaluation passed 15/15 measurable new fire/quiet cases; the candidate
+`security-review` case was **UNAVAILABLE** because Claude's same-named built-in won the namespace,
+so `dotnet-find-bugs` remains active and that result was not converted into a false PASS.
 
 **`ecpay` — retired to `attic/` 2026-07-25.**
 
@@ -252,19 +290,24 @@ the tree fingerprint.
 
 ## grilling
 
-**Decision (2026-07-29): accept the fork.**
+**Decision (2026-08-02): keep the existing fork and widen only its trigger description.**
 
 The user may explicitly authorize all remaining low-risk, reversible recommendations once instead
 of confirming each one. That authorization remains HITL feedback: the agent records each adopted
 default, pauses for high-risk, irreversible, scope-expanding, or low-confidence decisions, then
 summarizes every decision and waits for final confirmation before acting.
 
+The 2026-08-02 description-only change adds explicit under-specified/clarify routing so the
+byte-identical `clarify` skill can retire without losing one-at-a-time requirement interviews. The
+body and all upstream procedures remain unchanged; the global ambiguity gate alone was insufficient
+because an explicit "clarify this" request did not auto-invoke this skill in the RED canary.
+
 ### Re-merge procedure (when upstream moves)
 
 1. Diff the new upstream `grilling/SKILL.md` against pinned commit
    `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
-2. Replace the pinned Matt set normally, then reapply this opt-in default paragraph only if upstream
-   still lacks equivalent behavior.
+2. Replace the pinned Matt set normally, then reapply the opt-in default paragraph and clarify
+   trigger only if upstream still lacks equivalent behavior.
 3. Run `tests/matt-thin-workflow.sh`, `tests/vendored-detection.sh`, and the skill validator.
 4. Update the fork index's upstream commit; remove this record if upstream fully absorbs the behavior.
 
@@ -576,4 +619,4 @@ Both fixes landed in `vendored_flag()` **and** `vendored_owner()`. Fixing only t
 
 A third defect surfaced while writing this section: `fork_recorded()` matched `| \`name\` |` anywhere in this file, so the table above — documentation, not an index — promoted `agent-browser` to `VND*`, asserting an accepted fork decision that was never made. The fork index now sits between `<!-- fork-index:begin/end -->` markers and the lookup is confined to that block; a file with no markers fails closed.
 
-Regression coverage: `tests/vendored-detection.sh`, 65 cases — every provenance form, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.
+Regression coverage: `tests/vendored-detection.sh`, 55 cases — every provenance form, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.

@@ -1,6 +1,6 @@
 ---
 name: dotnet-framework-best-practices
-description: 'Use when writing or maintaining .NET Framework 4.x — System.Web, Web.config, Web API 2, OWIN/Katana, Global.asax, Windows Services, HttpClient lifetime, NLog/log4net. Symptoms: socket exhaustion/TIME_WAIT, IIS 502/503, ConfigurationManager null, HttpClient leak, AppDomain unload, web.config transform not applied. Also "fix this MVC 5 controller", "patch WCF service", "wire up OWIN".'
+description: 'Use when writing or maintaining .NET Framework 4.x — System.Web, Web.config, Web API 2, OWIN/Katana, Global.asax, Windows Services, packages.config/NuGet, HttpClient lifetime, NLog/log4net. Symptoms: socket exhaustion/TIME_WAIT, IIS 502/503, ConfigurationManager null, AppDomain unload, web.config transform not applied. Also "fix this MVC 5 controller", "update a packages.config dependency", "patch WCF service".'
 ---
 
 # .NET Framework 4.x Best Practices
@@ -42,5 +42,5 @@ No built-in DI, `System.Web` pipeline, `Global.asax`, XML transforms. Not for `M
 - `references/code-patterns.md` — 12 Rules, 7-step writing pattern, Console, logging anti-patterns
 - `references/architecture-di.md` — layering, Unity/Autofac/Ninject, Composition Root, Service Locator
 - `references/aspnet-mvc-webapi.md` — MVC 5 + Web API 2, routing, filters, binding, negotiation
-- `references/configuration-hosting.md` — Web/App.config, transforms, OWIN/Katana, IIS, Global.asax
+- `references/configuration-hosting.md` — Web/App.config, transforms, OWIN/Katana, IIS, Global.asax, legacy NuGet
 - `references/security-performance.md` — FormsAuth/OWIN, CSRF, CORS, caching, async, HttpClient

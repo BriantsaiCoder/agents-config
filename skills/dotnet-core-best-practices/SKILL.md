@@ -1,6 +1,6 @@
 ---
 name: dotnet-core-best-practices
-description: 'Use when writing or reviewing .NET 8+ / ASP.NET Core — WebApplication.CreateBuilder, Minimal API, controllers, DI lifetimes, middleware ordering, HttpClientFactory, ProblemDetails, options pattern, configuration binding, "scaffold ASP.NET Core API", "wire up DI". Symptoms: DI scope mismatch (scoped from singleton), BackgroundService stops silently, middleware misorder (auth after endpoint), HttpClient socket exhaustion, IOptions returns default.'
+description: 'Use when writing or reviewing .NET 8+ or ASP.NET Core: APIs, DI, middleware, HttpClient, ProblemDetails, Clean Architecture/CQRS/MediatR, SDK-style NuGet/CPM, AOT, or runtime diagnostics (dotnet-counters/trace/dump). Symptoms include scope mismatch, middleware misorder, socket exhaustion, high CPU, memory leak, crash, or hang. .NET Framework 4.x → dotnet-framework-best-practices.'
 ---
 
 # .NET 8/10 & ASP.NET Core Best Practices
@@ -43,7 +43,7 @@ Prefer built-in primitives over third-party workarounds. Not for .NET Framework 
 ## Reference Navigation
 
 - `references/code-patterns.md` — Rules 1–12, 7-step pattern, Console, version matrix, C# 12, async
-- `references/architecture-di.md` — DI, lifetimes, Options, keyed services
+- `references/architecture-di.md` — DI, lifetimes, Options, keyed services, Clean Architecture, CQRS/MediatR
 - `references/aspnet-core-api.md` — Minimal vs Controllers, filters, caching, rate limit, versioning, OpenAPI
 - `references/configuration-hosting.md` — appsettings, Kestrel, health, Worker, NuGet/CPM
-- `references/security-performance.md` — Identity/JWT, CORS, Data Protection, factory, crypto, AOT
+- `references/security-performance.md` — Identity/JWT, CORS, Data Protection, factory, crypto, AOT, runtime diagnostics (`dotnet-counters`, `dotnet-trace`, `dotnet-dump`)

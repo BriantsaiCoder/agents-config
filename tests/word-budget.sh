@@ -11,7 +11,8 @@
 # case "english-unchanged" 與真實語料斷言把這條釘死。
 #
 # A4 — 三個宣告的 tier 有兩個（using-*/getting-started* = 150、*-core/*-rules = 200）
-# 在 ~/.agents/skills 與 ~/.claude/skills 各 81 個 skill 中匹配 0 個，是不可達的死分支。
+# 在退役前的 ~/.agents/skills 與 ~/.claude/skills 各 81 個 skill 中匹配 0 個，是不可達的死分支；
+# 2026-08-02 active corpus 為 76 個。
 # 死分支會安靜地永遠不觸發，比沒有 tier 更糟，因為它製造「有分級」的錯覺。
 # case "every-tier-has-a-member" 是防復發守衛：任何 tier 若在真實語料上 0 命中即 FAIL。
 #

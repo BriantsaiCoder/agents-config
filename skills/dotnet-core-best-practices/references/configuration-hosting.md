@@ -574,7 +574,13 @@ dotnet nuget why <Name>
 dotnet package search <Name> --exact-match --format json
 ```
 
+Exit code 0 only means the search ran. Parse the JSON and require an exact
+version match before editing, for example with
+`jq -e '.searchResult[].packages[] | select(.version == "<VERSION>")'`.
+
 After any version change, run `dotnet restore` (or `dotnet build`) and commit the updated lock file (`packages.lock.json` if `RestorePackagesWithLockFile=true`).
+If verification fails, revert only the version edit made in this task; preserve
+all pre-existing dirty changes.
 
 ### Central Package Management (CPM)
 

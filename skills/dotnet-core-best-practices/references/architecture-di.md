@@ -355,6 +355,23 @@ src/
       Extensions/
 ```
 
+### CQRS and MediatR
+
+Use CQRS/MediatR only when use-case isolation or cross-cutting pipelines repay
+the extra indirection; simple CRUD can call an application service directly.
+
+- Commands mutate state; queries return data without hidden writes.
+- Keep requests, handlers, DTOs, and MediatR dependencies in Application.
+  Domain must not depend on MediatR or infrastructure packages.
+- Give each handler one use case and forward its `CancellationToken` to every
+  async dependency.
+- Put validation, logging/metrics, and write-transaction boundaries in ordered
+  `IPipelineBehavior` implementations; do not hide business logic there.
+- API controllers/endpoints dispatch through `ISender`; handlers own the use
+  case. Register handlers and behaviors once in the composition root.
+- Test the handler directly and add one pipeline-order test when ordering is
+  behaviorally significant.
+
 ### When to split vs keep together
 
 | Signal | Action |
