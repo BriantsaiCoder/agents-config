@@ -388,7 +388,7 @@ catch
 
 ## Result Pattern for Expected Failures
 
-Global CLAUDE.md preference: use Result for predictable business failures (validation, not-found, domain rule violation); reserve exceptions for system errors and invariant breaks. Pairs with Rule 10 (`ProblemDetails` converts unhandled exceptions at the edge).
+Use Result for predictable business failures (validation, not-found, domain rule violation); reserve exceptions for system errors and invariant breaks. Pairs with Rule 10 (`ProblemDetails` converts unhandled exceptions at the edge).
 
 ```csharp
 public readonly record struct Result<T>(bool IsSuccess, T? Value, string? Error, string? Code)

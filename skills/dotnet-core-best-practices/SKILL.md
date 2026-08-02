@@ -13,7 +13,7 @@ Prefer built-in primitives over third-party workarounds. Not for .NET Framework 
 2. **Options pattern** — bind with `ValidateDataAnnotations()` + `ValidateOnStart()`. Pick `IOptions<T>` / `IOptionsSnapshot<T>` / `IOptionsMonitor<T>` by lifetime. Never read `IConfiguration` in services.
 3. **`IHttpClientFactory`** — never `new HttpClient()` (socket exhaustion). `.AddStandardResilienceHandler()`; `Idempotency-Key` for non-idempotent retries.
 4. **Middleware order** — ExceptionHandler → HSTS → HttpsRedirection → StaticFiles → Routing → CORS → Auth → Authorization → RateLimiter → OutputCache → MapControllers. Misorder = silent security bug.
-5. **Controller-based Web API default; Minimal API only for prototypes** (CLAUDE.md). Controllers: attribute routing, filters, binding, versioning, OpenAPI.
+5. **Choose endpoint model by requirements.** Minimal APIs suit focused endpoints; Controllers suit APIs needing filters, binding conventions, or versioning.
 6. **Structured logging** — `ILogger<T>` templates (`"Order {OrderId}"`), not interpolation. Detail → `dotnet-logging-best-practices`.
 7. **`CancellationToken` everywhere** — auto-binds; accept and forward. Ignoring wastes CPU / DB on dead responses.
 8. **Health checks** — `MapHealthChecks` with `/health/ready` (deps) + `/health/live` (process).

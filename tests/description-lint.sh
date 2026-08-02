@@ -127,15 +127,15 @@ echo "── 檢查順序不變式 ──"
 check "zh-both: TRAP 與 GOOD 同時命中 -> YES"  "YES" "$(flag_of zh-both)"
 
 # ── 真實語料驗收 ───────────────────────────────────────────────────────────
-# 這五個是 ~/.agents/skills 內僅有的 zh-TW description。它們是本次變更的驗收標的：
-# 全部 "?" 代表偵測器對中文失明，全部 "-" 代表 TRAP 側沒landing。
+# 這五個是本次變更的 live description 驗收標的；其中四個為 zh-TW，一個為英文。
+# zh-TW 全部 "?" 代表偵測器對中文失明，全部 "-" 代表 TRAP 側沒 landing。
 LIVE="$AGENTS/skills"
 if [ -d "$LIVE" ] && [ -r "$LIVE/dev-workflow/SKILL.md" ]; then
-  echo "── 真實語料：5 個 zh-TW skill ──"
+  echo "── 真實語料：5 個 key live descriptions ──"
   OUT=$(bash "$SCRIPT" "$LIVE" 2>/dev/null)
   check "live dev-workflow: S0…S6 phase 列舉 -> YES"      "YES" "$(flag_of dev-workflow)"
   check "live sdd: trigger-led small-scope route -> -"          "-"   "$(flag_of sdd)"
-  check "live aspnet-api-architect: 祈使串列 -> YES"       "YES" "$(flag_of aspnet-api-architect)"
+  check "live aspnet-api-architect: requirements trigger -> -"  "-" "$(flag_of aspnet-api-architect)"
   check "live deps-check: 當使用者…觸發關鍵字 -> -"        "-"   "$(flag_of deps-check)"
   check "live bug-fix-settlement: …之後觸發 -> -"          "-"   "$(flag_of bug-fix-settlement)"
 else

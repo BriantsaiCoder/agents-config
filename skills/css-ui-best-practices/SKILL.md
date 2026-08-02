@@ -22,7 +22,7 @@ Portable CSS / UI / a11y rules. Apply proactively when writing and as a checklis
 
 ## Accessibility — Non-Negotiable
 
-WCAG 2.2 AA = legal floor (ADA / EAA / EN 301 549). Full → `references/accessibility-responsive.md`.
+Target WCAG 2.2 AA by default; verify the applicable legal standard for the product and jurisdiction. Full → `references/accessibility-responsive.md`.
 
 - Semantic HTML before ARIA. `<button>` not `<div role="button">`.
 - Keyboard-operable: Tab logical, Enter/Space activates, Escape closes overlays.

@@ -15,7 +15,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
-| `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream assessed at `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-07-31 — preserve the imported agent-skill adaptation; tree SHA-256 `7e53e673348379b72f76c7a85c3c199720ddd09e4b963c85092a03eefa054408` | **Active** |
+| `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-08-02 — re-adjudicated thin fork: narrow Clean Code triggers, retain a 360-word judgment checklist, keep only self-consistent illustrative SOLID snippets, and remove duplicated async/editorconfig payload; tree SHA-256 `3f1cb3c62da34813c63d3d041feb0287044a5df5047f1cf824d95a25ba8f89b0` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `diagnosing-bugs` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
@@ -46,17 +46,33 @@ Retired entries stay listed: the `attic/` copy still differs from upstream, so a
 
 ## clean-code-dotnet
 
-**Decision (2026-07-31): preserve the Stage B2 imported agent-skill adaptation as a recorded fork.**
+**Decision (2026-08-02): supersede the preservation-only record with a re-adjudicated thin fork.**
 
-The local skill names `thangchung/clean-code-dotnet` as its source but is not a wholesale upstream
-checkout. Its exact payload and tree are pinned in `vendored-skills.lock`.
+The upstream still ends at `a604cf99e618de359cf34c5384a16fe72a5db2f4`. The imported main file
+spent 1,899 words on generic examples, repeated the five SOLID examples already disclosed in
+`references/solid-principles.md`, claimed general C# review/write triggers, and carried async and
+`.editorconfig` payload already owned by stack skills and repository enforcement. A one-section
+trim would still leave 1,529 words while paying the same fork cost, so the recorded override keeps
+only the judgment-heavy readability checklist and explicit ownership boundaries.
+
+The thin main file is 360 words. Its three-case Claude collision canary stayed 3/3 before and after:
+explicit Clean Code/SOLID fires, ASP.NET Core DI routes to `dotnet-core-best-practices`, and xUnit
+authoring routes to `dotnet-testing-best-practices`. The exact payload and tree remain pinned in
+`vendored-skills.lock`.
+
+The retained SOLID reference is explicitly illustrative: placeholder methods throw instead of
+silently omitting required returns, generic examples no longer assume ABP registration, and
+render-only methods use `void`.
 
 ### Re-merge procedure (when upstream moves)
 
-1. Compare the full local skill against upstream from the assessed revision.
-2. Replace it wholesale or explicitly retain the agent-skill adaptation; do not silently mix trees.
-3. Recompute both fingerprints and run `tests/vendored-detection.sh` and
-   `tests/matt-thin-workflow.sh`.
+1. Compare the full upstream skill against the assessed revision and this thin checklist.
+2. Pull only new judgment-heavy Clean Code failure shields. Keep framework, async, UI, testing,
+   formatting, analyzer, and repository-style guidance with their named owners.
+3. Preserve the narrow fire/quiet cases and the disclosed SOLID reference; do not restore duplicate
+   examples to the main file.
+4. Recompute both fingerprints and run `tests/vendored-detection.sh`,
+   `tests/matt-thin-workflow.sh`, relative-reference checks, and the three-case trigger canary.
 
 ---
 

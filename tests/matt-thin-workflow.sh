@@ -362,6 +362,25 @@ done
 for fork in clean-code-dotnet dotnet-test; do
   fork_recorded "$fork" || fail "$fork Stage B2 fork is not recorded"
 done
+clean_code_skill="$AGENTS/skills/clean-code-dotnet/SKILL.md"
+clean_code_words="$(wc -w < "$clean_code_skill" | tr -d ' ')"
+[ "$clean_code_words" -le 500 ] ||
+  fail "clean-code-dotnet thin fork exceeds 500 words: $clean_code_words"
+rg -q '^description:.*readability.*naming.*responsibilit.*SOLID' "$clean_code_skill" ||
+  fail 'clean-code-dotnet description lost its narrow Clean Code triggers'
+rg -q 'references/solid-principles\.md' "$clean_code_skill" ||
+  fail 'clean-code-dotnet lost the disclosed SOLID reference'
+! rg -q '^## SOLID Principles|writing new code|code review feedback' "$clean_code_skill" ||
+  fail 'clean-code-dotnet still carries duplicated SOLID content or generic triggers'
+[ ! -e "$AGENTS/skills/clean-code-dotnet/references/async-patterns.md" ] ||
+  fail 'clean-code-dotnet still owns duplicated async guidance'
+[ ! -e "$AGENTS/skills/clean-code-dotnet/references/editorconfig-template.md" ] ||
+  fail 'clean-code-dotnet still owns repo-specific mechanical style config'
+clean_code_solid="$AGENTS/skills/clean-code-dotnet/references/solid-principles.md"
+rg -q '^# SOLID Principles - Illustrative Snippets$' "$clean_code_solid" ||
+  fail 'clean-code-dotnet SOLID reference overstates snippet completeness'
+! rg -q 'ABP module|public List<EmployeeData> Show' "$clean_code_solid" ||
+  fail 'clean-code-dotnet SOLID reference contains framework bleed or invalid render returns'
 fork_recorded web-design-reviewer ||
   fail 'web-design-reviewer thin fork is not recorded'
 fork_recorded playwright-best-practices ||
@@ -394,6 +413,8 @@ done < "$B2_SKILLS_LOCK"
 #                                    Step 2b collision；security-audit 是 VND 不能改，故改自有這側。
 # 2026-08-02 READY Batch 2 只放行 handoff 明列的 direct-edit files；init-project-docs 的
 # current-doc reference 修正逐檔列出，避免未審新增檔被 wildcard 靜默放行。
+# 2026-08-02 Batch 4 closure 只再放行已逐檔裁決的 stance/scope/routing trims；其餘 skill
+# 仍走 fail-closed fallback，避免全目錄 wildcard 把未審變更帶進 live tree。
 while IFS= read -r changed; do
   case "$changed" in
     skills/agent-browser/SKILL.md | \
@@ -414,6 +435,7 @@ while IFS= read -r changed; do
     skills/auditing-skill-folder/scripts/lint-descriptions.sh | \
     skills/auth-implementation-patterns/SKILL.md | \
     skills/bug-fix-settlement/SKILL.md | \
+    skills/bug-fix-settlement/references/settlement-guide.md | \
     skills/clarify/* | \
     skills/aspnet-api-architect/SKILL.md | \
     skills/aspnet-api-architect/templates/design.md | \
@@ -431,6 +453,7 @@ while IFS= read -r changed; do
     skills/dapper-best-practices/references/rules-expanded.md | \
     skills/dotnet-core-best-practices/SKILL.md | \
     skills/dotnet-core-best-practices/references/architecture-di.md | \
+    skills/dotnet-core-best-practices/references/code-patterns.md | \
     skills/dotnet-core-best-practices/references/configuration-hosting.md | \
     skills/dotnet-framework-best-practices/SKILL.md | \
     skills/dotnet-framework-best-practices/references/configuration-hosting.md | \
@@ -440,6 +463,8 @@ while IFS= read -r changed; do
     skills/ef-core-best-practices/SKILL.md | \
     skills/ef-core-best-practices/references/rules-expanded.md | \
     skills/ef-core-best-practices/references/working-patterns.md | \
+    skills/dotnet-logging-best-practices/SKILL.md | \
+    skills/frontend-release-verification/SKILL.md | \
     skills/init-project-docs/SKILL.md | \
     skills/init-project-docs/references/README.md | \
     skills/init-project-docs/references/agents/copilot/README.md | \
@@ -458,6 +483,7 @@ while IFS= read -r changed; do
     skills/security-review/references/changed-file-attack-surface.md | \
     skills/security-review/references/report-format.md | \
     skills/sdd/SKILL.md | \
+    skills/testing-library-react-best-practices/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/SKILL.md | \
     skills/vue-best-practices/references/rules-expanded.md | \

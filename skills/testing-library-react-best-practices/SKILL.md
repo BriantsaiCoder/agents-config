@@ -1,11 +1,11 @@
 ---
 name: testing-library-react-best-practices
-description: 'Use when writing or reviewing React Testing Library tests — query priority (getByRole/getByLabelText/getByText), userEvent vs fireEvent, async findBy/waitFor, accessible-name assertions, forms, hooks (renderHook), context providers, Suspense, or flaky component tests. For Vue component or Pinia store testing, use pinia.'
+description: 'Use when writing or reviewing React Testing Library tests — query priority (getByRole/getByLabelText/getByText), userEvent vs fireEvent, async findBy/waitFor, accessible-name assertions, forms, hooks (renderHook), context providers, Suspense, or flaky component tests. For Vue component or composable testing, use vue-best-practices; for Pinia store testing, use pinia.'
 ---
 
 # React Testing Library Best Practices
 
-> **Scope**: this skill covers React + React Testing Library specifically. For Vue 3 component / store testing, use `pinia`. For Vitest configuration / mocking issues regardless of framework, use `vitest`.
+> **Scope**: this skill covers React + React Testing Library specifically. For Vue component / composable testing, use `vue-best-practices`; for Pinia store testing, use `pinia`. For Vitest configuration / mocking issues regardless of framework, use `vitest`.
 
 ## Core Rule
 

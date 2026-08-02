@@ -1,5 +1,5 @@
 ---
-description: 'ASP.NET Core Web API 架構師 skill — 規劃、撰寫文件、架構設計、審查、產生專案與 MSTest 測試專案'
+description: 'Use when turning ASP.NET Core Web API requirements into design.md and tasks.md, or when an approved design authorizes scaffolding the API and MSTest project.'
 name: 'aspnet-api-architect'
 tools: ['read', 'edit', 'execute', 'search', 'agent/runSubagent']
 ---
@@ -12,7 +12,7 @@ tools: ['read', 'edit', 'execute', 'search', 'agent/runSubagent']
 
 本 skill 擁有「requirements → `design.md`／`tasks.md` → scaffold」的 orchestration，不重複維護一般規則：
 
-較寬的既有 frontmatter trigger 暫作 compatibility router；命中一般 review、security 或 testing 時只執行下列分流，不重新宣告 ownership：
+若明示呼叫本 skill 卻要求一般 review、security 或 testing，只執行下列分流，不重新宣告 ownership：
 
 - ASP.NET／C# implementation 與 review → `dotnet-core-best-practices`
 - MSTest／unit／integration tests → `dotnet-testing-best-practices`

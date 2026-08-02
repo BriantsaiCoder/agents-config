@@ -1,6 +1,6 @@
 ---
 name: dotnet-logging-best-practices
-description: 'Use when adding or reviewing logging in .NET applications, .NET 6+ or .NET Framework — Microsoft.Extensions.Logging ILogger generic logging, Serilog/NLog/log4net, LoggerMessage source generators, structured logs, sinks, log levels, correlation IDs, Activity/ActivitySource, OpenTelemetry exporters, appsettings configuration. Also "add logging here", "wire up Serilog".'
+description: 'Use when adding or reviewing logging in .NET applications, .NET 6+ or .NET Framework — Microsoft.Extensions.Logging ILogger generic logging, Serilog/NLog/log4net, LoggerMessage source generators, structured logs, sinks, log levels, correlation IDs, logging scopes, appsettings configuration. Also "add logging here", "wire up Serilog".'
 ---
 
 <!-- last-verified: 2026-07-26 -->

@@ -1,4 +1,4 @@
-# SOLID Principles - Complete Examples
+# SOLID Principles - Illustrative Snippets
 
 ## Single Responsibility Principle (SRP)
 
@@ -28,6 +28,7 @@ class UserSettings
     private bool VerifyCredentials()
     {
         // Authentication logic - DIFFERENT responsibility!
+        throw new NotImplementedException();
     }
 }
 ```
@@ -48,6 +49,7 @@ class UserAuth
     public bool VerifyCredentials()
     {
         // Authentication logic
+        throw new NotImplementedException();
     }
 }
 
@@ -104,10 +106,11 @@ class HttpRequester
             return MakeHttpCall(url);
         }
         // Adding new adapter requires modifying this class!
+        throw new NotSupportedException(adapterName);
     }
 
-    private bool MakeAjaxCall(string url) { /* ... */ }
-    private bool MakeHttpCall(string url) { /* ... */ }
+    private bool MakeAjaxCall(string url) => throw new NotImplementedException();
+    private bool MakeHttpCall(string url) => throw new NotImplementedException();
 }
 ```
 
@@ -125,6 +128,7 @@ class AjaxAdapter : IAdapter
     public bool Request(string url)
     {
         // Ajax implementation
+        throw new NotImplementedException();
     }
 }
 
@@ -133,6 +137,7 @@ class NodeAdapter : IAdapter
     public bool Request(string url)
     {
         // Node implementation
+        throw new NotImplementedException();
     }
 }
 
@@ -142,6 +147,7 @@ class FetchAdapter : IAdapter
     public bool Request(string url)
     {
         // Fetch implementation
+        throw new NotImplementedException();
     }
 }
 
@@ -432,9 +438,6 @@ public class Manager
     }
 }
 
-// Registration (in ABP module)
-context.Services.AddTransient<IEmployee, Human>();
-context.Services.AddTransient<IEmployee, Robot>();
 ```
 
 ---
@@ -445,7 +448,7 @@ context.Services.AddTransient<IEmployee, Robot>();
 
 ```csharp
 // ❌ Bad - Duplicate code
-public List<EmployeeData> ShowDeveloperList(Developer[] developers)
+public void ShowDeveloperList(Developer[] developers)
 {
     foreach (var developer in developers)
     {
@@ -456,7 +459,7 @@ public List<EmployeeData> ShowDeveloperList(Developer[] developers)
     }
 }
 
-public List<EmployeeData> ShowManagerList(Manager[] managers)
+public void ShowManagerList(Manager[] managers)
 {
     foreach (var manager in managers)
     {
@@ -472,7 +475,7 @@ public List<EmployeeData> ShowManagerList(Manager[] managers)
 
 ```csharp
 // ✅ Good - Single abstraction
-public List<EmployeeData> ShowList(IEmployee[] employees)
+public void ShowList(IEmployee[] employees)
 {
     foreach (var employee in employees)
     {

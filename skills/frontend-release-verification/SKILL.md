@@ -28,12 +28,12 @@ Evidence matched to risk. Use repo's existing scripts and test stack first; neve
 |---|---|
 | Static | Existing `lint` + `typecheck`, or explain if combined |
 | Unit/component | Vitest/Jest; target changed behavior |
-| Build | `npm run build` |
+| Build | Repo-configured build script |
 | Browser/E2E | Playwright/Cypress / Playwright MCP / Browser Use |
 | Visual/RWD | Screenshots / manual evidence per affected screen |
 | A11y | axe/Lighthouse if present, else keyboard/focus/label/role/contrast smoke |
 
-CI = clean install (`npm ci`). Local agent may skip install if deps present + lockfile unchanged.
+Use the package manager and clean-install command configured by the repo or CI. Local agent may skip install if deps are present and the lockfile is unchanged.
 
 ## Deployment Gates Beyond CI
 
