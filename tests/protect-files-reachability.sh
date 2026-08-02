@@ -89,6 +89,84 @@ for LOC in C en_US.UTF-8; do
   probe claude  "CLAUDECODE=1"    allow "/repo/environment.ts" "$LOC"
 done
 
+printf '\n── 解析器缺席：無從判斷即 fail-closed ──\n'
+# 2026-08-02 稽核補測的漏網：本檔第一版驗了四種 host 與 11 個 pattern，就是沒驗
+# 「jq 不在 PATH」。實測當時 rc=0（放行）——敏感檔案保護對整個缺 jq 的環境失效。
+# 同 repo 的 hooks/guard-git-push.sh 檔頭早已明訂相反方向（解析失敗保守拒絕），
+# 兩支 guard 對同一情境的處理不該相反。
+NOJQ=$(mktemp -d) || exit 1
+for _t in bash cat basename mktemp env printf grep sed; do
+  _p=$(command -v "$_t" 2>/dev/null) && ln -sf "$_p" "$NOJQ/$_t"
+done
+
+nojq_probe() {  # $1=標籤 $2=payload $3=expect $4=額外env
+  # 與 probe() 一樣要斷言「deny 必須有理由輸出」。第一版把輸出全丟 /dev/null 只驗
+  # exit code——實測讓 hook_block 靜默（只 exit 2 不輸出）後，這裡 9 條全數 PASS，
+  # 而 probe() 抓到 30 個。exit code 對但訊息空正是 #26 的失敗形狀，本檔檔頭就在
+  # 講這件事，新加的 probe 卻沒做（2026-08-02 Copilot review 抓到）。
+  local label="$1" payload="$2" want="$3" extra="$4" rc actual=allow reason_seen=no
+  local out err
+  out=$(mktemp) || { ng "$label 無法建立 fixture"; return; }
+  err=$(mktemp) || { rm -f "$out"; ng "$label 無法建立 fixture"; return; }
+  printf '%s' "$payload" |
+    env -i PATH="$NOJQ" HOME="$HOME" LC_ALL=en_US.UTF-8 CLAUDECODE=1 $extra bash "$HOOK" \
+    >"$out" 2>"$err"
+  rc=$?
+  [ "$rc" -eq 2 ] && actual=deny
+  [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ] || actual="BADEXIT($rc)"
+  { [ -s "$out" ] || [ -s "$err" ]; } && reason_seen=yes
+  rm -f "$out" "$err"
+  if [ "$actual" != "$want" ]; then
+    ng "$(printf '%-34s want=%s got=%s' "$label" "$want" "$actual")"
+  elif [ "$want" = deny ] && [ "$reason_seen" = no ]; then
+    ng "$(printf '%-34s deny 但無理由輸出' "$label")"
+  else
+    ok "$(printf '%-34s %s' "$label" "$want")"
+  fi
+}
+
+# 有 payload 但沒有解析器＝無從判斷，必須擋。一般檔也擋是刻意的：分不出安全與否時，
+# 誤擋的代價遠低於放行敏感檔。
+nojq_probe "無 jq，敏感檔"        '{"tool_input":{"file_path":"/repo/.env"}}'  deny  ""
+nojq_probe "無 jq，一般檔"        '{"tool_input":{"file_path":"/repo/a.ts"}}'  deny  ""
+
+# 「jq 在不在」不等於「讀得懂」。S5 補測：只 gate 在 command -v 會漏掉兩種失效，
+# 兩者都讓 jq 回空字串而靜默放行。判準因此改成實際解析一次（jq -e .）。
+printf '#!/usr/bin/env bash\nexit 5\n' > "$NOJQ/jq"; chmod +x "$NOJQ/jq"
+nojq_probe "jq 存在但 exit 5，敏感檔" '{"tool_input":{"file_path":"/repo/.env"}}' deny ""
+rm -f "$NOJQ/jq"
+
+# 這兩條用真 jq：payload 本身不是合法 JSON，jq 解析失敗
+badjson_probe() {  # $1=標籤 $2=payload $3=expect
+  local rc actual=allow reason_seen=no out err
+  out=$(mktemp) || { ng "$1 無法建立 fixture"; return; }
+  err=$(mktemp) || { rm -f "$out"; ng "$1 無法建立 fixture"; return; }
+  printf '%s' "$2" | env -i PATH="$PATH" HOME="$HOME" LC_ALL=en_US.UTF-8 CLAUDECODE=1 \
+    bash "$HOOK" >"$out" 2>"$err"
+  rc=$?
+  [ "$rc" -eq 2 ] && actual=deny
+  { [ -s "$out" ] || [ -s "$err" ]; } && reason_seen=yes
+  rm -f "$out" "$err"
+  if [ "$actual" != "$3" ]; then
+    ng "$(printf '%-34s want=%s got=%s(rc=%s)' "$1" "$3" "$actual" "$rc")"
+  elif [ "$3" = deny ] && [ "$reason_seen" = no ]; then
+    ng "$(printf '%-34s deny 但無理由輸出' "$1")"
+  else
+    ok "$(printf '%-34s %s' "$1" "$3")"
+  fi
+}
+badjson_probe "真 jq，JSON 截斷"    '{"tool_input":{"file_path":"/repo/.env"'  deny
+badjson_probe "真 jq，非 JSON 文字"  'not json at all'                          deny
+# 反向：合法 JSON 但沒有路徑欄位 → 必須放行，否則就是過度收緊。
+# S5 指出第一版沒有這條，導致「把守護改成對任何非空 stdin 都擋」仍能全綠。
+badjson_probe "真 jq，合法但無路徑欄位" '{"tool_input":{"prompt":"hi"}}'        allow
+# 不該誤擋：沒有 stdin 代表根本不是 hook 呼叫；env fallback 有值時仍能正確判定。
+nojq_probe "無 jq，無 stdin"      ''                                           allow ""
+nojq_probe "無 jq，env 給一般檔"  '{}'  allow "CLAUDE_FILE_PATH=/repo/a.ts"
+nojq_probe "無 jq，env 給敏感檔"  '{}'  deny  "CLAUDE_FILE_PATH=/repo/.env"
+
+rm -rf "$NOJQ"
+
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，
 # 那是這支測試自己的 fail-open。稽核報告 Follow-up 3 記的就是這個形狀。
