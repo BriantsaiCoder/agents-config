@@ -152,5 +152,9 @@ Restore 任何一支都應用 `git mv attic/<name> skills/<name>`，恢復 lock 
 | Secret scan | staged、pre-commit、2 untracked candidate scans皆 exit 0 |
 | Independent S5 | Standards fixed-point PASS；Spec fixed-point PASS |
 | Active/archive set | 76/76 active symmetric difference empty；5/5 attic copies readable |
+| Live fast-forward | `main`：`6584d62 → 84f2ff3`，`--ff-only` |
+| Live bootstrap / doctor | source 76；Claude links 76 valid；兩者 exit 0 |
+| Live host resolver | Claude 22/22、Codex policy 12/12、Copilot 22/22；3 PASS、0 FAIL、1 Codex runtime `UNAVAILABLE` |
+| Live local CI | `bin/ci-local` exit 0；17 PASS、0 FAIL、4 expected SKIP |
 
-本 ledger 只記 candidate verification，不把尚未執行的 S6 live cutover 算 PASS；fast-forward live `main` 至 candidate 後必須重跑 CI、bootstrap/doctor 與 host resolver。任何 `UNAVAILABLE` 保留原狀，不算 PASS。
+S6 live cutover 已完成。Codex current CLI 沒有 local skill-list command，因此 runtime resolver 維持 `UNAVAILABLE`，不算 PASS；其餘適用 gates 均已通過。
