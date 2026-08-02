@@ -188,7 +188,9 @@ exit code 契約分三套，互不衝突：
 
 ---
 
-## Follow-up（本次稽核不實作）
+## Follow-up
+
+稽核當下一律不實作，後續逐項處理時在該項標記結果。
 
 1. **`tests/version-tripwire.sh` 的 `SCAN_DIR=skills` 讓 `hooks/`、`bin/`、`.github/`
    都不在版本絆線守備範圍。** 具體暴露：`pre-commit-agents.sh` 用
@@ -212,10 +214,25 @@ exit code 契約分三套，互不衝突：
 5. **git pre-commit 的 exit code 契約沒有明文。** 另兩套 PreToolUse 契約都寫在各自
    檔頭，只有這套靠 git 的通用約定。`hooks/pre-commit-agents.sh` 檔頭補一行即可。
 
-6. **CI 的 locale 未固定。** 承上「locale-dependent」一節：`ci.yml` 沒有設
-   `LANG`／`LC_ALL`，runner 預設值變動會改變這類缺陷會不會在 CI 發作。要嘛明確
-   釘一個 UTF-8 locale（讓 CI 與開發機一致），要嘛明確記載「CI 在 C locale，這類
-   缺陷靠語法守護不靠行為測試」。目前是沒有立場，最糟的一種。
+6. ~~**CI 的 locale 未固定。**~~ **已處理**：`ci.yml` 的 `verify` job 加上
+   `env: { LC_ALL: C.UTF-8, LANG: C.UTF-8 }`。
+
+   三個候選的實測行為：
+
+   | locale | 多位元組語意 | 排序 collation |
+   |---|---|---|
+   | `C` | 無（缺陷不重現）| `A B a b`（確定性）|
+   | `C.UTF-8` | 有（缺陷會重現）| `A B a b`（確定性）|
+   | `en_US.UTF-8` | 有（缺陷會重現）| `a A b B`（locale-specific）|
+
+   **第一版選了 `C`，被 S5 推翻。** 當時的理由是「與既有 per-command `LC_ALL=C`
+   前綴一致」，聽起來合理，但 review 指出那會讓 CI 對 `$var` 緊接非 ASCII 整類
+   缺陷失明——正是 PR #26 那個 hook fail-open 的成因。若 runner 預設本來就是
+   `C.UTF-8`（Ubuntu 常見值），釘 `C` 等於主動關掉既有的暴露度，不是解決不確定性。
+
+   `C.UTF-8` 同時拿到確定性排序與 UTF-8 語意，是唯一沒有取捨的選項。三種 baseline
+   下 `bin/ci-local` 都是 `TOTAL=23  RAN=19  PASS=19  FAIL=0  SKIPPED=4`，所以決策
+   依據是立場而非通過率。
 
 ## 探針去向
 
