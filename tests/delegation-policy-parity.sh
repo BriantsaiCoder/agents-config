@@ -51,10 +51,14 @@ NOASK_RE='不必先問|無須另問|MUST NOT 為此停下發問|不得為此停�
 # 判準是**受詞**不是動詞：不重跑探索過程、不重推導推理鏈 → 放行（那正是官方要省的成本）；
 # 不核對它宣稱的回報／結論 → 擋（那是 [INT-4] 的不變量）。
 #
-# 間距用 `.{0,40}`（位元組）而非 `[^。；]{0,24}`：否定字元類在 C locale 下逐位元組比對，
-# 而 `，`(EF BC 8C) 與 `；`(EF BC 9B)、`、`(E3 80 81) 與 `。`(E3 80 82) 共用前導位元組，
-# 於是「不重做其工作，回報結論」這種以 `，` 分隔的寫法會在逗號處斷掉而靜默漏抓。
-# noverify-en fixture 就是釘住這一點的 canary，勿改回否定字元類。
+# 間距用 `.{0,40}` 而非 `[^。；]{0,24}`：含多位元組字元的**否定字元類**判定隨 locale 改變。
+# 實測（第一版就是這樣寫的，本檔 canary 可重現）：對「不重做其工作，回報結論直接採用。」
+# 這種以 `，` 分隔的寫法，`[^。；]{0,24}` 在 `LC_ALL=C` 下**漏抓**、在 `en_US.UTF-8` 下正常。
+# 於是同一份設定在 CI 與本機會得到相反判定，而漏抓的那邊是靜默的。`.` 沒有這個問題，
+# 代價是失去句界限定。
+#
+# 量詞的計數單位同樣隨 locale 變（C 下位元組、UTF-8 下字元），所以 40 是浮動窗口而非固定
+# 寬度；兩種 locale 下現有 fixture 判定一致，由下方 canary 逐一釘住。勿改回否定字元類。
 NOVERIFY_RE='(不重做|不重驗|不再驗|不核對|不重新驗證|不必驗證|不重推導|[Nn]ever redo|[Dd]o not re-?derive).{0,40}(回報|結論|findings)'
 
 # 先問語彙——政策被改回「每次問人」的各種寫法，含英文與同義動詞。
@@ -130,6 +134,23 @@ selftest() {
   has_noverify "$scratch/noverify-narrowed.md" && ng '否定重驗：誤判收窄後的合格寫法' || ok '否定重驗：不誤判收窄後的合格寫法'
   printf 'S5 以外不另派 subagent 做 verification；已委派就不重跑其探索過程。\n' > "$scratch/noverify-scope.md"
   has_noverify "$scratch/noverify-scope.md" && ng '否定重驗：誤判 delegation 收斂本身' || ok '否定重驗：不誤判 delegation 收斂本身'
+
+  # locale 獨立性：量詞計數單位在 C 下是位元組、UTF-8 下是字元，而否定字元類的多位元組
+  # 陷阱只在 C 下現形。只驗一種 locale 會得到「本機綠 runner 紅」或反過來的假保證——
+  # 本 repo 已在 wc -w 上踩過同一課，tests/word-budget.sh 有對應的 locale canary。
+  utf8_loc=$(locale -a 2>/dev/null | grep -iE '^(C\.UTF-?8|en_US\.UTF-?8)$' | head -1)
+  if [ -n "$utf8_loc" ]; then
+    for loc in C "$utf8_loc"; do
+      ( LC_ALL="$loc"; export LC_ALL; has_noverify "$scratch/noverify-en.md" ) \
+        && ok "locale 獨立[$loc]：逗號分隔的否定重驗仍被抓到" \
+        || ng "locale 獨立[$loc]：漏抓逗號分隔（否定字元類陷阱回流）"
+      ( LC_ALL="$loc"; export LC_ALL; has_noverify "$scratch/noverify-narrowed.md" ) \
+        && ng "locale 獨立[$loc]：誤判收窄後的合格寫法" \
+        || ok "locale 獨立[$loc]：不誤判收窄後的合格寫法"
+    done
+  else
+    na 'locale 獨立：本環境無 UTF-8 locale，只涵蓋 C'
+  fi
 
   printf 'Delegation 依 [INT-4] 自主判定是否、何時及使用多少 subagent，不設固定數量或階段限制，符合即直接執行不必先問。\n' > "$scratch/good.md"
   has_autonomy "$scratch/good.md" && ok '正向語彙：合格寫法通過' || ng '正向語彙：合格寫法被誤判'
