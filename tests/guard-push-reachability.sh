@@ -68,9 +68,13 @@ check_guard() {  # $1=路徑 $2=標籤
     probe "$guard" "$tag" "$fmt" deny  "git push $FWL --all origin"
     # positive control：全 deny 不具鑑別力，必須證明它分得出來
     probe "$guard" "$tag" "$fmt" allow "git push origin feature"
-    probe "$guard" "$tag" "$fmt" allow "git push origin main"
     probe "$guard" "$tag" "$fmt" allow "git status"
     probe "$guard" "$tag" "$fmt" allow "git push $FWL origin feature"
+    # 原本這裡還有 allow "git push origin main"。[INT-10]（2026-08-03）起，全域設定 repo
+    # 內推 main 由 allow 轉 deny，而本檔的 cwd 就是 ${AGENTS}——本機落在該範圍內、CI 的
+    # $GITHUB_WORKSPACE 不在，同一個 case 在兩個環境有相反的正確答案，釘死任一值都會在
+    # 另一邊誤報。該形狀的雙向覆蓋改由 tests/int10-push-guard.sh 承接（範圍內 deny +
+    # 範圍外 allow，各自用固定 fixture），本檔專注 [T0-3] 的 deny 路徑可達性。
   done
 }
 

@@ -80,6 +80,16 @@ jobs:
       - name: guard 雙格式回歸
         run: GUARD="$GITHUB_WORKSPACE/hooks/guard-git-push.sh" bash tests/git-push-guard.sh
 
+      # [INT-10] 的 enforcement 半邊。prose 規則（PR #40）擋不住任何東西——[T0-9] 的觸發
+      # 是「merge 前」，直接 push main 沒有 merge 動作，該 gate 連同 bot review 被整條
+      # 繞過且不違反任何條文。2026-08-03 有五個全域設定 commit 這樣落地：CI 全綠、bot
+      # review 從未產生；第一個走 PR 的變更立刻被 Copilot 抓到一個真缺陷。
+      # fixture 覆寫 HOME 建假的 .agents/.claude repo，因為判定輸入是「cwd 屬於哪個
+      # repo」而 runner 沒有那些目錄——同 delegation-policy-parity 的 fixture 思路。
+      # 正反兩組互為極性守衛：永遠放行則「應擋」組全 FAIL，永遠拒絕則「應放行」組全 FAIL。
+      - name: INT-10 直接推 main 攔截回歸
+        run: GUARD="$GITHUB_WORKSPACE/hooks/guard-git-push.sh" bash tests/int10-push-guard.sh
+
       # lib-vendored.sh 是「可否原地編輯第三方 skill」的唯一機械判準。2026-07-25 它漏判
       # 6 個 vendored skill 中的 2 個，其中一個的漏判直接導致一次未察覺的 in-place edit。
       # false negative 才是危險方向：假 VND 只成本一次人工確認，假 "-" 授權改別人的 skill。

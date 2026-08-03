@@ -70,11 +70,62 @@ fi
 case "$CMD" in *git*push*) ;; *) exit 0 ;; esac
 CWD=$(printf '%s' "$INPUT" | "$JQ" -r '.cwd // empty' 2>/dev/null) || CWD=""
 
+# [INT-10] 的例外是「使用者當下明示直接推 main」。hook 看不到對話，所以要求把明示
+# 具體化成指令前綴 INT10_ACK=<原因>：它會留在 command 字串裡，事後可稽核。
+# 刻意不用環境變數——那不會出現在 payload，等於一個看不見的後門。
+# 與 [T0-3] 的差別：force push 無例外可言，本條有，所以逃生門是規則本身要求的。
+INT10_ACK=0
+case "$CMD" in *INT10_ACK=*) INT10_ACK=1 ;; esac
+
 check_target() {
   local target="${1##*:}"          # refspec 可能是 src:dst，取 dst
   target="${target#refs/heads/}"
   case "$target" in
     main|master) deny "[T0-3] 禁止 force push（含 --force-with-lease）到 main/master。" ;;
+  esac
+}
+
+# ── [INT-10] 全域設定 repo 必須走 PR 路徑 ─────────────────────────
+# 為什麼需要機械閘：[T0-9]（merge 前 MUST 綠 CI + 處理 bot review）的觸發是「merge 前」，
+# 而直接 push main 根本沒有 merge 動作，於是該 gate 連同它唯一的獨立視角（bot review）
+# 被整條繞過，且不違反任何條文。2026-08-03 有五個全域設定 commit 這樣落地：CI 全綠、
+# bot review 從未產生；隨後走 PR 的第一個變更（#40）就被 Copilot 抓到一個真缺陷。
+# [INT-10] 補了 prose 規則，本節是它的 enforcement。
+#
+# 範圍以 repo 為單位而非逐檔比對 diff：這四個 repo 整體就是全域設定，且 push 前算 diff
+# 會增加失敗面。過度攔截的代價是多開一個 PR，漏攔截的代價是防線再次被靜默繞過——
+# 依 fail-closed 選前者。
+int10_repo_root() {
+  local cwd="$1" gitdir
+  [ -n "$cwd" ] || return 1
+  # --git-common-dir 而非 --show-toplevel：worktree 的 toplevel 是 .worktrees/<branch>，
+  # 用它會讓 worktree 逃出範圍判定；common-dir 一律指回主 repo 的 .git。
+  gitdir=$(git -C "$cwd" rev-parse --git-common-dir 2>/dev/null) || return 1
+  [ -n "$gitdir" ] || return 1
+  case "$gitdir" in /*) ;; *) gitdir="$cwd/$gitdir" ;; esac
+  (cd "$gitdir/.." 2>/dev/null && pwd -P) || return 1
+}
+
+int10_in_scope() {
+  local root home
+  root=$(int10_repo_root "$1") || return 1
+  # $HOME 也要正規化：int10_repo_root 回的是 pwd -P 的 physical path，而 $HOME 可能含
+  # symlink（macOS 的 /var → /private/var 是最常見的一個）。兩邊不同基準時比對永遠不成立，
+  # 而失敗方向是靜默放行——這道閘會看起來還在，實際上什麼都沒擋。
+  home=$(cd "$HOME" 2>/dev/null && pwd -P) || home="$HOME"
+  case "$root" in
+    "$home/.agents"|"$home/.claude"|"$home/.codex"|"$home/.copilot") return 0 ;;
+  esac
+  return 1
+}
+
+int10_check() {
+  local target="${1##*:}"
+  target="${target#refs/heads/}"
+  case "$target" in
+    main|master)
+      deny "[INT-10] 全域設定 repo 不得直接 push 到 ${target}，必須走 PR 路徑：isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch。理由：[T0-9] 的觸發是「merge 前」，直接推 main 沒有 merge 動作，該 gate 連同 bot review 會被整條繞過。使用者當下明示要直接推時，在指令前加 INT10_ACK=<原因> 前綴，例外即成立且留下稽核痕跡。"
+      ;;
   esac
 }
 
@@ -106,6 +157,20 @@ check_seg() {
   done
   (( seen_push )) || return 0
   (( has_force )) && deny "[T0-3] 禁用非 lease force push（--force / -f / +refspec）。非保護分支請改用 --force-with-lease。"
+
+  # [INT-10] 判定必須在下面 has_lease 的早退之前——一般 push（無 force 無 lease）
+  # 正是本條要擋的主要形態，放在早退之後等於永遠不執行。
+  if (( ! INT10_ACK )) && int10_in_scope "${CWD:-.}"; then
+    if (( ${#args[@]} >= 2 )); then
+      for ((i = 1; i < ${#args[@]}; i++)); do int10_check "${args[i]}"; done
+    else
+      # 無明示 refspec：推的是當前分支。解析不出來時不擋——[T0-3] 那邊 fail-closed 是
+      # 因為 force push 破壞性不可逆，這裡最壞情況只是漏擋一次可回復的 push。
+      target=$(git -C "${CWD:-.}" symbolic-ref --short HEAD 2>/dev/null || true)
+      [ -n "$target" ] && int10_check "$target"
+    fi
+  fi
+
   (( has_lease )) || return 0
   (( broad_refset )) && deny "[T0-3] --force-with-lease 搭配 --all/--mirror 無法排除保護分支，已保守拒絕。"
   if (( ${#args[@]} >= 2 )); then
