@@ -268,6 +268,8 @@ sed -n '/^### Copilot$/,/^## References$/p' "$KERNEL" |
 
 rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
   fail 'grilling does not offer compact options with the recommendation first'
+rg -q 'Prefix every question with a progress header.*Question N of ~M.*running estimate.*Re-estimate M' "$GRILLING" ||
+  fail 'grilling does not show a re-estimated question progress header'
 rg -q 'By default, ask decision questions one at a time.*wait for feedback.*wait for explicit confirmation before acting' "$GRILLING" ||
   fail 'grilling does not preserve the default interactive HITL flow'
 rg -q 'explicitly authorizes.*answer every decision.*ask only when blocked' "$GRILLING" ||

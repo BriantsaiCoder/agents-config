@@ -7,6 +7,8 @@ Interview me relentlessly about every aspect of this until we reach a shared und
 
 For each decision question, provide 2–3 mutually exclusive options, put your recommended option first, and keep the choices compact enough to answer with a number or "accept recommendation."
 
+Prefix every question with a progress header of the form **Question N of ~M — \\<topic\\>**, where M is your running estimate of the total number of questions. Re-estimate M as you go; it's fine for it to drift as new branches of the design tree surface.
+
 By default, ask decision questions one at a time, wait for feedback before continuing, then summarize every decision and wait for explicit confirmation before acting.
 
 If the user explicitly authorizes you to answer every decision you can and ask only when blocked, enter delegated-decision mode: process decisions in dependency order, adopt your recommended option without pausing, and record each adopted decision. When the calling workflow requires live HITL feedback, keep the default interactive mode unless the user explicitly overrides that requirement.

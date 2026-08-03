@@ -24,7 +24,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
 | `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; tree SHA-256 `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21` | **Active** |
 | `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
-| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-03 — preserve the clarify trigger and default HITL flow while adding an opt-in mode where the selected model adopts defensible decisions and keeps action authorization separate; payload SHA-256 `9f41e42f35618319970a98093cba956a3970c9cd67de3c9b759d7c64314782b4` | **Active** |
+| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-04 — preserve the clarify trigger and default HITL flow, add re-estimated progress headers to every question, and retain the opt-in mode where the selected model adopts defensible decisions while keeping action authorization separate; payload SHA-256 `8c5045d76d995da124c08e7a4be8e83cb488ebe78a063cb86603e85314ae9948` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
@@ -457,7 +457,11 @@ the tree fingerprint.
 
 ## grilling
 
-**Decision (2026-08-03): keep the existing fork and widen opt-in defaults to delegated decision-making.**
+**Decision (2026-08-04): keep the existing fork and add visible progress estimates to every question.**
+
+Every question starts with `Question N of ~M — <topic>`, where `M` is a running estimate that may be
+revised as new decision-tree branches surface. The estimate communicates progress without changing
+the one-question-at-a-time flow.
 
 The default remains a live HITL exchange. The user may explicitly open a delegated, non-HITL branch
 where the selected model answers every decision it can and asks only when blocked. In that branch the
@@ -469,16 +473,16 @@ model can answer; scope expansion and implementation remain separately authorize
 
 The earlier 2026-08-02 description-only change added explicit under-specified/clarify routing so the
 byte-identical `clarify` skill could retire without losing one-at-a-time requirement interviews. It
-left the body unchanged; this 2026-08-03 decision is the later behavior fork. The global ambiguity
-gate alone was insufficient because an explicit "clarify this" request did not auto-invoke this skill
-in the RED canary.
+left the body unchanged; the 2026-08-03 delegated-decision change became the behavior fork, and this
+2026-08-04 progress-header rule extends it. The global ambiguity gate alone was insufficient because
+an explicit "clarify this" request did not auto-invoke this skill in the RED canary.
 
 ### Re-merge procedure (when upstream moves)
 
 1. Diff the new upstream `grilling/SKILL.md` against pinned commit
    `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
-2. Replace the pinned Matt set normally, then reapply the delegated-decision paragraphs and clarify
-   trigger only if upstream still lacks equivalent behavior.
+2. Replace the pinned Matt set normally, then reapply the progress-header rule,
+   delegated-decision paragraphs, and clarify trigger only if upstream still lacks equivalent behavior.
 3. Run `tests/matt-thin-workflow.sh`, `tests/vendored-detection.sh`, and the skill validator.
 4. Update the fork index's upstream commit; remove this record if upstream fully absorbs the behavior.
 
