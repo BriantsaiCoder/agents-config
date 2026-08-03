@@ -14,7 +14,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 
 - Gate 只用 `PASS`／`FAIL`／`SKIPPED`（附理由）／`UNAVAILABLE`（附 probe evidence）。
 - Evidence 必須是指令 exit code、輸出／產物 probe，或可引用的 user／session artifact。
-- Closeout 後若出現新 commit，S4–S6 全部失效並重跑。
+- Closeout 後若出現新 commit，S4 MUST 全跑（build／test／lint 不分檔案，回歸可能跨檔）；S5 只對**新 commit 觸及的檔案**重審，未觸及範圍沿用前次 findings 並註明所依據的 baseline SHA；ledger 只更新受影響 row。範圍以 `git diff --name-only <前次 closeout SHA>..HEAD` 判定，不由審查者裁量。CI 與 bot-review gate 依 `references/review-triage.md` 對 current HEAD 一律整份重查，不適用本條收斂。
 
 ## Always-on guards
 
