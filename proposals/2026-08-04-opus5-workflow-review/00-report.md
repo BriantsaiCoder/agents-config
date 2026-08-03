@@ -96,8 +96,11 @@ checklist 有三項要求加 prompt block：conciseness（第 1128 行）、Comm
 
 Preflight ledger（8 列）與 Closeout ledger（6 列）有 4 列逐欄重複，`references/ledgers.md:74` 自己已寫明這點並加了呈現層壓縮規則 —— 壓的是版面，語意仍要各評估一次。官方「delete your verification scaffolding」（第 1063 行）指的是 harness 層沿用自舊模型的重複驗證步驟，形式上命中；但這是使用者刻意設計的治理結構，且 `[S5-3]` 的條文理由本身就承認 Self-simplification 是無獨立視角的自檢、已把真正的檢查外包給 review agent。刪 ledger 列超出「review 是否需要調教」的範圍，列為觀察，等指示。
 
-## 建議動作
+## 處置狀態（2026-08-04 當日）
 
-1. 回答第 1 項的待答問題（`xhigh` 是量測選的還是沿用的）。若需 sweep，開 PR 改 `settings.json` 並附量測數據。
-2. 第 2 項開一個 PR：補裁決鏈術語 + 收窄 `CLAUDE.md` 的 delegation 收斂句。兩者都屬 `[INT-10]` 範圍，走 PR 路徑。
-3. 第 3 項不需動作，本報告即為紀錄，避免下次審查重新提案。
+1. **`effortLevel: "xhigh"` — 結案，無動作。** 使用者答覆：是在 Opus 5 上量測後選定的，非從 Opus 4.7 沿用。註記寫進 memory `ultracode-arming-and-effort-pin` 而非 `settings.json`——該檔由 `repo-integrity.sh` 用 `jq` 解析，加註解會讓整份設定被靜默視為不存在。
+2. **Delegation 對撞 — 部分處理。**
+   - 已做：收窄 `~/.claude/CLAUDE.md` 的收斂句（dotclaude PR #8），並補機械守衛 `has_noverify`（agents-config PR #48），RED 已證原句對既有四條 Claude 斷言完全不可見。
+   - **未做：裁決鏈補 shared kernel 術語（根因）。** 卡在 `~/.copilot/copilot-instructions.md` 僅剩 4B headroom（3595B／閘 `<3600B`，實際預算 4000B），而最短的術語插入需 9–16B。三個解法各有代價，需使用者裁決：(a) 在該檔釋放位元組（要動使用者自撰的 preferences 行）；(b) 把 3600 警戒線上調至仍低於 4000 的值（等於為了塞這次變更而放寬守衛）；(c) 只落 Claude+Codex 兩家（製造正被消除中的三家不對稱）。
+   - 附帶事實：收斂條文目前只有 Claude 有，`~/.codex/AGENTS.md:39` 與 `~/.copilot/copilot-instructions.md:31` 都只有基礎那一行，所以 `has_noverify` 對那兩家是空過。
+3. **三個 prompt block — 結案，明確不做。** 本報告即為紀錄，避免下次審查重新提案。
