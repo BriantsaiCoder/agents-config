@@ -30,8 +30,8 @@
 
 | 檔案性質 | 用途 | 怎麼驗 |
 |---|---|---|
-| **常駐注入檔**（如 `~/.claude/CLAUDE.md`、`core/tier0-safety.md`） | context 級載入驗證 | 問 AI 指紋值；檔案級驗證（symlink 存在、hash 相符）不足以證明「進了 context」——兩起事故皆是檔案層正常、context 層死透 |
-| **非注入的查閱型正本**（如 `~/.claude/core/tier1-workflow.md`、`tier2-style.md`——`~/.claude/tests/repo-integrity.sh` 機械斷言它們**不得**被 @-import） | byte-level drift sentinel：釘住條文本體不被改寫 | 測試裡 `grep -Fq '<!-- FP:… -->'`，例 `tests/three-host-global-config-ownership.sh` 對 `FP:STYLE-T2-2026Q3` 的斷言 |
+| **常駐注入檔**（如 `~/.claude/CLAUDE.md`、`~/.claude/core/tier0-safety.md`） | context 級載入驗證 | 問 AI 指紋值；檔案級驗證（symlink 存在、hash 相符）不足以證明「進了 context」——兩起事故皆是檔案層正常、context 層死透 |
+| **非注入的查閱型正本**（如 `~/.claude/core/tier1-workflow.md`、`~/.claude/core/tier2-style.md`——`~/.claude/tests/repo-integrity.sh` 機械斷言它們**不得**被 @-import） | byte-level drift sentinel：釘住條文本體不被改寫 | 測試裡 `grep -Fq '<!-- FP:… -->'`，例 `~/.agents/tests/three-host-global-config-ownership.sh` 對 `FP:STYLE-T2-2026Q3` 的斷言 |
 
 判準：**進 context 的問 AI，不進 context 的用 grep。** 兩者都合法，都要有對應的機械驗證。
 
@@ -72,7 +72,7 @@ zh-TW；術語照附錄 A 用詞對照表（建立／物件／佇列；禁「創
 
 `~/.claude/CLAUDE.md` 與三個 Claude-local core 檔合計 ≤20KB（量測：`cat ~/.claude/CLAUDE.md ~/.claude/core/tier{0,1,2}-*.md | wc -c`）。觸發：編輯 CLAUDE.md 或 Claude core。理由：2026-07-08 審計（F7）發現 CLAUDE.md 與 tier0-2 逐句重複 ~6KB——重複不只費 token，更製造 drift 面。CLAUDE.md 只放 Claude 專屬語意；與 tier 規則重疊者一律刪除改 rule-ID 引用。例外：無。驗證：量測式 ≤20480；`grep -c "原生（語言 / 框架" ~/.claude/CLAUDE.md` = 0（抽樣重複片語）。
 
-**這四個檔不是同一種東西，標題 2026-08-03 由「常駐面」改為「規則面」**：只有 `CLAUDE.md` 與 `tier0-safety.md` 真的常駐（前者由 host 載入、後者被 @-import）；`tier1-workflow.md` 與 `tier2-style.md` **不進 context**，`~/.claude/tests/repo-integrity.sh` 有機械斷言擋著它們被 @-import。四個仍合計同一份預算，因為本條防的是**條文重複造成的 drift 面**，而重複不分注入與否——但別把這個預算讀成「這四個檔都在吃常駐 token」。指紋用途的對應差異見規則 6。
+**這四個檔不是同一種東西，標題 2026-08-03 由「常駐面」改為「規則面」**：只有 `~/.claude/CLAUDE.md` 與 `~/.claude/core/tier0-safety.md` 真的常駐（前者由 host 載入、後者被 @-import）；`~/.claude/core/tier1-workflow.md` 與 `~/.claude/core/tier2-style.md` **不進 context**，`~/.claude/tests/repo-integrity.sh` 有機械斷言擋著它們被 @-import。四個仍合計同一份預算，因為本條防的是**條文重複造成的 drift 面**，而重複不分注入與否——但別把這個預算讀成「這四個檔都在吃常駐 token」。指紋用途的對應差異見規則 6。
 
 ## 13. 注入層加一刪一（≥90% 預算時生效）
 
