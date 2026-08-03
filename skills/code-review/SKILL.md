@@ -55,7 +55,7 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man** — a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest** — a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-Two more, not from Fowler — the house over-engineering baseline, mandatory in every reviewer prompt per `[S5-3]` in `~/.agents/skills/dev-workflow/SKILL.md`. Same two binding rules above apply (repo overrides; judgement call):
+Two more, not from Fowler — the house over-engineering baseline, mandatory in every reviewer prompt per `[S5-3]` in `../dev-workflow/SKILL.md` (host path: `~/.agents/skills/dev-workflow/SKILL.md`). Same two binding rules above apply (repo overrides; judgement call):
 
 - **Reinvented Stdlib** — 手刻標準庫或平台已提供的功能 → 指名該 API 取代。
 - **Redundant Dependency** — 為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。

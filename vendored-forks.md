@@ -29,7 +29,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
-| `code-review` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs and add the within-axis filter pass they defer to, per [S5-4]; same day, add the two house over-engineering baseline rules to the step-3 smell baseline, per [S5-3]; tree SHA-256 `df2212240f79ef9a17d8564c48071f25841d08c36feb5798f3c640bbaf1cfc39` | **Active** |
+| `code-review` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs and add the within-axis filter pass they defer to, per [S5-4]; same day, add the two house over-engineering baseline rules to the step-3 smell baseline, per [S5-3]; tree SHA-256 `35588c2ab47c07ff6ffcb2e8aecd90acd564cde8b2abf5769d666dd1b5ad6eee` | **Active** |
 
 <!-- fork-index:end -->
 
@@ -423,7 +423,7 @@ already pastes that baseline into the Standards sub-agent verbatim; one insertio
 duplication. Both binding rules of that baseline (repo overrides; always a judgement call) apply
 to them unchanged.
 
-Approved tree SHA-256: `df2212240f79ef9a17d8564c48071f25841d08c36feb5798f3c640bbaf1cfc39`.
+Approved tree SHA-256: `35588c2ab47c07ff6ffcb2e8aecd90acd564cde8b2abf5769d666dd1b5ad6eee`.
 Driving rules: `[S5-4]` and `[S5-3]` in `skills/dev-workflow/SKILL.md`.
 
 On upstream update, drop this fork if the new step-4 briefs carry no output cap and step 5 already

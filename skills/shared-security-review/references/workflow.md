@@ -90,18 +90,20 @@ Holistic pass:
 - Identify vulnerabilities only visible across files.
 - Check trust boundaries between services / modules.
 
-## Step 6 — Confidence Labelling
+## Step 6 — Verdict, Confidence & Severity
 
 For EACH finding — **record, do not delete**. Step 7 is the only place findings leave this
 review, so anything dropped here is unrecoverable downstream; a reviewer re-judging its own
 findings before reporting drops borderline-but-real ones. Same rationale as `[S5-4]` in
-`~/.agents/skills/dev-workflow/SKILL.md`.
+`../../dev-workflow/SKILL.md` (host path: `~/.agents/skills/dev-workflow/SKILL.md`).
 
 1. Re-read the code with fresh eyes.
 2. Ask: "Is this actually exploitable, or did I miss sanitization?" — record the answer as the
    confidence rating below; do not use it as a delete condition.
-3. Assign a **Disposition** — this replaces the old "discard" step, so a finding you now believe
-   is wrong still reaches the report, labelled:
+3. Assign a **Verdict** — this replaces the old "discard" step, so a finding you now believe
+   is wrong still reaches the report, labelled. (Named Verdict, not Disposition: `report-format.md`
+   already uses Disposition for the Changed-file Coverage Ledger's per-file column, whose values
+   are mapped / no attack surface / skipped — a different axis.)
    - `exploitable` — stands as written.
    - `mitigated-upstream` — framework / middleware already handles it. Name the mitigation.
    - `not-exploitable` — you re-read and it does not hold (sanitization was present, path
@@ -111,8 +113,8 @@ findings before reporting drops borderline-but-real ones. Same rationale as `[S5
    definition; do not restate or re-scale it here.
 5. Assign final severity: CRITICAL / HIGH / MEDIUM / LOW / INFO.
 
-Report every finding in Step 7 with all three labels attached. Filtering, if wanted, is the
-caller's pass — not this one.
+Report every finding in Step 7 with Verdict, Confidence and severity attached. Filtering, if
+wanted, is the caller's pass — not this one.
 
 ## Step 7 — Generate Report
 

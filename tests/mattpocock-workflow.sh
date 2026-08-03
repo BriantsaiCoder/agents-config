@@ -170,15 +170,19 @@ has "reviewer template carries the complete-report contract" '全部回報、下
 # 注意力都在 S5-4，沒有守衛擋。規則沒有機械守衛就會在下一次編輯再漏一次。
 # host-local review agent（~/.claude/agents/*.md、~/.codex/agents/*.toml）的同名注入由各
 # host repo 的自檢負責，跨 repo 不可斷言。
-has "reviewer template carries the Reinvented Stdlib baseline" 'Reinvented Stdlib.*手刻標準庫或平台已提供的功能' skills/dev-workflow/references/reviewer-template.md
-has "reviewer template carries the Redundant Dependency baseline" 'Redundant Dependency.*為平台／既有模組已有的能力新增依賴' skills/dev-workflow/references/reviewer-template.md
+# 比對兩條「全文」含 `→` 之後的動作句：只比對前半（「手刻標準庫或平台已提供的功能」）時，
+# 把動作句裁掉仍會 PASS——守衛會再次 fail-open，且與 [S5-3] 驗證條款的「全文」不符。
+has "reviewer template carries the Reinvented Stdlib baseline" 'Reinvented Stdlib.*手刻標準庫或平台已提供的功能 → 指名該 API 取代。' skills/dev-workflow/references/reviewer-template.md
+has "reviewer template carries the Redundant Dependency baseline" 'Redundant Dependency.*為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。' skills/dev-workflow/references/reviewer-template.md
+has "code-review Standards baseline carries Reinvented Stdlib" 'Reinvented Stdlib.*手刻標準庫或平台已提供的功能 → 指名該 API 取代。' skills/code-review/SKILL.md
+has "code-review Standards baseline carries Redundant Dependency" 'Redundant Dependency.*為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。' skills/code-review/SKILL.md
 # A2（2026-08-03）：shared-security-review Step 6 原本叫同一個 agent 在回報前 discard 自己的
 # finding，與 [S5-4] 的 recall 論證相同——但 [S5-4] 的覆寫清單沒有列這個檔、觸發條件也是
 # 「組裝 prompt」而非同 agent 自我過濾，所以管不到它。改寫成 Confidence + Disposition 標記後
 # 若無守衛，下一次編輯會再退回 discard——這正是本批要修的根因，不能自己重蹈。
 has "security review Step 6 records instead of discarding" 'record, do not delete' skills/shared-security-review/references/workflow.md
 has "security review keeps a false-positive disposition" 'not-exploitable' skills/shared-security-review/references/workflow.md
-has "security report card carries a Disposition slot" 'Disposition: exploitable / mitigated-upstream / not-exploitable' skills/shared-security-review/references/report-format.md
+has "security report card carries a Verdict slot" 'Verdict: exploitable / mitigated-upstream / not-exploitable' skills/shared-security-review/references/report-format.md
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
 has "skill changes require invocation canaries" 'Skill change.*frontmatter.*relative references.*positive/negative.*trigger canary' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' skills/dev-workflow/SKILL.md

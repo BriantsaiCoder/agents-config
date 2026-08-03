@@ -53,7 +53,7 @@ For EACH finding, use this card format:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [SEVERITY EMOJI] [SEVERITY] — [VULNERABILITY TYPE]
 Confidence: HIGH / MEDIUM / LOW
-Disposition: exploitable / mitigated-upstream / not-exploitable
+Verdict: exploitable / mitigated-upstream / not-exploitable
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📍 Location:  src/routes/users.js, Line 47
@@ -209,15 +209,18 @@ Apply to every finding:
 | **MEDIUM** | Vulnerability likely exists but depends on runtime context, config, or call path the agent couldn't fully trace. |
 | **LOW** | Suspicious pattern detected but could be a false positive. Flag for human review. |
 
-Confidence is how sure you are; **Disposition** is what you concluded. They are independent axes —
+Confidence is how sure you are; **Verdict** is what you concluded. They are independent axes —
 a HIGH-confidence reading can still land on `not-exploitable` once you spot the sanitization.
 
-## Disposition Guide
+## Verdict Guide
 
 Set on every finding at `workflow.md` Step 6. Nothing is deleted at that step, so a finding you
 decided against still appears here, labelled.
 
-| Disposition | When to Use |
+Not to be confused with the **Disposition** column of the Changed-file Coverage Ledger above —
+that one is per changed FILE (mapped / no attack surface / skipped), this one is per FINDING.
+
+| Verdict | When to Use |
 |------------|-------------|
 | **exploitable** | Stands as written. The Risk section describes a reachable attack. |
 | **mitigated-upstream** | Real pattern, but framework / middleware / a gateway already blocks it. Name the mitigation — the reader needs it to know the finding stays closed. |
