@@ -42,6 +42,22 @@ PR 合併後用 `--merged` 而不是 `gh pr merge --delete-branch`：後者在 w
 
 每台機器先執行一次 `bash hooks/install-hooks.sh`。`post-checkout` 只在 live checkout 離開 `main` 時警告 shared-skills drift；linked worktree 內保持安靜。
 
+`~/.agents` 與三個 host global-config repo 的 `[INT-10]` safety rail 另以明示模式安裝：
+
+```sh
+bash hooks/install-hooks.sh --global-pre-push
+```
+
+安裝與升級只接受已同步 `origin/main` 的部署檔；installer 與 hook 的實際 bytes 都必須等於 `HEAD`。
+
+`pre-push` 只檢查 Git 已解析的 remote ref，任一目標為 `refs/heads/main` 或 `refs/heads/master` 即拒絕整批 push。這是 client-side safety rail，不是不可繞過的 security boundary：未安裝時不生效，`--no-verify` 或改寫 `core.hooksPath` 可略過；Git 2.55.0 實測 `--mirror` 的隱式刪除可能不出現在 hook stdin。使用者當下明示直接 push 才可使用 bypass。
+
+Installer 以 sidecar hash 辨識先前管理的版本，因此可安全升級或 rollback；內容與 managed hash 都不符的既有 hook 一律拒絕覆寫或刪除。Rollback 會移除原 default hooks 目錄中的 managed hook，即使之後另設 `core.hooksPath`：
+
+```sh
+bash hooks/install-hooks.sh --remove-global-pre-push
+```
+
 ## Verification
 
 ```sh

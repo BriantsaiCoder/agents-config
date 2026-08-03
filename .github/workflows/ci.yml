@@ -80,6 +80,10 @@ jobs:
       - name: guard 雙格式回歸
         run: GUARD="$GITHUB_WORKSPACE/hooks/guard-git-push.sh" bash tests/git-push-guard.sh
 
+      # [INT-10] 以 Git 已解析的 remote ref 判定；另驗四 repo 安裝與 rollback（2026-08-04）。
+      - name: INT-10 Git pre-push safety rail
+        run: bash tests/pre-push-global-config.sh
+
       # lib-vendored.sh 是「可否原地編輯第三方 skill」的唯一機械判準。2026-07-25 它漏判
       # 6 個 vendored skill 中的 2 個，其中一個的漏判直接導致一次未察覺的 in-place edit。
       # false negative 才是危險方向：假 VND 只成本一次人工確認，假 "-" 授權改別人的 skill。
