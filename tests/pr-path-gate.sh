@@ -13,10 +13,8 @@
 # CI 全綠，bot review 從未產生。[INT-6] 那條 MUST NOT 管不到，因為它綁在「使用者顯式
 # invoke implement」這個觸發條件上。
 #
-# 本測試守的是規則文字本身不被弱化，**不是** enforcement。真正的機械攔截要落在
-# guard-git-push（三份實體複本）——尚未實作，這也是為什麼 [INT-10] 條文裡明寫
-# 「機械攔截尚未實作，勿以本條存在推論已有 enforcement」，且下方有一條斷言專門守著
-# 那句話：過度承諾比沒有規則更危險，會讓人以為有防線而放心直接推。
+# 本測試守的是規則文字本身不被弱化，**不是** enforcement。Git-native pre-push 是
+# client-side safety rail；條文必須明列未安裝、--no-verify 與 --mirror 隱式刪除的 ceiling。
 #
 # --selftest 對 fixture 驗兩個方向都真的會觸發。沒有它，反向斷言可以整段不執行而仍然回綠。
 set -uo pipefail
@@ -35,7 +33,7 @@ PATH_STEPS='isolated branch.*Ready PR.*bot-review gate.*squash merge.*刪 branch
 PROHIBITION='MUST NOT 直接 push'                                       # 禁令本體
 SCOPE='CLAUDE\.md|AGENTS\.md|copilot-instructions\.md|tier0|hooks|CI workflow'  # 適用範圍
 ESCAPE='使用者當下明示'                                                # 逃生門（無它則無法被覆寫）
-HONESTY='機械攔截尚未實作'                                             # 不得升級為 enforcement 宣稱
+HONESTY='pre-push.*未安裝.*沒有機械 enforcement.*--no-verify.*--mirror' # 不得升級為完整 enforcement 宣稱
 
 check_kernel() {
   local file="$1" label="${2:-kernel}"
@@ -56,7 +54,7 @@ check_kernel() {
   printf '%s' "$line" | grep -Eq "$PROHIBITION" || miss="${miss} 禁令(MUST-NOT-直接-push)"
   printf '%s' "$line" | grep -Eq "$SCOPE"       || miss="${miss} 適用範圍"
   printf '%s' "$line" | grep -Eq "$ESCAPE"      || miss="${miss} 例外條款"
-  printf '%s' "$line" | grep -Eq "$HONESTY"     || miss="${miss} enforcement-未實作標註"
+  printf '%s' "$line" | grep -Eq "$HONESTY"     || miss="${miss} client-side-ceiling"
 
   if [ -n "$miss" ]; then
     ng "${label} [INT-10] 規範片段缺失:${miss}"
@@ -79,7 +77,7 @@ selftest() {
   cat > "${scratch}/good.md" <<'FIX'
 ## Always-on guards
 
-- [INT-10] 全域設定與 security config 的變更 MUST 走 PR 路徑：isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push 到 main／master。範圍：三 host 入口檔（`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`）、tier0、kernel 與其 references、hooks 與 permission settings、CI workflow。目前只有 prose 層與靜態斷言；機械攔截尚未實作。例外：使用者當下明示直接推 main。
+- [INT-10] 全域設定與 security config 的變更 MUST 走 PR 路徑：isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push 到 main／master。範圍：三 host 入口檔（`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`）、tier0、kernel 與其 references、hooks 與 permission settings、CI workflow。Git-native pre-push 是 client-side safety rail；未安裝時沒有機械 enforcement，--no-verify 可略過，且不保證 --mirror 的隱式刪除。例外：使用者當下明示直接推 main。
 
 ## S6 CLOSEOUT
 
@@ -90,7 +88,7 @@ FIX
 
   sed 's/ → bot-review gate//'                         "${scratch}/good.md" > "${scratch}/no-botgate.md"
   sed 's/；MUST NOT 直接 push 到 main／master//'        "${scratch}/good.md" > "${scratch}/no-prohibition.md"
-  sed 's/機械攔截尚未實作/機械攔截已由 hook 強制/'      "${scratch}/good.md" > "${scratch}/overclaim.md"
+  sed 's/未安裝時沒有機械 enforcement/已完整強制/'       "${scratch}/good.md" > "${scratch}/overclaim.md"
   sed 's/例外：使用者當下明示直接推 main。//'           "${scratch}/good.md" > "${scratch}/no-escape.md"
   grep -v '^- \[INT-10\]'                              "${scratch}/good.md" > "${scratch}/no-rule.md"
   sed 's/- 路徑選擇依 \[INT-10\]。/- 路徑選擇自行判斷。/' "${scratch}/good.md" > "${scratch}/no-s6-pointer.md"
@@ -109,7 +107,7 @@ FIX
   probe "${scratch}/good.md"           pass "完整 [INT-10]"
   probe "${scratch}/no-botgate.md"     fail "路徑掉了 bot-review gate（[INT-10] 存在的理由）"
   probe "${scratch}/no-prohibition.md" fail "禁令被拿掉"
-  probe "${scratch}/overclaim.md"      fail "把未實作的攔截講成已強制"
+  probe "${scratch}/overclaim.md"      fail "把 client-side safety rail 講成完整強制"
   probe "${scratch}/no-escape.md"      fail "例外條款被拿掉"
   probe "${scratch}/no-rule.md"        fail "[INT-10] 整條消失"
   probe "${scratch}/no-s6-pointer.md"  fail "S6 失去指標"
