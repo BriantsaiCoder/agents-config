@@ -90,15 +90,29 @@ Holistic pass:
 - Identify vulnerabilities only visible across files.
 - Check trust boundaries between services / modules.
 
-## Step 6 — Self-Verification
+## Step 6 — Confidence Labelling
 
-For EACH finding:
+For EACH finding — **record, do not delete**. Step 7 is the only place findings leave this
+review, so anything dropped here is unrecoverable downstream; a reviewer re-judging its own
+findings before reporting drops borderline-but-real ones. Same rationale as `[S5-4]` in
+`~/.agents/skills/dev-workflow/SKILL.md`.
 
 1. Re-read the code with fresh eyes.
-2. Ask: "Is this actually exploitable, or did I miss sanitization?"
-3. Check if framework / middleware already handles this upstream.
-4. Downgrade or discard non-genuine findings.
+2. Ask: "Is this actually exploitable, or did I miss sanitization?" — record the answer as the
+   confidence rating below; do not use it as a delete condition.
+3. Assign a **Disposition** — this replaces the old "discard" step, so a finding you now believe
+   is wrong still reaches the report, labelled:
+   - `exploitable` — stands as written.
+   - `mitigated-upstream` — framework / middleware already handles it. Name the mitigation.
+   - `not-exploitable` — you re-read and it does not hold (sanitization was present, path
+     unreachable). Say what you missed the first time. This is the slot for a false positive;
+     do not express it by lowering confidence, and do not delete the finding.
+4. Assign a **Confidence** per the Ratings Guide in `report-format.md` — that table is the single
+   definition; do not restate or re-scale it here.
 5. Assign final severity: CRITICAL / HIGH / MEDIUM / LOW / INFO.
+
+Report every finding in Step 7 with all three labels attached. Filtering, if wanted, is the
+caller's pass — not this one.
 
 ## Step 7 — Generate Report
 
