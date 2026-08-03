@@ -67,7 +67,7 @@
 **呈現粒度（六項語意一律不得省略，省的只有版面）：**
 
 - **展開完整六列表格**：中高風險、或任一項非 `PASS`、或不走 PR 路徑。
-- **PR 路徑且全 PASS**：`Self-simplification`、`Diff self-review`、`Review gate`、`Residual risks` 四列與 PR body 的 Preflight Ledger（第 1 節）同源，此處以 `見 PR body #<n>` 帶過即可；`Relevant verification` 與 `PR / CI / review status` 兩列 MUST 逐項展開——只有這兩列帶著 Preflight 當時還不存在的資訊（實際跑了什麼、CI 與 bot review 的最終狀態）。
+- **PR 路徑且全 PASS**：`Self-simplification`、`Diff self-review`、`Review gate`、`Residual risks` 四列與 PR body 的 Preflight Ledger（第 1 節）同源，此處以 `見 PR body 的 Preflight Ledger` 帶過即可（用固定段落名，不用 `#` 編號佔位符——那在 GitHub 語境會被讀成 issue／PR 編號，也容易被原樣輸出）；`Relevant verification` 與 `PR / CI / review status` 兩列 MUST 逐項展開——只有這兩列帶著 Preflight 當時還不存在的資訊（實際跑了什麼、CI 與 bot review 的最終狀態）。
 - **低風險、單檔、不進 PR 且全 PASS**：可壓成單行，六項次序不變，例：
   `Closeout: simplification／self-review／verification／review／PR-status／risks — PASS，dotnet test exit 0 (398 passed)，無殘留風險`
 

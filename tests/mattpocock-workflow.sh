@@ -183,16 +183,20 @@ has "code-review Standards baseline carries Redundant Dependency" 'Redundant Dep
 # 註解的 commit 也會強制整份 Standards+Spec 重審 + 全量 build/test/lint。收斂為 S4 全跑、
 # S5 只審新 commit 觸及的檔案。三條斷言分別釘住：S4 不被收斂、S5 範圍由 git diff 機械判定
 # （不是審查者裁量）、CI/bot gate 不適用本收斂。缺任一條，收斂都會變成漏洞而非優化。
-has "closeout rerun keeps S4 unscoped" 'Closeout 後若出現新 commit，S4 MUST 全跑' skills/dev-workflow/SKILL.md
-has "closeout rerun scopes S5 by changed files" 'S5 只對\*\*新 commit 觸及的檔案\*\*重審.*baseline SHA' skills/dev-workflow/SKILL.md
+# pattern 內的 `.` 一律轉義：ERE 的 `.` 匹配任意字元，`review-triage.md` 未轉義時
+# 檔名被改成 review-triageXmd 仍會綠（fail-open），守衛失去精準度。
+has "closeout rerun keeps S4 unscoped" '\*\*S4 MUST 全跑\*\*' skills/dev-workflow/SKILL.md
+has "closeout rerun scopes S5 by changed files" '\*\*S5 只對新 commit 觸及的檔案重審\*\*' skills/dev-workflow/SKILL.md
+has "closeout rerun still emits the full ledger" '\*\*S6 MUST 重跑並重出完整 Closeout Ledger\*\*.*六列一列不少.*baseline SHA' skills/dev-workflow/SKILL.md
 has "closeout scope is mechanical not discretionary" 'git diff --name-only.*不由審查者裁量' skills/dev-workflow/SKILL.md
-has "closeout scoping does not relax the CI/bot gate" 'CI 與 bot-review gate 依 `references/review-triage.md`.*不適用本條收斂' skills/dev-workflow/SKILL.md
+has "closeout scoping does not relax the CI/bot gate" 'CI 與 bot-review gate 依 `references/review-triage\.md`.*不適用本條收斂' skills/dev-workflow/SKILL.md
 
 # B2 Closeout Ledger：六列有四列與 Preflight Ledger 逐欄重複，PR 路徑上讀者已在 PR body
 # 看過。壓縮的是版面不是評估——這條斷言釘住「六項語意不得省略」，否則下一次會被讀成
 # 「PR 路徑可以少評估四項」。
 has "closeout ledger keeps all six rows semantically" '六項語意一律不得省略' skills/dev-workflow/references/ledgers.md
 has "closeout ledger expands the two Preflight-absent rows" 'Relevant verification.*PR / CI / review status.*MUST 逐項展開' skills/dev-workflow/references/ledgers.md
+has "closeout ledger cites a stable section not a placeholder" '見 PR body 的 Preflight Ledger' skills/dev-workflow/references/ledgers.md
 
 # A2（2026-08-03）：shared-security-review Step 6 原本叫同一個 agent 在回報前 discard 自己的
 # finding，與 [S5-4] 的 recall 論證相同——但 [S5-4] 的覆寫清單沒有列這個檔、觸發條件也是
