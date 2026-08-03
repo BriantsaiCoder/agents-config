@@ -212,6 +212,29 @@ actual="$(grep -c '^## [0-9]' "$AGENTS/CONVENTIONS.md")"
   ok "CONVENTIONS count $claimed" ||
   ng "CONVENTIONS claimed ${claimed:-none}, actual $actual"
 
+# 規則 6 的 FP 用途區分（2026-08-03）。原文只寫「每個常駐注入檔…用途：context 級載入
+# 驗證」，讀起來像「有 FP ⇒ 該檔會被注入」；同日稽核據此把 tier1／tier2 帶 FP 卻不注入
+# 判成 doc-rot，但那是第二種用途（非注入正本的 byte-level drift sentinel）且已有 grep
+# 斷言守著。普世宣稱本身才是 rot 來源，所以修的是條文不是檔頭——這兩條擋它被改回去。
+if grep -Fq 'byte-level drift sentinel' "$AGENTS/CONVENTIONS.md"; then
+  ok "CONVENTIONS 規則 6 保留 FP 的第二種用途"
+else
+  ng "CONVENTIONS 規則 6 的 FP 用途區分被移除"
+fi
+if grep -Fq '進 context 的問 AI，不進 context 的用 grep' "$AGENTS/CONVENTIONS.md"; then
+  ok "CONVENTIONS 規則 6 保留 FP 驗證方式判準"
+else
+  ng "CONVENTIONS 規則 6 的 FP 驗證判準被移除"
+fi
+
+# 規則 12 標題不得再叫「常駐面」：四個檔裡 tier1／tier2 不進 context，
+# ~/.claude/tests/repo-integrity.sh 有斷言擋著它們被 @-import。
+if grep -q '^## 12\..*常駐面' "$AGENTS/CONVENTIONS.md"; then
+  ng "CONVENTIONS 規則 12 標題退回「常駐面」（tier1／tier2 並不常駐）"
+else
+  ok "CONVENTIONS 規則 12 標題未誤稱常駐面"
+fi
+
 if git -C "$HOME/.agents" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   live_branch="$(git -C "$HOME/.agents" branch --show-current 2>/dev/null || true)"
   [ "$live_branch" = main ] &&

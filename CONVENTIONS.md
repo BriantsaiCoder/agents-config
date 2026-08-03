@@ -24,7 +24,18 @@
 
 ## 6. Fingerprint codeword
 
-每個常駐注入檔含恰一句唯一指紋，格式 `FP:<檔名代號>-<年季>`，例 `FP:AGENTS-T0-2026Q3`。用途：context 級載入驗證。檔案級驗證（symlink 存在、hash 相符）不足以證明「進了 context」——兩起事故皆是檔案層正常、context 層死透。
+每個常駐注入檔含恰一句唯一指紋，格式 `FP:<檔名代號>-<年季>`，例 `FP:AGENTS-T0-2026Q3`。
+
+**指紋有兩種用途，看該檔是否進 context 而定：**
+
+| 檔案性質 | 用途 | 怎麼驗 |
+|---|---|---|
+| **常駐注入檔**（如 `~/.claude/CLAUDE.md`、`core/tier0-safety.md`） | context 級載入驗證 | 問 AI 指紋值；檔案級驗證（symlink 存在、hash 相符）不足以證明「進了 context」——兩起事故皆是檔案層正常、context 層死透 |
+| **非注入的查閱型正本**（如 `~/.claude/core/tier1-workflow.md`、`tier2-style.md`——`~/.claude/tests/repo-integrity.sh` 機械斷言它們**不得**被 @-import） | byte-level drift sentinel：釘住條文本體不被改寫 | 測試裡 `grep -Fq '<!-- FP:… -->'`，例 `tests/three-host-global-config-ownership.sh` 對 `FP:STYLE-T2-2026Q3` 的斷言 |
+
+判準：**進 context 的問 AI，不進 context 的用 grep。** 兩者都合法，都要有對應的機械驗證。
+
+2026-08-03 補這張表，因為原文只寫「每個常駐注入檔…用途：context 級載入驗證」，讀起來像是「有 FP ⇒ 該檔會被注入」。同日的稽核據此把 tier1／tier2 帶 FP 卻不注入判成 doc-rot，但那兩個檔的 FP 其實是第二種用途且已有 grep 斷言守著——**普世宣稱本身才是 rot 的來源**。
 
 ## 7. 名稱引用必過 lint
 
@@ -57,9 +68,11 @@ zh-TW；術語照附錄 A 用詞對照表（建立／物件／佇列；禁「創
 
 版控狀態的差異不是疏漏而是分工的一部分：`attic/` 要能被未來的人 `git log --follow` 追到來歷，所以進版控；`backups/` 的還原機制本來就是 git 本身，快照只是操作當下的方便，進版控只會讓 repo 膨脹。**推論：`backups/` 裡的東西一旦本機刪掉就沒了——凡是刪掉會後悔的，它就不屬於 `backups/`，屬於 `attic/`。** 驗證（在 `~/.agents` 跑，worktree 內看不到 gitignored 目錄）：`ls ~/.agents/backups/` 每一項都符合 `YYYYMMDD-` 前綴；`git -C ~/.agents ls-files backups/ | wc -l` = 0。
 
-## 12. Claude 常駐面預算（CLAUDE.md + core 合計）
+## 12. Claude 規則面預算（CLAUDE.md + core 合計）
 
 `~/.claude/CLAUDE.md` 與三個 Claude-local core 檔合計 ≤20KB（量測：`cat ~/.claude/CLAUDE.md ~/.claude/core/tier{0,1,2}-*.md | wc -c`）。觸發：編輯 CLAUDE.md 或 Claude core。理由：2026-07-08 審計（F7）發現 CLAUDE.md 與 tier0-2 逐句重複 ~6KB——重複不只費 token，更製造 drift 面。CLAUDE.md 只放 Claude 專屬語意；與 tier 規則重疊者一律刪除改 rule-ID 引用。例外：無。驗證：量測式 ≤20480；`grep -c "原生（語言 / 框架" ~/.claude/CLAUDE.md` = 0（抽樣重複片語）。
+
+**這四個檔不是同一種東西，標題 2026-08-03 由「常駐面」改為「規則面」**：只有 `CLAUDE.md` 與 `tier0-safety.md` 真的常駐（前者由 host 載入、後者被 @-import）；`tier1-workflow.md` 與 `tier2-style.md` **不進 context**，`~/.claude/tests/repo-integrity.sh` 有機械斷言擋著它們被 @-import。四個仍合計同一份預算，因為本條防的是**條文重複造成的 drift 面**，而重複不分注入與否——但別把這個預算讀成「這四個檔都在吃常駐 token」。指紋用途的對應差異見規則 6。
 
 ## 13. 注入層加一刪一（≥90% 預算時生效）
 
