@@ -38,11 +38,31 @@ FIXED_LIMIT_RE="((併發(數)?|累計 delegation|單一 S 階段|同一 S 階段
 AUTONOMY_RE='自主判定|自行判定'
 NOASK_RE='不必先問|無須另問|MUST NOT 為此停下發問|不得為此停下發問'
 
+# main-context 重驗不得被 host 入口檔否定。
+#
+# 為什麼存在（2026-08-04）：PR #7 依 Opus 5 官方指引在 ~/.claude/CLAUDE.md 加了「已委派就
+# 不重做、不重推導其回報結論」，與 [INT-4] 的無條件約束「main context MUST 重驗其回報」
+# 正面對撞——而 tier0 裁決鏈沒有任何術語能裁定 kernel 與 host delta 這一對，兩種讀法都
+# 成立。官方原文就是 "Never redo the subagent's work and do not re-derive its findings"，
+# 所以同類措辭還會再被加進來，靠人工逐條比對會漏（同一個 PR 抓到了與 [S5-3] 的衝突，
+# 沒抓到這個）。本機第一手證據支持保留重驗：帶佐證的 finding 被 apply agent 照抄，仍會
+# 把正確內容改壞。
+#
+# 判準是**受詞**不是動詞：不重跑探索過程、不重推導推理鏈 → 放行（那正是官方要省的成本）；
+# 不核對它宣稱的回報／結論 → 擋（那是 [INT-4] 的不變量）。
+#
+# 間距用 `.{0,40}`（位元組）而非 `[^。；]{0,24}`：否定字元類在 C locale 下逐位元組比對，
+# 而 `，`(EF BC 8C) 與 `；`(EF BC 9B)、`、`(E3 80 81) 與 `。`(E3 80 82) 共用前導位元組，
+# 於是「不重做其工作，回報結論」這種以 `，` 分隔的寫法會在逗號處斷掉而靜默漏抓。
+# noverify-en fixture 就是釘住這一點的 canary，勿改回否定字元類。
+NOVERIFY_RE='(不重做|不重驗|不再驗|不核對|不重新驗證|不必驗證|不重推導|[Nn]ever redo|[Dd]o not re-?derive).{0,40}(回報|結論|findings)'
+
 # 先問語彙——政策被改回「每次問人」的各種寫法，含英文與同義動詞。
 ASKFIRST_RE='先詢問|須經同意|需經同意|一律.*(先問|詢問)|未(經|獲).*(授權|同意).{0,60}(不得|不可|禁止|MUST NOT)|(不得|不可|禁止|MUST NOT).{0,60}(subagent|sub-agent|子代理|委派|delegate|開子|平行代理)|[Nn]ever use (sub-?agents?|delegation)|without.*(approval|permission)|ask.*(first|before).*(delegat|subagent)|禁用.*(subagent|子代理)|先取得.*(同意|授權)|必須.*(同意|授權).{0,20}才'
 
 has_fixed_limit() { grep -Eq "$FIXED_LIMIT_RE" "$1"; }
 has_autonomy()    { grep -Eq "$AUTONOMY_RE" "$1" && grep -Eq "$NOASK_RE" "$1"; }
+has_noverify()    { grep -Eq "$NOVERIFY_RE" "$1"; }
 
 # 先問語彙偵測逐行、且跳過同一行帶自主語彙的句子，避免「不必先問」被反向誤判。
 has_askfirst() {
@@ -98,6 +118,19 @@ selftest() {
     && ng 'SKIP 偵測：無 SKIP 的輸入被誤判' \
     || ok 'SKIP 偵測：無 SKIP 時不誤判'
 
+  # 否定 main-context 重驗：RED 用 PR #7 的原句，GREEN 用收窄後的句子。兩者只差受詞，
+  # 所以這組 fixture 同時釘住「會擋」與「不過度擋」——只留其中一邊等於沒有鑑別力。
+  printf '已委派就不重做、不重推導其回報結論。\n' > "$scratch/noverify-pr7.md"
+  printf '已委派就不重做其工作，回報結論直接採用。\n' > "$scratch/noverify-en.md"
+  printf 'If you delegate, commit to it. Do not re-derive its findings once it reports back.\n' > "$scratch/noverify-official.md"
+  has_noverify "$scratch/noverify-pr7.md" && ok '否定重驗：PR #7 原句被抓到' || ng '否定重驗：漏掉 PR #7 原句'
+  has_noverify "$scratch/noverify-en.md" && ok '否定重驗：不重做+回報結論被抓到' || ng '否定重驗：漏掉不重做+回報結論'
+  has_noverify "$scratch/noverify-official.md" && ok '否定重驗：官方英文原句被抓到' || ng '否定重驗：漏掉官方英文原句'
+  printf '已委派就不重跑其探索過程、不重推導其推理鏈，但其宣稱的結果仍依 [INT-4] 由 main context 以證據核對。\n' > "$scratch/noverify-narrowed.md"
+  has_noverify "$scratch/noverify-narrowed.md" && ng '否定重驗：誤判收窄後的合格寫法' || ok '否定重驗：不誤判收窄後的合格寫法'
+  printf 'S5 以外不另派 subagent 做 verification；已委派就不重跑其探索過程。\n' > "$scratch/noverify-scope.md"
+  has_noverify "$scratch/noverify-scope.md" && ng '否定重驗：誤判 delegation 收斂本身' || ok '否定重驗：不誤判 delegation 收斂本身'
+
   printf 'Delegation 依 [INT-4] 自主判定是否、何時及使用多少 subagent，不設固定數量或階段限制，符合即直接執行不必先問。\n' > "$scratch/good.md"
   has_autonomy "$scratch/good.md" && ok '正向語彙：合格寫法通過' || ng '正向語彙：合格寫法被誤判'
   has_askfirst "$scratch/good.md" && ng '正向語彙：合格寫法被誤判為先問' || ok '正向語彙：不誤判為先問'
@@ -126,6 +159,9 @@ check_host() {
   has_askfirst "$file" \
     && ng "$label 仍含先問／禁止 delegation 語彙" \
     || ok "$label 無先問語彙"
+  has_noverify "$file" \
+    && ng "$label 否定 main-context 重驗（撞 [INT-4] 無條件約束）" \
+    || ok "$label 未否定 main-context 重驗"
 }
 
 finish() {
