@@ -69,6 +69,16 @@ else
   fail=$((fail + 1))
 fi
 
+help_out=$(bash "$ROOT/hooks/install-hooks.sh" --help 2>&1)
+help_rc=$?
+if [ "$help_rc" -eq 0 ] && grep -Fq '安裝步驟，不是自動生效的' <<< "$help_out"; then
+  printf '  PASS  help  完整輸出開頭說明\n'
+  pass=$((pass + 1))
+else
+  printf '  FAIL  help  開頭說明遭截斷 (rc=%s) %s\n' "$help_rc" "${help_out:0:120}" >&2
+  fail=$((fail + 1))
+fi
+
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/prepushguard.XXXXXX")" || exit 1
 trap 'rm -rf "$scratch"' EXIT
 fixture="$scratch/source"
