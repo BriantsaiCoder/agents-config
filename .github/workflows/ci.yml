@@ -171,6 +171,19 @@ jobs:
       - name: tier0 規範內容三家等價
         run: bash tests/tier0-parity.sh --selftest
 
+      # [INT-10] 全域設定變更走 PR 路徑。整條路徑的每一步本來就有規範（[INT-6] branch、
+      # [T1-8] Ready PR、review-triage.md 的 bot gate、[T0-9] merge、ledgers.md:86 刪
+      # branch），缺的是入口守門員：沒有條文規定什麼變更必須走上去。[T0-9] 的觸發是
+      # 「merge 前」，而直接 push main 沒有 merge 動作，於是該 gate 連同它唯一的獨立
+      # 視角（bot review）可以被整條繞過且不違反任何條文——2026-08-03 有四個全域設定
+      # commit 就是這樣落地的：CI 全綠，bot review 從未產生。
+      # kernel 在本 repo 內，故 CI 除 selftest 外可直接驗真實條文。其中一條斷言專門擋
+      # 「把尚未實作的機械攔截講成已強制」——過度承諾比沒有規則更危險。
+      - name: INT-10 PR 路徑規則守衛
+        run: |
+          bash tests/pr-path-gate.sh --selftest
+          AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/pr-path-gate.sh
+
       # 上面三支各驗一半，中間有縫：git-push-guard 驗判定邏輯但只對一份檔案，
       # hook-parity 驗漂移偵測機制但用 fixture，hook-parity-check 驗三份內容一致——
       # 內容一致不等於「deny 路徑走得到」。PR #26 就是這個縫的形狀：protect-files.sh

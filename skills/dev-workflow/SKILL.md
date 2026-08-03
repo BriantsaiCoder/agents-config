@@ -28,6 +28,8 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 - [INT-8] 已列出且經核准的多項工作 MUST 逐項執行至清單完成，不得每項完成即停下等待確認；使用者以「全部做完」「依照建議執行」「自行處理」等 blanket authorization 核准時，只涵蓋該原句之前已明列的 scope／編號項目。只有命中 [T0-5] 模糊、[T0-8]／[INT-3] plan gate，或需使用者裁決的取捨才可中斷，中斷時只問該一項；後續新發現 MUST 只分列清單外 follow-up，未確認不得實作。觸發：單次任務含 ≥2 個已核准項目。例外：無。驗證：核准原句早於 scope 清單外的新發現 + 回覆為單次彙總（各項 status + evidence），非逐項往返。
 - [INT-9] Kernel route 到 [tdd](../tdd/SKILL.md) 時 MUST 以 [INT-2] 視既有 public behavior seam 為已確認，只有新增 seam 才需先向使用者確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。本條覆寫該 upstream skill 的逐 seam 重問與「refactor 不在 loop」敘述。觸發：任何由本 kernel 管理的 tdd cycle。例外：無。驗證：seam state + RED／GREEN／retest evidence。
 
+- [INT-10] 全域設定與 security config 的變更 MUST 走 PR 路徑：isolated branch → Ready PR → `references/review-triage.md` 的 bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push 到 main／master。範圍（命中任一即適用）：三 host 入口檔（`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`）、tier0／tier1／tier2、本 kernel 與其 `references/`、三 host 的 hooks 與 permission／sandbox settings、CI workflow。理由：[T0-9] 的觸發是「merge 前」，不開 PR 就沒有 merge 動作，該 gate 連同它唯一的獨立視角（bot review）會被整條繞過，且全程不違反任何既有條文——2026-08-03 有四個此類 commit 即如此落地，CI 全綠但 bot review 從未產生。本條補的是路徑選擇的觸發條件，[INT-1] 管的是時機、[S5-1] 管的是 review 深度，兩者都無法阻止「不開 PR」。目前只有 prose 層與靜態斷言（`tests/pr-path-gate.sh`）；push 時的機械攔截尚未實作，勿以本條存在推論已有 enforcement。觸發：diff 命中上列任一範圍。例外：使用者當下明示直接推 main。驗證：PR 編號 + `references/review-triage.md` 定義的四態 gate PASS 紀錄；例外時引用使用者原句。
+
 退役 ID 殼標記（CONVENTIONS 規則 3：ID 永不重編、永不回收，舊 transcript 與 commit message 可能仍引用）：`[R-1 DEPRECATED→INT-1 2026-07]`、`[R-2 DEPRECATED→INT-2 2026-07]`。兩者原定義於 `core/routing.md`，該檔 2026-07-30 退役至 `attic/core/`；條文語意由上方 [INT-1]／[INT-2] 逐項承接。
 
 ## S0 ROUTE
@@ -121,7 +123,7 @@ Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findi
 
 ## S6 CLOSEOUT
 
-- 只有 [INT-1] 成立才 commit／push／open PR／merge／final closeout；commit／PR 用 zh-TW Conventional Commits。
+- 只有 [INT-1] 成立才 commit／push／open PR／merge／final closeout；commit／PR 用 zh-TW Conventional Commits。全域設定／security config 的**路徑選擇**依 [INT-10]（[INT-1] 只管時機，不管走不走 PR）。
 - PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger；Ready PR 的 current-HEAD CI／bot-review gate 與唯一 command 由 `references/review-triage.md` 定義，該 gate PASS 才可 merge。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更同步 current architecture docs。
 - 「分析 conflict」不得授權 resolve、stage 或 commit；只有使用者明示「解決 conflict」時才可執行 `resolving-merge-conflicts`。
