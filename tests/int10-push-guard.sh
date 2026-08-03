@@ -111,6 +111,15 @@ for fmt in claude codex; do
         "GIT_WORK_TREE= 環境變數前綴"
   probe "$fmt" deny "$HOME/elsewhere" "git --work-tree=$HOME/.agents push origin main" \
         "--work-tree= 形式"
+  # git 依 token 順序處理 -C，所以後面的相對 --git-dir/--work-tree 是相對於 -C 後的
+  # 目錄。一律拿 payload cwd 當 base 會把 .git 解成 ${CWD}/.git，範圍判定落空
+  # （Copilot 於 PR #42 指出）。
+  probe "$fmt" deny "$HOME/elsewhere" "git -C $HOME/.agents --git-dir .git push origin main" \
+        "-C 之後的相對 --git-dir（base 應為 -C 目錄）"
+  probe "$fmt" deny "$HOME/elsewhere" "git -C $HOME/.agents --work-tree . push origin main" \
+        "-C 之後的相對 --work-tree"
+  probe "$fmt" deny "$HOME/elsewhere" "git -C ~/.claude --git-dir .git push origin master" \
+        "-C 波浪號加相對 --git-dir"
 
   # ── 應放行 ──
   probe "$fmt" allow "$HOME/.agents" "git push origin feat/x"  "全域 repo 推 feature branch"
