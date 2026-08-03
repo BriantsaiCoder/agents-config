@@ -1,0 +1,311 @@
+From b9bd22e1c7268b0f966f9d0756a15e9b95781a07 Mon Sep 17 00:00:00 2001
+From: BriantsaiCoder <38770575+BriantsaiCoder@users.noreply.github.com>
+Date: Thu, 30 Jul 2026 23:06:28 +0800
+Subject: [PATCH 1/2] =?UTF-8?q?chore(skills):=20=E9=80=A3=E7=B5=90=2026=20?=
+ =?UTF-8?q?=E5=80=8B=E5=85=B1=E4=BA=AB=20skills?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ skills/analyzing-financial-statements | 1 +
+ skills/appinsights-instrumentation    | 1 +
+ skills/aspnet-api-architect           | 1 +
+ skills/azure-resource-visualizer      | 1 +
+ skills/azure-role-selector            | 1 +
+ skills/azure-static-web-apps          | 1 +
+ skills/clarify                        | 1 +
+ skills/clean-code-dotnet              | 1 +
+ skills/connection-properties          | 1 +
+ skills/create-mcp-app                 | 1 +
+ skills/csharp-developer               | 1 +
+ skills/data-storytelling              | 1 +
+ skills/dotnet-core-expert             | 1 +
+ skills/dotnet-find-bugs               | 1 +
+ skills/dotnet-test                    | 1 +
+ skills/github-issues                  | 1 +
+ skills/make-skill-template            | 1 +
+ skills/microsoft-code-reference       | 1 +
+ skills/microsoft-docs                 | 1 +
+ skills/nuget-manager                  | 1 +
+ skills/qa-tester                      | 1 +
+ skills/video-downloader               | 1 +
+ skills/vscode-ext-commands            | 1 +
+ skills/vscode-ext-localization        | 1 +
+ skills/web-design-reviewer            | 1 +
+ skills/webapp-testing                 | 1 +
+ 26 files changed, 26 insertions(+)
+ create mode 120000 skills/analyzing-financial-statements
+ create mode 120000 skills/appinsights-instrumentation
+ create mode 120000 skills/aspnet-api-architect
+ create mode 120000 skills/azure-resource-visualizer
+ create mode 120000 skills/azure-role-selector
+ create mode 120000 skills/azure-static-web-apps
+ create mode 120000 skills/clarify
+ create mode 120000 skills/clean-code-dotnet
+ create mode 120000 skills/connection-properties
+ create mode 120000 skills/create-mcp-app
+ create mode 120000 skills/csharp-developer
+ create mode 120000 skills/data-storytelling
+ create mode 120000 skills/dotnet-core-expert
+ create mode 120000 skills/dotnet-find-bugs
+ create mode 120000 skills/dotnet-test
+ create mode 120000 skills/github-issues
+ create mode 120000 skills/make-skill-template
+ create mode 120000 skills/microsoft-code-reference
+ create mode 120000 skills/microsoft-docs
+ create mode 120000 skills/nuget-manager
+ create mode 120000 skills/qa-tester
+ create mode 120000 skills/video-downloader
+ create mode 120000 skills/vscode-ext-commands
+ create mode 120000 skills/vscode-ext-localization
+ create mode 120000 skills/web-design-reviewer
+ create mode 120000 skills/webapp-testing
+
+diff --git a/skills/analyzing-financial-statements b/skills/analyzing-financial-statements
+new file mode 120000
+index 0000000..09976f4
+--- /dev/null
++++ b/skills/analyzing-financial-statements
+@@ -0,0 +1 @@
++../../.agents/skills/analyzing-financial-statements
+\ No newline at end of file
+diff --git a/skills/appinsights-instrumentation b/skills/appinsights-instrumentation
+new file mode 120000
+index 0000000..49eca39
+--- /dev/null
++++ b/skills/appinsights-instrumentation
+@@ -0,0 +1 @@
++../../.agents/skills/appinsights-instrumentation
+\ No newline at end of file
+diff --git a/skills/aspnet-api-architect b/skills/aspnet-api-architect
+new file mode 120000
+index 0000000..8fa390b
+--- /dev/null
++++ b/skills/aspnet-api-architect
+@@ -0,0 +1 @@
++../../.agents/skills/aspnet-api-architect
+\ No newline at end of file
+diff --git a/skills/azure-resource-visualizer b/skills/azure-resource-visualizer
+new file mode 120000
+index 0000000..35cbdae
+--- /dev/null
++++ b/skills/azure-resource-visualizer
+@@ -0,0 +1 @@
++../../.agents/skills/azure-resource-visualizer
+\ No newline at end of file
+diff --git a/skills/azure-role-selector b/skills/azure-role-selector
+new file mode 120000
+index 0000000..0543608
+--- /dev/null
++++ b/skills/azure-role-selector
+@@ -0,0 +1 @@
++../../.agents/skills/azure-role-selector
+\ No newline at end of file
+diff --git a/skills/azure-static-web-apps b/skills/azure-static-web-apps
+new file mode 120000
+index 0000000..c2383e6
+--- /dev/null
++++ b/skills/azure-static-web-apps
+@@ -0,0 +1 @@
++../../.agents/skills/azure-static-web-apps
+\ No newline at end of file
+diff --git a/skills/clarify b/skills/clarify
+new file mode 120000
+index 0000000..c9b216d
+--- /dev/null
++++ b/skills/clarify
+@@ -0,0 +1 @@
++../../.agents/skills/clarify
+\ No newline at end of file
+diff --git a/skills/clean-code-dotnet b/skills/clean-code-dotnet
+new file mode 120000
+index 0000000..418b2a4
+--- /dev/null
++++ b/skills/clean-code-dotnet
+@@ -0,0 +1 @@
++../../.agents/skills/clean-code-dotnet
+\ No newline at end of file
+diff --git a/skills/connection-properties b/skills/connection-properties
+new file mode 120000
+index 0000000..46e870f
+--- /dev/null
++++ b/skills/connection-properties
+@@ -0,0 +1 @@
++../../.agents/skills/connection-properties
+\ No newline at end of file
+diff --git a/skills/create-mcp-app b/skills/create-mcp-app
+new file mode 120000
+index 0000000..d445b03
+--- /dev/null
++++ b/skills/create-mcp-app
+@@ -0,0 +1 @@
++../../.agents/skills/create-mcp-app
+\ No newline at end of file
+diff --git a/skills/csharp-developer b/skills/csharp-developer
+new file mode 120000
+index 0000000..72ffcff
+--- /dev/null
++++ b/skills/csharp-developer
+@@ -0,0 +1 @@
++../../.agents/skills/csharp-developer
+\ No newline at end of file
+diff --git a/skills/data-storytelling b/skills/data-storytelling
+new file mode 120000
+index 0000000..8849659
+--- /dev/null
++++ b/skills/data-storytelling
+@@ -0,0 +1 @@
++../../.agents/skills/data-storytelling
+\ No newline at end of file
+diff --git a/skills/dotnet-core-expert b/skills/dotnet-core-expert
+new file mode 120000
+index 0000000..fe8694e
+--- /dev/null
++++ b/skills/dotnet-core-expert
+@@ -0,0 +1 @@
++../../.agents/skills/dotnet-core-expert
+\ No newline at end of file
+diff --git a/skills/dotnet-find-bugs b/skills/dotnet-find-bugs
+new file mode 120000
+index 0000000..cfb3c22
+--- /dev/null
++++ b/skills/dotnet-find-bugs
+@@ -0,0 +1 @@
++../../.agents/skills/dotnet-find-bugs
+\ No newline at end of file
+diff --git a/skills/dotnet-test b/skills/dotnet-test
+new file mode 120000
+index 0000000..fc48341
+--- /dev/null
++++ b/skills/dotnet-test
+@@ -0,0 +1 @@
++../../.agents/skills/dotnet-test
+\ No newline at end of file
+diff --git a/skills/github-issues b/skills/github-issues
+new file mode 120000
+index 0000000..4749164
+--- /dev/null
++++ b/skills/github-issues
+@@ -0,0 +1 @@
++../../.agents/skills/github-issues
+\ No newline at end of file
+diff --git a/skills/make-skill-template b/skills/make-skill-template
+new file mode 120000
+index 0000000..29904f2
+--- /dev/null
++++ b/skills/make-skill-template
+@@ -0,0 +1 @@
++../../.agents/skills/make-skill-template
+\ No newline at end of file
+diff --git a/skills/microsoft-code-reference b/skills/microsoft-code-reference
+new file mode 120000
+index 0000000..718d7af
+--- /dev/null
++++ b/skills/microsoft-code-reference
+@@ -0,0 +1 @@
++../../.agents/skills/microsoft-code-reference
+\ No newline at end of file
+diff --git a/skills/microsoft-docs b/skills/microsoft-docs
+new file mode 120000
+index 0000000..0f3da12
+--- /dev/null
++++ b/skills/microsoft-docs
+@@ -0,0 +1 @@
++../../.agents/skills/microsoft-docs
+\ No newline at end of file
+diff --git a/skills/nuget-manager b/skills/nuget-manager
+new file mode 120000
+index 0000000..9ad177c
+--- /dev/null
++++ b/skills/nuget-manager
+@@ -0,0 +1 @@
++../../.agents/skills/nuget-manager
+\ No newline at end of file
+diff --git a/skills/qa-tester b/skills/qa-tester
+new file mode 120000
+index 0000000..353ddcc
+--- /dev/null
++++ b/skills/qa-tester
+@@ -0,0 +1 @@
++../../.agents/skills/qa-tester
+\ No newline at end of file
+diff --git a/skills/video-downloader b/skills/video-downloader
+new file mode 120000
+index 0000000..e2ba4ad
+--- /dev/null
++++ b/skills/video-downloader
+@@ -0,0 +1 @@
++../../.agents/skills/video-downloader
+\ No newline at end of file
+diff --git a/skills/vscode-ext-commands b/skills/vscode-ext-commands
+new file mode 120000
+index 0000000..a1c9ea2
+--- /dev/null
++++ b/skills/vscode-ext-commands
+@@ -0,0 +1 @@
++../../.agents/skills/vscode-ext-commands
+\ No newline at end of file
+diff --git a/skills/vscode-ext-localization b/skills/vscode-ext-localization
+new file mode 120000
+index 0000000..6078ecb
+--- /dev/null
++++ b/skills/vscode-ext-localization
+@@ -0,0 +1 @@
++../../.agents/skills/vscode-ext-localization
+\ No newline at end of file
+diff --git a/skills/web-design-reviewer b/skills/web-design-reviewer
+new file mode 120000
+index 0000000..db8fd64
+--- /dev/null
++++ b/skills/web-design-reviewer
+@@ -0,0 +1 @@
++../../.agents/skills/web-design-reviewer
+\ No newline at end of file
+diff --git a/skills/webapp-testing b/skills/webapp-testing
+new file mode 120000
+index 0000000..8cb954a
+--- /dev/null
++++ b/skills/webapp-testing
+@@ -0,0 +1 @@
++../../.agents/skills/webapp-testing
+\ No newline at end of file
+-- 
+2.55.0
+
+
+From 43c58e801face3bcae1a8e56ddeb997d8862b1e3 Mon Sep 17 00:00:00 2001
+From: BriantsaiCoder <38770575+BriantsaiCoder@users.noreply.github.com>
+Date: Thu, 30 Jul 2026 23:28:01 +0800
+Subject: [PATCH 2/2] =?UTF-8?q?fix(skills):=20=E7=B5=B1=E4=B8=80=20youtube?=
+ =?UTF-8?q?=20downloader=20link?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ skills/video-downloader   | 1 -
+ skills/youtube-downloader | 1 +
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ delete mode 120000 skills/video-downloader
+ create mode 120000 skills/youtube-downloader
+
+diff --git a/skills/video-downloader b/skills/video-downloader
+deleted file mode 120000
+index e2ba4ad..0000000
+--- a/skills/video-downloader
++++ /dev/null
+@@ -1 +0,0 @@
+-../../.agents/skills/video-downloader
+\ No newline at end of file
+diff --git a/skills/youtube-downloader b/skills/youtube-downloader
+new file mode 120000
+index 0000000..5a85e62
+--- /dev/null
++++ b/skills/youtube-downloader
+@@ -0,0 +1 @@
++../../.agents/skills/youtube-downloader
+\ No newline at end of file
+-- 
+2.55.0
+

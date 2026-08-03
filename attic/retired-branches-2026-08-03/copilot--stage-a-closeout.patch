@@ -1,0 +1,47 @@
+From 1b7c6af170949d78bb1a05bc7ead9ffd323df2d0 Mon Sep 17 00:00:00 2001
+From: BriantsaiCoder <38770575+BriantsaiCoder@users.noreply.github.com>
+Date: Thu, 30 Jul 2026 21:35:40 +0800
+Subject: [PATCH] =?UTF-8?q?feat(workflow):=20=E6=95=B4=E5=90=88=20Copilot?=
+ =?UTF-8?q?=20Matt=20=E8=B7=AF=E7=94=B1?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ copilot-instructions.md | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/copilot-instructions.md b/copilot-instructions.md
+index 19c5ccf..5e5c761 100644
+--- a/copilot-instructions.md
++++ b/copilot-instructions.md
+@@ -26,11 +26,21 @@ Repo 層對 tier0 只可加嚴；只有 user 當下明示可放鬆。衝突引
+ 
+ 任何開發任務先讀 `~/.agents/skills/dev-workflow/SKILL.md`；本檔只保留 routing／governance／Copilot adapter。`available_skills` 缺項時不得假裝已 invoke。
+ 
+-- 需求／domain：`grilling` + `domain-modeling`。
+-- Spec／tickets／長期決策：`to-spec`、`to-tickets`、`wayfinder`。
+-- Implementation／TDD：`implement` + `tdd`；先建 isolated worktree，禁止 current/main commit。
+-- Diagnosis／review／architecture：`diagnosing-bugs`、`code-review`、`codebase-design`。
+-- 陌生 repo／小需求：`acquire-codebase-knowledge`、`sdd`。
++整合原則：保留現有 Tier0 + S4/S5/S6 當外層 production gate；Matt workflow 只放在中段 execution，不建立平行治理。
++
++### Routing 對照表（single source）
++
++- 需求不清或決策分歧：`grilling`（需 domain 詞彙時加 `domain-modeling`）。
++- 多 session 規劃迷霧：`wayfinder`；決策清楚但量大：`to-spec`/`to-tickets`。
++- 明確 implementation：推薦使用者顯式 invoke `implement`，每個 slice 用 `tdd`。
++- 明確 bug/perf 問題：`diagnosing-bugs`（修復遵守 RED→GREEN）。
++- 架構/模組深度：`codebase-design`；程式碼審查：`code-review`。
++- 陌生 codebase 或小範圍任務：`acquire-codebase-knowledge`、`sdd`。
++
++### Anti-duplication
++
++- 不建立第二套 review/release gate；審查與上線準備仍以 S4/S5/S6 為唯一標準。
++- `code-review` 僅作 S5 的 Standards/Spec 兩軸審查，不在 implementation 階段重複跑同軸檢查。
+ 
+ ### Authorization
+ 
+-- 
+2.55.0
+

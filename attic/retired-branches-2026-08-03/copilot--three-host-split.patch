@@ -1,0 +1,30 @@
+From 0b6fba3803b8302903750e8088e6395ea67ce607 Mon Sep 17 00:00:00 2001
+From: BriantsaiCoder <38770575+BriantsaiCoder@users.noreply.github.com>
+Date: Wed, 29 Jul 2026 20:34:26 +0800
+Subject: [PATCH] =?UTF-8?q?fix(copilot):=20=E4=BF=9D=E7=95=99=20T2-6=20?=
+ =?UTF-8?q?=E5=9B=9E=E8=A6=86=E8=A6=8F=E5=89=87?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ copilot-instructions.md | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/copilot-instructions.md b/copilot-instructions.md
+index 9cdccff..34c101a 100644
+--- a/copilot-instructions.md
++++ b/copilot-instructions.md
+@@ -53,7 +53,8 @@ S4、S5 全綠後才可 commit／push／open PR／merge／final closeout；merge
+ 
+ ## Copilot adapter
+ 
+-- 預設 zh-TW；technical terms 保留 English；outcome-first。
++- 預設 zh-TW；technical terms 保留 English。
++- 回覆 SHOULD outcome-first、無空泛前後文；決策列編號選項／推薦／取捨，單字或數字即為完整回答，推測標記，已決不列替案。
+ - plan = `--mode plan`／requestExitPlanMode；todo = update_todo；子代理 = `task`。
+ - 命中 [T0-8] 時，非 plan mode 先提出計畫並取得核准。
+ - S5 同一 response 用兩個 `task` 執行 Standards／Spec；不用 plugin-contributed reviewer。
+-- 
+2.55.0
+

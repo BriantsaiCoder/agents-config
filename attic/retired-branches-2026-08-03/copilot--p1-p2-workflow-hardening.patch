@@ -1,0 +1,121 @@
+From 41574f64989748746659d70b9f4def417309e839 Mon Sep 17 00:00:00 2001
+From: BriantsaiCoder <38770575+BriantsaiCoder@users.noreply.github.com>
+Date: Thu, 30 Jul 2026 22:29:26 +0800
+Subject: [PATCH] =?UTF-8?q?refactor(copilot):=20=E7=B0=A1=E5=8C=96?=
+ =?UTF-8?q?=E5=85=A8=E5=9F=9F=20workflow=20ownership?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ copilot-instructions.md          | 37 +++-----------------------------
+ tests/global-config-ownership.sh | 30 ++++++++++++++++++++------
+ 2 files changed, 27 insertions(+), 40 deletions(-)
+
+diff --git a/copilot-instructions.md b/copilot-instructions.md
+index 19c5ccf..a63cb05 100644
+--- a/copilot-instructions.md
++++ b/copilot-instructions.md
+@@ -22,45 +22,14 @@ Repo 層對 tier0 只可加嚴；只有 user 當下明示可放鬆。衝突引
+ [T0-8] Plan-first 明示或架構性／中高風險變更 MUST 先出 plan 並取得確認；其他明確 change／build／fix 可直接實作。觸發：命中 gate 且將改檔。例外：無。驗證：plan + 核准原句，或 user 實作原句。
+ [T0-9] Merge 前 MUST 綠 CI 且處理 bot review。觸發：merge。例外：無。驗證：checks 綠 + reviews resolved。
+ 
+-## Shared Matt workflow
++## Shared workflow
+ 
+-任何開發任務先讀 `~/.agents/skills/dev-workflow/SKILL.md`；本檔只保留 routing／governance／Copilot adapter。`available_skills` 缺項時不得假裝已 invoke。
++任何開發任務先讀 `~/.agents/skills/dev-workflow/SKILL.md`。Routing、authorization、risk、RED→GREEN、S4–S6 與 host adapter 均以該檔為 single source；`available_skills` 缺項時不得假裝已 invoke。
+ 
+-- 需求／domain：`grilling` + `domain-modeling`。
+-- Spec／tickets／長期決策：`to-spec`、`to-tickets`、`wayfinder`。
+-- Implementation／TDD：`implement` + `tdd`；先建 isolated worktree，禁止 current/main commit。
+-- Diagnosis／review／architecture：`diagnosing-bugs`、`code-review`、`codebase-design`。
+-- 陌生 repo／小需求：`acquire-codebase-knowledge`、`sdd`。
+-
+-### Authorization
+-
+-- 命中 [T0-8] 停在 plan gate；模糊時套 [T0-5]。
+-- Bugfix 或既有 behavior change 必須 RED regression test → minimal fix → GREEN；無 seam 明標例外。
+-- 高扇入共用介面先列 callers；中高風險附 before／after baseline。
+-- Delegation 需 user／repo／higher instruction 授權、scope 不重疊，且 main context 重驗。
+-
+-### S4 VERIFY
+-
+-Build／test／lint 與 task-specific probes 全跑；會部署另跑 release verification + dependency security scan。Evidence 必須含命令與 exit code。
+-
+-### S5 REVIEW
+-
+-用 `code-review` 分開跑 Standards／Spec；各軸標 PASS／FAIL／SKIPPED／UNAVAILABLE。Actionable findings 歸零才能前進。
+-
+-### S6 CLOSEOUT
+-
+-S4、S5 全綠後才可 commit／push／open PR／merge／final closeout；merge 前 CI 綠並處理 bot review。BUGFIX 另跑 `bug-fix-settlement`。
+-
+-Ready PR 建立後 task 保持 active；其後任何 push 都使前次 CI 與 bot review gate 失效，須以 `bin/pr-review-gate <PR>` 對 current HEAD 重查至 PASS 才可提示 Squash merge，非 PASS 只標 WAITING／FAIL／UNAVAILABLE 並附證據。
+-
+-## Copilot adapter
++## Copilot preferences
+ 
+ - 預設 zh-TW；technical terms 保留 English。
+ - 回覆 SHOULD outcome-first、無空泛前後文；決策列編號選項／推薦／取捨，單字或數字即為完整回答，推測標記，已決不列替案。
+-- plan = `--mode plan`／requestExitPlanMode；todo = update_todo；子代理 = `task`。
+-- 命中 [T0-8] 時，非 plan mode 先提出計畫並取得核准。
+-- S5 同一 response 用兩個 `task` 執行 Standards／Spec；不用 plugin-contributed reviewer。
+-- User-level Git guard 位於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
+ - Microsoft／Azure／.NET 優先 microsoft-learn；其他 library 優先 Context7。
+ - Secrets 只回報 set／unset；不得印 config／credential body。
+ 
+diff --git a/tests/global-config-ownership.sh b/tests/global-config-ownership.sh
+index d41d843..62f75e0 100755
+--- a/tests/global-config-ownership.sh
++++ b/tests/global-config-ownership.sh
+@@ -23,17 +23,35 @@ for rule in cookbook cpp dotnet frontend-spa infra testing typescript winforms;
+ done
+ 
+ bytes=$(wc -c < copilot-instructions.md | tr -d ' ')
+-[ "$bytes" -le 7000 ] || fail "copilot-instructions.md exceeds thin budget: ${bytes}B"
++[ "$bytes" -le 4000 ] || fail "copilot-instructions.md exceeds thin budget: ${bytes}B"
+ 
+-for marker in dev-workflow S4 S5 S6 grilling domain-modeling implement tdd diagnosing-bugs code-review codebase-design; do
+-  rg -q "$marker" copilot-instructions.md || fail "thin route missing: $marker"
++for rule in T0-1 T0-2 T0-3 T0-4 T0-5 T0-6 T0-7 T0-8 T0-9; do
++  rg -q "\\[$rule\\]" copilot-instructions.md || fail "Tier 0 rule missing: $rule"
+ done
+ 
+ rg -q '~/.agents/skills/dev-workflow/SKILL\.md' copilot-instructions.md ||
+   fail 'shared dev-workflow route missing'
+ 
+-if rg -q '^# tier[12]|superpowers:|mp-(diagnose|grill-with-docs|improve-codebase-architecture|tdd)' copilot-instructions.md; then
+-  fail 'Copilot instructions still contain legacy/non-thin workflow'
++if rg -q 'Matt workflow integration|Routing 對照表|Anti-duplication|^### S[456]|reasoning_effort|plugin-contributed reviewer' copilot-instructions.md; then
++  fail 'Copilot instructions duplicate shared workflow policy'
++fi
++
++# settings.json is app-managed and intentionally ignored; validate it only on the live host.
++if [ -f settings.json ]; then
++  jq -e '.enabledPlugins["code-review@claude-plugins-official"] == null' settings.json >/dev/null ||
++    fail 'stale code-review plugin setting remains'
++  jq -e '.enabledPlugins["pr-review-toolkit@claude-plugins-official"] == false' settings.json >/dev/null ||
++    fail 'overlapping pr-review-toolkit plugin remains enabled'
++  jq -e '
++    [paths(scalars) as $path
++      | {path: ($path | map(tostring) | join(".")), value: getpath($path)}
++      | select((.path | test("reason.*effort"; "i")) and .value != null)]
++    | length == 0
++  ' settings.json >/dev/null || fail 'settings contains a fixed reasoning effort'
++  settings_status=PASS
++else
++  settings_status=SKIPPED
++  printf 'SKIP: app-managed settings unavailable\n'
+ fi
+ 
+ # CONVENTIONS 規則 11 的 host 一側。必須用 find 不得用 ls + glob：後者在 zsh 下任一目錄
+@@ -43,4 +61,4 @@ fi
+ manual_bak="$(find . -maxdepth 1 -name '*.bak*' -not -name '.*' 2>/dev/null | tr '\n' ' ')"
+ [ -z "$manual_bak" ] || fail "manual .bak present (CONVENTIONS rule 11): $manual_bak"
+ 
+-printf 'PASS: Copilot global config ownership\n'
++printf 'PASS: Copilot global config ownership (settings: %s)\n' "$settings_status"
+-- 
+2.55.0
+

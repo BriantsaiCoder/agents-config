@@ -1,0 +1,169 @@
+diff --git a/skills/dev-workflow/SKILL.md b/skills/dev-workflow/SKILL.md
+index c9017fd..da690ec 100644
+--- a/skills/dev-workflow/SKILL.md
++++ b/skills/dev-workflow/SKILL.md
+@@ -3,7 +3,7 @@ name: dev-workflow
+ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 thin kernel：S0 route 到 Matt Pocock skills，S2 處理授權與風險，完成後只保留 S4 驗證、S5 審查、S6 收尾。
+ ---
+ 
+-<!-- tier: workflow | consumed-by: claude,codex,copilot | last-verified: 2026-07-29 -->
++<!-- tier: workflow | consumed-by: claude,codex,copilot | last-verified: 2026-07-30 -->
+ 
+ # dev-workflow — thin routing and governance kernel
+ 
+@@ -24,6 +24,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的
+ - [INT-4] Delegation 的寫入 ownership 與 read-only evidence scope MUST 不重疊；未獲 user／repo／higher instruction 授權即 SKIPPED。Subagent 回報不是完成證據，main context MUST 重驗。觸發：任何 delegation。例外：skill 明定的固定 fan-out。驗證：scope 清單 + main-context probe。
+ - [INT-5] `setup-matt-pocock-skills` 只有使用者明示才可執行；先讀 repo `docs/agents/issue-tracker.md`，不存在才讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：Matt skill 需要 tracker contract。例外：無。驗證：contract 存在或引用使用者 setup 原句。
+ - [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
++- [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 由 model 自動 invoke 或假裝已 invoke；S0 只能推薦下一個 host-specific command，並等待使用者明示啟動。觸發：route 命中 user-only skill。例外：無。驗證：skill frontmatter + 使用者 invocation 原句。
+ 
+ ## S0 ROUTE
+ 
+@@ -38,7 +39,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的
+ | 拆 tracer-bullet tickets | `to-tickets` |
+ | 超過單一 session 的決策地圖 | `wayfinder` |
+ | session 中斷且重要 context 尚未進 canonical artifact | `handoff` |
+-| 需求已清楚且單一 session 可完成（含已核准 spec／ticket） | kernel 的 `implement` adapter；每個 slice 用 `tdd` |
++| 需求已清楚且單一 session 可完成（含已核准 spec／ticket） | 推薦使用者顯式 invoke `implement`；啟動後由 kernel adapter 管理，每個 slice 用 `tdd` |
+ | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
+ | code review | `code-review` |
+ | 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
+@@ -46,15 +47,16 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的
+ | 單檔且 ≤3 tasks 的低風險 change | `sdd` |
+ | skill 建立／修改／稽核 | `writing-great-skills`／`auditing-skill-folder` |
+ 
+-Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
++Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於已 invoke；命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。
+ 
+ ### Routing continuations
+ 
+-- `triage`、`grilling` 或 `wayfinder` 釐清需求後，單一 session 可完成的 coherent vertical slice 進 `implement`。
+-- 多個可獨立驗收的 implementation slices：無 canonical spec 時依序跑 `to-spec` → `to-tickets`；已有完整 spec／agent-ready issue 時略過 `to-spec`，直接跑 `to-tickets`。
+-- 每張 ticket 以 fresh session 開始，先進 isolated branch／worktree，再依 `implement` adapter 執行；fresh session 不豁免 S2。
++- `triage`、`grilling` 或 `wayfinder` 釐清需求後，單一 session 可完成的 coherent vertical slice 推薦使用者顯式 invoke `implement`。
++- 多個可獨立驗收的 implementation slices：無 canonical spec 時依序推薦使用者顯式 invoke `to-spec` → `to-tickets`；已有完整 spec／agent-ready issue 時略過 `to-spec`，直接推薦 `to-tickets`。
++- 每張 ticket 以 fresh session 開始，由使用者顯式 invoke `implement`；啟動後先進 isolated branch／worktree，再依 adapter 執行，fresh session 不豁免 S2。
+ - `wayfinder` 只處理跨 session 的決策迷霧；決策已清楚但實作量大時走 spec／tickets 分流。
+-- `handoff` 只橋接中斷時仍未進入 spec、ticket 或 wayfinder map 的重要 context；已有 canonical artifact 時只引用，不重複內容。
++- 使用者明示要換 session、交接或讓另一個 agent 接手時，`handoff` 只橋接仍未進入 spec、ticket 或 wayfinder map 的重要 context；需要時依 [INT-7] 推薦 host-specific command 並等待使用者啟動。
++- Agent 因 blocker 或 session 邊界必須停止且工作未完成時，若仍有未落盤的重要 context，將 `handoff` 列為唯一 next action；已有 canonical artifact 時只引用、不重複內容。一般 context compaction、任務已完成或只是內容很長 MUST NOT 觸發 `handoff`。
+ 
+ ## S2 AUTHORIZE
+ 
+@@ -99,17 +101,20 @@ Routing 前先確認 skill path 存在；需要 delegation 時套 [INT-4]。
+ ### Claude
+ 
+ - plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent。
++- user-only skill command = `/<skill-name>`。
+ - S5 的 `code-review` 固定 fan-out 受 [INT-4] 管理；`uiux-reviewer` 是 Claude-only。
+ 
+ ### Codex
+ 
+ - plan = Plan Mode；todo = update_plan；子代理 = spawn_agent／wait_agent。
++- user-only skill command = `$<skill-name>`。
+ - `implement` 先用 `bin/agents-branch` 或 repo worktree 建 isolated branch；S6 用 PR heartbeat。
+ - Git guard 由 `~/.codex/hooks.json` 與 `~/.codex/rules/default.rules` 疊加，不能取代 tier0／CI。
+ 
+ ### Copilot
+ 
+ - plan = `--mode plan`；todo = update_todo；子代理 = `task` 工具。
++- user-only skill command = `/<skill-name>`。
+ - 命中 [T0-8] 時，非 plan mode 必須先提出計畫並取得核准。
+ - S5 同一 response 用兩個 `task` 跑 Standards／Spec；Copilot user-level hooks 已配置於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
+ 
+diff --git a/tests/matt-thin-workflow.sh b/tests/matt-thin-workflow.sh
+index 460fabf..445c2c1 100755
+--- a/tests/matt-thin-workflow.sh
++++ b/tests/matt-thin-workflow.sh
+@@ -31,7 +31,7 @@ for heading in \
+   rg -q "$heading" "$KERNEL" || fail "thin kernel heading missing: $heading"
+ done
+ 
+-for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6; do
++for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6 INT-7; do
+   rg -q "\\[$rule\\]" "$KERNEL" || fail "thin kernel guard missing: $rule"
+ done
+ 
+@@ -53,6 +53,67 @@ for skill in \
+   [ -f "$AGENTS/skills/$skill/SKILL.md" ] || fail "routed skill missing: $skill"
+ done
+ 
++for skill in \
++  ask-matt \
++  grill-with-docs \
++  triage \
++  improve-codebase-architecture \
++  setup-matt-pocock-skills \
++  to-spec \
++  to-tickets \
++  wayfinder \
++  implement \
++  grill-me \
++  handoff \
++  teach \
++  writing-great-skills; do
++  rg -q '^disable-model-invocation:[[:space:]]*true$' \
++    "$AGENTS/skills/$skill/SKILL.md" ||
++    fail "Matt user-only invocation boundary drifted: $skill"
++done
++
++for skill in \
++  diagnosing-bugs \
++  tdd \
++  prototype \
++  research \
++  domain-modeling \
++  codebase-design \
++  code-review \
++  resolving-merge-conflicts \
++  grilling; do
++  ! rg -q '^disable-model-invocation:[[:space:]]*true$' \
++    "$AGENTS/skills/$skill/SKILL.md" ||
++    fail "Matt model-invoked boundary drifted: $skill"
++done
++
++user_only_count="$(
++  while IFS='=' read -r key skill; do
++    [ "$key" = skill ] || continue
++    rg -q '^disable-model-invocation:[[:space:]]*true$' \
++      "$AGENTS/skills/$skill/SKILL.md" &&
++      printf '1\n'
++  done < "$AGENTS/mattpocock-skills.lock" |
++    wc -l |
++    tr -d ' '
++)"
++[ "$user_only_count" = 13 ] ||
++  fail "Matt invocation split drifted: expected 9 model / 13 user, found $((22 - user_only_count)) / $user_only_count"
++
++rg -q '\[INT-7\].*disable-model-invocation.*MUST NOT.*自動 invoke' "$KERNEL" ||
++  fail 'thin kernel does not preserve the Matt user-only invocation boundary'
++rg -q 'user-only skill.*推薦.*explicit invocation command.*等待' "$KERNEL" ||
++  fail 'thin kernel does not hand user-only routes back to explicit user invocation'
++sed -n '/^### Claude$/,/^### Codex$/p' "$KERNEL" |
++  rg -q 'user-only skill command = `/<skill-name>`' ||
++  fail 'Claude user-only invocation syntax missing'
++sed -n '/^### Codex$/,/^### Copilot$/p' "$KERNEL" |
++  rg -q 'user-only skill command = `\$<skill-name>`' ||
++  fail 'Codex user-only invocation syntax missing'
++sed -n '/^### Copilot$/,/^## References$/p' "$KERNEL" |
++  rg -q 'user-only skill command = `/<skill-name>`' ||
++  fail 'Copilot user-only invocation syntax missing'
++
+ rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
+   fail 'grilling does not offer compact options with the recommendation first'
+ rg -q 'explicitly authorizes.*low-risk.*reversible' "$GRILLING" ||
+diff --git a/tests/mattpocock-workflow.sh b/tests/mattpocock-workflow.sh
+index d83cd5e..799e499 100755
+--- a/tests/mattpocock-workflow.sh
++++ b/tests/mattpocock-workflow.sh
+@@ -72,6 +72,10 @@ has "existing spec skips duplicate to-spec" '已有完整 spec.*略過 `to-spec`
+ has "ticket implementation starts fresh" '每張 ticket.*fresh session.*isolated.*worktree' skills/dev-workflow/SKILL.md
+ has "session interruption routes to handoff" 'session 中斷.*`handoff`' skills/dev-workflow/SKILL.md
+ has "handoff only bridges uncaptured context" '`handoff`.*未進入 spec.*ticket.*wayfinder map' skills/dev-workflow/SKILL.md
++has "explicit session switch recommends handoff" '使用者明示.*換 session.*交接.*另一個 agent.*`handoff`' skills/dev-workflow/SKILL.md
++has "unfinished stop makes handoff the sole next action" 'blocker.*session 邊界.*工作未完成.*`handoff`.*唯一 next action' skills/dev-workflow/SKILL.md
++has "canonical artifact suppresses duplicate handoff" '已有 canonical artifact.*只引用.*不重複' skills/dev-workflow/SKILL.md
++has "compaction and completion do not trigger handoff" 'context compaction.*任務已完成.*內容很長.*MUST NOT.*`handoff`' skills/dev-workflow/SKILL.md
+ 
+ has "closeout is action-triggered" 'push.*open PR.*merge.*final closeout' skills/dev-workflow/SKILL.md
+ has "implement adapter enters branch" '`implement`.*(branch|worktree)' skills/dev-workflow/SKILL.md
