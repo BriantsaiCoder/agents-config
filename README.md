@@ -48,7 +48,7 @@ PR 合併後用 `--merged` 而不是 `gh pr merge --delete-branch`：後者在 w
 bash hooks/install-hooks.sh --global-pre-push
 ```
 
-安裝與升級只接受已同步 `origin/main` 的部署檔；installer 與 hook 的實際 bytes 都必須等於 `HEAD`。
+安裝與升級只接受已同步 `origin/main` 的部署檔；installer 與 hook 的實際 bytes 都必須等於 `HEAD`。四個 targets 必須各自是 Git repo，任一缺失或 preflight 失敗時整次零寫入。
 
 `pre-push` 只檢查 Git 已解析的 remote ref，任一目標為 `refs/heads/main` 或 `refs/heads/master` 即拒絕整批 push。這是 client-side safety rail，不是不可繞過的 security boundary：未安裝時不生效，`--no-verify` 或改寫 `core.hooksPath` 可略過；Git 2.55.0 實測 `--mirror` 的隱式刪除可能不出現在 hook stdin。使用者當下明示直接 push 才可使用 bypass。
 

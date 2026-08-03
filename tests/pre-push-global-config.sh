@@ -209,6 +209,23 @@ else
   fail=$((fail + 1))
 fi
 
+missing_home="$scratch/missing-target-home"
+for name in .agents .claude .codex; do
+  mkdir -p "$missing_home/$name"
+  git -C "$missing_home/$name" init -q
+done
+mkdir -p "$missing_home/.copilot"
+missing_out=$(HOME="$missing_home" bash "$fixture/hooks/install-hooks.sh" --global-pre-push 2>&1)
+missing_rc=$?
+if [ "$missing_rc" -ne 0 ] && ! has_managed_artifact "$missing_home"; then
+  printf '  PASS  install  缺任一 target repo 時 fail-closed 且零寫入\n'
+  pass=$((pass + 1))
+else
+  printf '  FAIL  install  缺任一 target repo 時未 fail-closed (rc=%s) %s\n' \
+    "$missing_rc" "${missing_out:0:120}" >&2
+  fail=$((fail + 1))
+fi
+
 custom_home="$scratch/custom-hooks-home"
 mk_target_home "$custom_home"
 custom_dir="$scratch/shared-hooks"

@@ -106,7 +106,8 @@ install_global_pre_push() {
 
   for repo in "$HOME/.agents" "$HOME/.claude" "$HOME/.codex" "$HOME/.copilot"; do
     if ! git -C "$repo" rev-parse --show-toplevel >/dev/null 2>&1; then
-      printf 'SKIP  非 Git repo：%s\n' "$repo"
+      printf '錯誤：必要 target 不是 Git repo：%s\n' "$repo" >&2
+      failed=1
       continue
     fi
     repo="$(cd "$repo" && pwd -P)"
