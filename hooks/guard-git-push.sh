@@ -80,9 +80,21 @@ CWD=$(printf '%s' "$INPUT" | "$JQ" -r '.cwd // empty' 2>/dev/null) || CWD=""
 # 另一個看不見的後門（Copilot 於 PR #42 指出）。逃生門必須是它宣稱的那個形狀
 # ——該段自己的開頭——否則它就不是逃生門而是繞過路徑。
 
+# refspec token 正規化。check_seg 的 tokenization 是 shell word splitting，不解析引號，
+# 所以 `git push origin "main"` 的 token 是帶引號的 "main"，直接比對 main|master 永遠
+# 命不中——[T0-3] 與 [INT-10] 都能用加一對引號繞過（Copilot 於 PR #42 指出 [INT-10] 側，
+# [T0-3] 側是同一個缺陷的另一半）。去引號的處理檔案上方判定 git 可執行檔時已有，
+# 這裡是它漏掉的另一處。
+normalize_ref() {
+  local s="$1"
+  s="${s%\"}"; s="${s#\"}"
+  s="${s%\'}"; s="${s#\'}"
+  s="${s##*:}"                     # refspec 可能是 src:dst，取 dst
+  printf '%s' "${s#refs/heads/}"
+}
+
 check_target() {
-  local target="${1##*:}"          # refspec 可能是 src:dst，取 dst
-  target="${target#refs/heads/}"
+  local target; target=$(normalize_ref "$1")
   case "$target" in
     main|master) deny "[T0-3] 禁止 force push（含 --force-with-lease）到 main/master。" ;;
   esac
@@ -123,8 +135,7 @@ int10_in_scope() {
 }
 
 int10_check() {
-  local target="${1##*:}"
-  target="${target#refs/heads/}"
+  local target; target=$(normalize_ref "$1")
   case "$target" in
     main|master)
       deny "[INT-10] 全域設定 repo 不得直接 push 到 ${target}，必須走 PR 路徑：isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch。理由：[T0-9] 的觸發是「merge 前」，直接推 main 沒有 merge 動作，該 gate 連同 bot review 會被整條繞過。使用者當下明示要直接推時，在指令前加 INT10_ACK=<原因> 前綴，例外即成立且留下稽核痕跡。"

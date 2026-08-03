@@ -91,6 +91,14 @@ for fmt in claude codex; do
         "git -C 波浪號路徑（hook 看到的是未展開字串）"
   probe "$fmt" deny "$HOME/elsewhere" "git -C$HOME/.claude push origin master" \
         "git -C 無空格形式"
+  # tokenization 是 shell word splitting，不解析引號：refspec token 會保留外層引號，
+  # 直接比對 main|master 永遠命不中，加一對引號即可繞過（Copilot 於 PR #42 指出）。
+  probe "$fmt" deny "$HOME/.agents" 'git push origin "main"'        "refspec 帶雙引號"
+  probe "$fmt" deny "$HOME/.agents" "git push origin 'master'"      "refspec 帶單引號"
+  probe "$fmt" deny "$HOME/.agents" 'git push origin "HEAD:main"'   "帶引號的 src:dst 形式"
+  # 同一個缺陷的 [T0-3] 側：force push 到帶引號的 main 也不得漏
+  probe "$fmt" deny "$HOME/elsewhere" 'git push --force-with-lease origin "main"' \
+        "[T0-3] force 推帶引號的 main"
 
   # ── 應放行 ──
   probe "$fmt" allow "$HOME/.agents" "git push origin feat/x"  "全域 repo 推 feature branch"
