@@ -164,10 +164,13 @@ check_seg() {
       # 去掉外層引號後，比對 git 可執行檔的常見型態。
       local bare="${t%\"}"; bare="${bare#\"}"; bare="${bare%\'}"; bare="${bare#\'}"
       case "$bare" in git|*/git|git.exe|*/git.exe) seen_git=1 ;; esac
-      # `git -C <path>` 決定實際操作哪個 repo，payload 的 cwd 只是 shell 所在目錄。
-      # 不看它就能用 `git -C ~/.agents push origin main` 從範圍外目錄推範圍內的 main
-      # （Copilot 於 PR #42 指出）。同一個位移也會讓下方 [T0-3] 的當前分支解析查錯 repo，
-      # 所以兩處共用同一個 effective cwd。
+      # subcommand 也要用去引號後的 bare 比對：tokenization 不解析引號，
+      # `git "push" origin main` 的第二個 token 是 "push"，用原始 token 比對會讓
+      # seen_push 永遠不成立、整段放行——[T0-3] 與 [INT-10] 一起被繞過。
+      # bare 在上一行就算好了，這裡只是漏用（Copilot 於 PR #42 指出）。
+      # `git -C <path>` 等旗標決定實際操作哪個 repo，payload 的 cwd 只是 shell 所在
+      # 目錄。不看它就能用 `git -C ~/.agents push origin main` 從範圍外目錄推範圍內的
+      # main（Copilot 於 PR #42 指出）。只記「有沒有」不記「指向哪」——見下方保守策略。
       if (( seen_git )); then
         # 分離形式的下一個 token 是路徑，跳過它免得被當成別的東西
         if (( want_arg )); then want_arg=0; continue; fi
@@ -176,7 +179,7 @@ check_seg() {
           -C?*|--work-tree=*|--git-dir=*) has_redirect=1; continue ;;
         esac
       fi
-      [[ $seen_git -eq 1 && "$t" == push ]] && seen_push=1
+      [[ $seen_git -eq 1 && "$bare" == push ]] && seen_push=1
       continue
     fi
     case "$t" in

@@ -149,6 +149,12 @@ for fmt in claude codex; do
         "上一條加 INT10_ACK 前綴即放行（誤擋有逃生門）"
   probe "$fmt" allow "$HOME/.agents" "git push origin --delete feat/x" "刪除 feature branch"
   probe "$fmt" allow "$HOME/.agents" "git status"              "非 push 指令"
+  # subcommand 帶引號時 seen_push 不成立、整段放行——[T0-3] 與 [INT-10] 一起被繞過。
+  # 既有缺陷（非本 PR 引入），Copilot 於 PR #42 指出。
+  probe "$fmt" deny "$HOME/.agents" 'git "push" origin main'  "subcommand 帶雙引號"
+  probe "$fmt" deny "$HOME/.agents" "git 'push' origin main"  "subcommand 帶單引號"
+  probe "$fmt" deny "$HOME/elsewhere" 'git "push" --force origin feat/x' \
+        "[T0-3] subcommand 帶引號的 force push"
 
   # ── [T0-3] 未被本次改動破壞（force 判定優先於 [INT-10]） ──
   probe "$fmt" deny "$HOME/elsewhere" "git push --force origin feat/x" \
