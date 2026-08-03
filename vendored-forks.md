@@ -24,7 +24,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
 | `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; tree SHA-256 `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21` | **Active** |
 | `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
-| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-04 — preserve the clarify trigger and default HITL flow, add re-estimated progress headers to every question, and retain the opt-in mode where the selected model adopts defensible decisions while keeping action authorization separate; payload SHA-256 `8c5045d76d995da124c08e7a4be8e83cb488ebe78a063cb86603e85314ae9948` | **Active** |
+| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-04 — narrow the trigger to an explicit interview request, preserve the clarify path and default HITL flow, add re-estimated progress headers to every question, and retain the opt-in mode where the selected model adopts defensible decisions while keeping action authorization separate; payload SHA-256 `d92143d631e2915416bc3c4794414c8c09e4294fd610475ab2f97ae438a794e1` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
@@ -476,6 +476,24 @@ byte-identical `clarify` skill could retire without losing one-at-a-time require
 left the body unchanged; the 2026-08-03 delegated-decision change became the behavior fork, and this
 2026-08-04 progress-header rule extends it. The global ambiguity gate alone was insufficient because
 an explicit "clarify this" request did not auto-invoke this skill in the RED canary.
+
+**Decision (2026-08-04, later the same day): narrow the trigger to an explicit user request.**
+
+The 2026-08-02 widening also made routine requirement clarification route here, and the trailing
+"or uses any 'grill' trigger phrase" matched conversations *about* this skill. A live Step 2c canary
+measured the cost: of three grilling prompts, the two that should have stayed quiet both fired
+(precision 0.33) — one of them a request to analyse whether the global workflow should keep using
+grilling at all, which the trigger read as a request to be grilled. The description now requires an
+explicit ask, excludes routine clarification that plan mode covers, and excludes discussions where
+grilling itself is the topic. The wording matters more than it looks: a first attempt that still led
+with "explicitly asks to clarify unresolved decisions in an under-specified plan" fixed the
+meta-discussion case but left routine clarification firing (precision 0.50), because "under-specified"
+reads as a trigger on its own. Only when the explicit request for the interview became the trigger —
+with vagueness demoted to a routed-away condition — did all three cases pass (precision 1.00). Keep
+that shape on any re-merge. The trigger stays natural-language and model-invocable: `clarify`'s
+retirement depends on an explicit "clarify this" still reaching this skill without a slash command,
+and `/grill-me` remains the separate explicit-command entry point. The body is unchanged — cadence is
+handled by the kernel's Claude adapter, which routes decision questions through `AskUserQuestion`.
 
 ### Re-merge procedure (when upstream moves)
 

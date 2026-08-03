@@ -39,7 +39,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | Need | Route |
 |---|---|
 | 外部 issue／PR 的初始評估 | `triage` |
-| 需求壓測／決策澄清 | `grilling`；領域詞彙與 ADR 另加 `domain-modeling` |
+| 使用者明示要求訪談釐清未決策，或壓測 under-specified plan／decision／idea | `grilling`；領域詞彙與 ADR 另加 `domain-modeling` |
 | 使用者明示邊討論邊產生 glossary／ADR | `grill-with-docs`（內含 `grilling` + `domain-modeling`） |
 | 把已決內容整理成 spec | `to-spec` |
 | 拆 tracer-bullet tickets | `to-tickets` |
@@ -50,7 +50,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | code review | `code-review` |
 | 高扇入共用介面變更 | MUST 先用 `deps-check` 列出完整 callers |
 | Security | code／diff／path 的 focused data-flow review → `shared-security-review`；使用者明示 whole-codebase adversarial audit／pen-test 且接受持久化 artifacts → `security-audit`；CI／pre-commit／SBOM／container gate → `dependency-security-scan` |
-| 架構、deep module、seam 設計 | `codebase-design`；候選取捨另加 `grilling` |
+| 架構、deep module、seam 設計 | `codebase-design`；另命中上列明示 trigger 時才組合 `grilling` |
 | 陌生 repo | `acquire-codebase-knowledge` |
 | primary-source background research／citable Markdown evidence | `research` |
 | current library／framework／SDK／API／CLI／cloud lookup | `context7-mcp` |
@@ -63,6 +63,8 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
 Routing 前先確認 skill path 與 frontmatter。Route 只選方法，不等於已 invoke；命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。
+
+澄清類 routing 的 question eligibility：MUST 先查既有 context、code 與 sensible defaults，只問真正阻擋下一步且屬 user-owned 的 decision。其餘澄清不進 `grilling`，依 S2 判 plan gate 後由各 host 的 plan mode 承接。提問載體與批次規則屬 host adapter。
 
 本表是 routing 的 single source。`ask-matt` 自述為「a router over the skills in this repo」，實際只涵蓋 22 支 Matt skill 中的 20 支（漏自身與 `resolving-merge-conflicts`）加 `/compact`，完全不含本表的自有與其他 vendored 項：`deps-check`、三支 security、`context7-mcp`、兩支 Microsoft docs、`ui-ux-pro-max`、`sdd`、`auditing-skill-folder`、`web-design-reviewer`、`bug-fix-settlement`、`acquire-codebase-knowledge`。它是 pinned upstream，描述不修；使用者叫它時把它當 Matt subset 的視圖，缺項回本表補齊。
 
@@ -136,7 +138,8 @@ Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocat
 
 ### Claude
 
-- plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent。
+- plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent；決策提問 = AskUserQuestion。
+- 決策提問 cadence：同一 ready frontier 上彼此獨立的 1–4 個 blocker MUST 合併在同一次 `AskUserQuestion`；dependent 題等前一批回答後再問。Skip／dismiss MUST NOT 視為答案、核准或採用預設值。
 - user-only skill command = `/<skill-name>`。
 - S5 適用時，Standards／Spec outcomes 仍須覆蓋；是否平行與 subagent 數量由 AI 依 [INT-4] 自主決定，review agent 保持 read-only；`uiux-reviewer` 是 Claude-only。
 
