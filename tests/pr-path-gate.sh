@@ -27,8 +27,11 @@ pass=0; fail=0
 ok() { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng() { printf '  FAIL  %s\n' "$1" >&2; fail=$((fail + 1)); }
 
-# [INT-10] 條文必須保有的規範性片段。分四類，缺任一類這條規則就失去它存在的理由。
-PATH_STEPS='isolated branch|Ready PR|squash merge|刪 branch'          # 路徑五步
+# [INT-10] 條文必須保有的規範性片段。分五類，缺任一類這條規則就失去它存在的理由。
+# PATH_STEPS 用 `.*` 串連而非 `|`：alternation 只要命中任一步就通過，等於允許把其他四步
+# 刪掉而守衛仍回綠。尤其 bot-review gate 是整條 [INT-10] 存在的理由——[T0-9] 被繞過就是
+# 因為它——漏列它等於守衛守不到重點（PR #40 由 Copilot review 指出）。
+PATH_STEPS='isolated branch.*Ready PR.*bot-review gate.*squash merge.*刪 branch'  # 路徑五步，全部且依序
 PROHIBITION='MUST NOT 直接 push'                                       # 禁令本體
 SCOPE='CLAUDE\.md|AGENTS\.md|copilot-instructions\.md|tier0|hooks|CI workflow'  # 適用範圍
 ESCAPE='使用者當下明示'                                                # 逃生門（無它則無法被覆寫）
@@ -85,6 +88,7 @@ selftest() {
 ## Host adapters
 FIX
 
+  sed 's/ → bot-review gate//'                         "${scratch}/good.md" > "${scratch}/no-botgate.md"
   sed 's/；MUST NOT 直接 push 到 main／master//'        "${scratch}/good.md" > "${scratch}/no-prohibition.md"
   sed 's/機械攔截尚未實作/機械攔截已由 hook 強制/'      "${scratch}/good.md" > "${scratch}/overclaim.md"
   sed 's/例外：使用者當下明示直接推 main。//'           "${scratch}/good.md" > "${scratch}/no-escape.md"
@@ -103,6 +107,7 @@ FIX
   }
 
   probe "${scratch}/good.md"           pass "完整 [INT-10]"
+  probe "${scratch}/no-botgate.md"     fail "路徑掉了 bot-review gate（[INT-10] 存在的理由）"
   probe "${scratch}/no-prohibition.md" fail "禁令被拿掉"
   probe "${scratch}/overclaim.md"      fail "把未實作的攔截講成已強制"
   probe "${scratch}/no-escape.md"      fail "例外條款被拿掉"
