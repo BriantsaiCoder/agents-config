@@ -84,6 +84,18 @@ for fmt in claude codex; do
   probe "$fmt" allow "$HOME/.claude" "git push"                "無 refspec，當前分支非 main"
   probe "$fmt" allow "$HOME/.agents" "INT10_ACK=user當下明示 git push origin main" \
         "帶 INT10_ACK 前綴（[INT-10] 的例外，留稽核痕跡）"
+  probe "$fmt" allow "$HOME/.agents" "cd /tmp && INT10_ACK=r git push origin main" \
+        "複合命令中該段以 INT10_ACK 開頭（切段後有前導空白）"
+
+  # ── 逃生門不得被「只是提到」打開（Copilot 於 PR #42 指出的繞過路徑） ──
+  # 第一版用 `case "$CMD" in *INT10_ACK=*)` 對整個 command 做子字串比對，下面三種
+  # 形態都會誤開例外。逃生門若能被字面提及觸發，它就不是逃生門而是繞過路徑。
+  probe "$fmt" deny "$HOME/.agents" "echo INT10_ACK=fake; git push origin main" \
+        "前段只是印出 INT10_ACK=（不得打開例外）"
+  probe "$fmt" deny "$HOME/.agents" "git push origin main INT10_ACK=x" \
+        "INT10_ACK= 出現在參數位置（不得打開例外）"
+  probe "$fmt" deny "$HOME/.agents" "git commit -m INT10_ACK=x && git push origin main" \
+        "前段 commit message 提到 INT10_ACK=（不得打開例外）"
   probe "$fmt" allow "$HOME/elsewhere" "git push origin main"  "範圍外 repo 推 main"
   probe "$fmt" allow "$HOME/.agents" "git push origin --delete feat/x" "刪除 feature branch"
   probe "$fmt" allow "$HOME/.agents" "git status"              "非 push 指令"

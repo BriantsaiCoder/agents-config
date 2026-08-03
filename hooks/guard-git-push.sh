@@ -74,8 +74,11 @@ CWD=$(printf '%s' "$INPUT" | "$JQ" -r '.cwd // empty' 2>/dev/null) || CWD=""
 # 具體化成指令前綴 INT10_ACK=<原因>：它會留在 command 字串裡，事後可稽核。
 # 刻意不用環境變數——那不會出現在 payload，等於一個看不見的後門。
 # 與 [T0-3] 的差別：force push 無例外可言，本條有，所以逃生門是規則本身要求的。
-INT10_ACK=0
-case "$CMD" in *INT10_ACK=*) INT10_ACK=1 ;; esac
+#
+# 判定下放到 check_seg 的段層級，不在此處對整個 CMD 做子字串比對：後者會讓
+# `echo INT10_ACK=x; git push origin main` 這種「只是提到」的形態打開例外，等於
+# 另一個看不見的後門（Copilot 於 PR #42 指出）。逃生門必須是它宣稱的那個形狀
+# ——該段自己的開頭——否則它就不是逃生門而是繞過路徑。
 
 check_target() {
   local target="${1##*:}"          # refspec 可能是 src:dst，取 dst
@@ -158,9 +161,14 @@ check_seg() {
   (( seen_push )) || return 0
   (( has_force )) && deny "[T0-3] 禁用非 lease force push（--force / -f / +refspec）。非保護分支請改用 --force-with-lease。"
 
+  # [INT-10] 例外只認「本段開頭」的 INT10_ACK= 前綴。去前導空白後比對，因為複合命令
+  # 切段後多半帶一個前導空格（`cd /x && INT10_ACK=r git push …`）。
+  local lead="${seg%%[![:space:]]*}" seg_ack=0
+  case "${seg#"$lead"}" in INT10_ACK=*) seg_ack=1 ;; esac
+
   # [INT-10] 判定必須在下面 has_lease 的早退之前——一般 push（無 force 無 lease）
   # 正是本條要擋的主要形態，放在早退之後等於永遠不執行。
-  if (( ! INT10_ACK )) && int10_in_scope "${CWD:-.}"; then
+  if (( ! seg_ack )) && int10_in_scope "${CWD:-.}"; then
     if (( ${#args[@]} >= 2 )); then
       for ((i = 1; i < ${#args[@]}; i++)); do int10_check "${args[i]}"; done
     else
