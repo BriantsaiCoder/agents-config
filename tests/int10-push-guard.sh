@@ -140,8 +140,13 @@ for fmt in claude codex; do
   probe "$fmt" deny "$HOME/.agents" "git commit -m INT10_ACK=x && git push origin main" \
         "前段 commit message 提到 INT10_ACK=（不得打開例外）"
   probe "$fmt" allow "$HOME/elsewhere" "git push origin main"  "範圍外 repo 推 main"
-  probe "$fmt" allow "$HOME/.agents" "git -C $HOME/elsewhere push origin main" \
-        "cwd 在範圍內但 git -C 指向範圍外（不得誤擋）"
+  # 保守策略下這條由 allow 轉 deny：有重導旗標就不推導指向哪裡，一律擋。這是刻意
+  # 接受的誤擋——精確推導在前六輪 review 裡有三輪都被找出洞，追不完。逃生門是
+  # INT10_ACK= 前綴。
+  probe "$fmt" deny "$HOME/.agents" "git -C $HOME/elsewhere push origin main" \
+        "重導指向範圍外也擋（保守策略的刻意代價）"
+  probe "$fmt" allow "$HOME/.agents" "INT10_ACK=跨repo維運 git -C $HOME/elsewhere push origin main" \
+        "上一條加 INT10_ACK 前綴即放行（誤擋有逃生門）"
   probe "$fmt" allow "$HOME/.agents" "git push origin --delete feat/x" "刪除 feature branch"
   probe "$fmt" allow "$HOME/.agents" "git status"              "非 push 指令"
 

@@ -134,25 +134,6 @@ int10_in_scope() {
   return 1
 }
 
-# $1=路徑 $2=相對路徑的 base。~ 自己展開——hook 拿到的是尚未交給 shell 的原始字串。
-abs_path() {
-  case "$1" in
-    "~")   printf '%s' "$HOME" ;;
-    "~"/*) printf '%s/%s' "$HOME" "${1#\~/}" ;;
-    /*)    printf '%s' "$1" ;;
-    *)     printf '%s/%s' "$2" "$1" ;;
-  esac
-}
-
-# git-dir 指向的是 .git 本身，repo root 是它的 parent；裸 .git 目錄（bare）則用它自己。
-gitdir_root() {
-  local gd; gd=$(abs_path "$1" "$2")
-  case "$gd" in
-    */.git|*/.git/) printf '%s' "${gd%/.git*}" ;;
-    *)              printf '%s' "$gd" ;;
-  esac
-}
-
 int10_check() {
   local target; target=$(normalize_ref "$1")
   case "$target" in
@@ -167,7 +148,7 @@ check_seg() {
   local IFS=$' \t\n'
   local -a toks=($seg) args=()
   local i seen_git=0 seen_push=0 has_force=0 has_lease=0 broad_refset=0
-  local dash_c="" work_tree="" git_dir="" want_c=0 want_wt=0 want_gitdir=0
+  local has_redirect=0 want_arg=0
   for ((i = 0; i < ${#toks[@]}; i++)); do
     t=${toks[i]}
     if (( ! seen_push )); then
@@ -176,8 +157,7 @@ check_seg() {
       # （worktree 隔離被 git -C / --git-dir / GIT_DIR 重導）。只擋 -C 等於留三個門。
       if (( ! seen_git )); then
         case "$t" in
-          GIT_DIR=*)       git_dir="${t#GIT_DIR=}"; continue ;;
-          GIT_WORK_TREE=*) work_tree="${t#GIT_WORK_TREE=}"; continue ;;
+          GIT_DIR=*|GIT_WORK_TREE=*) has_redirect=1; continue ;;
         esac
       fi
       # 只認裸 token `git` 會被完整路徑繞過（/usr/bin/git push --force …）。
@@ -189,16 +169,11 @@ check_seg() {
       # （Copilot 於 PR #42 指出）。同一個位移也會讓下方 [T0-3] 的當前分支解析查錯 repo，
       # 所以兩處共用同一個 effective cwd。
       if (( seen_git )); then
-        if (( want_c ));      then dash_c="$t";    want_c=0;      continue; fi
-        if (( want_wt ));     then work_tree="$t"; want_wt=0;     continue; fi
-        if (( want_gitdir )); then git_dir="$t";   want_gitdir=0; continue; fi
+        # 分離形式的下一個 token 是路徑，跳過它免得被當成別的東西
+        if (( want_arg )); then want_arg=0; continue; fi
         case "$t" in
-          -C)            want_c=1; continue ;;
-          -C?*)          dash_c="${t#-C}"; continue ;;
-          --work-tree)   want_wt=1; continue ;;
-          --work-tree=*) work_tree="${t#--work-tree=}"; continue ;;
-          --git-dir)     want_gitdir=1; continue ;;
-          --git-dir=*)   git_dir="${t#--git-dir=}"; continue ;;
+          -C|--work-tree|--git-dir)       has_redirect=1; want_arg=1; continue ;;
+          -C?*|--work-tree=*|--git-dir=*) has_redirect=1; continue ;;
         esac
       fi
       [[ $seen_git -eq 1 && "$t" == push ]] && seen_push=1
@@ -217,35 +192,16 @@ check_seg() {
   done
   (( seen_push )) || return 0
 
-  # effective cwd = payload cwd 疊上 -C / --work-tree / GIT_WORK_TREE / --git-dir /
-  # GIT_DIR。~ 要自己展開：hook 看到的是尚未交給 shell 的原始字串，波浪號還在。
+  # 保守策略：段中只要出現任何 repo 重導旗標（-C / --git-dir / --work-tree /
+  # GIT_DIR= / GIT_WORK_TREE=），就不推導它指向哪個 repo，一律視為可能指向範圍內。
   #
-  # base 的順序很重要：git 依 token 順序處理 -C，所以 `git -C ~/.agents --git-dir .git`
-  # 裡的 .git 是相對於 -C 後的目錄，不是相對於 payload cwd。一律用 cwd 當 base 會把它
-  # 解成 ${CWD}/.git，範圍判定落空而漏擋（Copilot 於 PR #42 指出）。
+  # 為什麼不精確推導：前六輪 review 有三輪花在這上面——-C 沒看、git-dir 那族沒看、
+  # -C 之後的相對 base 沒看，而每次「補正確」都擴大一次表面再長出新缺陷。精確模擬
+  # git 的路徑解析語意是一個追不完的表面，而這是一道安全閘：不推導、一律擋，比
+  # 精確推導、每次推導都可能有洞更站得住。
   #
-  # 相對路徑另外保留一個以 cwd 為 base 的候選：若上面對 git base 解析的理解有誤，
-  # 第二個候選會兜住。範圍判定對候選取聯集（任一在範圍內就擋）——多擋的代價是一個
-  # 誤擋，漏擋的代價是防線失效。
-  local eff_cwd base
-  base="${CWD:-.}"
-  [ -n "$dash_c" ] && base=$(abs_path "$dash_c" "${CWD:-.}")
-
-  local -a eff_cands=()
-  add_cand() { [ -n "$1" ] && eff_cands+=("$1"); }
-
-  if [ -n "$git_dir" ]; then
-    eff_cwd=$(gitdir_root "$git_dir" "$base")
-    add_cand "$eff_cwd"
-    case "$git_dir" in /*|"~"|"~"/*) ;; *) add_cand "$(gitdir_root "$git_dir" "${CWD:-.}")" ;; esac
-  elif [ -n "$work_tree" ]; then
-    eff_cwd=$(abs_path "$work_tree" "$base")
-    add_cand "$eff_cwd"
-    case "$work_tree" in /*|"~"|"~"/*) ;; *) add_cand "$(abs_path "$work_tree" "${CWD:-.}")" ;; esac
-  else
-    eff_cwd="$base"
-    add_cand "$eff_cwd"
-  fi
+  # 代價是誤擋「從範圍內 repo 用重導操作範圍外 repo 的 main」這種罕見形態，
+  # 逃生門是 INT10_ACK= 前綴。
 
   (( has_force )) && deny "[T0-3] 禁用非 lease force push（--force / -f / +refspec）。非保護分支請改用 --force-with-lease。"
 
@@ -256,10 +212,12 @@ check_seg() {
 
   # [INT-10] 判定必須在下面 has_lease 的早退之前——一般 push（無 force 無 lease）
   # 正是本條要擋的主要形態，放在早退之後等於永遠不執行。
-  local in_scope=0 cand
-  for cand in "${eff_cands[@]}"; do
-    int10_in_scope "$cand" && { in_scope=1; break; }
-  done
+  local in_scope=0
+  if (( has_redirect )); then
+    in_scope=1                      # 不推導指向哪裡，保守視為在範圍內
+  else
+    int10_in_scope "${CWD:-.}" && in_scope=1
+  fi
   if (( ! seg_ack )) && (( in_scope )); then
     if (( ${#args[@]} >= 2 )); then
       for ((i = 1; i < ${#args[@]}; i++)); do int10_check "${args[i]}"; done
@@ -273,7 +231,8 @@ check_seg() {
       (( ${#args[@]} == 1 )) && int10_check "${args[0]}"
       # 無明示 refspec：推的是當前分支。解析不出來時不擋——[T0-3] 那邊 fail-closed 是
       # 因為 force push 破壞性不可逆，這裡最壞情況只是漏擋一次可回復的 push。
-      target=$(git -C "$eff_cwd" symbolic-ref --short HEAD 2>/dev/null || true)
+      (( has_redirect )) && deny "[INT-10] 命令含 repo 重導旗標（-C／--git-dir／--work-tree／GIT_DIR／GIT_WORK_TREE）且未明示 refspec，無法判定推的是哪個 repo 的哪個分支，保守拒絕。請明示 origin <branch>，或在指令前加 INT10_ACK=<原因> 前綴。"
+      target=$(git -C "${CWD:-.}" symbolic-ref --short HEAD 2>/dev/null || true)
       [ -n "$target" ] && int10_check "$target"
     fi
   fi
@@ -286,7 +245,8 @@ check_seg() {
       check_target "${args[i]}"
     done
   else
-    target=$(git -C "$eff_cwd" symbolic-ref --short HEAD 2>/dev/null || true)
+    (( has_redirect )) && deny "[T0-3] --force-with-lease 未明示 refspec 且命令含 repo 重導旗標，無法可靠判定目標分支，保守拒絕（請明示 origin <branch>）。"
+    target=$(git -C "${CWD:-.}" symbolic-ref --short HEAD 2>/dev/null || true)
     [[ -z "$target" ]] && deny "[T0-3] --force-with-lease 未明示 refspec 且無法解析當前分支，保守拒絕（請明示 origin <branch>）。"
     check_target "$target"
   fi
