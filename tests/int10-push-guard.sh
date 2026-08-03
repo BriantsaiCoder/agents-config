@@ -78,10 +78,16 @@ for fmt in claude codex; do
         "worktree 內推 main（common-dir 歸屬主 repo）"
   probe "$fmt" deny "$HOME/.agents" "git push origin refs/heads/main" "refspec 帶 refs/heads/ 前綴"
   probe "$fmt" deny "$HOME/.agents" "git push origin HEAD:main" "src:dst 形式，dst 為 main"
+  # 省略 remote 的 refspec：args 只有 1 個 token，位置上與 remote 無法區分。第一版只把它
+  # 當 remote，於是落到當前分支分支——在當前分支非 main 的 repo 裡就整個繞過了
+  # （Copilot 於 PR #42 指出）。fixture 用 .claude（當前分支 feat/safe）才驗得到這條。
+  probe "$fmt" deny "$HOME/.claude" "git push HEAD:main"  "省略 remote 的 refspec 推 main"
+  probe "$fmt" deny "$HOME/.claude" "git push :master"    "省略 remote 的刪除型 refspec 指向 master"
 
   # ── 應放行 ──
   probe "$fmt" allow "$HOME/.agents" "git push origin feat/x"  "全域 repo 推 feature branch"
   probe "$fmt" allow "$HOME/.claude" "git push"                "無 refspec，當前分支非 main"
+  probe "$fmt" allow "$HOME/.claude" "git push origin"         "只有 remote（不得被當成 refspec 誤擋）"
   probe "$fmt" allow "$HOME/.agents" "INT10_ACK=user當下明示 git push origin main" \
         "帶 INT10_ACK 前綴（[INT-10] 的例外，留稽核痕跡）"
   probe "$fmt" allow "$HOME/.agents" "cd /tmp && INT10_ACK=r git push origin main" \

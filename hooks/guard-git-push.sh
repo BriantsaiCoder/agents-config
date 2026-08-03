@@ -172,6 +172,13 @@ check_seg() {
     if (( ${#args[@]} >= 2 )); then
       for ((i = 1; i < ${#args[@]}; i++)); do int10_check "${args[i]}"; done
     else
+      # args 為 1 個時無法從位置區分 remote 與「省略 remote 的 refspec」——
+      # `git push origin` 與 `git push HEAD:main` / `git push :master` 都長這樣。
+      # 只當它是 remote 就會漏掉後兩者（Copilot 於 PR #42 指出）：args 只有 1 個時
+      # 落到當前分支分支，當前分支不是 main 便放行，而實際推的是 main。
+      # 兩者都查：當 refspec 查一次、再解析當前分支查一次。不會誤傷——remote 名
+      # （origin 之類）不可能命中 main/master，命中的本來就該擋。
+      (( ${#args[@]} == 1 )) && int10_check "${args[0]}"
       # 無明示 refspec：推的是當前分支。解析不出來時不擋——[T0-3] 那邊 fail-closed 是
       # 因為 force push 破壞性不可逆，這裡最壞情況只是漏擋一次可回復的 push。
       target=$(git -C "${CWD:-.}" symbolic-ref --short HEAD 2>/dev/null || true)
