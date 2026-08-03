@@ -83,6 +83,14 @@ for fmt in claude codex; do
   # （Copilot 於 PR #42 指出）。fixture 用 .claude（當前分支 feat/safe）才驗得到這條。
   probe "$fmt" deny "$HOME/.claude" "git push HEAD:main"  "省略 remote 的 refspec 推 main"
   probe "$fmt" deny "$HOME/.claude" "git push :master"    "省略 remote 的刪除型 refspec 指向 master"
+  # `git -C <path>` 決定實際操作哪個 repo；只看 payload 的 cwd 會讓範圍外目錄推範圍內
+  # 的 main 整個繞過（Copilot 於 PR #42 指出）。cwd 一律用 elsewhere 才驗得到這條。
+  probe "$fmt" deny "$HOME/elsewhere" "git -C $HOME/.agents push origin main" \
+        "git -C 絕對路徑指向範圍內 repo"
+  probe "$fmt" deny "$HOME/elsewhere" "git -C ~/.agents push origin main" \
+        "git -C 波浪號路徑（hook 看到的是未展開字串）"
+  probe "$fmt" deny "$HOME/elsewhere" "git -C$HOME/.claude push origin master" \
+        "git -C 無空格形式"
 
   # ── 應放行 ──
   probe "$fmt" allow "$HOME/.agents" "git push origin feat/x"  "全域 repo 推 feature branch"
@@ -103,6 +111,8 @@ for fmt in claude codex; do
   probe "$fmt" deny "$HOME/.agents" "git commit -m INT10_ACK=x && git push origin main" \
         "前段 commit message 提到 INT10_ACK=（不得打開例外）"
   probe "$fmt" allow "$HOME/elsewhere" "git push origin main"  "範圍外 repo 推 main"
+  probe "$fmt" allow "$HOME/.agents" "git -C $HOME/elsewhere push origin main" \
+        "cwd 在範圍內但 git -C 指向範圍外（不得誤擋）"
   probe "$fmt" allow "$HOME/.agents" "git push origin --delete feat/x" "刪除 feature branch"
   probe "$fmt" allow "$HOME/.agents" "git status"              "非 push 指令"
 

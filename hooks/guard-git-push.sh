@@ -137,6 +137,7 @@ check_seg() {
   local IFS=$' \t\n'
   local -a toks=($seg) args=()
   local i seen_git=0 seen_push=0 has_force=0 has_lease=0 broad_refset=0
+  local git_c="" want_c=0
   for ((i = 0; i < ${#toks[@]}; i++)); do
     t=${toks[i]}
     if (( ! seen_push )); then
@@ -144,6 +145,17 @@ check_seg() {
       # 去掉外層引號後，比對 git 可執行檔的常見型態。
       local bare="${t%\"}"; bare="${bare#\"}"; bare="${bare%\'}"; bare="${bare#\'}"
       case "$bare" in git|*/git|git.exe|*/git.exe) seen_git=1 ;; esac
+      # `git -C <path>` 決定實際操作哪個 repo，payload 的 cwd 只是 shell 所在目錄。
+      # 不看它就能用 `git -C ~/.agents push origin main` 從範圍外目錄推範圍內的 main
+      # （Copilot 於 PR #42 指出）。同一個位移也會讓下方 [T0-3] 的當前分支解析查錯 repo，
+      # 所以兩處共用同一個 effective cwd。
+      if (( seen_git )); then
+        if (( want_c )); then git_c="$t"; want_c=0; continue; fi
+        case "$t" in
+          -C)   want_c=1; continue ;;
+          -C?*) git_c="${t#-C}"; continue ;;
+        esac
+      fi
       [[ $seen_git -eq 1 && "$t" == push ]] && seen_push=1
       continue
     fi
@@ -159,6 +171,19 @@ check_seg() {
     esac
   done
   (( seen_push )) || return 0
+
+  # effective cwd = payload cwd 疊上 `git -C <path>`。~ 要自己展開：hook 看到的是尚未
+  # 交給 shell 的原始字串，波浪號還在。
+  local eff_cwd="${CWD:-.}"
+  if [ -n "$git_c" ]; then
+    case "$git_c" in
+      "~")   eff_cwd="$HOME" ;;
+      "~"/*) eff_cwd="$HOME/${git_c#\~/}" ;;
+      /*)    eff_cwd="$git_c" ;;
+      *)     eff_cwd="${CWD:-.}/$git_c" ;;
+    esac
+  fi
+
   (( has_force )) && deny "[T0-3] 禁用非 lease force push（--force / -f / +refspec）。非保護分支請改用 --force-with-lease。"
 
   # [INT-10] 例外只認「本段開頭」的 INT10_ACK= 前綴。去前導空白後比對，因為複合命令
@@ -168,7 +193,7 @@ check_seg() {
 
   # [INT-10] 判定必須在下面 has_lease 的早退之前——一般 push（無 force 無 lease）
   # 正是本條要擋的主要形態，放在早退之後等於永遠不執行。
-  if (( ! seg_ack )) && int10_in_scope "${CWD:-.}"; then
+  if (( ! seg_ack )) && int10_in_scope "$eff_cwd"; then
     if (( ${#args[@]} >= 2 )); then
       for ((i = 1; i < ${#args[@]}; i++)); do int10_check "${args[i]}"; done
     else
@@ -181,7 +206,7 @@ check_seg() {
       (( ${#args[@]} == 1 )) && int10_check "${args[0]}"
       # 無明示 refspec：推的是當前分支。解析不出來時不擋——[T0-3] 那邊 fail-closed 是
       # 因為 force push 破壞性不可逆，這裡最壞情況只是漏擋一次可回復的 push。
-      target=$(git -C "${CWD:-.}" symbolic-ref --short HEAD 2>/dev/null || true)
+      target=$(git -C "$eff_cwd" symbolic-ref --short HEAD 2>/dev/null || true)
       [ -n "$target" ] && int10_check "$target"
     fi
   fi
@@ -194,7 +219,7 @@ check_seg() {
       check_target "${args[i]}"
     done
   else
-    target=$(git -C "${CWD:-.}" symbolic-ref --short HEAD 2>/dev/null || true)
+    target=$(git -C "$eff_cwd" symbolic-ref --short HEAD 2>/dev/null || true)
     [[ -z "$target" ]] && deny "[T0-3] --force-with-lease 未明示 refspec 且無法解析當前分支，保守拒絕（請明示 origin <branch>）。"
     check_target "$target"
   fi
