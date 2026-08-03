@@ -39,7 +39,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | Need | Route |
 |---|---|
 | 外部 issue／PR 的初始評估 | `triage` |
-| 使用者明示要求訪談釐清未決策，或壓測 under-specified plan／decision／idea | `grilling`；領域詞彙與 ADR 另加 `domain-modeling` |
+| 使用者明示要求接受訪談或壓測（對象為 under-specified plan／decision／idea；對象 under-specified 本身不構成 trigger） | `grilling`；領域詞彙與 ADR 另加 `domain-modeling` |
 | 使用者明示邊討論邊產生 glossary／ADR | `grill-with-docs`（內含 `grilling` + `domain-modeling`） |
 | 把已決內容整理成 spec | `to-spec` |
 | 拆 tracer-bullet tickets | `to-tickets` |
