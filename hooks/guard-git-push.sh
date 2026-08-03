@@ -148,10 +148,19 @@ check_seg() {
   local IFS=$' \t\n'
   local -a toks=($seg) args=()
   local i seen_git=0 seen_push=0 has_force=0 has_lease=0 broad_refset=0
-  local git_c="" want_c=0
+  local git_c="" want_c=0 git_dir="" want_gitdir=0
   for ((i = 0; i < ${#toks[@]}; i++)); do
     t=${toks[i]}
     if (( ! seen_push )); then
+      # 環境變數前綴同樣能改變實際操作的 repo，且出現在 git 之前。
+      # `-C` 只是這一族的其中一個成員——Claude Code 自己的 changelog 修過同一組
+      # （worktree 隔離被 git -C / --git-dir / GIT_DIR 重導）。只擋 -C 等於留三個門。
+      if (( ! seen_git )); then
+        case "$t" in
+          GIT_DIR=*)       git_dir="${t#GIT_DIR=}"; continue ;;
+          GIT_WORK_TREE=*) git_c="${t#GIT_WORK_TREE=}"; continue ;;
+        esac
+      fi
       # 只認裸 token `git` 會被完整路徑繞過（/usr/bin/git push --force …）。
       # 去掉外層引號後，比對 git 可執行檔的常見型態。
       local bare="${t%\"}"; bare="${bare#\"}"; bare="${bare%\'}"; bare="${bare#\'}"
@@ -161,10 +170,15 @@ check_seg() {
       # （Copilot 於 PR #42 指出）。同一個位移也會讓下方 [T0-3] 的當前分支解析查錯 repo，
       # 所以兩處共用同一個 effective cwd。
       if (( seen_git )); then
-        if (( want_c )); then git_c="$t"; want_c=0; continue; fi
+        if (( want_c ));      then git_c="$t";   want_c=0;      continue; fi
+        if (( want_gitdir )); then git_dir="$t"; want_gitdir=0; continue; fi
         case "$t" in
-          -C)   want_c=1; continue ;;
-          -C?*) git_c="${t#-C}"; continue ;;
+          -C)            want_c=1; continue ;;
+          -C?*)          git_c="${t#-C}"; continue ;;
+          --work-tree)   want_c=1; continue ;;
+          --work-tree=*) git_c="${t#--work-tree=}"; continue ;;
+          --git-dir)     want_gitdir=1; continue ;;
+          --git-dir=*)   git_dir="${t#--git-dir=}"; continue ;;
         esac
       fi
       [[ $seen_git -eq 1 && "$t" == push ]] && seen_push=1
@@ -183,16 +197,27 @@ check_seg() {
   done
   (( seen_push )) || return 0
 
-  # effective cwd = payload cwd 疊上 `git -C <path>`。~ 要自己展開：hook 看到的是尚未
-  # 交給 shell 的原始字串，波浪號還在。
+  # effective cwd = payload cwd 疊上 -C / --work-tree / GIT_WORK_TREE / --git-dir /
+  # GIT_DIR。~ 要自己展開：hook 看到的是尚未交給 shell 的原始字串，波浪號還在。
+  # git-dir 優先於 work-tree：它直接指向 .git，是判定 repo 歸屬最強的訊號。
   local eff_cwd="${CWD:-.}"
-  if [ -n "$git_c" ]; then
-    case "$git_c" in
-      "~")   eff_cwd="$HOME" ;;
-      "~"/*) eff_cwd="$HOME/${git_c#\~/}" ;;
-      /*)    eff_cwd="$git_c" ;;
-      *)     eff_cwd="${CWD:-.}/$git_c" ;;
+  abs_path() {
+    case "$1" in
+      "~")   printf '%s' "$HOME" ;;
+      "~"/*) printf '%s/%s' "$HOME" "${1#\~/}" ;;
+      /*)    printf '%s' "$1" ;;
+      *)     printf '%s/%s' "${CWD:-.}" "$1" ;;
     esac
+  }
+  if [ -n "$git_dir" ]; then
+    # <path>/.git → repo root 是它的 parent；裸 .git 目錄（bare repo）則用它自己。
+    local gd; gd=$(abs_path "$git_dir")
+    case "$gd" in
+      */.git|*/.git/) eff_cwd="${gd%/.git*}" ;;
+      *)              eff_cwd="$gd" ;;
+    esac
+  elif [ -n "$git_c" ]; then
+    eff_cwd=$(abs_path "$git_c")
   fi
 
   (( has_force )) && deny "[T0-3] 禁用非 lease force push（--force / -f / +refspec）。非保護分支請改用 --force-with-lease。"

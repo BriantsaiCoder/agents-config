@@ -99,6 +99,18 @@ for fmt in claude codex; do
   # 同一個缺陷的 [T0-3] 側：force push 到帶引號的 main 也不得漏
   probe "$fmt" deny "$HOME/elsewhere" 'git push --force-with-lease origin "main"' \
         "[T0-3] force 推帶引號的 main"
+  # -C 只是「能改變實際操作 repo」這一族的其中一個成員。Claude Code 自己的 changelog
+  # 修過同一組（worktree 隔離被 git -C / --git-dir / GIT_DIR 重導），只擋 -C 留三個門。
+  probe "$fmt" deny "$HOME/elsewhere" "git --git-dir=$HOME/.agents/.git push origin main" \
+        "--git-dir= 指向範圍內"
+  probe "$fmt" deny "$HOME/elsewhere" "git --git-dir $HOME/.claude/.git push origin master" \
+        "--git-dir 分離形式"
+  probe "$fmt" deny "$HOME/elsewhere" "GIT_DIR=$HOME/.agents/.git git push origin main" \
+        "GIT_DIR= 環境變數前綴"
+  probe "$fmt" deny "$HOME/elsewhere" "GIT_WORK_TREE=$HOME/.agents git push origin main" \
+        "GIT_WORK_TREE= 環境變數前綴"
+  probe "$fmt" deny "$HOME/elsewhere" "git --work-tree=$HOME/.agents push origin main" \
+        "--work-tree= 形式"
 
   # ── 應放行 ──
   probe "$fmt" allow "$HOME/.agents" "git push origin feat/x"  "全域 repo 推 feature branch"
