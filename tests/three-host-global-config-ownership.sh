@@ -66,18 +66,15 @@ if rg -q \
   fail 'agents-sync still owns host global config'
 fi
 
-resolve_worktree() {
-  local repo="$1" branch="$2"
-  git -C "$repo" worktree list --porcelain |
-    awk -v ref="refs/heads/$branch" '
-      /^worktree / { path=substr($0, 10) }
-      $0=="branch " ref { print path }
-    '
-}
-
-CLAUDE_CANDIDATE="${CLAUDE_CANDIDATE:-$(resolve_worktree "$HOME/.claude" codex/three-host-global-config-split-claude)}"
-CODEX_CANDIDATE="${CODEX_CANDIDATE:-$(resolve_worktree "$HOME/.codex" codex/three-host-global-config-split-codex)}"
-COPILOT_CANDIDATE="${COPILOT_CANDIDATE:-$(resolve_worktree "$HOME/.copilot" codex/three-host-global-config-split-copilot)}"
+# 2026-08-03：candidate 改為直接指向 live host 目錄。原本用 `resolve_worktree` 去找
+# `codex/three-host-global-config-split-{claude,codex,copilot}` 三個分支的 worktree，
+# 但那些 worktree 建在 `/private/tmp/*-worktrees/`，macOS 會定期清空該路徑——目錄一消失
+# 這支測試就恆 FAIL（實測從 2026-07-29 掛到 08-03）。三個分支的內容（保留 T2-6 回覆規則）
+# 早已進入各 host 的 main，分支已於 2026-08-03 存檔至 backups/branch-archive/ 後刪除，
+# 所以拆分實驗的 candidate 就是 live 目錄本身。env 覆寫保留，供 CI 或沙箱指向別處。
+CLAUDE_CANDIDATE="${CLAUDE_CANDIDATE:-$HOME/.claude}"
+CODEX_CANDIDATE="${CODEX_CANDIDATE:-$HOME/.codex}"
+COPILOT_CANDIDATE="${COPILOT_CANDIDATE:-$HOME/.copilot}"
 
 for candidate in "$CLAUDE_CANDIDATE" "$CODEX_CANDIDATE" "$COPILOT_CANDIDATE"; do
   [ -d "$candidate" ] || fail "host candidate missing: $candidate"
@@ -93,13 +90,25 @@ for active_config in \
 done
 
 # 2026-07-30：移除對 $AGENTS/core/tier2-style.md 的 SHA 比對。core/ 三家 runtime 都不讀
-# （本檔第 200 行的反向斷言已禁止 host config 引用 .agents control plane），已退役至
+# （本檔的 control_plane_hits 反向斷言已禁止 host config 引用 .agents control plane），已退役至
 # attic/core/。T2-6 的 active 正本只在三家 host-local config，由下面 claude
-# candidate 那條與第 88-92 行的逐字 preserved_response_policy 檢查把關。
-expected_tier2_sha='677f78d81cfe358760584b27bd7a8e0e7e08fd1197842f08ceabb7f725aeba5e'
-claude_tier2_sha="$(shasum -a 256 "$CLAUDE_CANDIDATE/core/tier2-style.md" | awk '{ print $1 }')"
-[ "$claude_tier2_sha" = "$expected_tier2_sha" ] ||
+# candidate 那條與上方 preserved_response_policy 的逐字檢查把關。
+# 2026-08-03：由整檔 SHA 改為釘 [T2-6] 條文本體 + FP 指紋兩行。原值 677f78d8… 經逐 commit
+# 追查共失效兩次，都只動檔頭、T2-6 一字未改：`077c703 docs(claude): 清除 tier0／tier2 退役
+# pipeline header`（拿掉 generated-from:）→ 865fceac，再 `9b8d9bf fix(core): tier1／tier2 檔頭
+# consumed-by 更正為 claude`（改 consumed-by 與 last-verified）→ 410dc112。整檔 SHA 會把
+# 「重新驗證日期」這種無關編輯誤報成條文漂移，而每次重新驗證都必然觸發。
+# 改釘條文本體後，整檔 SHA 原本順帶守住的 `FP:STYLE-T2-2026Q3` 指紋會失去唯一機械守衛
+# （四個 repo 全庫 grep 確認無第二處），而 CONVENTIONS 規則 6 讓該指紋是 context-level 載入
+# 驗證的憑據——故另加一條 FP 斷言補回，不回退成整檔 SHA。
+expected_tier2_rule='[T2-6] 回覆 SHOULD outcome-first、無空泛前後文；決策列編號選項／推薦／取捨，單字或數字即為完整回答，推測標記，已決不列替案。觸發：所有回覆。例外：安全確認／[T0-5] 澄清可先問。驗證：首段有結論／結果／阻塞／問題，結尾非客套。'
+claude_tier2_src="$CLAUDE_CANDIDATE/core/tier2-style.md"
+[ -f "$claude_tier2_src" ] ||
+  fail "Claude candidate lacks the T2-6 source file: $claude_tier2_src"
+grep -Fqx -- "$expected_tier2_rule" "$claude_tier2_src" ||
   fail 'Claude candidate does not materialize exact current T2-6 source bytes'
+grep -Fq -- '<!-- FP:STYLE-T2-2026Q3 -->' "$claude_tier2_src" ||
+  fail 'Claude candidate lost the tier2 FP fingerprint (CONVENTIONS 規則 6)'
 rg -Fq 'current T2-6只保留到三家host-local active config；不得恢復 `.agents` control-plane ownership' "$PLAN" ||
   fail 'Plan 48 does not preserve T2-6 under host-local ownership'
 
@@ -198,14 +207,30 @@ done
 diff -u "$sentinel_before" "$sentinel_after" >/dev/null ||
   fail 'skills-only modes changed host global config metadata'
 
-if rg -n '\.agents/(core|rules|hooks|hosts|dist|bin)(/|`|$)' \
-  "$CLAUDE_CANDIDATE/CLAUDE.md" \
-  "$CLAUDE_CANDIDATE/settings.json" \
-  "$CODEX_CANDIDATE/AGENTS.md" \
-  "$CODEX_CANDIDATE/hooks.json" \
-  "$COPILOT_CANDIDATE/copilot-instructions.md" >/dev/null; then
-  fail 'active host global config still references .agents control plane'
-fi
+# 2026-08-03：`bin/agents-branch` 單點放行，`bin` 其餘路徑仍禁止。
+#
+# 衝突：`~/.codex/tests/global-config-ownership.sh` 反向斷言 AGENTS.md 必須含
+# `~/.agents/bin/agents-branch`（fail 訊息 'verified agents-branch path missing'），而本條原本
+# 禁止一切 `.agents/bin`——兩個 repo 的測試互相否定、永遠無法同時綠。使用者於 2026-08-03
+# 裁定放寬 bin。但整個 `bin/` 放行過寬：該目錄還有 agents-sync，而本檔上方另有一條斷言明文
+# 禁止 agents-sync 擁有 host global config——整包放行會讓 host config 引用 agents-sync 不再被
+# 偵測。故只放行 [T1-10] 實際強制的那一個工具路徑，其餘七支仍在守備範圍。
+#
+# 用 grep 而非 rg：本條是「找到就 FAIL」的反向斷言，寫成 `if rg …; then fail` 時缺 rg 會讓
+# 整段靜默跳過（rg 非 0 → if 不成立 → 假綠）。bin/ci-local 已記錄過這個事故類別。grep 是
+# POSIX 必然存在。終止字元加入空白與全形句讀，否則 `~/.agents/core。` 這類 zh-TW 散文寫法
+# 可規避偵測。
+control_plane_hits="$(
+  grep -nE '\.agents/(core|rules|hooks|hosts|dist|bin)(/|`|$|[[:space:]]|，|。|、)' \
+    "$CLAUDE_CANDIDATE/CLAUDE.md" \
+    "$CLAUDE_CANDIDATE/settings.json" \
+    "$CODEX_CANDIDATE/AGENTS.md" \
+    "$CODEX_CANDIDATE/hooks.json" \
+    "$COPILOT_CANDIDATE/copilot-instructions.md" 2>/dev/null |
+    grep -vF '.agents/bin/agents-branch' || true
+)"
+[ -z "$control_plane_hits" ] ||
+  fail "active host global config still references .agents control plane: $control_plane_hits"
 
 for dir in core rules hooks; do
   if find "$CLAUDE_CANDIDATE/$dir" -maxdepth 1 -type l -print -quit | grep -q .; then
@@ -248,10 +273,32 @@ fi
 skills_before="${OWNERSHIP_SKILLS_BEFORE:-/private/tmp/three-host-global-config-split-impl-skills-before.tsv}"
 skills_after="${OWNERSHIP_SKILLS_AFTER:-/private/tmp/three-host-global-config-split-ownership-after.tsv}"
 skills_metadata="${OWNERSHIP_DS_STORE_METADATA:-}"
-[ -f "$skills_before" ] || fail "ownership skills baseline missing: $skills_before"
-[ -f "$skills_after" ] || fail "ownership skills after manifest missing: $skills_after"
-skills_manifests_match "$skills_before" "$skills_after" "$skills_metadata" candidate ||
-  fail 'ownership semantic skills manifest changed'
+# 2026-08-03：由硬 FAIL 改為 UNAVAILABLE（家規 Gate contract：`UNAVAILABLE`（附 probe
+# evidence）——artifact 可證明不存在且可證明不可重建，正是該狀態的定義；`SKIPPED` 是「有
+# 能力但選擇不跑」）。這兩份 manifest 是 2026-07-29 ownership-split 對當下機器狀態拍的一次性
+# 快照，存在 /private/tmp、從未進版控（`git log --all` 對六個 manifest 檔名在四個 repo 全部
+# 0 命中），macOS 清空該路徑後不可重建——快照的是「拆分前」的樹，不是任何 commit 的內容。
+# 計畫書 §7.1 另明文禁止 rebaseline（「不得自行 rebaseline」）。硬 FAIL 只會讓整支測試恆紅、
+# 連帶遮住它後面所有仍有效的斷言（實證：本次修復前，control-plane 衝突斷言與 tier2 stale
+# SHA 斷言都因為前面先死而從未被跑到）。
+#
+# artifact 若存在，MUST 先驗它是不是「那一份」：計畫書 §7.1 記錄 before manifest 的
+# SHA-256。沒有這道驗證時，把 env 指向任意檔案（連 README.md）都會讓 gate 回綠——
+# 逃生口會變成橡皮圖章。比對函式 skills_manifests_match 本身由下方 fixture 自我測試守護。
+authentic_skills_before_sha='f7a3595ed6cbe8ff691fc094438aaed48e0cb8fdaa04b3a87a4c1a1ba37da12b'
+if [ -f "$skills_before" ] && [ -f "$skills_after" ]; then
+  [ "$(shasum -a 256 "$skills_before" | awk '{ print $1 }')" = "$authentic_skills_before_sha" ] ||
+    fail "ownership skills baseline is not the recorded 2026-07-29 snapshot: $skills_before"
+  skills_manifests_match "$skills_before" "$skills_after" "$skills_metadata" candidate ||
+    fail 'ownership semantic skills manifest changed'
+elif [ -n "${OWNERSHIP_SKILLS_BEFORE+set}${OWNERSHIP_SKILLS_AFTER+set}${OWNERSHIP_DS_STORE_METADATA+set}" ]; then
+  # 用 `+set` 而非 `:-`：export 成空字串也算「呼叫者明確要求跑這個 gate」，不得降級。
+  # 三個變數都要納入——OWNERSHIP_DS_STORE_METADATA 設定的是同一道 gate。
+  fail "ownership skills manifest explicitly requested but missing: $skills_before / $skills_after"
+else
+  printf 'UNAVAILABLE  ownership skills manifest：2026-07-29 一次性快照已隨 /private/tmp 清空、從未進版控、計畫書禁止 rebaseline。probe：ls %s → No such file。設 OWNERSHIP_SKILLS_BEFORE／OWNERSHIP_SKILLS_AFTER 指向真本（SHA-256 %s）可恢復。\n' \
+    "$skills_before" "$authentic_skills_before_sha"
+fi
 
 accepted_metadata=$'.DS_Store\tfile\tabac08d6445bcc8848a10a5e0e2a406629d2dea627e500c8e6006f720a647606\t57348\t644\t-'
 fixture_before="$scratch/skills-before.tsv"
@@ -293,14 +340,34 @@ carrier="$AGENTS/docs/agents/issue-tracker.md"
 
 historical_before="${HISTORICAL_BEFORE:-/private/tmp/three-host-global-config-split-historical-before.tsv}"
 historical_after="${HISTORICAL_AFTER:-/private/tmp/three-host-global-config-split-historical-after.tsv}"
-[ -f "$historical_before" ] || fail "historical baseline missing: $historical_before"
-[ -f "$historical_after" ] || fail "historical after manifest missing: $historical_after"
-diff -u "$historical_before" "$historical_after" >/dev/null || fail 'historical artifacts changed'
+# 2026-08-03：與上方 skills manifest 同一處置，理由相同（一次性 /private/tmp 快照、未進
+# 版控、計畫書禁止 rebaseline）。artifact 存在時先驗 before manifest 是不是計畫書 §16 記錄
+# 的那一份，否則逃生口等於橡皮圖章；明確設 env 時仍硬 FAIL，不得降級。
+authentic_historical_before_sha='6b75b8a337f51b7bc94e53c59f3a15d65255f0f42eea0b50607c71a57c1593cf'
+if [ -f "$historical_before" ] && [ -f "$historical_after" ]; then
+  [ "$(shasum -a 256 "$historical_before" | awk '{ print $1 }')" = "$authentic_historical_before_sha" ] ||
+    fail "historical baseline is not the recorded 2026-07-29 snapshot: $historical_before"
+  diff -u "$historical_before" "$historical_after" >/dev/null || fail 'historical artifacts changed'
+elif [ -n "${HISTORICAL_BEFORE+set}${HISTORICAL_AFTER+set}" ]; then
+  fail "historical manifest explicitly requested but missing: $historical_before / $historical_after"
+else
+  printf 'UNAVAILABLE  historical artifacts：一次性快照不可重建（同上）。設 HISTORICAL_BEFORE／HISTORICAL_AFTER 指向真本（SHA-256 %s）可恢復。\n' \
+    "$authentic_historical_before_sha"
+fi
 
 live_before="${LIVE_BEFORE:-/private/tmp/three-host-global-config-split-live-before.tsv}"
 live_after="${LIVE_AFTER:-/private/tmp/three-host-global-config-split-live-after.tsv}"
-[ -f "$live_before" ] || fail "live baseline missing: $live_before"
-[ -f "$live_after" ] || fail "live after fingerprint missing: $live_after"
-diff -u "$live_before" "$live_after" >/dev/null || fail 'live repo fingerprints changed'
+# 同上；before manifest 的權威 SHA 記於計畫書 §1.5。
+authentic_live_before_sha='3426b877845913a2ebbc5c9f6cf3ac2876aa29f2df9a46171e6b475446897217'
+if [ -f "$live_before" ] && [ -f "$live_after" ]; then
+  [ "$(shasum -a 256 "$live_before" | awk '{ print $1 }')" = "$authentic_live_before_sha" ] ||
+    fail "live baseline is not the recorded 2026-07-29 snapshot: $live_before"
+  diff -u "$live_before" "$live_after" >/dev/null || fail 'live repo fingerprints changed'
+elif [ -n "${LIVE_BEFORE+set}${LIVE_AFTER+set}" ]; then
+  fail "live fingerprint explicitly requested but missing: $live_before / $live_after"
+else
+  printf 'UNAVAILABLE  live repo fingerprints：一次性快照不可重建（同上）。設 LIVE_BEFORE／LIVE_AFTER 指向真本（SHA-256 %s）可恢復。\n' \
+    "$authentic_live_before_sha"
+fi
 
 printf 'PASS: three-host global-config ownership contract\n'
