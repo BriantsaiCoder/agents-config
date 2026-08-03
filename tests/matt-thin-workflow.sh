@@ -268,12 +268,20 @@ sed -n '/^### Copilot$/,/^## References$/p' "$KERNEL" |
 
 rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
   fail 'grilling does not offer compact options with the recommendation first'
-rg -q 'explicitly authorizes.*low-risk.*reversible' "$GRILLING" ||
-  fail 'grilling lacks opt-in defaults for low-risk reversible decisions'
-rg -q 'high-risk.*irreversible.*scope.*low-confidence' "$GRILLING" ||
-  fail 'grilling lacks mandatory pause conditions'
-rg -q 'summarize.*explicit confirmation' "$GRILLING" ||
-  fail 'grilling lacks final decision summary and confirmation'
+rg -q 'By default, ask decision questions one at a time.*wait for feedback.*wait for explicit confirmation before acting' "$GRILLING" ||
+  fail 'grilling does not preserve the default interactive HITL flow'
+rg -q 'explicitly authorizes.*answer every decision.*ask only when blocked' "$GRILLING" ||
+  fail 'grilling lacks opt-in delegated decision-making'
+rg -q 'In delegated-decision mode.*Ask only when no defensible recommendation remains.*material fact or user-only constraint.*user-only preference or authority.*low-confidence' "$GRILLING" ||
+  fail 'grilling lacks evidence, preference, authority, and confidence blockers'
+rg -q 'Risk alone does not make a decision unanswerable.*acting requires authorization' "$GRILLING" ||
+  fail 'grilling conflates decision-making risk with action authorization'
+rg -q 'calling workflow requires live HITL feedback.*keep the default interactive mode.*unless the user explicitly overrides that requirement' "$GRILLING" ||
+  fail 'grilling does not preserve caller-required live HITL feedback'
+rg -q 'Before acting in delegated-decision mode.*summarize every decision.*Delegated decision-making is not implementation authorization' "$GRILLING" ||
+  fail 'grilling lacks a decision summary and separate action gate'
+rg -q 'Proceed only when the action is already authorized and permitted by higher-priority rules.*Ask for authorization only when authorization is the sole blocker.*otherwise report the binding constraint' "$GRILLING" ||
+  fail 'grilling lacks terminal branches for authorization and binding constraints'
 fork_recorded grilling ||
   fail 'grilling fork is not recorded inside the fork index'
 expected_grilling_sha="$(fork_payload_sha grilling)"

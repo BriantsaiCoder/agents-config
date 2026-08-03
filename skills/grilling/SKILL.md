@@ -7,10 +7,10 @@ Interview me relentlessly about every aspect of this until we reach a shared und
 
 For each decision question, provide 2–3 mutually exclusive options, put your recommended option first, and keep the choices compact enough to answer with a number or "accept recommendation."
 
-Ask the questions one at a time, waiting for feedback on each question before continuing. Asking multiple questions at once is bewildering. If the user explicitly authorizes defaulting to your recommendations, treat that as advance feedback only for remaining low-risk, reversible decisions; continue without pausing for those decisions and record each adopted recommendation.
+By default, ask decision questions one at a time, wait for feedback before continuing, then summarize every decision and wait for explicit confirmation before acting.
 
-Pause for direct feedback whenever a decision is high-risk, irreversible, expands scope, or your recommendation is low-confidence.
+If the user explicitly authorizes you to answer every decision you can and ask only when blocked, enter delegated-decision mode: process decisions in dependency order, adopt your recommended option without pausing, and record each adopted decision. When the calling workflow requires live HITL feedback, keep the default interactive mode unless the user explicitly overrides that requirement.
 
-If a *fact* can be found by exploring the environment (filesystem, tools, etc.), look it up rather than asking me. The *decisions*, though, are mine — ask for my feedback unless my explicit advance authorization above already covers them.
+In delegated-decision mode, before asking, explore relevant available facts in the environment (filesystem, tools, etc.). Ask only when no defensible recommendation remains because a material fact or user-only constraint is unavailable, the choice depends on a user-only preference or authority, or your recommendation remains low-confidence and a wrong choice would materially matter. Risk alone does not make a decision unanswerable; it changes whether acting requires authorization. Keep the existing scope unless the user authorizes an expansion.
 
-Before acting, summarize every decision, including defaults adopted under advance authorization, and wait for explicit confirmation that we have reached a shared understanding.
+Before acting in delegated-decision mode, summarize every decision. Delegated decision-making is not implementation authorization. Proceed only when the action is already authorized and permitted by higher-priority rules. Ask for authorization only when authorization is the sole blocker; otherwise report the binding constraint.
