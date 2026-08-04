@@ -60,16 +60,45 @@ run_suite() {
   probe "$fmt" allow "git push -u origin main"
   probe "$fmt" allow "git push origin master"
   probe "$fmt" allow "git push --tags"
+  probe "$fmt" allow "git push --all origin"
   probe "$fmt" allow "git push -u origin feat/safe"
   probe "$fmt" allow "git push --force-with-lease origin feat/safe"
-  probe "$fmt" allow "git push --force-with-lease"            # 無 refspec，當前分支 feat/safe
+  probe "$fmt" deny  "git push --force-with-lease"            # Git config 可能改寫 effective destination
   probe "$fmt" allow "git pull --rebase && git push"
 
   # 攔截：非 lease force（任何分支）
   probe "$fmt" deny "git push --force origin feat/unsafe"
   probe "$fmt" deny "git push -f origin feat/unsafe"
   probe "$fmt" deny "git push -fu origin feat/unsafe"         # 短旗標捆綁
+  probe "$fmt" deny "git push -4f origin feat/unsafe"         # 數字 + force 短旗標捆綁
+  probe "$fmt" deny "git push --force --all origin"
+  probe "$fmt" deny "git push --mirror origin"                # --mirror 隱含 force
   probe "$fmt" deny "git push origin +feat/x:main"            # +refspec 即 force
+  probe "$fmt" deny 'git push "--mirror" origin'
+  probe "$fmt" deny 'git "push" --mirror origin'
+  probe "$fmt" deny 'git push "--force" origin main'
+  probe "$fmt" deny 'git push --force-with-lease origin "main"'
+  probe "$fmt" deny 'git p"ush" --force origin main'
+  probe "$fmt" deny 'git push --for"ce" origin main'
+  probe "$fmt" deny 'g"it" push --force origin main'
+  probe "$fmt" deny 'git push --force-with-lease origin ma"in"'
+  probe "$fmt" deny 'git p\ush --force origin main'
+  probe "$fmt" deny 'git push --force-w origin main'
+  probe "$fmt" deny 'git push --force-with-l origin main'
+  probe "$fmt" deny 'git push --mirr origin'
+  probe "$fmt" deny 'git push --m origin'
+  probe "$fmt" deny 'git push --mi origin'
+  probe "$fmt" deny $'g\\\nit push --mirror origin'
+  probe "$fmt" deny "\$'git' push --mirror origin"
+  probe "$fmt" deny 'git push --force-with-l --al origin'
+  probe "$fmt" deny 'git push --force-with-lease --repo=origin main'
+  probe "$fmt" deny 'git push --force-with-lease --repo origin main'
+  probe "$fmt" deny 'git push --force-with-lease --branches origin'
+  probe "$fmt" deny 'git push --force-with-lease --br origin'
+  probe "$fmt" deny 'git push --force-with-lease origin :'
+  probe "$fmt" deny 'git push --force-with-lease origin refs/heads/*:refs/heads/*'
+  probe "$fmt" deny 'git push --force-with-lease origin HEAD'
+  probe "$fmt" deny 'git push --force-with-lease origin @'
 
   # 攔截：force 變體推 main/master
   probe "$fmt" deny "git push --force origin main"
@@ -84,6 +113,8 @@ run_suite() {
 
   # 攔截：複合指令中的危險段
   probe "$fmt" deny "echo hi && git push --force origin main"
+  probe "$fmt" deny "(git push --mirror origin)"
+  probe "$fmt" deny "(/usr/bin/git push --force origin main)"
 
   # 攔截：完整路徑 git（Copilot review agents-config#1 發現的第 5 個破口）
   # 只比對裸 token `git` 時，下列全部放行
@@ -97,8 +128,8 @@ run_suite() {
 run_suite codex
 run_suite claude
 
-# 當前分支為 main 時，無 refspec 的 lease 必須攔截
-printf '── 當前分支 = main（無 refspec 解析）──\n'
+# 換成 main 後重驗無 refspec 仍保守拒絕
+printf '── 當前分支 = main（無 refspec 同樣拒絕）──\n'
 git -C "$REPO" branch -M main
 probe codex  deny "git push --force-with-lease"
 probe claude deny "git push --force-with-lease"
