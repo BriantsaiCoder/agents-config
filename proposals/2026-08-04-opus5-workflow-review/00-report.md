@@ -99,8 +99,9 @@ Preflight ledger（8 列）與 Closeout ledger（6 列）有 4 列逐欄重複�
 ## 處置狀態（2026-08-04 當日）
 
 1. **`effortLevel: "xhigh"` — 結案，無動作。** 使用者答覆：是在 Opus 5 上量測後選定的，非從 Opus 4.7 沿用。註記寫進 memory `ultracode-arming-and-effort-pin` 而非 `settings.json`——該檔由 `repo-integrity.sh` 用 `jq` 解析，加註解會讓整份設定被靜默視為不存在。
-2. **Delegation 對撞 — 部分處理。**
-   - 已做：收窄 `~/.claude/CLAUDE.md` 的收斂句（dotclaude PR #8），並補機械守衛 `has_noverify`（agents-config PR #48），RED 已證原句對既有四條 Claude 斷言完全不可見。
-   - **未做：裁決鏈補 shared kernel 術語（根因）。** 卡在 `~/.copilot/copilot-instructions.md` 僅剩 4B headroom（3595B／閘 `<3600B`，實際預算 4000B），而最短的術語插入需 9–16B。三個解法各有代價，需使用者裁決：(a) 在該檔釋放位元組（要動使用者自撰的 preferences 行）；(b) 把 3600 警戒線上調至仍低於 4000 的值（等於為了塞這次變更而放寬守衛）；(c) 只落 Claude+Codex 兩家（製造正被消除中的三家不對稱）。
+2. **Delegation 對撞 — 症狀與根因都已處理。**
+   - 症狀：收窄 `~/.claude/CLAUDE.md` 的收斂句（dotclaude PR #8），並補機械守衛 `has_noverify`（agents-config PR #48）。RED 已證原句對既有四條 Claude 斷言完全不可見。
+   - 根因：**沒有在裁決鏈插入 shared kernel 術語**，因為那組關係不是線性位階 —— host 可加一條 kernel 沒有的約束（PR #7 那樣正當），但不可放鬆 kernel 的 MUST；鏈上任一格都只能編碼其中一半。改為在 `dev-workflow/SKILL.md` 的 `## Host adapters` 段首寫加嚴契約（agents-config PR #49，commit `6a73ff8`），形狀比照 tier0 既有的「repo 層對 tier0 只可加嚴」——那條同樣寫在鏈外。由 `matt-thin-workflow.sh` 三條斷言釘住。
+   - 連帶：契約落在 kernel 而非三個 entry file，繞開了 `~/.copilot/copilot-instructions.md` 僅剩 4B headroom（3595B／閘 `<3600B`）的死結。原先評估的三個解法（釋放位元組／上調警戒線／只落兩家）全部不需要。
    - 附帶事實：收斂條文目前只有 Claude 有，`~/.codex/AGENTS.md:39` 與 `~/.copilot/copilot-instructions.md:31` 都只有基礎那一行，所以 `has_noverify` 對那兩家是空過。
 3. **三個 prompt block — 結案，明確不做。** 本報告即為紀錄，避免下次審查重新提案。
