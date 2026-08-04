@@ -134,6 +134,8 @@ Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findi
 
 ## Host adapters
 
+**加嚴契約**：Host adapter 對本 kernel 只可加嚴，MUST NOT 放鬆其 MUST 或無條件約束；放鬆需 user 當下明示。加一條 kernel 沒有的 host-specific 約束屬加嚴，正當（例：Opus 5 的 delegation 收斂只寫在 Claude adapter）。本條寫在 seam 上而非 tier0 裁決鏈，是因為這組關係不是線性位階——host 可加、不可減，鏈上任一個位置都只能編碼其中一半；形狀比照 tier0 的「repo 層對 tier0 只可加嚴不可放鬆」。
+
 Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocation 時，實際 command 前綴與啟動權限以本節對應 host adapter 為準。
 
 ### Claude
