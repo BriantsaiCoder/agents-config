@@ -198,6 +198,18 @@ has "closeout ledger keeps all six rows semantically" '六項語意一律不得�
 has "closeout ledger expands the two Preflight-absent rows" 'Relevant verification.*PR / CI / review status.*MUST 逐項展開' skills/dev-workflow/references/ledgers.md
 has "closeout ledger cites a stable section not a placeholder" '見 PR body 的 Preflight Ledger' skills/dev-workflow/references/ledgers.md
 
+# B2b 呈現壓縮的兩個界線（2026-08-04）。Opus 5 與 GPT-5.6 Sol 兩份官方指引同時命中 ledger：
+# 前者說 delete your verification scaffolding，後者說刪 repeated process instructions that
+# do not change behavior。壓的是版面不是評估，所以兩條斷言各釘一邊——「語意不得省略」擋
+# 收斂被讀成減少評估，「MUST 合併為單行／一列」擋規則被讀回逐列各寫一行。
+#
+# Closeout 那條原本寫「四列…此處以『見 PR body』帶過即可」，語意含糊到可以讀成四列各寫
+# 一行指向同一處——實測就是這樣被執行的，四行各說一次「見 PR body」，而那正是要壓掉的重複。
+has "closeout collapses the four same-source rows into one line" '四列.*MUST 合併為單行' skills/dev-workflow/references/ledgers.md
+has "preflight ledger keeps all eight rows semantically" '八項語意一律不得省略' skills/dev-workflow/references/ledgers.md
+has "preflight collapses the two self-attested rows when clean" 'Diff self-review.*Self-simplification.*MUST 合併為一列' skills/dev-workflow/references/ledgers.md
+has "preflight compression yields to any row with real content" '任一列非 PASS.*MUST 獨立展開' skills/dev-workflow/references/ledgers.md
+
 # A2（2026-08-03）：shared-security-review Step 6 原本叫同一個 agent 在回報前 discard 自己的
 # finding，與 [S5-4] 的 recall 論證相同——但 [S5-4] 的覆寫清單沒有列這個檔、觸發條件也是
 # 「組裝 prompt」而非同 agent 自我過濾，所以管不到它。改寫成 Confidence + Disposition 標記後
