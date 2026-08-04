@@ -1,4 +1,4 @@
-<!-- tier: workflow-reference | consumed-by: codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-07-25 -->
+<!-- tier: workflow-reference | consumed-by: codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-04 -->
 
 # S5 泛用 reviewer prompt（host 中立）
 
@@ -74,5 +74,5 @@
 
 - 每條 finding 給**技術評估**：採納（並修）、或有據 pushback（附技術理由，於對應 thread 回覆）。
 - 禁表演式同意——不做無理由的「好的我改」；也不做無理由的「不用改」。
-- finding 是 bug → 回 S3，且先寫 failing regression test 再修（[INT-2]）。
+- finding 是 bug → 回 S3；有 stable／valuable seam 時先補 RED，否則用同一 repro 留 before／after 並記錄理由（[INT-2]）。
 - 全部 findings 皆已 resolved（修掉或有據駁回並回覆）才可回 SKILL.md S5 判 EXIT。

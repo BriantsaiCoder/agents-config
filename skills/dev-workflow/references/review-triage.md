@@ -1,4 +1,4 @@
-<!-- tier: workflow | consumed-by: claude,codex,copilot | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md | last-verified: 2026-07-07 -->
+<!-- tier: workflow | consumed-by: claude,codex,copilot | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md | last-verified: 2026-08-04 -->
 
 # review-triage — bot-review triage 合併規格
 
@@ -18,31 +18,43 @@
 
 ### ACTION
 
+Current `head.sha` 的 CI 與 review 都是 whole-head gate；舊 head 的結果不得沿用。
+
 1. **等待異步 review**
    - 優先以 reviewer slug `copilot-pull-request-reviewer` 判定 Copilot review 是否已提交。
    - 開 Ready PR 後保持 task active；每次 push 都使前次結果失效，跑 `~/.agents/bin/pr-review-gate <n>` 對 current HEAD 重查。repo ruleset 無法啟用 Review new pushes 時，helper 會用 REST 自動 request / re-request。
    - 首查為空 → **等 2–3 分鐘重查**，勿立即斷言「無 review」。重查仍空且已逾合理視窗才記為真無。
-   - slug／API 不可用時 MUST 標 UNAVAILABLE 並附 probe 證據；不得把「無 review」或人工目視降級成 PASS。
+   - slug／API 不可用時 MUST 標 UNAVAILABLE 並附 probe 證據；不得把「無 review」或人工目視降級成 bot PASS。
 
-2. **thread-aware 逐條讀**
+2. **Bot unavailable 的 independent fallback**
+   - 這是 manual evidence branch；`pr-review-gate` 保持 `UNAVAILABLE` 且不得替 fallback 回 PASS。
+   - `STATE=REQUESTED`／`WAIT_REVIEW` 是 transient state，MUST NOT fallback；`FINDINGS`、`WAIT_CI`、`FAIL_CI`、`WAIT_READY` 也不得 fallback。
+   - fallback 只適用於 bot reviewer capability／request 經合理等待與 retry 後仍為 `UNAVAILABLE`；`repo_probe_failed`、`pr_probe_failed`、`review_probe_failed`、`requested_reviewer_probe_failed`、head 無法確認、thread probe／pagination 不完整都不得 fallback。
+   - fallback 前 MUST 獨立確認 open／ready／mergeable PR、current head 與 CI PASS，再由 independent read-only reviewer 審 current `head.sha` 的完整 diff；記錄 reviewer identity、SHA、findings 與處理結果，不得由 PR 作者自審頂替。
+   - 每次 push 都使 bot 與 fallback review 失效；新 head 必須重跑 current-head CI 與獨立 review。
+   - bot 狀態仍記 `UNAVAILABLE`，不得偽裝成 PASS；只有 fallback 的 current-head CI PASS、independent review PASS 且 0 未處理 actionable findings，整體 Review gate 才可 PASS。
+
+3. **thread-aware 逐條讀**
    - 逐個 review thread / comment 讀，**不跳讀、不抽樣**。每條標一結論：
-     - **actionable 且技術正確** → 自動修 → 驗證（build / test / lint exit 0）→ push → 重新監控（推後 review 可能再產新 findings）→ resolve 該 thread。
+     - **actionable 且技術正確** → 自動修 → 依 S4 risk tier 驗證並記 exit code → push → 重新監控（推後 review 可能再產新 findings）→ resolve 該 thread。
      - **錯誤 / YAGNI / 不適用** → 附**技術理由**於 thread 回覆，不盲從。禁表演式同意、禁盲修。
    - 回饋依 S5 技術 triage：逐條採納或附 evidence pushback，不表演式同意。
 
-3. **子集自核（改共用 / 高扇入函式時 MUST）**
+4. **子集自核（改共用 / 高扇入函式時 MUST）**
    - 把 bot findings 當**起點子集**，不當完整清單。
    - 另跑 `deps-check` 或 grep 枚舉該函式**全部 caller**，逐一核對反模式是否都已修（見 SKILL.md「動高扇入共用檔前先列依賴方」）。
    - 例：改 `ReadBig5File` 的 deref-before-null 時，枚舉 6 個消費端全查，不止 bot 點名的 4 個。
 
 ### EXIT
-- `pr-review-gate` 對 current PR head 回 PASS：latest Copilot review `commit_id == head.sha`、requested Copilot reviewer 已清除、unresolved Copilot review threads 為 0、CI 全綠、PR 為 open / ready / mergeable。
+- Primary path：`pr-review-gate` 對 current PR head 回 PASS；latest Copilot review `commit_id == head.sha`、requested Copilot reviewer 已清除、unresolved Copilot review threads 為 0、CI 全綠。
+- Fallback path：bot capability 的 `UNAVAILABLE` probe、current `head.sha` 的 CI PASS 與 independent read-only review PASS 均有 evidence，且 push 後已全部重跑。
+- 兩條 path 都要求 PR 為 open／ready／mergeable。
 - 0 條未處理 actionable findings：actionable 者全 resolved，pushback 者全附技術理由回覆並 resolve。
 - 改共用函式時，`deps-check` / grep 全 caller 核對完成且無殘留反模式。
 
 ### FAILURE
-- finding 是 bug → 回 S3 且**先寫紅測**（[INT-2]），修完重走本 gate。
-- 未等異步 review 就 merge / 只看 CI 綠燈就 merge / 以 bot 清單為完整 caller 集 → gate FAIL，撤回 merge 動作。
+- finding 是 bug → 回 S3；由 [INT-2] 決定 RED 或同一 repro before／after，修完重走本 gate。
+- 未等異步 review就 merge／在 transient state fallback／只看 CI 綠燈就 merge／以 bot 清單為完整 caller 集 → gate FAIL，撤回 merge 動作。
 
 ## 常用查詢
 
