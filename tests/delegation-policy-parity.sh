@@ -38,11 +38,35 @@ FIXED_LIMIT_RE="((併發(數)?|累計 delegation|單一 S 階段|同一 S 階段
 AUTONOMY_RE='自主判定|自行判定'
 NOASK_RE='不必先問|無須另問|MUST NOT 為此停下發問|不得為此停下發問'
 
+# main-context 重驗不得被 host 入口檔否定。
+#
+# 為什麼存在（2026-08-04）：PR #7 依 Opus 5 官方指引在 ~/.claude/CLAUDE.md 加了「已委派就
+# 不重做、不重推導其回報結論」，與 [INT-4] 的無條件約束「main context MUST 重驗其回報」
+# 正面對撞——而 tier0 裁決鏈沒有任何術語能裁定 kernel 與 host delta 這一對，兩種讀法都
+# 成立。官方原文就是 "Never redo the subagent's work and do not re-derive its findings"，
+# 所以同類措辭還會再被加進來，靠人工逐條比對會漏（同一個 PR 抓到了與 [S5-3] 的衝突，
+# 沒抓到這個）。本機第一手證據支持保留重驗：帶佐證的 finding 被 apply agent 照抄，仍會
+# 把正確內容改壞。
+#
+# 判準是**受詞**不是動詞：不重跑探索過程、不重推導推理鏈 → 放行（那正是官方要省的成本）；
+# 不核對它宣稱的回報／結論 → 擋（那是 [INT-4] 的不變量）。
+#
+# 間距用 `.{0,40}` 而非 `[^。；]{0,24}`：含多位元組字元的**否定字元類**判定隨 locale 改變。
+# 實測（第一版就是這樣寫的，本檔 canary 可重現）：對「不重做其工作，回報結論直接採用。」
+# 這種以 `，` 分隔的寫法，`[^。；]{0,24}` 在 `LC_ALL=C` 下**漏抓**、在 `en_US.UTF-8` 下正常。
+# 於是同一份設定在 CI 與本機會得到相反判定，而漏抓的那邊是靜默的。`.` 沒有這個問題，
+# 代價是失去句界限定。
+#
+# 量詞的計數單位同樣隨 locale 變（C 下位元組、UTF-8 下字元），所以 40 是浮動窗口而非固定
+# 寬度；兩種 locale 下現有 fixture 判定一致，由下方 canary 逐一釘住。勿改回否定字元類。
+NOVERIFY_RE='(不重做|不重驗|不再驗|不核對|不重新驗證|不必驗證|不重推導|[Nn]ever redo|[Dd]o not re-?derive).{0,40}(回報|結論|findings)'
+
 # 先問語彙——政策被改回「每次問人」的各種寫法，含英文與同義動詞。
 ASKFIRST_RE='先詢問|須經同意|需經同意|一律.*(先問|詢問)|未(經|獲).*(授權|同意).{0,60}(不得|不可|禁止|MUST NOT)|(不得|不可|禁止|MUST NOT).{0,60}(subagent|sub-agent|子代理|委派|delegate|開子|平行代理)|[Nn]ever use (sub-?agents?|delegation)|without.*(approval|permission)|ask.*(first|before).*(delegat|subagent)|禁用.*(subagent|子代理)|先取得.*(同意|授權)|必須.*(同意|授權).{0,20}才'
 
 has_fixed_limit() { grep -Eq "$FIXED_LIMIT_RE" "$1"; }
 has_autonomy()    { grep -Eq "$AUTONOMY_RE" "$1" && grep -Eq "$NOASK_RE" "$1"; }
+has_noverify()    { grep -Eq "$NOVERIFY_RE" "$1"; }
 
 # 先問語彙偵測逐行、且跳過同一行帶自主語彙的句子，避免「不必先問」被反向誤判。
 has_askfirst() {
@@ -98,6 +122,36 @@ selftest() {
     && ng 'SKIP 偵測：無 SKIP 的輸入被誤判' \
     || ok 'SKIP 偵測：無 SKIP 時不誤判'
 
+  # 否定 main-context 重驗：RED 用 PR #7 的原句，GREEN 用收窄後的句子。兩者只差受詞，
+  # 所以這組 fixture 同時釘住「會擋」與「不過度擋」——只留其中一邊等於沒有鑑別力。
+  printf '已委派就不重做、不重推導其回報結論。\n' > "$scratch/noverify-pr7.md"
+  printf '已委派就不重做其工作，回報結論直接採用。\n' > "$scratch/noverify-en.md"
+  printf 'If you delegate, commit to it. Do not re-derive its findings once it reports back.\n' > "$scratch/noverify-official.md"
+  has_noverify "$scratch/noverify-pr7.md" && ok '否定重驗：PR #7 原句被抓到' || ng '否定重驗：漏掉 PR #7 原句'
+  has_noverify "$scratch/noverify-en.md" && ok '否定重驗：不重做+回報結論被抓到' || ng '否定重驗：漏掉不重做+回報結論'
+  has_noverify "$scratch/noverify-official.md" && ok '否定重驗：官方英文原句被抓到' || ng '否定重驗：漏掉官方英文原句'
+  printf '已委派就不重跑其探索過程、不重推導其推理鏈，但其宣稱的結果仍依 [INT-4] 由 main context 以證據核對。\n' > "$scratch/noverify-narrowed.md"
+  has_noverify "$scratch/noverify-narrowed.md" && ng '否定重驗：誤判收窄後的合格寫法' || ok '否定重驗：不誤判收窄後的合格寫法'
+  printf 'S5 以外不另派 subagent 做 verification；已委派就不重跑其探索過程。\n' > "$scratch/noverify-scope.md"
+  has_noverify "$scratch/noverify-scope.md" && ng '否定重驗：誤判 delegation 收斂本身' || ok '否定重驗：不誤判 delegation 收斂本身'
+
+  # locale 獨立性：量詞計數單位在 C 下是位元組、UTF-8 下是字元，而否定字元類的多位元組
+  # 陷阱只在 C 下現形。只驗一種 locale 會得到「本機綠 runner 紅」或反過來的假保證——
+  # 本 repo 已在 wc -w 上踩過同一課，tests/word-budget.sh 有對應的 locale canary。
+  utf8_loc=$(locale -a 2>/dev/null | grep -iE '^(C\.UTF-?8|en_US\.UTF-?8)$' | head -1)
+  if [ -n "$utf8_loc" ]; then
+    for loc in C "$utf8_loc"; do
+      ( LC_ALL="$loc"; export LC_ALL; has_noverify "$scratch/noverify-en.md" ) \
+        && ok "locale 獨立[$loc]：逗號分隔的否定重驗仍被抓到" \
+        || ng "locale 獨立[$loc]：漏抓逗號分隔（否定字元類陷阱回流）"
+      ( LC_ALL="$loc"; export LC_ALL; has_noverify "$scratch/noverify-narrowed.md" ) \
+        && ng "locale 獨立[$loc]：誤判收窄後的合格寫法" \
+        || ok "locale 獨立[$loc]：不誤判收窄後的合格寫法"
+    done
+  else
+    na 'locale 獨立：本環境無 UTF-8 locale，只涵蓋 C'
+  fi
+
   printf 'Delegation 依 [INT-4] 自主判定是否、何時及使用多少 subagent，不設固定數量或階段限制，符合即直接執行不必先問。\n' > "$scratch/good.md"
   has_autonomy "$scratch/good.md" && ok '正向語彙：合格寫法通過' || ng '正向語彙：合格寫法被誤判'
   has_askfirst "$scratch/good.md" && ng '正向語彙：合格寫法被誤判為先問' || ok '正向語彙：不誤判為先問'
@@ -126,6 +180,9 @@ check_host() {
   has_askfirst "$file" \
     && ng "$label 仍含先問／禁止 delegation 語彙" \
     || ok "$label 無先問語彙"
+  has_noverify "$file" \
+    && ng "$label 否定 main-context 重驗（撞 [INT-4] 無條件約束）" \
+    || ok "$label 未否定 main-context 重驗"
 }
 
 finish() {
