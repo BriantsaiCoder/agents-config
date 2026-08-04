@@ -15,6 +15,12 @@
 
 四態標記（全鏈通則，同 SKILL.md）：`PASS` / `FAIL` / `UNAVAILABLE`（須附 probe 失敗證據）/ `SKIPPED`（須附理由）。無證據不得標 PASS。
 
+## Closeout 後的新 commit
+
+- S4 依 `git diff --name-only <前次 closeout SHA>..HEAD` 的累積影響重新判 risk tier 並重跑適用 checks；不得因新 commit 很小而降低整體風險。
+- S5 只重審該 diff 觸及的檔案與其 transitive impact；未觸及範圍可沿用前次 findings 並註明 baseline SHA，範圍不得由 reviewer 任意縮小。
+- S6 重出完整六項 ledger；未受影響項目可引用 baseline SHA。Current-head CI／review 結果一律失效並依 `review-triage.md` 重查。
+
 ---
 
 ## 1. Preflight Ledger（8 rows，寫進 PR body）
@@ -27,7 +33,7 @@
 | 2 | **Git state** | 從乾淨 baseline 出發，工作在 `feat/` / `fix/` 分支（非 master）| 分支名 + 動手前 `git status` 為 clean 的紀錄；確認非 main / master（[T0-3]）|
 | 3 | **Diff self-review** | 每行變更已逐行看過；無自己殘留的 debug / TODO / dead code（unused import / var / func）| `git diff` 走查摘要；自造 dead code 已清（pre-existing 只標不刪）|
 | 4 | **Self-simplification** | S4 四檢核通過：無 unrequested abstraction、無新依賴、無單一使用點抽象層、無 speculative config | 四項逐一標記結果；有新依賴時附選型理由（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）|
-| 5 | **Tests evidence** | 測試已寫且跑綠；BUGFIX 另證紅測早於 fix（[INT-2]）| 確切測試指令 + exit code + 通過數；BUGFIX 附紅→綠的 commit 序（無 seam 須標例外理由）|
+| 5 | **Tests evidence** | 適用的 risk-tier verification 已跑綠；BUGFIX 依 [INT-2] 證 RED→GREEN 或同一 repro before／after | 確切測試／repro 指令 + exit code + 通過數；stable／valuable seam 附 RED→GREEN 順序，否則附同一 repro before／after 與不採 RED 的理由 |
 | 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要；0 條未處理 actionable |
 | 7 | **Security-release gates** | 會部署的變更已跑 `*-release-verification` + `dependency-security-scan`（正交必跑，非三選一）| 列出跑了哪些 gate + 結果；不部署則標 SKIPPED 附「本次不部署」理由 |
 | 8 | **Residual risks** | 已知但接受的殘留風險已列舉；中高風險附 rollback | 風險清單（「無」是明述斷言不是留白）；中高風險變更附 rollback 註記（[T0-6]）|
@@ -66,7 +72,7 @@
 |-----|------|
 | **Self-simplification** | PASS / FAIL / SKIPPED，附證據（四檢核結果）|
 | **Diff self-review** | PASS / FAIL / SKIPPED，附證據（逐行走查摘要）|
-| **Relevant verification** | 確切指令或工具檢查 + 結果摘要（build / test / lint 的指令 + exit code）|
+| **Relevant verification** | 依 S4 risk tier 列 task-specific probe／targeted test／affected build／full suite 的確切指令與 exit code |
 | **Review gate** | reviewer 型別、agent id 或不可用理由、最終 finding 摘要 |
 | **PR / CI / review status** | 適用時：PR 連結、CI 綠燈狀態、bot review 處理狀態 |
 | **Residual risks** | 殘留風險（中高風險附 rollback）|

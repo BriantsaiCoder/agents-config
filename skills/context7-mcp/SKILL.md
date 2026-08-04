@@ -1,9 +1,9 @@
 ---
 name: context7-mcp
-description: This skill should be used when the user asks about libraries, frameworks, API references, or needs code examples. Activates for setup questions, code generation involving libraries, or mentions of specific frameworks like React, Vue, Next.js, Prisma, Supabase, etc. Microsoft／Azure／.NET → microsoft-docs (concepts, tutorials) or microsoft-code-reference (API signatures, SDK samples).
+description: Use for current third-party library, framework, SDK, API, CLI, or cloud docs when the active host exposes no provider-native official-docs capability or that capability is UNAVAILABLE. Microsoft／Azure／.NET → microsoft-docs or microsoft-code-reference.
 ---
 
-When the user asks about libraries, frameworks, or needs code examples, use Context7 to fetch current documentation instead of relying on training data.
+Use Context7 as the third-party fallback after any provider-native official-docs capability exposed by the active host, not as a blanket documentation router.
 
 ## Authorization
 
@@ -13,7 +13,7 @@ When the user asks about libraries, frameworks, or needs code examples, use Cont
 
 ## When to Use This Skill
 
-Activate this skill when the user:
+After provider-native official docs are absent or report `UNAVAILABLE`, activate this skill when the user:
 
 - Asks setup or configuration questions ("How do I configure Next.js middleware?")
 - Requests code involving libraries ("Write a Prisma query for...")

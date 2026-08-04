@@ -14,15 +14,27 @@ has() {
 }
 
 lacks() {
-  local label="$1" pattern="$2" path="$3"
-  if [ ! -e "$ROOT/$path" ]; then
-    ng "$label"
-  elif rg -q "$pattern" "$ROOT/$path"; then
-    ng "$label"
-  else
-    ok "$label"
-  fi
+  local label="$1" pattern="$2" path rc
+  shift 2
+  [ "$#" -gt 0 ] || { ng "$label"; return 1; }
+  for path in "$@"; do
+    [ -e "$ROOT/$path" ] || { ng "$label"; return 1; }
+    rg -q "$pattern" "$ROOT/$path"
+    rc=$?
+    case "$rc" in
+      0) ng "$label"; return 1 ;;
+      1) ;;
+      *) ng "$label"; return 1 ;;
+    esac
+  done
+  ok "$label"
 }
+
+if (rg() { return 2; }; lacks "lacks helper scan error fixture" 'unused' skills/dev-workflow/SKILL.md) >/dev/null; then
+  ng "lacks helper fails closed on scan errors"
+else
+  ok "lacks helper fails closed on scan errors"
+fi
 
 rule_has_in() {
   local label="$1" id="$2" pattern="$3" file="$4"
@@ -84,7 +96,12 @@ has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.m
 has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md
 has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
 has "primary-source research routes to research" 'primary-source.*citable Markdown.*`research`' skills/dev-workflow/SKILL.md
-has "current product docs route to context7" 'library.*framework.*SDK.*API.*CLI.*cloud.*`context7-mcp`' skills/dev-workflow/SKILL.md
+has "provider-native official docs route before fallback" 'provider-native official docs.*Context7 fallback' skills/dev-workflow/SKILL.md
+has "third-party current docs fall back to context7" 'third-party.*current.*`context7-mcp`' skills/dev-workflow/SKILL.md
+has "context7 activation preserves provider-first gate" 'provider-native official docs.*(absent|UNAVAILABLE).*activate this skill' skills/context7-mcp/SKILL.md
+lacks "Context7 is not the blanket docs owner" '所有 current docs.*Context7|current product docs.*一律.*context7' skills/dev-workflow/SKILL.md
+lacks "shared kernel does not name a host-only OpenAI skill" '`openai-docs`' skills/dev-workflow/SKILL.md
+lacks "Context7 fallback does not name a host-only OpenAI skill" '`openai-docs`' skills/context7-mcp/SKILL.md
 has "context7 pre-authorizes only its two read-only tools" 'resolve-library-id.*query-docs.*pre-authorized' skills/context7-mcp/SKILL.md
 has "context7 starts lazily without a separate prompt" 'lazily.*do not ask the user' skills/context7-mcp/SKILL.md
 has "context7 permission failure stays fail-closed" 'fail closed.*UNAVAILABLE.*do not broaden' skills/context7-mcp/SKILL.md
@@ -115,8 +132,8 @@ lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|impr
 
 has "external issue or PR routes to triage" '外部.*issue.*PR.*`triage`' skills/dev-workflow/SKILL.md
 has "grill-with-docs stays explicit" '明示.*`grill-with-docs`' skills/dev-workflow/SKILL.md
-has "initially clear single-session work routes to implement" '需求已清楚.*單一 session.*`implement`' skills/dev-workflow/SKILL.md
-has "single-session slice routes to implement" '單一 session.*`implement`' skills/dev-workflow/SKILL.md
+has "clear change build fix directly authorizes local implementation" '明確.*change／build／fix.*in-scope local implementation.*non-destructive verification' skills/dev-workflow/SKILL.md
+lacks "clear work does not wait for implement invocation" '需求已清楚.*推薦.*`implement`|單一 session.*等待.*`implement`' skills/dev-workflow/SKILL.md
 has "missing canonical spec routes through to-spec" '無 canonical spec.*`to-spec`.*`to-tickets`' skills/dev-workflow/SKILL.md
 has "existing spec skips duplicate to-spec" '已有完整 spec.*略過 `to-spec`.*`to-tickets`' skills/dev-workflow/SKILL.md
 has "ticket implementation starts fresh" '每張 ticket.*fresh session.*isolated.*worktree' skills/dev-workflow/SKILL.md
@@ -158,12 +175,15 @@ has "runtime capacity remains a technical bound" 'host/runtime 可用容量仍�
 rule_has "S5 review agents stay read-only while AI chooses usage" INT-4 'S5 Standards／Spec outcomes.*如使用 review agents，MUST 為 read-only，數量與批次由 AI 決定'
 rule_has "downstream fixed choreography is advisory" INT-4 '下游 skill 的固定 spawn 時機／數量一律由本條覆寫為 advisory choreography.*coverage、outcome 與 independence requirements 保留'
 rule_has "delegation cannot bypass authorization gates" INT-4 'MUST NOT 用 delegation 迴避 S2 授權或 \[T0-8\] plan gate'
-rule_has "existing public behavior seam is pre-confirmed" INT-2 '既有 public behavior seam 視為已確認.*只有新增 seam 才需.*確認'
-rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 '\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新增 seam.*micro-refactor.*重跑.*覆寫'
+rule_has "stable valuable seam requires RED" INT-2 'stable.*valuable.*seam.*failing regression test.*RED'
+rule_has "unstable seam keeps same repro before after" INT-2 '否則.*同一.*repro.*before／after.*理由'
+rule_has "INT-2 keeps the five-element rule contract" INT-2 '觸發：.*例外：.*驗證：'
+lacks "bugfix no longer has unconditional RED" 'MUST 在 fix 前先有 failing regression test.*例外：無' skills/dev-workflow/SKILL.md
+rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 'stable.*valuable.*\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新增 seam.*micro-refactor.*重跑.*覆寫'
 rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
 rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
-rule_has "S5 reports all findings with severity and confidence" S5-4 'MUST NOT 設 word count.*回報所有命中項.*severity.*confidence'
-rule_has "S5 aggregate stays within one review axis" S5-4 '只在單一軸內進行.*跨軸不合併、不重排'
+has "reviewer template owns severity and confidence" '全部回報、下游過濾.*severity.*confidence|全部回報、下游過濾.*確信度' skills/dev-workflow/references/reviewer-template.md
+has "reviewer template keeps axes separate" '單一 review 軸內.*跨軸不合併、不重排' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template carries the complete-report contract" '全部回報、下游過濾.*不設字數或條數上限.*確信度.*高／中／低' skills/dev-workflow/references/reviewer-template.md
 # [S5-3] 要求兩條 baseline 逐字進「每一個」reviewer prompt，但在 2026-08-03 之前零測試
 # 守它——同日 reviewer-template.md 被編輯注入 [S5-4] 時，[S5-3] 的兩條仍被漏掉，單純是
@@ -179,17 +199,31 @@ has "code-review Standards baseline carries Redundant Dependency" 'Redundant Dep
 # B 層（2026-08-03）：兩條「放寬」型修正，各自要有守衛——放寬比收緊更需要，因為退回舊
 # 版本不會有人察覺，只會表現為「又開始整份重跑／整份重述」。
 #
-# B1 Gate contract：原文是「Closeout 後若出現新 commit，S4–S6 全部失效並重跑」，一顆只改
-# 註解的 commit 也會強制整份 Standards+Spec 重審 + 全量 build/test/lint。收斂為 S4 全跑、
-# S5 只審新 commit 觸及的檔案。三條斷言分別釘住：S4 不被收斂、S5 範圍由 git diff 機械判定
-# （不是審查者裁量）、CI/bot gate 不適用本收斂。缺任一條，收斂都會變成漏洞而非優化。
-# pattern 內的 `.` 一律轉義：ERE 的 `.` 匹配任意字元，`review-triage.md` 未轉義時
-# 檔名被改成 review-triageXmd 仍會綠（fail-open），守衛失去精準度。
-has "closeout rerun keeps S4 unscoped" '\*\*S4 MUST 全跑\*\*' skills/dev-workflow/SKILL.md
-has "closeout rerun scopes S5 by changed files" '\*\*S5 只對新 commit 觸及的檔案重審\*\*' skills/dev-workflow/SKILL.md
-has "closeout rerun still emits the full ledger" '\*\*S6 MUST 重跑並重出完整 Closeout Ledger\*\*.*六列一列不少.*baseline SHA' skills/dev-workflow/SKILL.md
-has "closeout scope is mechanical not discretionary" 'git diff --name-only.*不由審查者裁量' skills/dev-workflow/SKILL.md
-has "closeout scoping does not relax the CI/bot gate" 'CI 與 bot-review gate 依 `references/review-triage\.md`.*不適用本條收斂' skills/dev-workflow/SKILL.md
+# B1 Gate contract：verification 依風險擴張，不因一顆低風險 commit 無條件全量重跑；
+# current-head CI/review 仍由 PR gate fail-closed。
+has "S4 defines low medium high risk tiers" 'Low.*Medium.*High' skills/dev-workflow/SKILL.md
+has "S4 expands targeted affected full by risk" 'targeted.*affected.*full CI|targeted.*affected.*full suite' skills/dev-workflow/SKILL.md
+lacks "S4 no longer always reruns everything" 'S4 MUST 全跑|Build／test／lint 與 task-specific probes 全跑' skills/dev-workflow/SKILL.md
+has "current-head PR gates remain whole" 'current `head\.sha`.*CI.*review|current HEAD.*CI.*review' skills/dev-workflow/references/review-triage.md
+
+has "bot fallback is independent and read-only" 'independent read-only reviewer.*current `head\.sha`' skills/dev-workflow/references/review-triage.md
+has "bot transient states cannot fallback" 'REQUESTED.*WAIT_REVIEW.*MUST NOT fallback' skills/dev-workflow/references/review-triage.md
+has "bot findings and CI states cannot fallback" 'FINDINGS.*WAIT_CI.*FAIL_CI.*WAIT_READY.*不得 fallback' skills/dev-workflow/references/review-triage.md
+has "bot fallback requires current-head CI" 'fallback.*current.*CI.*PASS' skills/dev-workflow/references/review-triage.md
+has "push invalidates bot fallback" '每次 push.*fallback.*失效' skills/dev-workflow/references/review-triage.md
+has "bot fallback rejects incomplete PR and thread probes" 'repo_probe_failed.*pr_probe_failed.*head.*thread probe' skills/dev-workflow/references/review-triage.md
+has "bot fallback rejects incomplete reviewer probes" 'review_probe_failed.*requested_reviewer_probe_failed.*不得 fallback' skills/dev-workflow/references/review-triage.md
+has "bot fallback requires open ready mergeable PR" 'fallback 前.*open.*ready.*mergeable PR' skills/dev-workflow/references/review-triage.md
+has "bot fallback cannot use author self-review" 'independent read-only reviewer.*不得由 PR 作者自審' skills/dev-workflow/references/review-triage.md
+has "bot helper cannot manufacture fallback PASS" 'manual evidence branch.*pr-review-gate.*UNAVAILABLE.*不得.*PASS' skills/dev-workflow/references/review-triage.md
+has "bot UNAVAILABLE remains visible under fallback" 'bot 狀態仍記 `UNAVAILABLE`.*不得偽裝成 PASS' skills/dev-workflow/references/review-triage.md
+
+has "ledger records conditional RED or same-repro evidence" 'stable.*valuable.*RED.*否則.*repro.*before／after.*理由' skills/dev-workflow/references/ledgers.md
+has "reviewer bug findings preserve conditional RED" 'stable.*valuable.*RED.*否則.*同一 repro.*before／after.*理由' skills/dev-workflow/references/reviewer-template.md
+has "S5 bug findings preserve conditional RED" 'bug finding.*stable.*valuable.*RED.*否則.*repro.*before／after.*理由' skills/dev-workflow/SKILL.md
+has "PR bug findings preserve conditional RED" 'finding 是 bug.*\[INT-2\].*RED.*同一 repro before／after' skills/dev-workflow/references/review-triage.md
+lacks "no review path restores blanket RED" 'bug finding 先補 RED test|先寫紅測' skills/dev-workflow/SKILL.md skills/dev-workflow/references/review-triage.md
+has "bot fixes use the applicable S4 tier" 'actionable.*自動修.*S4 risk tier.*exit code' skills/dev-workflow/references/review-triage.md
 
 # B2 Closeout Ledger：六列有四列與 Preflight Ledger 逐欄重複，PR 路徑上讀者已在 PR body
 # 看過。壓縮的是版面不是評估——這條斷言釘住「六項語意不得省略」，否則下一次會被讀成
@@ -219,6 +253,8 @@ has "security review keeps a false-positive disposition" 'not-exploitable' skill
 has "security report card carries a Verdict slot" 'Verdict: exploitable / mitigated-upstream / not-exploitable' skills/shared-security-review/references/report-format.md
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
 has "skill changes require invocation canaries" 'Skill change.*frontmatter.*relative references.*positive/negative.*trigger canary' skills/dev-workflow/SKILL.md
+has "references declare load conditions" 'Load when' skills/dev-workflow/SKILL.md
+lacks "kernel does not inline reviewer baselines" 'Reinvented Stdlib|Redundant Dependency' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' skills/dev-workflow/SKILL.md
 has "Copilot S5 delegates dirty reviews adaptively" 'working tree dirty 時，依 \[INT-4\] 由 AI 自主決定是否、何時及使用多少 read-only `task`' skills/dev-workflow/SKILL.md
 has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' skills/dev-workflow/SKILL.md
