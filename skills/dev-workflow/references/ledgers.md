@@ -1,4 +1,4 @@
-<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | referenced-from: dev-workflow/SKILL.md S6 CLOSEOUT | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md + .codex/AGENTS.override.md（Mandatory Closeout Ledger 收割）| last-verified: 2026-07-07 -->
+<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | referenced-from: dev-workflow/SKILL.md S6 CLOSEOUT | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md + .codex/AGENTS.override.md（Mandatory Closeout Ledger 收割）| last-verified: 2026-08-04 -->
 
 # ledgers.md — S6 CLOSEOUT 的 ledger 定義
 

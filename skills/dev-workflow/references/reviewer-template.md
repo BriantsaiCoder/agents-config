@@ -1,4 +1,4 @@
-<!-- tier: workflow-reference | consumed-by: codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-07-25 -->
+<!-- tier: workflow-reference | consumed-by: codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-04 -->
 
 # S5 泛用 reviewer prompt（host 中立）
 
