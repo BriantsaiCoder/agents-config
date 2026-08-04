@@ -139,6 +139,7 @@ run_suite() {
   probe "$fmt" deny 'git p"ush" --force origin main'
   probe "$fmt" deny 'git push --for"ce" origin main'
   probe "$fmt" deny 'g"it" push --force origin main'
+  probe "$fmt" deny '{git,push,--force,origin,main}'
   probe "$fmt" deny 'git push --force-with-lease origin ma"in"'
   probe "$fmt" deny 'git p\ush --force origin main'
   probe "$fmt" deny 'git push --force-w origin main'
