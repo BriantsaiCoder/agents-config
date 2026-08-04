@@ -165,13 +165,11 @@ jobs:
 
       # tier0 有三份實體：~/.claude/core/tier0-safety.md（Claude 靠 @import 常駐）與
       # ~/.codex/AGENTS.md、~/.copilot/copilot-instructions.md（兩者無 import 機制，只能內嵌）。
-      # 三份都蓋同一個 FP:AGENTS-T0-2026Q3 指紋宣稱同版，但 2026-08-03 之前沒有任何測試、
-      # hook、CI 或 bin/ 工具在驗——agents-sync 只管 skills symlink，不碰入口檔，2026-07-07
-      # blueprint 的 dist/codex-AGENTS.md 生成流程從未實作。指紋是假保證，實測已漂移兩處：
-      # [T0-8] Codex/Copilot 掉了 in-scope 限定詞（scope 外變更落入免 plan 區，與 [T2-8] 衝突），
-      # [T0-9] 掉了「bot 異步產出，開 PR 當下為空是延遲不是無」（會過早判定 merge gate 滿足）。
-      # runner 沒有那三個檔，同 delegation-policy-parity 的處境，故 CI 跑 --selftest：對 fixture
-      # 驗正向不誤報、四種反向（掉 token／掉整條／拔指紋）都真的觸發。
+      # 三份都蓋同一個 FP:AGENTS-T0-2026Q3 指紋宣稱同版，但 agents-sync 不碰入口檔；
+      # 2026-08-04 實測 Claude/Copilot 的 T0-1/5/7 仍是 blanket gate，三家 T0-9 又與 shared
+      # bot UNAVAILABLE fallback 衝突。runner 沒有真實 host 檔，故 CI 跑 --selftest：以完整
+      # clause 與正反 fixture 驗 autonomy exception、risk trigger、review outcome、五要素、
+      # 整條規則與指紋都會 fail closed，並避免把含空白 clause 拆成鬆散 token 的舊誤報。
       - name: tier0 規範內容三家等價
         run: bash tests/tier0-parity.sh --selftest
 
