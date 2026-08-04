@@ -93,7 +93,7 @@ Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findi
 1. 先依 [T0-8] 與 [INT-3] 判定 plan gate；schema、auth、payment、migration、deployment 與 destructive change 另附 rollback。
 2. 使用者明確要求 change／build／fix 且 scope 清楚時，該原句直接授權 in-scope local implementation 與 non-destructive verification；`implement` 是可選 workflow adapter，不是第二道授權。Commit／push／PR／merge 與高風險 side effects 仍走各自 gate。
 3. 核准前只保留 session plan／todo；只有 user／repo 要求或確有跨-session 價值時，才持久化到 `docs/agents/specs/`、`docs/agents/plans/` 或 `sdd/<slug>/`。
-4. 有多種合理解讀且會改檔時，列假設與影響後停下發問；不得用 delegation 迴避授權（[INT-4]）。
+4. 有多種合理解讀時依 [T0-5]：只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問；低風險、可逆且無 material impact 的細節採 sensible default 並記錄 default／impact。不得用 delegation 迴避授權（[INT-4]）。
 
 ## Implementation adapters
 

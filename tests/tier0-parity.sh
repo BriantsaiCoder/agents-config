@@ -7,17 +7,14 @@
 # hook、CI 或 bin/ 工具在驗證它們真的等價——agents-sync 只管 skills symlink，不碰入口檔，
 # 2026-07-07 blueprint 描述的 dist/codex-AGENTS.md 生成流程從未實作。指紋成了假保證。
 #
-# 實測到的後果（本測試建立當下即為 RED）：
-#   [T0-8] Codex/Copilot 側掉了 in-scope 限定詞——正本「其餘明確的 in-scope change 可直接
-#          實作」變成「其他明確 change 可直接實作」，scope 外的變更也落入免 plan 區，與
-#          [T2-8]（scope 外只能列 follow-up）直接衝突。這是唯一方向為「放寬」的漂移。
-#   [T0-9] 掉了「bot 異步產出，開 PR 當下為空是延遲不是無」，少了它會把「還沒跑出來」
-#          誤判成「沒有 bot review」而過早 merge。
+# 2026-08-04 的第二次 RED 顯示，單靠寬鬆 token 表會同時漏掉語意漂移與製造誤報：
+#   [T0-1]/[T0-5]/[T0-7] Claude/Copilot 保留舊 blanket gate，Codex 已採 risk-based contract；
+#   [T0-9] 三家未承接 shared review-triage 的 bot UNAVAILABLE fallback；
+#   [T0-1] checker 把「file path」按空白拆成兩個 token，Codex 的合法「path」因此被誤報。
 #
-# 判準是規範內容，不是逐字相同。三份是各自撰寫的 per-host renderings，措辭本來就系統性
-# 不同（rg↔grep、probe↔探針、consumer↔消費端、Codex/Copilot 額外要求 exit code），逐字
-# 比對只會製造雜訊。所以只斷言每條規則的**規範性 token** 三份都在：觸發類別、MUST 的動作
-# 邊界、防誤判的關鍵限定詞。措辭差異放行，加嚴放行（tier0 裁決鏈明定「只可加嚴不可放鬆」）。
+# 判準是規範內容，不是逐字相同。三份仍可保留 per-host 措辭，但每個以 `|` 分隔的 clause
+# 必須完整存在，不能再按空白拆詞；selftest 另用正反 fixture 證明 autonomy exception、risk
+# trigger、fallback outcome 與五要素缺一時都會 FAIL。
 #
 # 改 tier0 規則時 MUST 同步更新下方 REQUIRED 表，否則新規則的漂移不會被抓到。
 #
@@ -33,19 +30,18 @@ ok()   { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng()   { printf '  FAIL  %s\n' "$1" >&2; fail=$((fail + 1)); }
 na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 
-# 每列：規則 ID|token|token|...
-# token 以 grep -i -F 在該規則所在行內比對，故只放跨 host 共通的字面片段——
-# 不放措辭會變的詞（如「消費端」對上「consumer」），只放規範性的那些。
+# 每列：規則 ID|完整 clause|完整 clause|...
+# clause 以 grep -i -F 在規則行內比對；空白是 clause 的一部分，不得拆成鬆散 token。
 REQUIRED=$(cat <<'TABLE'
-T0-1|file path|config key
+T0-1|Action／current-state claim|path／API／config key|live evidence|實際修改／執行 target|live probe|non-action citation／hypothetical
 T0-2|evidence|done
 T0-3|force-push|force-with-lease
 T0-4|secret|set
-T0-5|停下發問|假設
+T0-5|Material ambiguity|停下發問|低風險可逆細節|sensible default|outcome／scope／risk|無 material impact
 T0-6|auth|payment|migration|大量刪除|crypto|multi-tenant|rate-limit|pipeline|rollback
-T0-7|expand|dual-write|backfill|switch-reads|remove-legacy
+T0-7|Online DB migration|compatibility／destructive risk|expand→dual-write→backfill→switch-reads→remove-legacy|destructive schema|additive／new-object|SKIPPED|consumer boundary
 T0-8|in-scope|plan|中高風險
-T0-9|CI|bot review|延遲不是無
+T0-9|current HEAD|applicable CI PASS|0 unresolved actionable findings|UNAVAILABLE|independent read-only reviewer|review-triage
 TABLE
 )
 
@@ -67,7 +63,7 @@ check_host() {
     return
   fi
 
-  local row rule line tok missing
+  local row rule line clause missing marker
   while IFS= read -r row; do
     [ -n "$row" ] || continue
     rule=${row%%|*}
@@ -78,11 +74,14 @@ check_host() {
       continue
     fi
     missing=""
-    for tok in $(printf '%s' "${row#*|}" | tr '|' '\n'); do
-      printf '%s' "$line" | grep -Fqi -- "$tok" || missing="$missing $tok"
+    while IFS= read -r clause; do
+      printf '%s' "$line" | grep -Fqi -- "$clause" || missing="$missing [$clause]"
+    done < <(printf '%s\n' "${row#*|}" | tr '|' '\n')
+    for marker in '觸發：' '例外：' '驗證：'; do
+      printf '%s' "$line" | grep -Fq -- "$marker" || missing="$missing [$marker]"
     done
     if [ -n "$missing" ]; then
-      ng "$label [$rule] 規範 token 缺失:$missing"
+      ng "$label [$rule] 規範 clause 缺失:$missing"
       missing_total=$((missing_total + 1))
     fi
   done <<< "$REQUIRED"
@@ -95,29 +94,39 @@ selftest() {
   local scratch; scratch="$(mktemp -d)"
   local rc=0
 
-  # 正向 fixture：照抄正本語意，應全數 PASS。
+  # 正向 fixture：含 autonomy exception、risk trigger、review outcome 與五要素，應全數 PASS。
   cat > "$scratch/good.md" <<'FIX'
 <!-- FP:AGENTS-T0-2026Q3 -->
-[T0-1] MUST NOT 假設未驗證的 file path／API／config key。
-[T0-2] MUST NOT 無 evidence 宣稱 done。
-[T0-3] MUST NOT force-push main／master；非保護分支只用 --force-with-lease。
-[T0-4] MUST NOT 把 token／secret 印明文；遮罩為 set／unset。
-[T0-5] 模糊時 MUST 停下發問並列假設與影響。
-[T0-6] auth／payment／migration／大量刪除／crypto／multi-tenant／rate-limit／deployment pipeline 變更 MUST 附 rollback。
-[T0-7] DB migration MUST expand→dual-write→backfill→switch-reads→remove-legacy。
-[T0-8] Plan-first 明示或架構性／中高風險變更 MUST 先出 plan；其餘明確的 in-scope change 可直接實作。
-[T0-9] Merge 前 MUST 綠 CI 且處理 bot review（bot 異步產出，開 PR 當下為空是延遲不是無）。
+[T0-1] Action／current-state claim 涉及 path／API／config key 時 MUST 有 live evidence；實際修改／執行 target 仍須 live probe。觸發：前述 action／claim。例外：non-action citation／hypothetical。驗證：read／list／schema probe 或例外標記。
+[T0-2] MUST NOT 無 evidence 宣稱 done。觸發：完成宣稱。例外：無。驗證：命令與 exit code。
+[T0-3] MUST NOT force-push main／master；非保護分支只用 --force-with-lease。觸發：force push。例外：無。驗證：hook。
+[T0-4] MUST NOT 把 token／secret 印明文；遮罩為 set／unset。觸發：credential 輸出。例外：非敏感值。驗證：gitleaks。
+[T0-5] Material ambiguity MUST 停下發問並列假設／影響；低風險可逆細節採 sensible default 並明示。觸發：多種合理解讀會改變 outcome／scope／risk。例外：低風險、可逆、無 material impact。驗證：default／impact 紀錄。
+[T0-6] auth／payment／migration／大量刪除／crypto／multi-tenant／rate-limit／deployment pipeline 變更 MUST 附 rollback。觸發：diff 命中。例外：無。驗證：plan。
+[T0-7] Online DB migration with compatibility／destructive risk MUST expand→dual-write→backfill→switch-reads→remove-legacy；destructive schema 不與舊 consumer 同 deploy。觸發：schema／data-contract risk。例外：additive／new-object 或停機 batch 可標 SKIPPED（理由）。驗證：phases／consumer boundary／rollback。
+[T0-8] Plan-first 明示或架構性／中高風險變更 MUST 先出 plan；其餘明確的 in-scope change 可直接實作。觸發：命中 gate。例外：無。驗證：plan 或授權原句。
+[T0-9] Merge 前 MUST 在 current HEAD 有 applicable CI PASS 且 0 unresolved actionable findings；bot UNAVAILABLE 時依 review-triage 由 independent read-only reviewer fallback。觸發：merge。例外：無。驗證：current-head CI + review gate PASS。
 FIX
 
-  # 反向 fixture 一：[T0-8] 掉 in-scope（實測到的那個放寬）。
+  # 反向 fixtures：每種曾發生或最危險的語意漂移都必須真的觸發。
+  sed 's/Action／current-state claim/任何引用/' \
+    "$scratch/good.md" > "$scratch/blanket-t01.md"
+  sed 's/例外：non-action citation／hypothetical。/例外：無。/' \
+    "$scratch/good.md" > "$scratch/no-t01-exception.md"
+  sed 's/Material ambiguity/任何 ambiguity/' \
+    "$scratch/good.md" > "$scratch/blanket-t05.md"
+  sed 's/Online DB migration with compatibility／destructive risk/任何 DB migration/' \
+    "$scratch/good.md" > "$scratch/blanket-t07.md"
+  sed 's/例外：additive／new-object 或停機 batch 可標 SKIPPED（理由）。/例外：無。/' \
+    "$scratch/good.md" > "$scratch/no-t07-skip.md"
   sed 's/其餘明確的 in-scope change 可直接實作/其他明確 change 可直接實作/' \
     "$scratch/good.md" > "$scratch/drift-t08.md"
-  # 反向 fixture 二：[T0-9] 掉 bot 異步註記。
-  sed 's/（bot 異步產出，開 PR 當下為空是延遲不是無）//' \
-    "$scratch/good.md" > "$scratch/drift-t09.md"
-  # 反向 fixture 三：整條規則消失。
+  sed 's/；bot UNAVAILABLE 時依 review-triage 由 independent read-only reviewer fallback//' \
+    "$scratch/good.md" > "$scratch/no-t09-fallback.md"
+  sed 's/ 且 0 unresolved actionable findings//' \
+    "$scratch/good.md" > "$scratch/no-t09-outcome.md"
   grep -v '\[T0-6\]' "$scratch/good.md" > "$scratch/drop-t06.md"
-  # 反向 fixture 四：指紋被拔掉。
+  sed 's/觸發：merge。//' "$scratch/good.md" > "$scratch/no-trigger.md"
   grep -v 'FP:AGENTS-T0-2026Q3' "$scratch/good.md" > "$scratch/no-fp.md"
 
   probe() {  # $1=fixture $2=期望(pass|fail) $3=說明
@@ -131,11 +140,18 @@ FIX
     esac
   }
 
-  probe "$scratch/good.md"      pass "完整 tier0"
-  probe "$scratch/drift-t08.md" fail "[T0-8] 掉 in-scope"
-  probe "$scratch/drift-t09.md" fail "[T0-9] 掉 bot 異步註記"
-  probe "$scratch/drop-t06.md"  fail "[T0-6] 整條消失"
-  probe "$scratch/no-fp.md"     fail "FP 指紋被拔"
+  probe "$scratch/good.md"             pass "完整 tier0"
+  probe "$scratch/blanket-t01.md"      fail "[T0-1] 退回 blanket path probe"
+  probe "$scratch/no-t01-exception.md" fail "[T0-1] 掉 non-action/hypothetical 例外"
+  probe "$scratch/blanket-t05.md"      fail "[T0-5] 退回任何 ambiguity 都停問"
+  probe "$scratch/blanket-t07.md"      fail "[T0-7] 退回任何 migration 都跑五階段"
+  probe "$scratch/no-t07-skip.md"      fail "[T0-7] 掉 additive/offline SKIPPED"
+  probe "$scratch/drift-t08.md"        fail "[T0-8] 掉 in-scope"
+  probe "$scratch/no-t09-fallback.md"  fail "[T0-9] 掉 bot UNAVAILABLE fallback"
+  probe "$scratch/no-t09-outcome.md"   fail "[T0-9] 掉 0 actionable outcome"
+  probe "$scratch/drop-t06.md"         fail "[T0-6] 整條消失"
+  probe "$scratch/no-trigger.md"       fail "規則掉觸發要素"
+  probe "$scratch/no-fp.md"            fail "FP 指紋被拔"
 
   rm -rf "$scratch"
   return $rc
