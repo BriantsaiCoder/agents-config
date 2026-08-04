@@ -40,7 +40,7 @@ T0-4|secret|set
 T0-5|Material ambiguity|停下發問|低風險可逆細節|sensible default|outcome／scope／risk|無 material impact
 T0-6|auth|payment|migration|大量刪除|crypto|multi-tenant|rate-limit|pipeline|rollback
 T0-7|Online DB migration|compatibility／destructive risk|expand→dual-write→backfill→switch-reads→remove-legacy|destructive schema|additive／new-object|SKIPPED|consumer boundary
-T0-8|in-scope|plan|中高風險
+T0-8|plan-first|架構性|High-risk|external write|destructive／costly／credential／payment／deployment／migration|material scope expansion|in-scope|local|reversible|Low／Medium-risk|session plan|第二次確認
 T0-9|current HEAD|applicable CI PASS|0 unresolved actionable findings|UNAVAILABLE|independent read-only reviewer|review-triage
 TABLE
 )
@@ -104,7 +104,7 @@ selftest() {
 [T0-5] Material ambiguity MUST 停下發問並列假設／影響；低風險可逆細節採 sensible default 並明示。觸發：多種合理解讀會改變 outcome／scope／risk。例外：低風險、可逆、無 material impact。驗證：default／impact 紀錄。
 [T0-6] auth／payment／migration／大量刪除／crypto／multi-tenant／rate-limit／deployment pipeline 變更 MUST 附 rollback。觸發：diff 命中。例外：無。驗證：plan。
 [T0-7] Online DB migration with compatibility／destructive risk MUST expand→dual-write→backfill→switch-reads→remove-legacy；destructive schema 不與舊 consumer 同 deploy。觸發：schema／data-contract risk。例外：additive／new-object 或停機 batch 可標 SKIPPED（理由）。驗證：phases／consumer boundary／rollback。
-[T0-8] Plan-first 明示或架構性／中高風險變更 MUST 先出 plan；其餘明確的 in-scope change 可直接實作。觸發：命中 gate。例外：無。驗證：plan 或授權原句。
+[T0-8] 使用者明示 plan-first、架構性／High-risk change，或 external write、destructive／costly／credential／payment／deployment／migration side effect 與 material scope expansion 未獲授權時 MUST 先出 plan 並取得確認；scope 清楚、in-scope、local、reversible 的 Low／Medium-risk change／build／fix 可直接實作並做 non-destructive verification，Medium 先留 session plan，不需第二次確認。觸發：將改檔或執行 side effect 且命中前述 protected gate。例外：無。驗證：protected gate 有 plan + 核准原句；direct path 有 user 原句 + risk／reversibility，Medium 另有 session plan。
 [T0-9] Merge 前 MUST 在 current HEAD 有 applicable CI PASS 且 0 unresolved actionable findings；bot UNAVAILABLE 時依 review-triage 由 independent read-only reviewer fallback。觸發：merge。例外：無。驗證：current-head CI + review gate PASS。
 FIX
 
@@ -119,8 +119,14 @@ FIX
     "$scratch/good.md" > "$scratch/blanket-t07.md"
   sed 's/例外：additive／new-object 或停機 batch 可標 SKIPPED（理由）。/例外：無。/' \
     "$scratch/good.md" > "$scratch/no-t07-skip.md"
-  sed 's/其餘明確的 in-scope change 可直接實作/其他明確 change 可直接實作/' \
+  sed 's/scope 清楚、in-scope、local、reversible/scope 清楚、local、reversible/' \
     "$scratch/good.md" > "$scratch/drift-t08.md"
+  sed 's/Low／Medium-risk/Low-risk/' \
+    "$scratch/good.md" > "$scratch/no-medium-autonomy-t08.md"
+  sed 's/架構性／High-risk change/架構性／中高風險 change/' \
+    "$scratch/good.md" > "$scratch/blanket-medium-t08.md"
+  sed 's/external write、destructive／costly／credential／payment／deployment／migration side effect 與 material scope expansion 未獲授權時/High-risk change 時/' \
+    "$scratch/good.md" > "$scratch/no-protected-boundary-t08.md"
   sed 's/；bot UNAVAILABLE 時依 review-triage 由 independent read-only reviewer fallback//' \
     "$scratch/good.md" > "$scratch/no-t09-fallback.md"
   sed 's/ 且 0 unresolved actionable findings//' \
@@ -147,6 +153,9 @@ FIX
   probe "$scratch/blanket-t07.md"      fail "[T0-7] 退回任何 migration 都跑五階段"
   probe "$scratch/no-t07-skip.md"      fail "[T0-7] 掉 additive/offline SKIPPED"
   probe "$scratch/drift-t08.md"        fail "[T0-8] 掉 in-scope"
+  probe "$scratch/no-medium-autonomy-t08.md" fail "[T0-8] 掉 Medium 直接路徑"
+  probe "$scratch/blanket-medium-t08.md" fail "[T0-8] 退回中高風險 blanket gate"
+  probe "$scratch/no-protected-boundary-t08.md" fail "[T0-8] 掉 protected side-effect boundary"
   probe "$scratch/no-t09-fallback.md"  fail "[T0-9] 掉 bot UNAVAILABLE fallback"
   probe "$scratch/no-t09-outcome.md"   fail "[T0-9] 掉 0 actionable outcome"
   probe "$scratch/drop-t06.md"         fail "[T0-6] 整條消失"

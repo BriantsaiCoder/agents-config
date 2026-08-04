@@ -1,0 +1,17 @@
+# Routing continuations
+
+`triage`／`grilling`／`wayfinder` continuation、skill audit／VND、跨 session／ticket、持久化 research 或 handoff 時載入。
+
+命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。
+
+Question eligibility：MUST 先查既有 context、code 與 sensible defaults，只問真正阻擋下一步且屬 user-owned 的 decision。其餘澄清不進 `grilling`，依 S2 判 plan gate 後由 host plan mode 承接；提問載體與批次規則見 host adapter。`ask-matt` 只涵蓋 Matt subset，缺項回 S0 表。
+
+Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findings 寫入 repo Markdown 仍受 S2 authorization，未獲授權不得落盤。
+
+- `triage`、`grilling` 或 `wayfinder` 釐清需求後，單一 session 可完成的 coherent vertical slice 直接進 S2，不等待額外 skill invocation。
+- 多個可獨立驗收的 implementation slices：無 canonical spec 時依序推薦使用者顯式 invoke `to-spec` → `to-tickets`；已有完整 spec／agent-ready issue 時略過 `to-spec`，直接推薦 `to-tickets`。
+- 每張 ticket 以 fresh session 開始，明確 change／build／fix 原句可直接授權 in-scope local implementation 與 non-destructive verification；先進 isolated branch／worktree，再依 adapter 執行，fresh session 不豁免 S2／[T0-8]。
+- `wayfinder` 只處理跨 session 的決策迷霧；決策已清楚但實作量大時走 spec／tickets 分流。
+- Skill audit finding 要求修改時先跑 vendored gate；`VND` 只回報、整體替換或移除，self-owned 才進 S2。
+- 使用者明示要換 session、交接或讓另一個 agent 接手時，`handoff` 只橋接仍未進入 spec、ticket 或 wayfinder map 的重要 context；需要時依 [INT-7] 推薦 host-specific command 並等待使用者啟動。
+- Agent 因 blocker 或 session 邊界必須停止且工作未完成時，若仍有未落盤的重要 context，將 `handoff` 列為唯一 next action；已有 canonical artifact 時只引用、不重複內容。一般 context compaction、任務已完成或只是內容很長 MUST NOT 觸發 `handoff`；same-conversation `/compact` 也 MUST NOT 觸發 `handoff`。

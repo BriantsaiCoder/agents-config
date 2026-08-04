@@ -6,6 +6,9 @@ WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
 B2_SKILLS_LOCK="$AGENTS/stage-b2-skills.lock"
 WRAPPER_PARITY_EVIDENCE="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow/49-three-host-global-config-ownership-split-candidate-evidence.md"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
+DELEGATION_REF="$AGENTS/skills/dev-workflow/references/delegation.md"
+HOST_ADAPTERS_REF="$AGENTS/skills/dev-workflow/references/host-adapters.md"
+ROUTING_CONTINUATIONS_REF="$AGENTS/skills/dev-workflow/references/routing-continuations.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
 HANDOFF="$AGENTS/skills/handoff/SKILL.md"
 DIAGNOSING="$AGENTS/skills/diagnosing-bugs/SKILL.md"
@@ -49,10 +52,29 @@ for heading in \
   'BUGFIX RED' \
   'S4 VERIFY' \
   'S5 REVIEW' \
-  'S6 CLOSEOUT' \
-  'Host adapters'; do
+  'S6 CLOSEOUT'; do
   rg -q "$heading" "$KERNEL" || fail "thin kernel heading missing: $heading"
 done
+
+rg -q '^description: .*開發任務必讀.*三 host.*S0.*S2.*S4.*S6' "$KERNEL" ||
+  fail 'dev-workflow description lost its all-development-task trigger'
+grep -Fqx '[R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]' "$KERNEL" ||
+  fail 'retired workflow ID shells must preserve DEPRECATED targets and dates'
+[ "$(grep -Fc 'FP:DEVWF-2026Q3' "$KERNEL")" -eq 1 ] ||
+  fail 'dev-workflow fingerprint must appear exactly once'
+
+kernel_bytes=$(wc -c < "$KERNEL" | tr -d ' ')
+[ "$kernel_bytes" -le 12700 ] ||
+  fail "dev-workflow kernel exceeds 12700 bytes: $kernel_bytes"
+for ref in "$DELEGATION_REF" "$HOST_ADAPTERS_REF" "$ROUTING_CONTINUATIONS_REF"; do
+  [ -r "$ref" ] || fail "conditional workflow reference missing: $ref"
+done
+rg -q '^# Host adapters' "$HOST_ADAPTERS_REF" ||
+  fail 'host adapters reference lacks its canonical heading'
+rg -q 'skill audit／VND.*continuations' "$KERNEL" ||
+  fail 'skill audit must load the VND routing continuation'
+! rg -q '^### UI/Web design continuation' "$KERNEL" ||
+  fail 'kernel still duplicates ui-ux-pro-max continuation'
 
 for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6 INT-7; do
   rg -q "\\[$rule\\]" "$KERNEL" || fail "thin kernel guard missing: $rule"
@@ -256,13 +278,13 @@ rg -q '\[INT-7\].*disable-model-invocation.*MUST NOT.*自動 invoke' "$KERNEL" |
   fail 'thin kernel does not preserve the Matt user-only invocation boundary'
 rg -q 'user-only skill.*推薦.*explicit invocation command.*等待' "$KERNEL" ||
   fail 'thin kernel does not hand user-only routes back to explicit user invocation'
-sed -n '/^### Claude$/,/^### Codex$/p' "$KERNEL" |
+sed -n '/^## Claude$/,/^## Codex$/p' "$HOST_ADAPTERS_REF" |
   rg -q 'user-only skill command = `/<skill-name>`' ||
   fail 'Claude user-only invocation syntax missing'
-sed -n '/^### Codex$/,/^### Copilot$/p' "$KERNEL" |
+sed -n '/^## Codex$/,/^## Copilot$/p' "$HOST_ADAPTERS_REF" |
   rg -q 'user-only skill command = `\$<skill-name>`' ||
   fail 'Codex user-only invocation syntax missing'
-sed -n '/^### Copilot$/,/^## References$/p' "$KERNEL" |
+sed -n '/^## Copilot$/,$p' "$HOST_ADAPTERS_REF" |
   rg -q 'user-only skill command = `/<skill-name>`' ||
   fail 'Copilot user-only invocation syntax missing'
 
@@ -356,9 +378,9 @@ rg -q 'GREEN.*micro-refactor|micro-refactor.*GREEN' "$KERNEL" ||
 # 修法不是在鏈上插一格：這組關係不是線性位階。host 可以加一條 kernel 沒有的約束
 # （PR #7 那樣是正當的），但不可放鬆 kernel 的 MUST——鏈上任一個位置都只能編碼其中
 # 一半。所以契約寫在 seam 上，形狀比照 tier0 的「repo 層對 tier0 只可加嚴」。
-ADAPTER_SECTION=$(sed -n '/^## Host adapters$/,/^## References$/p' "$KERNEL")
+ADAPTER_SECTION=$(cat "$HOST_ADAPTERS_REF") || fail 'cannot read host adapters reference'
 printf '%s\n' "$ADAPTER_SECTION" | rg -q 'Host adapter 對本 kernel 只可加嚴' ||
-  fail 'kernel does not state the add-only contract for host adapters'
+  fail 'host adapters reference does not state the add-only contract'
 printf '%s\n' "$ADAPTER_SECTION" | rg -q 'MUST NOT 放鬆.*(MUST|無條件約束)' ||
   fail 'add-only contract does not forbid loosening kernel MUSTs'
 printf '%s\n' "$ADAPTER_SECTION" | rg -q '放鬆.*user 當下明示' ||
@@ -425,11 +447,11 @@ typescript-best-practices
 vite
 vitest
 vue-best-practices
+web-design-reviewer
 LIST
 )
-# 三類：stack skill（31，靠自己的 description 觸發）、kernel 自身（dev-workflow 不能
-# route 自己）、以及由 upstream router 或使用者明示進入的 Matt skill（grill-me、
-# mp-zoom-out、prototype、teach）。
+# 四類：stack skill、kernel 自身、由 upstream／使用者明示進入的 Matt skill，以及
+# 由 ui-ux-pro-max own continuation 的 web-design-reviewer。
 # 用純 bash glob 迭代，對齊 tests/vendored-detection.sh:306 的既有寫法：
 # `ls | xargs basename` 配 `for s in $(...)` 會經過 word splitting，目錄名含空白或
 # 換行時拆壞，且 glob 未命中時會把字面 pattern 當成一個項目。`[ -f "$sd/SKILL.md" ]`
@@ -438,7 +460,7 @@ actual_unrouted=$(
   for sd in "$AGENTS"/skills/*/; do
     [ -f "$sd/SKILL.md" ] || continue
     s=${sd%/}; s=${s##*/}
-    grep -Fq "\`$s\`" "$KERNEL" || printf '%s\n' "$s"
+    grep -Fq "\`$s\`" "$KERNEL" "$ROUTING_CONTINUATIONS_REF" || printf '%s\n' "$s"
   done | sort
 )
 declared_unrouted=$(printf '%s\n' "$UNROUTED_BY_DESIGN" | rg -v '^\s*$' | sort)

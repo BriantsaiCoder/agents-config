@@ -20,26 +20,83 @@ fail=0
 REPO="$(mktemp -d "${TMPDIR:-/tmp}/gpguard.XXXXXX")"
 FAKEBIN="$(mktemp -d "${TMPDIR:-/tmp}/gpfake.XXXXXX")"
 trap 'rm -rf "$REPO" "$FAKEBIN"' EXIT   # 不清會在 /tmp 累積 gpguard.* / gpfake.*
+PROBE_STDOUT="$REPO/probe.stdout"
+PROBE_STDERR="$REPO/probe.stderr"
 git -C "$REPO" init -q
 git -C "$REPO" config user.email t@t
 git -C "$REPO" config user.name t
 git -C "$REPO" commit -q --allow-empty -m init
 git -C "$REPO" branch -M feat/safe
 
-probe() {
-  local fmt="$1" expected="$2" command="$3" out rc
-  out=$("$JQ" -nc --arg command "$command" --arg cwd "$REPO" \
-        '{tool_input:{command:$command},cwd:$cwd}' \
-        | bash "$GUARD" --format="$fmt" 2>/dev/null)
-  rc=$?
-  local actual=allow
+classify_output() {
+  local fmt="$1" rc="$2" stdout_file="$3" stderr_file="$4"
+
   if [ "$fmt" = codex ]; then
-    printf '%s' "$out" | "$JQ" -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1 && actual=deny
-    [ "$rc" -eq 0 ] || actual="BADEXIT($rc)"
+    if [ "$rc" -ne 0 ]; then
+      printf 'BADEXIT(%s)' "$rc"
+    elif [ -s "$stderr_file" ]; then
+      printf 'BADOUTPUT'
+    elif [ ! -s "$stdout_file" ]; then
+      printf 'allow'
+    elif "$JQ" -se '
+      length == 1 and
+      .[0].hookSpecificOutput.permissionDecision == "deny" and
+      (.[0].hookSpecificOutput.permissionDecisionReason | type == "string" and length > 0)
+    ' "$stdout_file" >/dev/null 2>&1; then
+      printf 'deny'
+    else
+      printf 'BADOUTPUT'
+    fi
   else
-    [ "$rc" -eq 2 ] && actual=deny
-    [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ] || actual="BADEXIT($rc)"
+    if [ -s "$stdout_file" ]; then
+      printf 'BADOUTPUT'
+    elif [ "$rc" -eq 0 ] && [ ! -s "$stderr_file" ]; then
+      printf 'allow'
+    elif [ "$rc" -eq 2 ] && [ -s "$stderr_file" ] &&
+      "$JQ" -se '
+        length == 1 and
+        .[0].decision == "block" and
+        (.[0].reason | type == "string" and length > 0)
+      ' "$stderr_file" >/dev/null 2>&1; then
+      printf 'deny'
+    elif [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then
+      printf 'BADOUTPUT'
+    else
+      printf 'BADEXIT(%s)' "$rc"
+    fi
   fi
+}
+
+classifier_selfcheck() {
+  : >"$PROBE_STDOUT"
+  printf '\n' >"$PROBE_STDERR"
+  [ "$(classify_output codex 0 "$PROBE_STDOUT" "$PROBE_STDERR")" = BADOUTPUT ] ||
+    { printf 'FAIL  classifier accepted unexpected stderr\n'; exit 1; }
+
+  printf '%s\n%s\n' \
+    '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"x"}}' \
+    '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"x"}}' \
+    >"$PROBE_STDOUT"
+  : >"$PROBE_STDERR"
+  [ "$(classify_output codex 0 "$PROBE_STDOUT" "$PROBE_STDERR")" = BADOUTPUT ] ||
+    { printf 'FAIL  classifier accepted a JSON stream\n'; exit 1; }
+
+  printf '{"decision":"block","reason":"x"}' >"$PROBE_STDOUT"
+  : >"$PROBE_STDERR"
+  [ "$(classify_output claude 2 "$PROBE_STDOUT" "$PROBE_STDERR")" = BADOUTPUT ] ||
+    { printf 'FAIL  classifier accepted Claude deny JSON on stdout\n'; exit 1; }
+  printf '  PASS classifier malformed-output self-checks\n'
+}
+
+classifier_selfcheck
+
+probe() {
+  local fmt="$1" expected="$2" command="$3" rc actual
+  "$JQ" -nc --arg command "$command" --arg cwd "$REPO" \
+    '{tool_input:{command:$command},cwd:$cwd}' |
+    bash "$GUARD" --format="$fmt" >"$PROBE_STDOUT" 2>"$PROBE_STDERR"
+  rc=$?
+  actual=$(classify_output "$fmt" "$rc" "$PROBE_STDOUT" "$PROBE_STDERR")
   if [ "$actual" = "$expected" ]; then
     pass=$((pass + 1)); printf '  PASS %-6s %-5s %s\n' "$fmt" "$expected" "$command"
   else
@@ -60,16 +117,47 @@ run_suite() {
   probe "$fmt" allow "git push -u origin main"
   probe "$fmt" allow "git push origin master"
   probe "$fmt" allow "git push --tags"
+  probe "$fmt" allow "git push --all origin"
+  probe "$fmt" allow "git push --multiple origin backup"
   probe "$fmt" allow "git push -u origin feat/safe"
   probe "$fmt" allow "git push --force-with-lease origin feat/safe"
-  probe "$fmt" allow "git push --force-with-lease"            # 無 refspec，當前分支 feat/safe
+  probe "$fmt" deny  "git push --force-with-lease"            # Git config 可能改寫 effective destination
   probe "$fmt" allow "git pull --rebase && git push"
 
   # 攔截：非 lease force（任何分支）
   probe "$fmt" deny "git push --force origin feat/unsafe"
   probe "$fmt" deny "git push -f origin feat/unsafe"
   probe "$fmt" deny "git push -fu origin feat/unsafe"         # 短旗標捆綁
+  probe "$fmt" deny "git push -4f origin feat/unsafe"         # 數字 + force 短旗標捆綁
+  probe "$fmt" deny "git push --force --all origin"
+  probe "$fmt" deny "git push --mirror origin"                # --mirror 隱含 force
   probe "$fmt" deny "git push origin +feat/x:main"            # +refspec 即 force
+  probe "$fmt" deny 'git push "--mirror" origin'
+  probe "$fmt" deny 'git "push" --mirror origin'
+  probe "$fmt" deny 'git push "--force" origin main'
+  probe "$fmt" deny 'git push --force-with-lease origin "main"'
+  probe "$fmt" deny 'git p"ush" --force origin main'
+  probe "$fmt" deny 'git push --for"ce" origin main'
+  probe "$fmt" deny 'g"it" push --force origin main'
+  probe "$fmt" deny '{git,push,--force,origin,main}'
+  probe "$fmt" deny 'git push --force-with-lease origin ma"in"'
+  probe "$fmt" deny 'git p\ush --force origin main'
+  probe "$fmt" deny 'git push --force-w origin main'
+  probe "$fmt" deny 'git push --force-with-l origin main'
+  probe "$fmt" deny 'git push --mirr origin'
+  probe "$fmt" deny 'git push --m origin'
+  probe "$fmt" deny 'git push --mi origin'
+  probe "$fmt" deny $'g\\\nit push --mirror origin'
+  probe "$fmt" deny "\$'git' push --mirror origin"
+  probe "$fmt" deny 'git push --force-with-l --al origin'
+  probe "$fmt" deny 'git push --force-with-lease --repo=origin main'
+  probe "$fmt" deny 'git push --force-with-lease --repo origin main'
+  probe "$fmt" deny 'git push --force-with-lease --branches origin'
+  probe "$fmt" deny 'git push --force-with-lease --br origin'
+  probe "$fmt" deny 'git push --force-with-lease origin :'
+  probe "$fmt" deny 'git push --force-with-lease origin refs/heads/*:refs/heads/*'
+  probe "$fmt" deny 'git push --force-with-lease origin HEAD'
+  probe "$fmt" deny 'git push --force-with-lease origin @'
 
   # 攔截：force 變體推 main/master
   probe "$fmt" deny "git push --force origin main"
@@ -84,21 +172,28 @@ run_suite() {
 
   # 攔截：複合指令中的危險段
   probe "$fmt" deny "echo hi && git push --force origin main"
+  probe "$fmt" deny "(git push --mirror origin)"
+  probe "$fmt" deny "(/usr/bin/git push --force origin main)"
 
   # 攔截：完整路徑 git（Copilot review agents-config#1 發現的第 5 個破口）
   # 只比對裸 token `git` 時，下列全部放行
   probe "$fmt" deny "/usr/bin/git push --force origin main"
   probe "$fmt" deny "/opt/homebrew/bin/git push --force-with-lease origin main"
+  probe "$fmt" deny '"C:\Program Files\Git\bin\git.exe" push --force origin main'
+  probe "$fmt" deny '"C:\Program Files\Git\bin\GIT.EXE" push --force origin main'
+  probe "$fmt" deny '"C:\Program Files\Git\bin\GIT.EXE" p\ush --for\ce origin main'
+  probe "$fmt" allow 'legit.exe push --force origin main'
   probe "$fmt" deny "'/usr/bin/git' push --force-with-lease --all origin"
   probe "$fmt" deny "env git push --force origin main"
+  probe "$fmt" deny "GIT push --force origin main"
   probe "$fmt" allow "/usr/bin/git push -u origin main"      # 完整路徑的一般 push 仍放行
 }
 
 run_suite codex
 run_suite claude
 
-# 當前分支為 main 時，無 refspec 的 lease 必須攔截
-printf '── 當前分支 = main（無 refspec 解析）──\n'
+# 換成 main 後重驗無 refspec 仍保守拒絕
+printf '── 當前分支 = main（無 refspec 同樣拒絕）──\n'
 git -C "$REPO" branch -M main
 probe codex  deny "git push --force-with-lease"
 probe claude deny "git push --force-with-lease"
@@ -107,16 +202,13 @@ probe claude deny "git push --force-with-lease"
 printf '── jq 不可用（降級路徑）──\n'
 printf '#!/bin/sh\nexit 1\n' > "$FAKEBIN/jq"; chmod +x "$FAKEBIN/jq"
 probe_nojq() {
-  local fmt="$1" expected="$2" command="$3" payload out rc actual=allow
+  local fmt="$1" expected="$2" command="$3" payload rc actual
   payload=$("$JQ" -nc --arg command "$command" --arg cwd "$REPO" \
             '{tool_input:{command:$command},cwd:$cwd}')   # payload 先建好，再破壞 PATH
-  out=$(printf '%s' "$payload" | PATH="$FAKEBIN:$PATH" bash "$GUARD" --format="$fmt" 2>/dev/null)
+  printf '%s' "$payload" |
+    PATH="$FAKEBIN:$PATH" bash "$GUARD" --format="$fmt" >"$PROBE_STDOUT" 2>"$PROBE_STDERR"
   rc=$?
-  if [ "$fmt" = codex ]; then
-    printf '%s' "$out" | grep -q '"permissionDecision":"deny"' && actual=deny
-  else
-    [ "$rc" -eq 2 ] && actual=deny
-  fi
+  actual=$(classify_output "$fmt" "$rc" "$PROBE_STDOUT" "$PROBE_STDERR")
   if [ "$actual" = "$expected" ]; then
     pass=$((pass + 1)); printf '  PASS %-6s %-5s (jq 壞) %s\n' "$fmt" "$expected" "$command"
   else
@@ -126,6 +218,8 @@ probe_nojq() {
 for f in codex claude; do
   probe_nojq "$f" deny  "git push --force origin main"        # 保守拒絕
   probe_nojq "$f" deny  "git push --force-with-lease origin feat/safe"
+  probe_nojq "$f" deny  "GIT push --force origin main"
+  probe_nojq "$f" deny  '"C:\Program Files\Git\bin\GIT.EXE" push --force origin main'
   probe_nojq "$f" allow "npm test"                            # 非 git 指令不受影響
   probe_nojq "$f" allow "ls -la"
 done

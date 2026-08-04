@@ -24,6 +24,7 @@ set -uo pipefail
 
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd -P)}"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
+DELEGATION_REF="$AGENTS/skills/dev-workflow/references/delegation.md"
 
 pass=0; fail=0; skip=0
 ok()   { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
@@ -229,40 +230,43 @@ esac
 
 # ── kernel 正本 ──────────────────────────────────────────────────────────
 [ -r "$KERNEL" ] || { printf 'FAIL: kernel missing: %s\n' "$KERNEL" >&2; exit 1; }
+[ -r "$DELEGATION_REF" ] || { printf 'FAIL: delegation reference missing: %s\n' "$DELEGATION_REF" >&2; exit 1; }
 int4="$(grep -F '[INT-4]' "$KERNEL" | head -1)"
 [ -n "$int4" ] || { printf 'FAIL: [INT-4] not found in kernel\n' >&2; exit 1; }
-int4_file="$(mktemp)"; printf '%s\n' "$int4" > "$int4_file"
-trap 'rm -f "$int4_file"' EXIT
+printf '%s\n' "$int4" | grep -qE 'MUST.*觸發：.*例外：.*驗證：' || {
+  printf 'FAIL: [INT-4] lost five-element rule contract\n' >&2; exit 1;
+}
+policy_file="$(mktemp)"
+{ printf '%s\n' "$int4"; cat "$DELEGATION_REF"; } > "$policy_file" || {
+  rm -f "$policy_file"; printf 'FAIL: cannot assemble delegation policy\n' >&2; exit 1;
+}
+trap 'rm -f "$policy_file"' EXIT
 
 # 逐片段驗，不逐條驗：整句 grep 會在任一項被刪掉時仍然通過，所以下列每個片段各自釘住
 # [INT-4] 的一個承重點——無條件約束三項，以及由 AI 決定 delegation 的時機與數量。
 # 為什麼釘無條件約束（S5 finding H1）：第一版把它們降級成「條件」，於是寫入重疊與序列
 # 相依變成明文可授權——舊規則從未開這條路。使用者要改的是「誰決定」不是「允許什麼」。
 for cond in '無條件約束' '可獨立平行' '寫入 ownership MUST 不重疊' 'MUST 重驗其回報' '何時委派、subagent 數量與是否平行 MUST 由 AI 自主判定'; do
-  case "$int4" in
-    *"$cond"*) ok "[INT-4] 含核心片段：$cond" ;;
-    *) ng "[INT-4] 缺核心片段：$cond" ;;
-  esac
+  grep -Fq "$cond" "$policy_file" \
+    && ok "[INT-4] 含核心片段：$cond" \
+    || ng "[INT-4] 缺核心片段：$cond"
 done
-case "$int4" in
-  *'無條件約束不在可授權範圍內'*) ok '[INT-4] 明示無條件約束不可被授權繞過' ;;
-  *) ng '[INT-4] 未擋住「取得授權就能寫入重疊／序列相依」的路徑' ;;
-esac
-has_fixed_limit "$int4_file" && ng '[INT-4] 仍含固定數量／時機限制' || ok '[INT-4] 無固定數量／時機限制'
+grep -Fq '無條件約束不在可授權範圍內' "$policy_file" \
+  && ok '[INT-4] 明示無條件約束不可被授權繞過' \
+  || ng '[INT-4] 未擋住「取得授權就能寫入重疊／序列相依」的路徑'
+has_fixed_limit "$policy_file" && ng '[INT-4] 仍含固定數量／時機限制' || ok '[INT-4] 無固定數量／時機限制'
 
-case "$int4" in
-  *'host/runtime 可用容量仍是技術上限'*) ok '[INT-4] 保留 runtime 技術容量約束' ;;
-  *) ng '[INT-4] 未區分自主 policy 與 runtime 技術容量' ;;
-esac
+grep -Fq 'host/runtime 可用容量仍是技術上限' "$policy_file" \
+  && ok '[INT-4] 保留 runtime 技術容量約束' \
+  || ng '[INT-4] 未區分自主 policy 與 runtime 技術容量'
 
-case "$int4" in
-  *'MUST NOT 為此停下發問'*) ok '[INT-4] 明示不得為 delegation 停下發問' ;;
-  *) ng '[INT-4] 未明示不得為 delegation 停下發問' ;;
-esac
+grep -Fq 'MUST NOT 為此停下發問' "$policy_file" \
+  && ok '[INT-4] 明示不得為 delegation 停下發問' \
+  || ng '[INT-4] 未明示不得為 delegation 停下發問'
 
 # 放寬控制的同時，三條安全不變量必須留著。
 for inv in '回報不是完成證據' '迴避 S2 授權或 [T0-8] plan gate' '依 [T0-5] 停下發問'; do
-  if grep -Fq "$inv" "$int4_file"; then
+  if grep -Fq "$inv" "$policy_file"; then
     ok "[INT-4] 保留不變量：$inv"
   else
     ng "[INT-4] 遺失不變量：$inv"
@@ -270,12 +274,11 @@ for inv in '回報不是完成證據' '迴避 S2 授權或 [T0-8] plan gate' '�
 done
 
 # S5 review agent 的 read-only 限定不得再度脫落；是否使用及數量則由 AI 判定。
-case "$int4" in
-  *'如使用 review agents，MUST 為 read-only'*) ok '[INT-4] S5 review agents 仍限定 read-only' ;;
-  *) ng '[INT-4] S5 review agents 遺失 read-only 限定' ;;
-esac
+grep -Fq '如使用 review agents，MUST 為 read-only' "$policy_file" \
+  && ok '[INT-4] S5 review agents 仍限定 read-only' \
+  || ng '[INT-4] S5 review agents 遺失 read-only 限定'
 
-has_askfirst "$KERNEL" && ng 'kernel 含先問／禁止 delegation 語彙' || ok 'kernel 無先問語彙'
+has_askfirst "$policy_file" && ng 'kernel 含先問／禁止 delegation 語彙' || ok 'kernel 無先問語彙'
 
 # ── 三個 host 入口檔 ─────────────────────────────────────────────────────
 check_host Claude  "${CLAUDE_INSTRUCTIONS:-$HOME/.claude/CLAUDE.md}"
