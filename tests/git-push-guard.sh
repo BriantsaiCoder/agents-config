@@ -179,8 +179,13 @@ run_suite() {
   # 只比對裸 token `git` 時，下列全部放行
   probe "$fmt" deny "/usr/bin/git push --force origin main"
   probe "$fmt" deny "/opt/homebrew/bin/git push --force-with-lease origin main"
+  probe "$fmt" deny '"C:\Program Files\Git\bin\git.exe" push --force origin main'
+  probe "$fmt" deny '"C:\Program Files\Git\bin\GIT.EXE" push --force origin main'
+  probe "$fmt" deny '"C:\Program Files\Git\bin\GIT.EXE" p\ush --for\ce origin main'
+  probe "$fmt" allow 'legit.exe push --force origin main'
   probe "$fmt" deny "'/usr/bin/git' push --force-with-lease --all origin"
   probe "$fmt" deny "env git push --force origin main"
+  probe "$fmt" deny "GIT push --force origin main"
   probe "$fmt" allow "/usr/bin/git push -u origin main"      # 完整路徑的一般 push 仍放行
 }
 
@@ -213,6 +218,8 @@ probe_nojq() {
 for f in codex claude; do
   probe_nojq "$f" deny  "git push --force origin main"        # 保守拒絕
   probe_nojq "$f" deny  "git push --force-with-lease origin feat/safe"
+  probe_nojq "$f" deny  "GIT push --force origin main"
+  probe_nojq "$f" deny  '"C:\Program Files\Git\bin\GIT.EXE" push --force origin main'
   probe_nojq "$f" allow "npm test"                            # 非 git 指令不受影響
   probe_nojq "$f" allow "ls -la"
 done

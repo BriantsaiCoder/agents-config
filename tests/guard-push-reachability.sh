@@ -2,7 +2,7 @@
 # [T0-3] guard 的 deny 路徑可達性回歸。
 #
 # 為何需要這支（2026-08-02 稽核）：既有測試各驗一半，中間有縫。
-#   tests/git-push-guard.sh   驗判定邏輯（134 cases）——但只對 $GUARD 指到的那一份。
+#   tests/git-push-guard.sh   驗判定邏輯（148 cases）——但只對 $GUARD 指到的那一份。
 #   tests/hook-parity.sh      驗漂移偵測機制本身，用 fixture，不碰真的 guard。
 #   bin/hook-parity-check     驗三份副本內容一致——一致不等於「deny 路徑走得到」。
 # 縫在於：沒有任何一支斷言「host 實際執行的那份，餵它 force push 真的會被擋」。
@@ -14,7 +14,7 @@
 # 底下的檔沒有任何 host 會執行，三份是實體副本。稽核初期正是先驗錯了對象。
 #
 # ⚠️ 這支在 CI 上的增量有限，價值主要在開發機。runner 沒有 host-local 副本，
-#   剩下的 16 個 repo 正本 case 是 tests/git-push-guard.sh（134 cases，同樣兩種
+#   剩下的 16 個 repo 正本 case 是 tests/git-push-guard.sh（148 cases，同樣兩種
 #   format）的子集。真正只有這支能驗的是「~/.claude 與 ~/.codex 那兩份實體副本
 #   當下能不能擋」——那要在有 host 設定的機器上跑才成立。保留 CI 註冊是因為
 #   bin/ci-local 從 ci.yml 解析步驟，不註冊就等於本機也不會跑。
