@@ -380,7 +380,7 @@ rg -q 'GREEN.*micro-refactor|micro-refactor.*GREEN' "$KERNEL" ||
 # 一半。所以契約寫在 seam 上，形狀比照 tier0 的「repo 層對 tier0 只可加嚴」。
 ADAPTER_SECTION=$(cat "$HOST_ADAPTERS_REF") || fail 'cannot read host adapters reference'
 printf '%s\n' "$ADAPTER_SECTION" | rg -q 'Host adapter 對本 kernel 只可加嚴' ||
-  fail 'kernel does not state the add-only contract for host adapters'
+  fail 'host adapters reference does not state the add-only contract'
 printf '%s\n' "$ADAPTER_SECTION" | rg -q 'MUST NOT 放鬆.*(MUST|無條件約束)' ||
   fail 'add-only contract does not forbid loosening kernel MUSTs'
 printf '%s\n' "$ADAPTER_SECTION" | rg -q '放鬆.*user 當下明示' ||

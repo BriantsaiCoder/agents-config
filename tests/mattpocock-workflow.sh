@@ -64,7 +64,7 @@ refs=$(grep -ho '\[INT-4\]' \
 # 擁有的檔案（ownership 邊界）。拆成兩條：isolation 要求由 [INT-6] 承接，工具指向由
 # Codex adapter 承接。只驗 'bin/agents-branch' 是不夠的——那條在 [INT-6] 被刪掉後仍會綠。
 has "[INT-6] requires isolated worktree" '^\- \[INT-6\].*(isolated worktree|worktree)' skills/dev-workflow/SKILL.md
-has "[T1-10] tooling points to agents-branch" '~/.agents/bin/agents-branch' "$host_adapters_ref"
+has "[T1-10] tooling points to agents-branch" '~/\.agents/bin/agents-branch' "$host_adapters_ref"
 
 has "house skill standards exists" '^# Skill standards' skills/auditing-skill-folder/references/skill-standards.md
 lacks "audit no longer depends on superpowers:writing-skills" 'superpowers:writing-skills' skills/auditing-skill-folder
@@ -83,7 +83,7 @@ for pattern in 'Status:' 'bug' 'enhancement' 'needs-triage' 'needs-info' \
 done
 
 has "setup requires explicit user invocation" 'setup-matt-pocock-skills.*使用者.*明示|使用者.*明示.*setup-matt-pocock-skills' skills/dev-workflow/SKILL.md
-has "global issue-tracker fallback" '~/.agents/docs/agents/issue-tracker.md' skills/dev-workflow/SKILL.md
+has "global issue-tracker fallback" '~/\.agents/docs/agents/issue-tracker.md' skills/dev-workflow/SKILL.md
 has "Copilot delegation uses task" '子代理 = `task` 工具' "$host_adapters_ref"
 has "Copilot hook path is normative" 'Copilot.*Git guard MUST 位於' "$host_adapters_ref"
 
@@ -317,7 +317,7 @@ has "conflict staging stays within authorized resolved files" '`resolving-merge-
 has "unsafe conflict resolution may abort after confirmation" '必要意圖.*merge goal.*使用者確認.*abort.*上游' skills/dev-workflow/SKILL.md
 lacks "no dangling T1-11" '\[T1-11\]' skills/dev-workflow/SKILL.md
 lacks "kernel does not duplicate PR command" 'pr-review-gate' skills/dev-workflow/SKILL.md
-has "review triage owns exact PR command" '~/.agents/bin/pr-review-gate' skills/dev-workflow/references/review-triage.md
+has "review triage owns exact PR command" '~/\.agents/bin/pr-review-gate' skills/dev-workflow/references/review-triage.md
 
 if command -v gitleaks >/dev/null 2>&1; then
   scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/matt-secret-fixture.XXXXXX")"
