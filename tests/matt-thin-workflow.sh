@@ -346,6 +346,24 @@ rg -q 'implement.*(current|main).*(MUST NOT|不得)|MUST NOT.*implement.*(curren
 rg -q 'GREEN.*micro-refactor|micro-refactor.*GREEN' "$KERNEL" ||
   fail 'post-GREEN micro-refactor rule missing'
 
+# Host adapter 與 kernel 的加嚴契約。
+#
+# 為什麼釘在這裡（2026-08-04）：dotclaude PR #7 在 CLAUDE.md 加的 delegation 條文與
+# [INT-4] 的無條件約束正面對撞，而 tier0 裁決鏈裁不了 kernel 與 host delta 這一對——
+# 該檔實體在 skills/ 下（讀成程序步驟則 host delta 勝），功能是三 host 共用治理層
+# （讀成協作層則 kernel 勝），兩種讀法都成立。
+#
+# 修法不是在鏈上插一格：這組關係不是線性位階。host 可以加一條 kernel 沒有的約束
+# （PR #7 那樣是正當的），但不可放鬆 kernel 的 MUST——鏈上任一個位置都只能編碼其中
+# 一半。所以契約寫在 seam 上，形狀比照 tier0 的「repo 層對 tier0 只可加嚴」。
+ADAPTER_SECTION=$(sed -n '/^## Host adapters$/,/^## References$/p' "$KERNEL")
+printf '%s\n' "$ADAPTER_SECTION" | rg -q 'Host adapter 對本 kernel 只可加嚴' ||
+  fail 'kernel does not state the add-only contract for host adapters'
+printf '%s\n' "$ADAPTER_SECTION" | rg -q 'MUST NOT 放鬆.*(MUST|無條件約束)' ||
+  fail 'add-only contract does not forbid loosening kernel MUSTs'
+printf '%s\n' "$ADAPTER_SECTION" | rg -q '放鬆.*user 當下明示' ||
+  fail 'add-only contract does not route loosening back to explicit user instruction'
+
 if rg -n 'superpowers:' "$AGENTS/skills" >/dev/null; then
   fail 'active shared skills still reference Superpowers'
 fi
