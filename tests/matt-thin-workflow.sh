@@ -430,8 +430,14 @@ LIST
 # 三類：stack skill（31，靠自己的 description 觸發）、kernel 自身（dev-workflow 不能
 # route 自己）、以及由 upstream router 或使用者明示進入的 Matt skill（grill-me、
 # mp-zoom-out、prototype、teach）。
+# 用純 bash glob 迭代，對齊 tests/vendored-detection.sh:306 的既有寫法：
+# `ls | xargs basename` 配 `for s in $(...)` 會經過 word splitting，目錄名含空白或
+# 換行時拆壞，且 glob 未命中時會把字面 pattern 當成一個項目。`[ -f "$sd/SKILL.md" ]`
+# 同時擋掉未命中與缺 SKILL.md 的空目錄（後者曾讓 agents-sync 三個入口全 die）。
 actual_unrouted=$(
-  for s in $(ls -d "$AGENTS"/skills/*/ | xargs -n1 basename); do
+  for sd in "$AGENTS"/skills/*/; do
+    [ -f "$sd/SKILL.md" ] || continue
+    s=${sd%/}; s=${s##*/}
     grep -Fq "\`$s\`" "$KERNEL" || printf '%s\n' "$s"
   done | sort
 )
