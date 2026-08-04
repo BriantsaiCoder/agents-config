@@ -32,6 +32,15 @@
 | 7 | **Security-release gates** | 會部署的變更已跑 `*-release-verification` + `dependency-security-scan`（正交必跑，非三選一）| 列出跑了哪些 gate + 結果；不部署則標 SKIPPED 附「本次不部署」理由 |
 | 8 | **Residual risks** | 已知但接受的殘留風險已列舉；中高風險附 rollback | 風險清單（「無」是明述斷言不是留白）；中高風險變更附 rollback 註記（[T0-6]）|
 
+**呈現粒度（八項語意一律不得省略，省的只有版面）：**
+
+- 預設逐列展開。
+- `Diff self-review` 與 `Self-simplification` 兩列，在**都是 PASS 且都沒有可報告內容**時（沒清掉 debug／dead code、沒新增抽象或依賴、沒有選型取捨）MUST 合併為一列，例：
+  `3+4. Diff self-review／Self-simplification — PASS：逐行走查無殘留 debug／dead code；無 unrequested abstraction／新依賴／單一使用點抽象層／speculative config。`
+- 任一列非 PASS，或有實際內容可報（清掉了什麼、加了什麼依賴、做了什麼取捨）→ 該列 MUST 獨立展開，理由與證據寫在該列。
+
+理由：這兩列是八列中僅有的自我宣告，無獨立視角（`[S5-3]` 條文已明述），實際防護由 S5 review 與 bot review 承擔。壓縮的是版面不是評估——有任何實質內容時壓縮條件即不成立。
+
 ### 範例（已填）
 
 ```
@@ -67,7 +76,9 @@
 **呈現粒度（六項語意一律不得省略，省的只有版面）：**
 
 - **展開完整六列表格**：中高風險、或任一項非 `PASS`、或不走 PR 路徑。
-- **PR 路徑且全 PASS**：`Self-simplification`、`Diff self-review`、`Review gate`、`Residual risks` 四列與 PR body 的 Preflight Ledger（第 1 節）同源，此處以 `見 PR body 的 Preflight Ledger` 帶過即可（用固定段落名，不用 `#` 編號佔位符——那在 GitHub 語境會被讀成 issue／PR 編號，也容易被原樣輸出）；`Relevant verification` 與 `PR / CI / review status` 兩列 MUST 逐項展開——只有這兩列帶著 Preflight 當時還不存在的資訊（實際跑了什麼、CI 與 bot review 的最終狀態）。
+- **PR 路徑且全 PASS**：`Self-simplification`、`Diff self-review`、`Review gate`、`Residual risks` 四列與 PR body 的 Preflight Ledger（第 1 節）同源，**MUST 合併為單行**帶過，不得四列各寫一行指向同一處——那正是要壓掉的重複。用固定段落名，不用 `#` 編號佔位符（那在 GitHub 語境會被讀成 issue／PR 編號，也容易被原樣輸出）。例：
+  `Self-simplification／Diff self-review／Review gate／Residual risks — PASS，見 PR body 的 Preflight Ledger。`
+  `Relevant verification` 與 `PR / CI / review status` 兩列 MUST 逐項展開——只有這兩列帶著 Preflight 當時還不存在的資訊（實際跑了什麼、CI 與 bot review 的最終狀態）。
 - **低風險、單檔、不進 PR 且全 PASS**：可壓成單行，六項次序不變，例：
   `Closeout: simplification／self-review／verification／review／PR-status／risks — PASS，dotnet test exit 0 (398 passed)，無殘留風險`
 
@@ -78,12 +89,9 @@
 ```
 ## Closeout Ledger
 
-- Self-simplification — PASS：無 unrequested abstraction／無新依賴／無單一使用點抽象層／無 speculative config。
-- Diff self-review — PASS：git diff 逐行走查；無殘留 debug／dead code。
+- Self-simplification／Diff self-review／Review gate／Residual risks — PASS，見 PR body 的 Preflight Ledger。
 - Relevant verification — PASS：DOTNET_SYSTEM_NET_DISABLEIPV6=1 dotnet test → exit 0（Passed! 398）；dotnet build --configuration Release → exit 0。
-- Review gate — PASS：reviewer=dotnet-code-reviewer（dcr-07）；2 findings 採納並修；0 未處理 actionable。
 - PR / CI / review status — PR #64 已開；gh pr checks 全綠；Copilot review 異步產出 3 條，2 條採納 1 條附 technical reason pushback，thread 皆 resolve。
-- Residual risks — 分塊邊界仰賴 byte 量測；風險低。rollback：revert 單 commit。
 ```
 
 ---
