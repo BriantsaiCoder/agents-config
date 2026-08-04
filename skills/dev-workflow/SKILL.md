@@ -52,6 +52,7 @@ description: 收到任何開發任務時先讀本檔。這是三 host 共用的 
 | Security | code／diff／path 的 focused data-flow review → `shared-security-review`；使用者明示 whole-codebase adversarial audit／pen-test 且接受持久化 artifacts → `security-audit`；CI／pre-commit／SBOM／container gate → `dependency-security-scan` |
 | 架構、deep module、seam 設計 | `codebase-design`；另命中上列明示 trigger 時才組合 `grilling` |
 | 陌生 repo | `acquire-codebase-knowledge` |
+| 產出或更新 repo 專案文件與 host-native AI 指令 | `init-project-docs`；只跑被要求的 output，探索地圖另走 `acquire-codebase-knowledge` |
 | primary-source background research／citable Markdown evidence | `research` |
 | current library／framework／SDK／API／CLI／cloud lookup | `context7-mcp` |
 | Microsoft concepts／tutorial／config；API signature／SDK sample | 前者 `microsoft-docs`；後者 `microsoft-code-reference` |
@@ -127,7 +128,7 @@ Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findi
 
 - 只有 [INT-1] 成立才 commit／push／open PR／merge／final closeout；commit／PR 用 zh-TW Conventional Commits。全域設定／security config 的**路徑選擇**依 [INT-10]（[INT-1] 只管時機，不管走不走 PR）。
 - PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger；Ready PR 的 current-HEAD CI／bot-review gate 與唯一 command 由 `references/review-triage.md` 定義，該 gate PASS 才可 merge。
-- BUGFIX 跑 `bug-fix-settlement`；架構變更同步 current architecture docs。
+- BUGFIX 跑 `bug-fix-settlement`；架構變更用 `init-project-docs` 的 architecture output 同步 current architecture docs，只跑該 output 不做 full refresh。
 - 「分析 conflict」不得授權 resolve、stage 或 commit；只有使用者明示「解決 conflict」時才可執行 `resolving-merge-conflicts`。
 - 執行 `resolving-merge-conflicts` 時只 stage 授權 scope 內已解決檔案，MUST NOT `git add -A`；若必要意圖無法安全保留或沒有解法符合 merge goal，停止並回報 trade-off，取得使用者確認後可 abort，不受上游「always resolve／stage everything」指示約束。
 - 合併後依 repo policy 清理已合併 branch；不得 force-push main／master。

@@ -364,6 +364,91 @@ printf '%s\n' "$ADAPTER_SECTION" | rg -q 'MUST NOT 放鬆.*(MUST|無條件約束
 printf '%s\n' "$ADAPTER_SECTION" | rg -q '放鬆.*user 當下明示' ||
   fail 'add-only contract does not route loosening back to explicit user instruction'
 
+# init-project-docs 的兩個掛載點。
+#
+# 為什麼釘（2026-08-04）：這支 skill 在 kernel、四個 references 與三個 host 入口檔
+# 全都 0 次出現，走 workflow 進來的任務永遠到不了它。它的姊妹
+# acquire-codebase-knowledge 在 S0 表上（「陌生 repo」列），而 S6 有一句
+# 「架構變更同步 current architecture docs」講了 outcome 卻沒指名 skill——缺口正好
+# 落在兩者之間，同一行的 BUGFIX 半句反而有指名 bug-fix-settlement。
+sed -n '/^| Need | Route |$/,/^$/p' "$KERNEL" | rg -q 'init-project-docs' ||
+  fail 'S0 routing table does not route init-project-docs'
+rg -q '架構變更.*`init-project-docs`.*architecture docs' "$KERNEL" ||
+  fail 'S6 architecture-docs obligation does not name init-project-docs'
+
+# S0 路由的反向缺口。
+#
+# 既有斷言只驗單向（表上每支 skill 的檔案必須存在），所以「method skill 沒被 route」
+# 是機械不可見的——上面那個缺口就是這樣活下來的。
+#
+# 判準不能是「所有 skill 都要被 route」：stack skill 本來就靠自己的 description 觸發，
+# kernel 的 S0 只 route method skill，71 支裡有 36 支合法地不在 route 路徑上。所以改成
+# 宣告式——實際未被 route 的集合必須等於下方宣告的集合。新增一支未 route 的 skill 會紅，
+# 把宣告過的 skill 改成有 route 也會紅，兩個方向都逼出一次明確決定。
+#
+# 「被 route」取全檔提及而非只看 S0 表：Routing continuations 那段的 prose 也是合法路由
+# 路徑（implement／handoff／to-spec 都只在那裡出現）。
+UNROUTED_BY_DESIGN=$(cat <<'LIST'
+agent-browser
+aspnet-api-architect
+auth-implementation-patterns
+c-cpp-best-practices
+clean-code-dotnet
+containerization
+css-ui-best-practices
+dapper-best-practices
+dev-workflow
+dotnet-core-best-practices
+dotnet-framework-best-practices
+dotnet-logging-best-practices
+dotnet-testing-best-practices
+dotnet-winforms-best-practices
+ef-core-best-practices
+ef6-best-practices
+grill-me
+jest-best-practices
+mp-zoom-out
+mysql-best-practices
+next-best-practices
+nodejs-best-practices
+nuxt
+playwright-best-practices
+postgresql-best-practices
+postgresql-optimization
+prototype
+react-best-practices
+react-router-framework-mode
+tailwind-v4-shadcn
+teach
+testing-library-react-best-practices
+typescript-best-practices
+vite
+vitest
+vue-best-practices
+LIST
+)
+# 三類：stack skill（31，靠自己的 description 觸發）、kernel 自身（dev-workflow 不能
+# route 自己）、以及由 upstream router 或使用者明示進入的 Matt skill（grill-me、
+# mp-zoom-out、prototype、teach）。
+# 用純 bash glob 迭代，對齊 tests/vendored-detection.sh:306 的既有寫法：
+# `ls | xargs basename` 配 `for s in $(...)` 會經過 word splitting，目錄名含空白或
+# 換行時拆壞，且 glob 未命中時會把字面 pattern 當成一個項目。`[ -f "$sd/SKILL.md" ]`
+# 同時擋掉未命中與缺 SKILL.md 的空目錄（後者曾讓 agents-sync 三個入口全 die）。
+actual_unrouted=$(
+  for sd in "$AGENTS"/skills/*/; do
+    [ -f "$sd/SKILL.md" ] || continue
+    s=${sd%/}; s=${s##*/}
+    grep -Fq "\`$s\`" "$KERNEL" || printf '%s\n' "$s"
+  done | sort
+)
+declared_unrouted=$(printf '%s\n' "$UNROUTED_BY_DESIGN" | rg -v '^\s*$' | sort)
+newly_unrouted=$(comm -23 <(printf '%s\n' "$actual_unrouted") <(printf '%s\n' "$declared_unrouted"))
+[ -z "$newly_unrouted" ] ||
+  fail "skill 未被 route 且未宣告例外（route 進 S0，或加進 UNROUTED_BY_DESIGN）: $(printf '%s' "$newly_unrouted" | tr '\n' ' ')"
+stale_declaration=$(comm -13 <(printf '%s\n' "$actual_unrouted") <(printf '%s\n' "$declared_unrouted"))
+[ -z "$stale_declaration" ] ||
+  fail "UNROUTED_BY_DESIGN 列出的 skill 其實已被 route 或已不存在，請移除: $(printf '%s' "$stale_declaration" | tr '\n' ' ')"
+
 if rg -n 'superpowers:' "$AGENTS/skills" >/dev/null; then
   fail 'active shared skills still reference Superpowers'
 fi
