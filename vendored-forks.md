@@ -30,6 +30,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 | `code-review` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs and add the within-axis filter pass they defer to, per [S5-4]; same day, add the two house over-engineering baseline rules to the step-3 smell baseline, per [S5-3]; tree SHA-256 `35588c2ab47c07ff6ffcb2e8aecd90acd564cde8b2abf5769d666dd1b5ad6eee` | **Active** |
+| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Pending trigger canary** |
 
 <!-- fork-index:end -->
 
@@ -798,6 +799,84 @@ What remains capable of producing the same output: writing ````` ```mermaid ````
 
 ---
 
+## test-gap-analysis
+
+**Decision (2026-08-05): vendor one skill out of a 96-skill marketplace, as a recorded fork.**
+
+**Activation status:** pending Claude collision canary. The 2026-08-05 attempt was `UNAVAILABLE` because the Claude OAuth token returned `401`; static conformance is not a substitute for measured trigger behavior.
+
+`github.com/dotnet/skills` is the .NET team's official marketplace — 16 plugins, 96 skills, 16 agents at
+`4d25f17`. The adoption review (`proposals/2026-08-05-dotnet-skills-adoption/`) scored all 96 against this
+corpus and installed none of them: `dotnet-test` alone would add 10 agents to a menu deliberately reduced
+from 43 to 3, its `code-testing-agent` declares itself a `MANDATORY ENTRY POINT for generating or writing
+tests` (`SKILL.md:4`) which pre-empts `tdd` and `dotnet-testing-best-practices`, and its 20-skill payload leans
+MSTest against an xUnit corpus. Six further skills were harvested as reference sections into existing house
+files rather than vendored. This is the single skill that survived adversarial refute as a standalone
+capability: `grep mutation` across all 71 prior skills matched only `clean-code-dotnet:24`, where it means
+mutable state. Nothing here asks "would my tests catch a bug in this code?".
+
+Its value is orthogonal to coverage. A CI line-coverage threshold is satisfied by testing the easy half of a
+codebase; pseudo-mutation asks whether an assertion would actually fail if the line were wrong. The
+boolean-and-arithmetic mutation classes it generates are exactly the survivable defect shape that weighted-sum
+scoring code produces.
+
+### Local fork changes
+
+| Site | Change | Why |
+|---|---|---|
+| frontmatter `description` | `DO NOT USE FOR` re-pointed: `code-testing-agent` / `writing-mstest-tests` → `tdd` + the stack's testing skill; `test-anti-patterns` + `assertion-quality` → the stack's testing skill | All four name skills that do not exist in this corpus. A routing pointer to a missing owner routes nowhere |
+| `SKILL.md` header note and Step 1 | `Call the test-analysis-extensions skill` → read the vendored `references/dotnet.md` | That skill ships `disable-model-invocation: true` **and** `user-invocable: false`, so on Claude it is unreachable by any path. Its `extensions/dotnet.md` is the only one of 12 extension files this stack needs; the other 11 are dead weight. Upstream's own note calls the payload "nothing standalone" |
+| `When Not to Use` and the `Common Pitfalls` integration row | Same four pointers re-targeted | Same reason; these were the in-body copies |
+| Step 4b | Static-only is the default. Empirical mutation requires explicit authorization, a clean isolated temporary copy/worktree, original-file fingerprints, a full affected-suite check, inverse editing, and exact cleanup proof | An analysis request does not authorize production edits. Narrow tests are triage, not proof that a mutant survived every affected test |
+| Empirical timeout and score | Calibrate each timeout from the same command's unmutated duration, terminate timed-out process trees before mandatory inverse-edit cleanup, count `TimedOut` as detected, and use one non-equivalent denominator with `N/A` at zero | Mutants can introduce infinite loops; arbitrary timeouts create false kills, while an undefined denominator creates incompatible scores |
+| Mutation/reference calibration | Treat C#/TypeScript null-forgiving removal as equivalent, and tie xUnit APIs to assertion-package semantics rather than the target framework | Compile-time-only operators are not runtime mutations; xUnit `Throws<T>` is exact-type and `Assert.Fail` availability is package-version dependent |
+
+`references/dotnet.md` carries two one-line corrections of the same class: its header named four
+non-existent sibling skills as consumers, and a section heading was labelled "for `test-tagging`".
+
+Baseline before the fork: upstream `SKILL.md` SHA-256
+`cfec7d0e13deaee15fb97151d0cd5339fa5f14c109a10c49de81e9a5512231b7` (blob `973a20d`, 19,121B).
+Local `SKILL.md` SHA-256 `f7a49f4422309f92f59abb728838fb73cc16671ede3c2b2133d918062532e1ab`.
+Lock `payload_sha256` (hash-of-hashes over every file in the directory, the column's convention)
+`718315d6c125ac404ef713b0975de76a3b88527f07c9ac0e3bf10ed5e0cf67fe`;
+approved tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81`.
+Upstream `LICENSE` (MIT, .NET Foundation and Contributors) is carried with the payload.
+
+The polyglot mutation catalog is deliberately **not** trimmed to .NET. It is the bulk of the file and the
+part most likely to move upstream; trimming it would buy a one-time load saving against a recurring
+merge-conflict cost on every update — the exact trade `step0-vendored-gate.md` says the constraint outranks.
+
+### Re-merge procedure (when upstream moves)
+
+1. Diff the new `plugins/dotnet-test/skills/test-gap-analysis/SKILL.md` against blob `973a20d` at `4d25f17`.
+2. Replace the payload, then reapply the local changes above **only where upstream still lacks them**. Drop
+   the pointer re-targeting for any pointer whose named skill has since been vendored here. Keep the Step 4b
+   authorization, isolation, full-suite, fingerprint, calibrated timeout/process-tree termination, canonical
+   score/zero-denominator, and mandatory inverse-edit contract unless upstream provides an equivalent or
+   stronger safety boundary.
+3. Re-pull `extensions/dotnet.md` into `references/dotnet.md` and reapply its two heading corrections.
+4. Recompute both fingerprints (`vendored_tree_sha256 skills/test-gap-analysis`) and update this section,
+   the index row, and `vendored-skills.lock`.
+5. Run `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, relative-reference checks, and the
+   Step 2c trigger canary (fire + quiet cases in `skills/auditing-skill-folder/evals/cases.jsonl`).
+
+### Rollback
+
+Rollback is coordinated and PR-based; do not delete the shared payload first:
+
+1. In `dotclaude`, open a Ready PR that removes the tracked `skills/test-gap-analysis` symlink introduced by
+   PR #13, merge it, and confirm no host link still targets the shared directory.
+2. In an isolated `agents-config` branch, remove the three trigger-eval cases, the dedicated safety assertions
+   in `tests/matt-thin-workflow.sh`, the vendored expected-set/count entries, the lock row, the skill directory,
+   and this section plus its index row. Use Git history/revert for recovery rather than a raw recursive delete.
+3. Run vendored detection, workflow, relative-reference, trigger, and `agents-sync --doctor` checks; publish the
+   rollback through the same Ready PR and review gate.
+
+The harvested reference sections in `dotnet-testing-best-practices` and `dotnet-core-best-practices` are
+independent and stay.
+
+---
+
 ## Detector gap — check-vendored.sh missed 2 of 6 (fixed)
 
 Found 2026-07-25, fixed 2026-07-26. `check-vendored.sh` reported 4 vendored skills out of `skills/`; the real count was 6. Both misses were caught by hand during the description-trim pass — exactly the review this detector exists to make unnecessary.
@@ -813,4 +892,4 @@ Both fixes landed in `vendored_flag()` **and** `vendored_owner()`. Fixing only t
 
 A third defect surfaced while writing this section: `fork_recorded()` matched `| \`name\` |` anywhere in this file, so the table above — documentation, not an index — promoted `agent-browser` to `VND*`, asserting an accepted fork decision that was never made. The fork index now sits between `<!-- fork-index:begin/end -->` markers and the lookup is confined to that block; a file with no markers fails closed.
 
-Regression coverage: `tests/vendored-detection.sh`, 56 cases — every provenance form, Git-untracked empty-directory invariance, fail-closed tree scanning, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.
+Regression coverage: `tests/vendored-detection.sh`, 58 cases — every provenance form, Git-untracked empty-directory invariance, fail-closed tree scanning, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.

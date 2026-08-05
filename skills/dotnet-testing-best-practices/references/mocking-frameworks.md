@@ -571,8 +571,8 @@ Mocking is a tool for isolating collaborators. Overuse leads to brittle, hard-to
 ### Prefer fakes or real implementations for
 
 - **In-memory databases**: `UseInMemoryDatabase` or SQLite in-memory for simple EF Core tests.
-- **File system**: Use `System.IO.Abstractions` with `MockFileSystem`, or a temp directory.
-- **Time**: Inject `TimeProvider` (or `ISystemClock`) rather than mocking `DateTime.Now`.
+- **File system**: Prefer a real temp directory; reuse an existing project abstraction when isolation is required. Add `System.IO.Abstractions` only when broad virtualization materially helps.
+- **Time**: Inject `TimeProvider` on .NET 8+; below that, reuse an existing clock abstraction or add the smallest local seam rather than a package by default.
 - **Configuration**: Use `IOptions<T>` with `Options.Create(new MyConfig { ... })`.
 
 ### Signs you are over-mocking
@@ -596,3 +596,37 @@ mockOptions.Setup(o => o.Value).Returns(new SmtpSettings { Host = "localhost" })
 // GOOD: use Options.Create
 var options = Options.Create(new SmtpSettings { Host = "localhost" });
 ```
+
+---
+
+## Finding what needs a seam
+
+Before deciding what to mock, find what is currently unmockable. Choose the first rung that satisfies the test: native runtime/testing feature → .NET standard-library type → existing project abstraction → already-installed third-party adapter → smallest handwritten seam. Do not add a package only to avoid a narrow seam. Real temp directories and deterministic in-memory values are valid test tools, not fallback failures.
+
+Scan production `.cs` (exclude `obj/`, `bin/`, `*.Designer.cs`, `*.g.cs`, and `*.Tests.csproj`) for these categories:
+
+| Category | Patterns | Replacement |
+|---|---|---|
+| **Time** | `DateTime.Now/UtcNow/Today`, `DateTimeOffset.Now/UtcNow`, `Task.Delay(`, `new CancellationTokenSource(TimeSpan` | `TimeProvider` (.NET 8+), then an existing clock, installed adapter, or narrow local seam |
+| **File system** | `File.ReadAllText/WriteAllText/Exists/Delete/Copy/Move(`, `Directory.Exists/CreateDirectory/GetFiles/Delete(`, `Path.GetTempPath(`, plus instance members that hit disk: `new FileInfo(...)`, `new DirectoryInfo(...)`, `.LastWriteTimeUtc`, `new StreamReader(path)` | Real temp directory, then existing abstraction or installed `System.IO.Abstractions`; handwrite only the narrow seam still missing |
+| **Randomness / identity** | `new Random(`, `Random.Shared`, `Guid.NewGuid(` | Inject `Random`; for identity, reuse an existing provider or installed adapter before a narrow handwritten provider |
+| **Culture / serialization** | `CultureInfo.CurrentCulture/CurrentUICulture`, `JsonSerializer.Serialize/Deserialize(` | Pass `CultureInfo` / `JsonSerializerOptions` explicitly, then reuse an existing or installed adapter before a narrow wrapper |
+| **Environment** | `Environment.GetEnvironmentVariable/SetEnvironmentVariable/MachineName/UserName/CurrentDirectory/Exit(` | Existing environment abstraction, then installed adapter, then a narrow `IEnvironmentProvider` |
+| **Network** | `new HttpClient(`, `HttpClient.GetAsync/PostAsync/SendAsync(` | `IHttpClientFactory`, then an existing or installed handler adapter |
+| **Console** | `Console.WriteLine/Write/ReadLine/ReadKey(` | `TextReader` / `TextWriter` or `ILogger`, then an existing abstraction or installed adapter, then a narrow wrapper |
+| **Process** | `Process.Start/GetCurrentProcess/GetProcessesByName(` | Existing process runner, then installed adapter, then a narrow `IProcessRunner` |
+
+### Counting rules
+
+An inaccurate total is how this loses to an ad-hoc grep. Four rules decide the number:
+
+- **Classify by what the member touches, not by whether it is `static`.** `new FileInfo(p).LastWriteTimeUtc` is an instance call and still a file-system dependency. Call it a *hidden dependency*, not a static.
+- **Exclude deterministic pure helpers.** `Path.Combine`, `Path.GetExtension`, `Path.GetFileName`, `Math.*`, `string.*` take no ambient input and are trivially testable. They are not testability blockers; listing them as such makes the recommendation wrong.
+- **One authoritative total.** Every call site belongs in a category and in the grand total. Findings parked in a trailing "also noticed" paragraph are an under-count.
+- **Give `file:line` for every occurrence**, and reconcile the category totals, the top-patterns table, and the per-file table to the same grand total before publishing.
+
+Skip a call site that is already behind an interface, an injected service, or `TimeProvider` — it has its seam.
+
+### Reading the result
+
+Rank by count × ease of replacement, not count alone: Time usually wins first because `TimeProvider` is built in and needs no package. A high `Console.*` count in a batch or console app is often *not* a defect — it is the app's output channel, and the question is whether the code under test needs to assert on it. Decide per category what a seam actually buys before proposing one.
