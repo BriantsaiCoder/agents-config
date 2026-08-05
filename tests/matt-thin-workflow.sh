@@ -9,6 +9,7 @@ KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 DELEGATION_REF="$AGENTS/skills/dev-workflow/references/delegation.md"
 HOST_ADAPTERS_REF="$AGENTS/skills/dev-workflow/references/host-adapters.md"
 ROUTING_CONTINUATIONS_REF="$AGENTS/skills/dev-workflow/references/routing-continuations.md"
+AUTHORIZATION_MATRIX_REF="$AGENTS/skills/dev-workflow/references/authorization-matrix.md"
 GRILLING="$AGENTS/skills/grilling/SKILL.md"
 HANDOFF="$AGENTS/skills/handoff/SKILL.md"
 DIAGNOSING="$AGENTS/skills/diagnosing-bugs/SKILL.md"
@@ -66,9 +67,11 @@ grep -Fqx '[R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]' "$
 kernel_bytes=$(wc -c < "$KERNEL" | tr -d ' ')
 [ "$kernel_bytes" -le 12700 ] ||
   fail "dev-workflow kernel exceeds 12700 bytes: $kernel_bytes"
-for ref in "$DELEGATION_REF" "$HOST_ADAPTERS_REF" "$ROUTING_CONTINUATIONS_REF"; do
+for ref in "$DELEGATION_REF" "$HOST_ADAPTERS_REF" "$ROUTING_CONTINUATIONS_REF" "$AUTHORIZATION_MATRIX_REF"; do
   [ -r "$ref" ] || fail "conditional workflow reference missing: $ref"
 done
+rg -q '^# Authorization matrix' "$AUTHORIZATION_MATRIX_REF" ||
+  fail 'authorization matrix reference lacks its canonical heading'
 rg -q '^# Host adapters' "$HOST_ADAPTERS_REF" ||
   fail 'host adapters reference lacks its canonical heading'
 rg -q 'skill audit／VND.*continuations' "$KERNEL" ||

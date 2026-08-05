@@ -52,6 +52,9 @@ dirty_review=skills/dev-workflow/references/dirty-review-package.md
 delegation_ref=skills/dev-workflow/references/delegation.md
 host_adapters_ref=skills/dev-workflow/references/host-adapters.md
 routing_continuations_ref=skills/dev-workflow/references/routing-continuations.md
+authorization_matrix_ref=skills/dev-workflow/references/authorization-matrix.md
+ledgers_ref=skills/dev-workflow/references/ledgers.md
+host_ownership_test=tests/three-host-global-config-ownership.sh
 
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
 refs=$(grep -ho '\[INT-4\]' \
@@ -139,14 +142,38 @@ lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|impr
 
 has "external issue or PR routes to triage" '外部.*issue.*PR.*`triage`' skills/dev-workflow/SKILL.md
 has "grill-with-docs stays explicit" '明示.*`grill-with-docs`' skills/dev-workflow/SKILL.md
-has "clear change build fix directly authorizes local implementation" '明確.*change／build／fix.*in-scope local implementation.*non-destructive verification' skills/dev-workflow/SKILL.md
+has "S2 routes mutations through the authorization matrix" 'mutation.*side effect.*authorization.*matrix|變更.*side effect.*authorization.*matrix' skills/dev-workflow/SKILL.md
+has "clear change build fix directly authorizes local implementation" '明確.*change／build／fix.*in-scope local implementation.*non-destructive verification' "$authorization_matrix_ref"
 lacks "clear work does not wait for implement invocation" '需求已清楚.*推薦.*`implement`|單一 session.*等待.*`implement`' skills/dev-workflow/SKILL.md "$routing_continuations_ref"
 rule_has "Medium risk alone does not reopen authorization" INT-3 'Medium-risk.*MUST NOT.*第二次確認|MUST NOT.*Medium-risk.*第二次確認'
-has "S2 keeps local reversible Medium autonomous" 'Medium-risk.*session plan.*不需第二次確認|Medium.*本身不是第二次授權 gate' skills/dev-workflow/SKILL.md
-has "S2 stops before High or protected boundaries" 'High.*protected boundary.*material scope expansion.*停|High.*material scope expansion.*protected boundary.*停' skills/dev-workflow/SKILL.md
-has "S2 asks only for material ambiguity" '只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問' skills/dev-workflow/SKILL.md
-has "S2 keeps reversible defaults autonomous" '低風險.*可逆.*無 material impact.*sensible default.*default／impact' skills/dev-workflow/SKILL.md
-lacks "S2 does not restore blanket ask-before-edit" '有多種合理解讀且會改檔時.*停下發問' skills/dev-workflow/SKILL.md
+has "mechanical triggers set a non-overridable risk floor" 'mechanical trigger.*risk floor.*不得.*(自評|label).*降級' "$authorization_matrix_ref"
+has "multiple triggers take the highest risk floor" '多個 trigger.*最高 risk floor' "$authorization_matrix_ref"
+has "S2 keeps local reversible Medium autonomous" 'Medium-risk.*session plan.*不需第二次確認|Medium.*本身不是第二次授權 gate' "$authorization_matrix_ref"
+has "S2 stops before High or protected boundaries" 'High.*protected boundary.*material scope expansion.*停|High.*material scope expansion.*protected boundary.*停' "$authorization_matrix_ref"
+has "S2 asks only for material ambiguity" '只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問' "$authorization_matrix_ref"
+has "S2 keeps reversible defaults autonomous" '低風險.*可逆.*無 material impact.*sensible default.*default／impact' "$authorization_matrix_ref"
+lacks "S2 does not restore blanket ask-before-edit" '有多種合理解讀且會改檔時.*停下發問' skills/dev-workflow/SKILL.md "$authorization_matrix_ref"
+has "personal preferences stay on the reversible local track" 'Personal preference.*model.*effort.*verbosity.*UI.*local.*reversible' "$authorization_matrix_ref"
+has "plugin and MCP capability expansion use the policy track" 'Policy.*plugin.*MCP.*credential.*permission.*tool capability.*INT-10' "$authorization_matrix_ref"
+has "MCP command args and env changes stay on the policy track" 'MCP.*command／args／env.*Policy' "$authorization_matrix_ref"
+has "weakening an existing control stays on the policy track" '刪除／停用／放寬.*hook.*sandbox.*permission.*Policy' "$authorization_matrix_ref"
+has "local reversible excludes unbacked ignored deletion" 'local reversible.*VCS.*backup.*untracked／ignored.*不算' "$authorization_matrix_ref"
+has "checkpoint commit is feature-branch-only after targeted S4" 'checkpoint.*(feature branch|worktree).*targeted S4.*PASS' "$authorization_matrix_ref"
+has "checkpoint excludes sensitive and publication surfaces" 'checkpoint.*secrets.*permission.*sandbox.*hooks.*CI.*deployment.*migration.*push.*PR.*merge' "$authorization_matrix_ref"
+has "checkpoint excludes global and security policy" 'checkpoint.*global／security policy' "$authorization_matrix_ref"
+has "checkpoint cannot claim final completion" '不得宣稱 final done' "$authorization_matrix_ref"
+has "checkpoint keeps the original cumulative baseline" 'Checkpoint 不重設 baseline.*未跑的 S5／CI／review.*原 baseline.*累積 diff' "$ledgers_ref"
+has "checkpoint baseline is an immutable ancestor SHA" 'immutable baseline SHA.*merge-base.*--is-ancestor.*gate FAIL.*全套重驗' "$ledgers_ref"
+has "checkpoint verification reuses repo-defined commands" 'checkpoint.*targeted S4.*repo／CI.*既有.*commands' "$authorization_matrix_ref"
+has "checkpoint stages an explicit allowlist and scans it" 'checkpoint.*explicit path allowlist.*git add -A.*gitleaks.*--staged' "$authorization_matrix_ref"
+has "checkpoint blocks foreign pre-staged paths without unstaging them" 'checkpoint 前.*git diff --cached --name-only.*allowlist 外.*停止.*不得.*unstage.*stage 後.*僅.*allowlist' "$authorization_matrix_ref"
+has "credential-only operations do not inherit blanket T0-6 rollback" 'Credential-only.*T0-8.*INT-10.*T0-6.*不適用' "$authorization_matrix_ref"
+has "T0-6 rollback remains on its exact categories" 'Auth.*payment.*migration.*大量刪除.*crypto.*multi-tenant.*rate-limit.*deployment pipeline.*T0-6.*rollback' "$authorization_matrix_ref"
+has "S6 routes checkpoint commits through the matrix" 'checkpoint.*authorization-matrix' skills/dev-workflow/SKILL.md
+has "ownership gate runs semantic parity against actual host candidates" 'three-host-capability-parity\.sh.*--check' "$host_ownership_test"
+has "ownership gate maps the Claude candidate" 'CLAUDE_INSTRUCTIONS=.*CLAUDE_CANDIDATE.*CLAUDE\.md' "$host_ownership_test"
+has "ownership gate maps the Codex candidate" 'CODEX_INSTRUCTIONS=.*CODEX_CANDIDATE.*AGENTS\.md' "$host_ownership_test"
+has "ownership gate maps the Copilot candidate" 'COPILOT_INSTRUCTIONS=.*COPILOT_CANDIDATE.*copilot-instructions\.md' "$host_ownership_test"
 has "missing canonical spec routes through to-spec" '無 canonical spec.*`to-spec`.*`to-tickets`' "$routing_continuations_ref"
 has "existing spec skips duplicate to-spec" '已有完整 spec.*略過 `to-spec`.*`to-tickets`' "$routing_continuations_ref"
 has "ticket implementation starts fresh" '每張 ticket.*fresh session.*isolated.*worktree' "$routing_continuations_ref"

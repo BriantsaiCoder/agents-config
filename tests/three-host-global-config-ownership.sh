@@ -69,7 +69,7 @@ fi
 # 2026-08-03：candidate 改為直接指向 live host 目錄。原本用 `resolve_worktree` 去找
 # `codex/three-host-global-config-split-{claude,codex,copilot}` 三個分支的 worktree，
 # 但那些 worktree 建在 `/private/tmp/*-worktrees/`，macOS 會定期清空該路徑——目錄一消失
-# 這支測試就恆 FAIL（實測從 2026-07-29 掛到 08-03）。三個分支的內容（保留 T2-6 回覆規則）
+# 這支測試就恆 FAIL（實測從 2026-07-29 掛到 08-03）。三個分支的內容（含回覆 capability）
 # 早已進入各 host 的 main，分支已於 2026-08-03 存檔至 backups/branch-archive/ 後刪除，
 # 所以拆分實驗的 candidate 就是 live 目錄本身。env 覆寫保留，供 CI 或沙箱指向別處。
 CLAUDE_CANDIDATE="${CLAUDE_CANDIDATE:-$HOME/.claude}"
@@ -80,19 +80,16 @@ for candidate in "$CLAUDE_CANDIDATE" "$CODEX_CANDIDATE" "$COPILOT_CANDIDATE"; do
   [ -d "$candidate" ] || fail "host candidate missing: $candidate"
 done
 
-preserved_response_policy='- 回覆 SHOULD outcome-first、無空泛前後文；決策列編號選項／推薦／取捨，單字或數字即為完整回答，推測標記，已決不列替案。'
-for active_config in \
-  "$CLAUDE_CANDIDATE/CLAUDE.md" \
-  "$CODEX_CANDIDATE/AGENTS.md" \
-  "$COPILOT_CANDIDATE/copilot-instructions.md"; do
-  rg -Fqx -- "$preserved_response_policy" "$active_config" ||
-    fail "host candidate drops preserved T2-6 response policy: $active_config"
-done
+CLAUDE_INSTRUCTIONS="$CLAUDE_CANDIDATE/CLAUDE.md" \
+  CODEX_INSTRUCTIONS="$CODEX_CANDIDATE/AGENTS.md" \
+  COPILOT_INSTRUCTIONS="$COPILOT_CANDIDATE/copilot-instructions.md" \
+  bash "$AGENTS/tests/three-host-capability-parity.sh" --check ||
+  fail 'host candidates do not provide equivalent semantic capabilities'
 
 # 2026-07-30：移除對 $AGENTS/core/tier2-style.md 的 SHA 比對。core/ 三家 runtime 都不讀
 # （本檔的 control_plane_hits 反向斷言已禁止 host config 引用 .agents control plane），已退役至
-# attic/core/。T2-6 的 active 正本只在三家 host-local config，由下面 claude
-# candidate 那條與上方 preserved_response_policy 的逐字檢查把關。
+# attic/core/。三家 active config 的回覆等價由 three-host-capability-parity.sh 依 semantic
+# anchors 把關；下面只保留 Claude-owned tier2 source 與指紋的 materialization 驗證。
 # 2026-08-03：由整檔 SHA 改為釘 [T2-6] 條文本體 + FP 指紋兩行。原值 677f78d8… 經逐 commit
 # 追查共失效兩次，都只動檔頭、T2-6 一字未改：`077c703 docs(claude): 清除 tier0／tier2 退役
 # pipeline header`（拿掉 generated-from:）→ 865fceac，再 `9b8d9bf fix(core): tier1／tier2 檔頭

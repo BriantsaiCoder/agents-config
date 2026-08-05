@@ -4,6 +4,21 @@
 
 Host adapter 對本 kernel 只可加嚴，MUST NOT 放鬆其 MUST 或無條件約束；放鬆需 user 當下明示。Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocation 時，實際 command 前綴與啟動權限以本 reference 對應 host adapter 為準。
 
+## Capability parity
+
+三家等價以 capability 與各自 semantic anchors 判定，不要求 prose、檔案結構或 hash 相同。`^` 分隔同一 capability 必備的 clauses；此表是 `tests/three-host-capability-parity.sh` 的 canonical mapping。
+
+<!-- capability-parity:start -->
+```tsv
+CAP-WORKFLOW	Shared workflow 是唯一方法來源	dev-workflow/SKILL.md^host-local prose 不複製 method	dev-workflow/SKILL.md^程序只由該 skill 維護	dev-workflow/SKILL.md^workflow 方法與 gates 唯一來源
+CAP-LOCAL-AUTONOMY	安全、local、reversible 工作可自主完成	Low／Medium-risk、local、reversible^可自主完成	Low／Medium-risk^local、reversible^可直接實作	Low／Medium-risk^local、reversible^可直接實作
+CAP-DELEGATION	Delegation 由 AI 自主判定且無須先問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問
+CAP-RESPONSE	Outcome-first 且決策列出 recommendation 與 trade-off	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨
+```
+<!-- capability-parity:end -->
+
+Tier0 安全內容由 `tests/tier0-parity.sh` 驗；model、effort、permission 與 hook 是 host-local capability，不以跨 host 相同值判定；control-plane materialization 仍由 ownership tests 驗。
+
 ## Claude
 
 - plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent；決策提問 = AskUserQuestion。

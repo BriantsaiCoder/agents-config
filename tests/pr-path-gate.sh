@@ -32,6 +32,7 @@ ng() { printf '  FAIL  %s\n' "$1" >&2; fail=$((fail + 1)); }
 PATH_STEPS='isolated branch.*Ready PR.*bot-review gate.*squash merge.*刪 branch'  # 路徑五步，全部且依序
 PROHIBITION='MUST NOT 直接 push'                                       # 禁令本體
 SCOPE='CLAUDE\.md|AGENTS\.md|copilot-instructions\.md|tier0|hooks|CI workflow'  # 適用範圍
+CAPABILITY_SCOPE='plugin.*(install|enable|啟用).*MCP.*(install|enable|啟用).*credential.*tool'  # 新 capability surface
 ESCAPE='使用者當下明示'                                                # 逃生門（無它則無法被覆寫）
 HONESTY='pre-push.*未安裝.*沒有機械 enforcement.*--no-verify.*--mirror' # 不得升級為完整 enforcement 宣稱
 
@@ -53,6 +54,7 @@ check_kernel() {
   printf '%s' "$line" | grep -Eq "$PATH_STEPS"  || miss="${miss} 路徑步驟"
   printf '%s' "$line" | grep -Eq "$PROHIBITION" || miss="${miss} 禁令(MUST-NOT-直接-push)"
   printf '%s' "$line" | grep -Eq "$SCOPE"       || miss="${miss} 適用範圍"
+  printf '%s' "$line" | grep -Eq "$CAPABILITY_SCOPE" || miss="${miss} plugin/MCP-capability"
   printf '%s' "$line" | grep -Eq "$ESCAPE"      || miss="${miss} 例外條款"
   printf '%s' "$line" | grep -Eq "$HONESTY"     || miss="${miss} client-side-ceiling"
 
@@ -77,7 +79,7 @@ selftest() {
   cat > "${scratch}/good.md" <<'FIX'
 ## Always-on guards
 
-- [INT-10] 全域設定與 security config 的變更 MUST 走 PR 路徑：isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push 到 main／master。範圍：三 host 入口檔（`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`）、tier0、kernel 與其 references、hooks 與 permission settings、CI workflow。Git-native pre-push 是 client-side safety rail；未安裝時沒有機械 enforcement，--no-verify 可略過，且不保證 --mirror 的隱式刪除。例外：使用者當下明示直接推 main。
+- [INT-10] 全域設定與 security config 的變更 MUST 走 PR 路徑：isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push 到 main／master。範圍：三 host 入口檔（`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md`、`~/.copilot/copilot-instructions.md`）、tier0、kernel 與其 references、hooks 與 permission settings、CI workflow，以及 plugin install／enable、MCP 啟用、新 credential 或 external tool capability。Git-native pre-push 是 client-side safety rail；未安裝時沒有機械 enforcement，--no-verify 可略過，且不保證 --mirror 的隱式刪除。例外：使用者當下明示直接推 main。
 
 ## S6 CLOSEOUT
 
@@ -90,6 +92,9 @@ FIX
   sed 's/；MUST NOT 直接 push 到 main／master//'        "${scratch}/good.md" > "${scratch}/no-prohibition.md"
   sed 's/未安裝時沒有機械 enforcement/已完整強制/'       "${scratch}/good.md" > "${scratch}/overclaim.md"
   sed 's/例外：使用者當下明示直接推 main。//'           "${scratch}/good.md" > "${scratch}/no-escape.md"
+  sed 's/，以及 plugin install／enable、MCP 啟用、新 credential 或 external tool capability//' "${scratch}/good.md" > "${scratch}/no-capability-scope.md"
+  sed 's/plugin install／enable/plugin/'                 "${scratch}/good.md" > "${scratch}/no-plugin-action.md"
+  sed 's/MCP 啟用/MCP/'                                  "${scratch}/good.md" > "${scratch}/no-mcp-action.md"
   grep -v '^- \[INT-10\]'                              "${scratch}/good.md" > "${scratch}/no-rule.md"
   sed 's/- 路徑選擇依 \[INT-10\]。/- 路徑選擇自行判斷。/' "${scratch}/good.md" > "${scratch}/no-s6-pointer.md"
 
@@ -109,6 +114,9 @@ FIX
   probe "${scratch}/no-prohibition.md" fail "禁令被拿掉"
   probe "${scratch}/overclaim.md"      fail "把 client-side safety rail 講成完整強制"
   probe "${scratch}/no-escape.md"      fail "例外條款被拿掉"
+  probe "${scratch}/no-capability-scope.md" fail "plugin/MCP capability scope 被拿掉"
+  probe "${scratch}/no-plugin-action.md" fail "plugin 缺 install/enable action"
+  probe "${scratch}/no-mcp-action.md"    fail "MCP 缺 install/enable action"
   probe "${scratch}/no-rule.md"        fail "[INT-10] 整條消失"
   probe "${scratch}/no-s6-pointer.md"  fail "S6 失去指標"
 

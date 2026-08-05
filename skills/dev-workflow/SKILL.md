@@ -25,7 +25,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 - [INT-8] 核准清單 MUST 連續執行至完成，不得逐項重問；blanket authorization 只涵蓋原句前已明列 scope。只有 [T0-5]、[T0-8]／[INT-3] 或 user-owned 取捨可中斷；新發現只列 follow-up，未核准不得做。觸發：≥2 個已核准項目。例外：無。驗證：核准原句早於新增 scope + 單次彙總 status／evidence。
 - [INT-9] Kernel 只在 [INT-2] 選定 stable／valuable seam 時 route 到 [tdd](../tdd/SKILL.md)；既有 public behavior seam 視為已確認，只有新增 seam 才需先向使用者確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。本條覆寫 upstream 的逐 seam 重問與固定 choreography。觸發：kernel 管理的 tdd cycle。例外：無。驗證：RED／GREEN／retest evidence。
 
-- [INT-10] 全域／security config MUST 走 isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push main／master。範圍：`CLAUDE.md`／`AGENTS.md`／`copilot-instructions.md`、tier0／tier1／tier2、kernel／references、hooks、permission／sandbox、CI workflow。`pre-push` 未安裝時沒有機械 enforcement；`--no-verify` 可略過且不保證 `--mirror` 隱式刪除。觸發：diff 命中範圍。例外：使用者當下明示直接推 main。驗證：PR + review-triage gate PASS；例外引用原句。
+- [INT-10] 全域／security config MUST 走 isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push main／master。範圍：`CLAUDE.md`／`AGENTS.md`／`copilot-instructions.md`、tier0／tier1／tier2、kernel／references、hooks、permission／sandbox、CI workflow，以及 plugin install／enable、MCP 啟用、新 credential 或 external tool capability。`pre-push` 未安裝時沒有機械 enforcement；`--no-verify` 可略過且不保證 `--mirror` 隱式刪除。觸發：diff 命中範圍。例外：使用者當下明示直接推 main。驗證：PR + review-triage gate PASS；例外引用原句。
 
 [R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]
 
@@ -64,10 +64,8 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 ## S2 AUTHORIZE
 
-1. 標 risk／reversibility／boundary。清楚、in-scope、local、reversible 的 Low／Medium-risk user-requested work 可做；Medium-risk 留 session plan，不需第二次確認。High、未授權 protected boundary 或 material scope expansion 依 [T0-8]／[INT-3] 停；schema／auth／payment／migration／deployment／destructive change 附 rollback。
-2. 明確 change／build／fix 原句授權 in-scope local implementation 與 non-destructive verification；`implement` 非第二道 gate。Commit／push／PR／merge／protected side effects 另走 gate。
-3. 核准前只留 session plan／todo；user／repo 要求或跨-session 才寫 `docs/agents/specs/`、`docs/agents/plans/`、`sdd/<slug>/`。
-4. 依 [T0-5]，只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問；低風險、可逆、無 material impact 採 sensible default 並記 default／impact。Delegation 不得繞過授權（[INT-4]）。
+1. mutation／side effect 一律先讀 [authorization matrix](references/authorization-matrix.md)；mechanical trigger 決定 risk floor，AI 自評不得降級。
+2. 核准前只留 session plan／todo；user／repo 要求或跨-session 才寫 `docs/agents/specs/`、`docs/agents/plans/`、`sdd/<slug>/`。Delegation 不得繞過授權（[INT-4]）。
 
 ## Implementation adapters
 
@@ -102,7 +100,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 ## S6 CLOSEOUT
 
-- 只有 [INT-1] 成立才 commit／push／open PR／merge／final closeout；commit／PR 用 zh-TW Conventional Commits。全域設定／security config 的**路徑選擇**依 [INT-10]（[INT-1] 只管時機，不管走不走 PR）。
+- Local checkpoint commit 依 [authorization matrix](references/authorization-matrix.md#local-checkpoint-commit)；final commit／push／open PR／merge／final closeout 仍須 [INT-1]。commit／PR 用 zh-TW Conventional Commits；全域／security config 路徑依 [INT-10]。
 - PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger；Ready PR 的 current-HEAD CI／bot-review gate 與唯一 command 由 `references/review-triage.md` 定義，該 gate PASS 才可 merge。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更用 `init-project-docs` 的 architecture output 同步 current architecture docs，只跑該 output 不做 full refresh。
 - 「分析 conflict」不得授權 resolve、stage 或 commit；只有使用者明示「解決 conflict」時才可執行 `resolving-merge-conflicts`。
@@ -113,6 +111,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 | Reference | Load when |
 |---|---|
+| [authorization matrix](references/authorization-matrix.md) | mutation／side effect 的 S2 分類；checkpoint commit |
 | `references/ledgers.md` | push／PR／merge／closeout 或其後新 commit |
 | `references/review-triage.md` | Ready PR 準備 merge |
 | `references/reviewer-template.md` | 非 SKIPPED S5 reviewer prompt |
