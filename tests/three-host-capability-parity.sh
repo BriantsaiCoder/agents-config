@@ -43,10 +43,13 @@ check_host() {
     rest="$field"
     while :; do
       clause=${rest%%^*}
-      grep -Fq -- "$clause" "$file" || {
+      if [ -z "$clause" ]; then
+        printf '  FAIL %s: %s has an empty clause\n' "$label" "$id" >&2
+        missing=$((missing + 1))
+      elif ! grep -Fq -- "$clause" "$file"; then
         printf '  FAIL %s: %s missing clause: %s\n' "$label" "$id" "$clause" >&2
         missing=$((missing + 1))
-      }
+      fi
       [ "$rest" = "$clause" ] && break
       rest=${rest#*^}
     done
@@ -74,7 +77,7 @@ run_checks() {
 }
 
 selftest() {
-  local scratch count id meaning claude codex copilot label target field first_clause pos_rc neg_rc unavailable_rc rc=0
+  local scratch count id meaning claude codex copilot label target field first_clause pos_rc neg_rc empty_rc unavailable_rc rc=0
   scratch=$(mktemp -d); trap "rm -rf '$scratch'" EXIT
   count=$(mapping_count)
   [ "$count" -ge 4 ] || { printf 'FAIL selftest: canonical mapping has only %s capabilities\n' "$count" >&2; return 1; }
@@ -111,6 +114,20 @@ selftest() {
   else
     sed 's/^/  /' "$scratch/negative.log" >&2
     printf 'FAIL selftest negative\n' >&2; rc=1
+  fi
+
+  mkdir -p "$scratch/agents/skills/dev-workflow/references"
+  awk -F '\t' 'BEGIN { OFS="\t" } /^CAP-/ && !done { $3="^" $3; done=1 } { print }' \
+    "$MAPPING" > "$scratch/agents/skills/dev-workflow/references/host-adapters.md"
+  AGENTS_HOME="$scratch/agents" CLAUDE_INSTRUCTIONS="$scratch/claude.md" \
+    CODEX_INSTRUCTIONS="$scratch/codex.md" COPILOT_INSTRUCTIONS="$scratch/copilot.md" \
+    bash "$0" --check > "$scratch/empty.log" 2>&1
+  empty_rc=$?
+  if [ "$empty_rc" -ne 0 ] && grep -q 'has an empty clause' "$scratch/empty.log"; then
+    printf 'PASS selftest malformed mapping: empty clause fails closed\n'
+  else
+    sed 's/^/  /' "$scratch/empty.log" >&2
+    printf 'FAIL selftest malformed mapping: empty clause passed\n' >&2; rc=1
   fi
 
   CLAUDE_INSTRUCTIONS="$scratch/missing.md" CODEX_INSTRUCTIONS="$scratch/codex.md" \
