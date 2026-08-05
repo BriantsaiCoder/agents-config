@@ -18,7 +18,7 @@ xUnit v3 primary (NUnit alt). Compose Moq/NSubstitute, AutoFixture/Bogus, WebApp
 7. **`WebApplicationFactory<Program>` for integration** — boots full pipeline in-memory; catches routing/DI/middleware bugs. → `references/integration-testing.md`.
 8. **Testcontainers for DB, not EF in-memory.** In-memory ignores constraints / SQL semantics.
 9. **Isolate tests** — no shared mutable state, no order dependency. `IAsyncLifetime` per-test.
-10. **Test observable behavior, not implementation.** Public API only.
+10. **Test observable behavior, not implementation.** Public API only. 生成測試時，將每個明示的 scenario、variant 與 qualifier 對應至精確命名的 public behavior，並回報 requirement → test evidence。
 11. **Keep tests fast.** Unit <10ms, integration <1s, E2E <10s. `IClassFixture<T>` for expensive shared context.
 12. **Coverage guides, not goals.** Cover business rules, validation, errors; skip POCOs/DTOs/generated.
 13. **A benchmark is a test whose assertion is a number.** Release mode, `[Benchmark(Baseline = true)]`, one variable at a time; too few iterations to finish the statistics = not evidence.
