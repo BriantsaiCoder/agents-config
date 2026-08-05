@@ -603,7 +603,7 @@ var options = Options.Create(new SmtpSettings { Host = "localhost" });
 
 Before deciding what to mock, find what is currently unmockable. Choose the first rung that satisfies the test: native runtime/testing feature → .NET standard-library type → existing project abstraction → already-installed third-party adapter → smallest handwritten seam. Do not add a package only to avoid a narrow seam. Real temp directories and deterministic in-memory values are valid test tools, not fallback failures.
 
-Scan production `.cs` (exclude `obj/`, `bin/`, `*.Designer.cs`, `*.g.cs`, and `*.Tests.csproj`) for these categories:
+Scan production `.cs` files (excluding `obj/`, `bin/`, `*.Designer.cs`, and `*.g.cs`) for these categories:
 
 | Category | Patterns | Replacement |
 |---|---|---|
