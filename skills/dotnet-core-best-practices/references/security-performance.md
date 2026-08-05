@@ -760,16 +760,78 @@ Use the `dotnet-*` global tools for live diagnosis. They attach to a running PID
 | High CPU / GC / throughput | `dotnet-counters` | `dotnet-counters monitor -p <PID> --counters System.Runtime` |
 | Memory leak | `dotnet-gcdump` | `dotnet-gcdump collect -p <PID>` (take two, diff the heap) |
 | Crash / hang | `dotnet-dump` | `dotnet-dump collect -p <PID>` then `analyze` + `pe`, `clrstack`, `dumpheap -stat`, `gcroot` |
-| Slow request / hot path | `dotnet-trace` | `dotnet-trace collect -p <PID> --profile cpu-sampling --duration 00:00:30`, then `--format speedscope` |
+| Slow request / hot path | `dotnet-trace` | `dotnet-trace collect -p <PID> --profile dotnet-common,dotnet-sampled-thread-time --duration 00:00:00:30 --format Speedscope` |
 | Deadlock | `dotnet-stack` | `dotnet-stack report -p <PID>` — inspect blocked threads and the resource each is waiting on |
 
-Install with `dotnet tool install -g dotnet-counters` etc. On Linux containers, enable crash dumps via env vars: `DOTNET_DbgEnableMiniDump=1`, `DOTNET_DbgMiniDumpType=4`, `DOTNET_DbgMiniDumpName=/tmp/dump.dmp`.
+On an SDK-equipped development host, diagnostic tools can be installed with `dotnet tool install`. An SDK-less production host may instead need the appropriate standalone tool, such as `https://aka.ms/dotnet-dump/win-x64` (also `win-x86`, `win-arm64`, `linux-x64`, `linux-musl-x64`, `linux-arm64`). Installation is a separate machine change; probe what is already available and obtain authorization first.
+
+### Automatic crash dumps (all platforms)
+
+A service that restarts its own workers on failure destroys the crash scene: without dumps armed in advance, a crash leaves nothing behind. Arm them **before** the crash — these are environment variables read at process start, not a runtime switch.
+
+```powershell
+# Windows (PowerShell) — applies to this shell and processes launched from it
+$env:DOTNET_DbgEnableMiniDump = "1"
+$env:DOTNET_DbgMiniDumpType   = "3"                       # see table below
+$env:DOTNET_DbgMiniDumpName   = "C:\dumps\%e_%p_%t.dmp"   # %e=exe %p=pid %h=host %t=epoch (.NET 5+)
+$env:DOTNET_CreateDumpDiagnostics = "1"                   # log why dump creation itself failed
+$env:DOTNET_CreateDumpLogToFile   = "C:\dumps\createdump.log"
+```
+
+For an existing Windows Service, persist these variables through that service's manager or deployment configuration, restart the service, and verify the dump directory is writable by the actual service identity. `$env:` alone does not update an already-running service.
+
+```bash
+# Linux / macOS
+export DOTNET_DbgEnableMiniDump=1
+export DOTNET_DbgMiniDumpType=3
+export DOTNET_DbgMiniDumpName=/var/dumps/%e_%p_%t.dmp
+```
+
+These variables are **not Linux-only** — the runtime honours them on Windows, Linux, and macOS. The only platform exclusion is mobile (Android/iOS). Within the set, only `DOTNET_EnableCrashReport` (the JSON crash report) is unsupported on Windows.
+
+| Value | Type | Size | Use when |
+|---|---|---|---|
+| 1 | `Mini` | Small | Stack traces only, minimal disk |
+| 2 | `Heap` | Large | Need managed heap objects (**runtime default**) |
+| 3 | `Triage` | Small | Same as Mini, with paths and passwords stripped — the safe default for a long-running service |
+| 4 | `Full` | Largest | All memory including module images |
+
+Three traps, each of which silently produces nothing or the wrong thing:
+
+- **Create and verify the output directory before arming.** Confirm the crash process identity can write there. If no dump appears, `DOTNET_CreateDumpDiagnostics=1` writes diagnostics to that process's console; use `DOTNET_CreateDumpLogToFile` when durable logging is required.
+- **The two collection paths have different defaults.** `DOTNET_DbgMiniDumpType` defaults to `2` (Heap); `dotnet-dump collect --type` defaults to `Full`. Never document them as one value.
+- **`Full` on a 24/7 service is a disk-space decision.** Every crash writes the entire process memory. Pick `3` (Triage) unless heap contents are what you are actually chasing.
+
+`DOTNET_DbgMiniDumpName` defaults to `/tmp/coredump.<pid>` — always set it explicitly on Windows, or the dump lands somewhere you will not look. The legacy `COMPlus_` prefix still works but `DOTNET_` is preferred on .NET 6+.
+
+**Only single-file and Native AOT apps are restricted to `Full`.** Self-contained is *not* single-file: `PublishSelfContained=true` alone leaves all four types available. Check for `PublishSingleFile` before assuming the restriction applies.
+
+### Windows trace collection: the admin split
+
+**PerfView** ETW collection (`github.com/microsoft/perfview/releases`, standalone `.exe`) requires elevation; viewing an existing trace does not. On modern .NET, `dotnet-trace` is a lower-privilege alternative. On .NET Framework, PerfMon/.NET CLR counters and existing application telemetry can still provide lower-resolution triage, subject to local counter ACLs; full ETW collection may require an elevated operator. Dumps are another diagnostic path, not the only one.
+
+```powershell
+# Hang triage — /ThreadTime adds thread-level wait/block detail, which is what
+# separates a livelock (threads burning CPU) from thread-pool starvation
+# (threads blocked on a resource) from a true deadlock (threads waiting on each other).
+PerfView /ThreadTime collect /BufferSizeMB:1024 /CircularMB:2048
+
+# Long-running repro — circular buffer keeps only the last N MB, so the trigger
+# must fire on the SYMPTOM, never on the recovery, or the interesting window is
+# already overwritten by the time collection stops.
+PerfView collect /StopOnPerfCounter:"Processor:% Processor Time:_Total>80" /BufferSizeMB:2048 /CircularMB:4096
+PerfView collect /StopOnGCEvent /BufferSizeMB:2048 /CircularMB:4096
+```
+
+Add `/StartOn…` only when the start event is known to precede the stop event; otherwise omit it. For slow requests, do not pick a stop trigger blind — collect without one first and design the trigger from what the trace shows.
 
 **Symbols are a precondition, not a detail.** `clrstack` and `dumpheap` resolve managed frames from metadata in the dump, but native frames, inlined methods, and line numbers need the *matching* binaries and PDBs — same build, same commit, same RID. A dump analysed against a different build yields plausible-looking frames that point at the wrong lines. Publish with `<DebugType>portable</DebugType>` and keep the PDBs for every artifact you might have to analyse; a stripped release build makes deep triage guesswork. When handing a dump to someone else, ship the PDBs with it. Redact secrets before sharing — a heap dump contains connection strings and tokens in cleartext.
 
 Common leak patterns to watch for during triage: event handlers never unsubscribed, unbounded static collections, `HttpClient` created per request (Rule 3), captured closures holding large graphs alive, and `Timer` instances not disposed.
 
 For micro-benchmarks (before/after a perf fix) use **BenchmarkDotNet** with `[MemoryDiagnoser]` and compare allocations as well as time. Run in Release configuration.
+
+Primary sources (last verified 2026-08-05): Microsoft Learn on [crash dump environment variables](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/collect-dumps-crash), [`dotnet-dump`](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-dump), and [`dotnet-trace`](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace); Microsoft [PerfView repository](https://github.com/microsoft/perfview).
 
 ---
 

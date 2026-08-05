@@ -26,6 +26,7 @@ AUDIT_TRIGGER_RUNNER="$AGENTS/skills/auditing-skill-folder/scripts/eval-triggers
 AUDIT_STYLE_CHECKS="$AGENTS/skills/auditing-skill-folder/step7-style-checks.md"
 AUDIT_LINTER="$AGENTS/skills/auditing-skill-folder/scripts/lint-descriptions.sh"
 VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
+TEST_GAP="$AGENTS/skills/test-gap-analysis/SKILL.md"
 
 # shellcheck source=../skills/auditing-skill-folder/scripts/lib-vendored.sh
 . "$VENDORED_LIB"
@@ -78,6 +79,42 @@ rg -q 'skill audit／VND.*continuations' "$KERNEL" ||
   fail 'skill audit must load the VND routing continuation'
 ! rg -q '^### UI/Web design continuation' "$KERNEL" ||
   fail 'kernel still duplicates ui-ux-pro-max continuation'
+
+[ -r "$TEST_GAP" ] || fail 'test-gap-analysis skill is missing'
+rg -q 'explicit mutation authorization' "$TEST_GAP" ||
+  fail 'test-gap-analysis can mutate production code without explicit authorization'
+rg -q 'isolated temporary (copy|worktree)' "$TEST_GAP" ||
+  fail 'test-gap-analysis does not isolate empirical mutations'
+rg -q 'full affected test (project|suite)' "$TEST_GAP" ||
+  fail 'test-gap-analysis can certify a survivor from only narrow tests'
+rg -q 'Record the original production-file hashes and package manifest' "$TEST_GAP" ||
+  fail 'test-gap-analysis does not fingerprint empirical-mutation inputs'
+rg -qi 'apply the inverse edit' "$TEST_GAP" ||
+  fail 'test-gap-analysis does not require an inverse edit'
+rg -Fq 'After green, red, error, or timeout, apply the inverse edit' "$TEST_GAP" ||
+  fail 'test-gap-analysis cleanup is not mandatory after every mutant outcome'
+rg -q 'hashes to match the baseline before the next mutation' "$TEST_GAP" ||
+  fail 'test-gap-analysis does not prove per-mutant cleanup'
+rg -q 'package manifest has no unexpected diff' "$TEST_GAP" ||
+  fail 'test-gap-analysis does not prove final package cleanup'
+rg -q 'finite runner/host timeout' "$TEST_GAP" ||
+  fail 'test-gap-analysis empirical mutations have no bounded timeout'
+rg -q 'terminate the spawned test process tree' "$TEST_GAP" ||
+  fail 'test-gap-analysis timeouts do not terminate the mutant test process tree'
+rg -Fq 'Mutation score = (Killed + TimedOut) / (Killed + TimedOut + Survived + No coverage)' "$TEST_GAP" ||
+  fail 'test-gap-analysis empirical score has no canonical denominator'
+rg -Fq 'duration × 2 + 30 seconds' "$TEST_GAP" ||
+  fail 'test-gap-analysis mutant timeouts are not calibrated from an unmutated run'
+rg -Fq 'separately calibrated full-suite timeout' "$TEST_GAP" ||
+  fail 'test-gap-analysis incorrectly reuses the narrow-test timeout for the full suite'
+rg -Fq 'If that denominator is zero, report `Mutation score: N/A`' "$TEST_GAP" ||
+  fail 'test-gap-analysis does not define the zero-mutant score'
+rg -q 'Static mode reports unverified candidate counts without percentages or a mutation score' "$TEST_GAP" ||
+  fail 'test-gap-analysis static report can still look empirical'
+! rg -q 'fix only obvious wiring problems' "$TEST_GAP" ||
+  fail 'test-gap-analysis still authorizes out-of-scope wiring fixes'
+! rg -q 'Medium／High behavior change.*test-gap-analysis' "$ROUTING_CONTINUATIONS_REF" ||
+  fail 'workflow still auto-routes ordinary Medium/High changes to mutation analysis'
 
 for rule in INT-1 INT-2 INT-3 INT-4 INT-5 INT-6 INT-7; do
   rg -q "\\[$rule\\]" "$KERNEL" || fail "thin kernel guard missing: $rule"
@@ -256,7 +293,7 @@ rg -q 'UNVERIFIED: current Claude CLI loading semantics' "$AUDIT_TRIGGER_RUNNER"
 ! rg -q 'UNVERIFIED：' "$AUDIT_TRIGGER_EVAL" \
   "$AGENTS/skills/auditing-skill-folder/evals/runners.json" ||
   fail 'Step 2c uses a non-machine-readable UNVERIFIED prefix'
-rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 56 cases' "$AGENTS/vendored-forks.md" ||
+rg -q 'Regression coverage: `tests/vendored-detection\.sh`, 58 cases' "$AGENTS/vendored-forks.md" ||
   fail 'vendored detector regression count is stale'
 ! rg -q 'model invocation metadata only|four steps above' "$AUDIT_VENDORED_GATE" ||
   fail 'auditing-skill-folder carries a stale fork scope or override step count'
@@ -446,6 +483,7 @@ react-router-framework-mode
 tailwind-v4-shadcn
 teach
 testing-library-react-best-practices
+test-gap-analysis
 typescript-best-practices
 vite
 vitest
@@ -453,8 +491,9 @@ vue-best-practices
 web-design-reviewer
 LIST
 )
-# 四類：stack skill、kernel 自身、由 upstream／使用者明示進入的 Matt skill，以及
-# 由 ui-ux-pro-max own continuation 的 web-design-reviewer。
+# 五類：stack skill、kernel 自身、由 upstream／使用者明示進入的 Matt skill、由
+# ui-ux-pro-max own continuation 的 web-design-reviewer，以及靠精準 description model-invoke
+# 的 specialist（test-gap-analysis）。
 # 用純 bash glob 迭代，對齊 tests/vendored-detection.sh:306 的既有寫法：
 # `ls | xargs basename` 配 `for s in $(...)` 會經過 word splitting，目錄名含空白或
 # 換行時拆壞，且 glob 未命中時會把字面 pattern 當成一個項目。`[ -f "$sd/SKILL.md" ]`
@@ -620,6 +659,15 @@ done < "$B2_SKILLS_LOCK"
 #                                      補 run/benchmark trigger，避免 dotnet-test 退役造成能力退化。
 #   vue-best-practices/references/{pinia,vueuse,debugging}/*  承接三支的 reference payload；
 #                                      原 references/pinia.md 是指向已併入 skill 的轉址，一併刪除。
+# 2026-08-05 dotnet/skills harvest。upstream 96 支中 1 支 vendor（test-gap-analysis，走 fork_recorded
+# 不需列在此），6 項只取內容折進既有自有檔、不新增 skill。SKILL.md 與 security-performance.md 已
+# 在上一批放行，本批只多兩個檔，逐檔列出：
+#   dotnet-testing-best-practices/references/mocking-frameworks.md  承接 detect-static-dependencies 的
+#                                      category→abstraction 對照與計數規則（依「碰到什麼」分類而非
+#                                      依 static 關鍵字；Path.Combine 這類純 helper 不算阻塞項）。
+#   dotnet-testing-best-practices/references/coverage-crap.md  新檔，承接 crap-score：CRAP 公式、
+#                                      risk band、反解 cov_needed 及其 comp≥15 無解的邊界，以及
+#                                      「絕不估算覆蓋率」的 fallback 階梯。Rule 12 的量化面。
 while IFS= read -r changed; do
   case "$changed" in
     skills/agent-browser/SKILL.md | \
@@ -632,6 +680,8 @@ while IFS= read -r changed; do
     skills/dotnet-core-best-practices/references/security-performance.md | \
     skills/dotnet-testing-best-practices/SKILL.md | \
     skills/dotnet-testing-best-practices/references/benchmarks.md | \
+    skills/dotnet-testing-best-practices/references/coverage-crap.md | \
+    skills/dotnet-testing-best-practices/references/mocking-frameworks.md | \
     skills/vue-best-practices/references/pinia.md | \
     skills/vue-best-practices/references/pinia/advanced-hmr.md | \
     skills/vue-best-practices/references/pinia/advanced-nuxt.md | \
