@@ -1,11 +1,11 @@
 ---
 name: dotnet-core-best-practices
-description: 'Use when writing or reviewing .NET 8+ or ASP.NET Core: APIs, DI, middleware, HttpClient, ProblemDetails, Clean Architecture/CQRS/MediatR, SDK-style NuGet/CPM, AOT, or runtime diagnostics (dotnet-counters/trace/dump). Symptoms include scope mismatch, middleware misorder, socket exhaustion, high CPU, memory leak, crash, or hang. .NET Framework 4.x → dotnet-framework-best-practices.'
+description: 'Use when writing or reviewing .NET 8+ or ASP.NET Core: APIs, DI, middleware, HttpClient, ProblemDetails, ASP.NET Core OpenTelemetry/OTLP, Clean Architecture/CQRS/MediatR, SDK-style NuGet/CPM, AOT, runtime diagnostics (dotnet-counters/trace/dump). Symptoms: scope mismatch, middleware misorder, socket exhaustion, high CPU, memory leak, crash, or hang. .NET Framework 4.x → dotnet-framework-best-practices.'
 ---
 
 # .NET 8/10 & ASP.NET Core Best Practices
 
-Prefer built-in primitives over third-party workarounds. Not for .NET Framework 4.x (use `dotnet-framework-best-practices`). Cross-ref: `ef-core-best-practices`, `dapper-best-practices`, `dotnet-logging-best-practices`. Rule detail in `references/code-patterns.md#rule-N`.
+Prefer built-ins over third-party workarounds. .NET Framework 4.x → `dotnet-framework-best-practices`. Cross-ref: `ef-core-best-practices`, `dapper-best-practices`, `dotnet-logging-best-practices`. Rule detail in `references/code-patterns.md#rule-N`.
 
 ## 12 Golden Rules
 
@@ -16,7 +16,7 @@ Prefer built-in primitives over third-party workarounds. Not for .NET Framework 
 5. **Choose endpoint model by requirements.** Minimal APIs suit focused endpoints; Controllers suit APIs needing filters, binding conventions, or versioning.
 6. **Structured logging** — `ILogger<T>` templates (`"Order {OrderId}"`), not interpolation. Detail → `dotnet-logging-best-practices`.
 7. **`CancellationToken` everywhere** — auto-binds; accept and forward. Ignoring wastes CPU / DB on dead responses.
-8. **Health checks** — `MapHealthChecks` with `/health/ready` (deps) + `/health/live` (process).
+8. **Health/telemetry** — `/health/ready` (deps), `/health/live` (process); ASP.NET Core OTel/OTLP → `references/security-performance.md#opentelemetry-for-aspnet-core`.
 9. **No secrets in `appsettings.json`** — User Secrets (dev), env (CI), Key Vault / Vault (prod).
 10. **Global error handling** — `UseExceptionHandler` + `ProblemDetails` (RFC 9457); `AddProblemDetails()` auto-wires on .NET 8+.
 11. **Authorization policies** — `AddAuthorizationBuilder().AddPolicy(...)` + `[Authorize(Policy = "...")]`. Not inline `User.IsInRole`.

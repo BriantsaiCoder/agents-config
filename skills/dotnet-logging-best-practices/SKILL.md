@@ -1,6 +1,6 @@
 ---
 name: dotnet-logging-best-practices
-description: 'Use when adding or reviewing logging in .NET applications, .NET 6+ or .NET Framework — Microsoft.Extensions.Logging ILogger generic logging, Serilog/NLog/log4net, LoggerMessage source generators, structured logs, sinks, log levels, correlation IDs, logging scopes, appsettings configuration. Also "add logging here", "wire up Serilog".'
+description: 'Use when adding or reviewing application logging in .NET 6+ or .NET Framework — Microsoft.Extensions.Logging ILogger, Serilog/NLog/log4net, LoggerMessage, structured logs, sinks, levels, correlation IDs, scopes, appsettings. Also "add logging here", "wire up Serilog". ASP.NET Core on .NET 8+ OpenTelemetry/OTLP traces, metrics, or log export → dotnet-core-best-practices.'
 ---
 
 <!-- last-verified: 2026-07-26 -->
@@ -10,7 +10,7 @@ Four pillars: structured logging, log-level strategy, performance, sensitive-dat
 
 ## Scope
 
-Covers .NET 6+ / ASP.NET Core / Worker / .NET Framework (NLog/log4net). Not for distributed tracing or metrics. Cross-ref: `dotnet-core-best-practices`, `dotnet-framework-best-practices`.
+Covers .NET 6+ / ASP.NET Core / Worker / .NET Framework (NLog/log4net). Application logging stays here; ASP.NET Core on .NET 8+ OpenTelemetry/OTLP traces, metrics, or log export → `dotnet-core-best-practices`. Cross-ref: `dotnet-framework-best-practices`.
 
 ## 12 Golden Rules
 

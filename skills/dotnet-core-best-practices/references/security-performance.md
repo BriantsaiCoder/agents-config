@@ -911,3 +911,79 @@ AOT warnings appear as build warnings (`IL2XXX` trim warnings, `IL3XXX` AOT warn
 ```
 
 If a library is not AOT-compatible, you will see trim warnings during publish. Either find an alternative library, use source generators, or exclude AOT for that project.
+
+---
+
+## OpenTelemetry for ASP.NET Core
+
+Use this branch for ASP.NET Core on .NET 8+: OpenTelemetry traces, metrics, log export, service identity, or OTLP configuration. Plain `ILogger`/Serilog/NLog design stays in `dotnet-logging-best-practices`; runtime trace or dump collection stays in the runtime-diagnostics section above.
+
+### Minimum setup
+
+Keep packages in the repository's existing NuGet or Central Package Management policy. Select a current stable, target-compatible version and verify it; do not copy a documentation sample's historical version blindly.
+
+| Need | Package |
+|---|---|
+| Hosted SDK | `OpenTelemetry.Extensions.Hosting` |
+| OTLP export | `OpenTelemetry.Exporter.OpenTelemetryProtocol` |
+| Incoming ASP.NET Core spans/metrics | `OpenTelemetry.Instrumentation.AspNetCore` |
+| Outgoing `HttpClient` spans | `OpenTelemetry.Instrumentation.Http` |
+
+Register only instrumentation the service uses. This cross-signal pattern keeps exporter configuration in one place:
+
+```csharp
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+
+var serviceName = builder.Configuration["OTEL_SERVICE_NAME"]
+    ?? builder.Environment.ApplicationName;
+
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.IncludeScopes = true;
+});
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(serviceName))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddSource(Telemetry.SourceName))
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddMeter(Telemetry.SourceName))
+    .UseOtlpExporter();
+```
+
+Omit the logging block if logs stay on an existing sink. Define `ActivitySource` and `Meter` from the same stable `Telemetry.SourceName`; the strings passed to `AddSource` and `AddMeter` must match exactly. HTTP instrumentation propagates trace context automatically. Add manual propagation only at boundaries without supported instrumentation, such as a custom message envelope.
+
+Call `UseOtlpExporter()` once for the configured signals. Do not combine it with signal-specific `AddOtlpExporter()` registrations. Verify this API against the installed package because OpenTelemetry evolves independently of .NET.
+
+### Deployment and transport
+
+- Set a stable `service.name`; add low-cardinality `service.namespace`, `service.version`, and environment identity when useful. Never use customer or tenant IDs as resource attributes.
+- Configure `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_PROTOCOL`, timeout, and headers through deployment configuration. Inject auth headers from a secret store; never put credentials in source, committed appsettings, command arguments, or output.
+- Match endpoint and protocol: gRPC commonly uses port 4317 and HTTP/protobuf 4318. For a remote production endpoint, require HTTPS with normal certificate validation; reserve cleartext HTTP for an explicitly trusted local/dev path.
+- If the selected .NET 8+ exporter release supports mTLS, use its CA/client certificate environment settings and PEM files. Do not disable certificate validation as a workaround.
+- Authenticate and restrict access to the Collector and backend. Telemetry can expose architecture and user data even when application payloads are excluded.
+
+### Data and cardinality guard
+
+OpenTelemetry cannot determine what is sensitive for the application. Inventory attributes emitted by every instrumentation library before production enablement.
+
+- Default-deny PII, credentials, session tokens, auth headers, request/response bodies, query strings, SQL text, financial/health data, and detailed user behavior. Never put secrets or PII in baggage because it propagates across service boundaries.
+- Prefer route templates, coarse outcome/status fields, and aggregate identifiers. Metric dimensions must be bounded; user, request, order, trace, or other unbounded IDs are not metric tags.
+- Avoid collection at the source. As defense in depth, use Collector attributes/filter/redaction/transform processors with an allowlist before export or storage.
+- Hashing a small or predictable identifier space is not anonymization. Confirm the result against the application's privacy and retention requirements.
+
+### Completion checks
+
+1. Build and run applicable tests with the repository's pinned package versions.
+2. In a development-only Collector, Console exporter, or standalone Aspire Dashboard, generate one inbound request and one outbound `HttpClient` request. Confirm `service.name`, parent/child spans, expected metrics, and log `TraceId`/`SpanId` correlation.
+3. Send synthetic secret/PII sentinel values through instrumented paths and confirm they are absent from exported attributes, logs, baggage, and backend search.
+4. Exercise the real authenticated OTLP path without printing headers. For failure behavior, only in dev/staging point the test app at a disposable Collector or known-unreachable URI; never stop a shared or production Collector. Confirm request handling remains functional and inspect `OpenTelemetry-Exporter-OpenTelemetryProtocol` internal events for export failures or dropped batches.
+5. Check sampling, attribute count/length, metric cardinality, exporter queue pressure, and backend ingestion cost against the production budget.
+
+Primary sources (last verified 2026-08-05): Microsoft Learn [.NET observability with OpenTelemetry](https://learn.microsoft.com/dotnet/core/diagnostics/observability-with-otel) and [OTLP walkthrough](https://learn.microsoft.com/dotnet/core/diagnostics/observability-otlp-example); OpenTelemetry [.NET OTLP exporter](https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry.Exporter.OpenTelemetryProtocol), [handling sensitive data](https://opentelemetry.io/docs/security/handling-sensitive-data/), and [Collector hosting security](https://opentelemetry.io/docs/security/hosting-best-practices/).
