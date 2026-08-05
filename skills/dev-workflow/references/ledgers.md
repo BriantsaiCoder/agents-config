@@ -17,6 +17,8 @@
 
 ## Closeout 後的新 commit
 
+- Checkpoint 不重設 baseline，也不使未跑的 S5／CI／review 變成 PASS；publication 一律以原 baseline 到 current HEAD 的累積 diff 判定。
+- 第一次 checkpoint 前在 Preflight ledger 記錄 immutable baseline SHA（target merge-base）；publication 先用 `git merge-base --is-ancestor <baseline> HEAD` 驗證，失敗即 gate FAIL，重新確認 target merge-base 後跑全套重驗。
 - S4 依 `git diff --name-only <前次 closeout SHA>..HEAD` 的累積影響重新判 risk tier 並重跑適用 checks；不得因新 commit 很小而降低整體風險。
 - S5 只重審該 diff 觸及的檔案與其 transitive impact；未觸及範圍可沿用前次 findings 並註明 baseline SHA，範圍不得由 reviewer 任意縮小。
 - S6 重出完整六項 ledger；未受影響項目可引用 baseline SHA。Current-head CI／review 結果一律失效並依 `review-triage.md` 重查。

@@ -173,6 +173,12 @@ jobs:
       - name: tier0 規範內容三家等價
         run: bash tests/tier0-parity.sh --selftest
 
+      # Host adapter 可用不同 prose 與機制；以 canonical capability→semantic-anchor mapping
+      # 驗等價，避免整檔 hash／逐字同步把三家綁成同一份設定。selftest 含三家正向與單家
+      # 漂移反向 fixture，並要求各 host 個別回報 PASS／FAIL／UNAVAILABLE。
+      - name: 三家 semantic capability 等價
+        run: bash tests/three-host-capability-parity.sh --selftest
+
       # [INT-10] 全域設定變更走 PR 路徑。整條路徑的每一步本來就有規範（[INT-6] branch、
       # [T1-8] Ready PR、review-triage.md 的 bot gate、[T0-9] merge、ledgers.md:86 刪
       # branch），缺的是入口守門員：沒有條文規定什麼變更必須走上去。[T0-9] 的觸發是
