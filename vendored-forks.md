@@ -30,7 +30,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 | `code-review` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs and add the within-axis filter pass they defer to, per [S5-4]; same day, add the two house over-engineering baseline rules to the step-3 smell baseline, per [S5-3]; tree SHA-256 `35588c2ab47c07ff6ffcb2e8aecd90acd564cde8b2abf5769d666dd1b5ad6eee` | **Active** |
-| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Pending trigger canary** |
+| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Active** |
 
 <!-- fork-index:end -->
 
@@ -803,7 +803,7 @@ What remains capable of producing the same output: writing ````` ```mermaid ````
 
 **Decision (2026-08-05): vendor one skill out of a 96-skill marketplace, as a recorded fork.**
 
-**Activation status:** pending Claude collision canary. The 2026-08-05 attempt was `UNAVAILABLE` because the Claude OAuth token returned `401`; static conformance is not a substitute for measured trigger behavior.
+**Activation status:** active. After Claude reauthentication on 2026-08-05, the three-case collision canary passed (`3 PASS / 0 FAIL / 0 ERR`; TP=1, TN=2, FP=0, FN=0; precision=recall=1.00). The earlier OAuth `401` run remains recorded as `UNAVAILABLE`, not as a pass.
 
 `github.com/dotnet/skills` is the .NET team's official marketplace — 16 plugins, 96 skills, 16 agents at
 `4d25f17`. The adoption review (`proposals/2026-08-05-dotnet-skills-adoption/`) scored all 96 against this

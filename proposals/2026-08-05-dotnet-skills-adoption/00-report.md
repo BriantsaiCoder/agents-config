@@ -2,7 +2,7 @@
 
 日期：2026-08-05｜upstream HEAD `805a42a`｜前份報告：`~/.agents/proposals/2026-08-04-dotnet-skills-comparison/00-report.md`
 
-> **實作狀態（2026-08-05）**：本 candidate 已套用 actions 1a、2 的 static/safety fork、3、4；marketplace update 依 action 0 **SKIPPED**。Claude collision canary 因 OAuth token 過期回 `401`，判定 **UNAVAILABLE**，所以 vendored skill 維持 `Pending trigger canary`，不得宣稱 production-ready。Windows production crash-dump 設定未執行。下方 `0/6`、`0/8` 是實作前快照，不是目前狀態。
+> **實作狀態（2026-08-05）**：本 candidate 已套用 actions 1a、2 的 static/safety fork、3、4；marketplace update 依 action 0 **SKIPPED**。Claude reauth 後的 collision canary 為 **3/3 PASS**（TP=1、TN=2、FP/FN=0，precision/recall=1.00），vendored skill 狀態為 `Active`；先前 OAuth `401` run 仍記為 **UNAVAILABLE**，不計入通過。Windows production crash-dump 設定未執行。下方 `0/6`、`0/8` 是實作前快照，不是目前狀態。
 
 > **實作前重驗快照（2026-08-05 07:0x）**：upstream 現為 `4d25f17`，較 `805a42a` ahead 1 commit（`chore: recompile agentic workflows with gh-aw 0.84.3` #985），9 檔全在 `.github/workflows/`，**`plugins/` 零變動** → 本報告全部 skill 層結論在 HEAD 仍逐字成立。live 重驗：16 plugin／96 skill／16 agent（`dotnet-test` 10 agent）、`code-testing-agent:4` 與 `find-untested-sources:4` 的 `MANDATORY` 宣告仍在、marketplace 快照仍停 `ce75c35`、已裝 dotnet plugin 仍 0、**行動 1a～4 的 0/6 全未落地**（`security-performance.md` 的「On Linux containers」錯誤仍逐字存在）。
 
