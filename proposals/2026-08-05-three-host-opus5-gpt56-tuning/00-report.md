@@ -76,7 +76,7 @@ log 逐字命中（`process-*.log`，6 次出現）：
 - Copilot CLI 的 harness 是否也逐字注入 scope-discipline／corrections 段？若否，2026-08-04「已由 harness 注入所以不加」的結論**對 Copilot 不成立**。
 - `stayInAutopilot: true` × `[T0-8]` plan+confirm 的交互作用未經審查——這也是下方 F2 必須保留 `[INT-3]` autopilot 條款的直接理由。
 
-**byte 死結仍在**：`copilot-instructions.md` 現為 3545B，硬閘 `<3600B`，headroom 55B。任何往該檔加字的方案 DOA；照 PR #49 的先例落在 kernel。
+**byte 死結仍在**：`copilot-instructions.md` 現為 3545B，硬閘 `<3600B`，headroom 54B。本次需增加 62B 的完整還原方案 DOA；照 PR #49 的先例落在 kernel。
 
 ---
 
@@ -101,7 +101,7 @@ log 逐字命中（`process-*.log`，6 次出現）：
 2. Claude adapter 那條與 `[T0-8]` 重疊的句子刪除（`CLAUDE.md` 現 3685B，刪字無 byte 風險）。
 3. 在 kernel S2 加一組**明列的 safe local actions**（讀檔、查 log、跑測試、改 in-scope 程式碼），對照官方第二句。這是唯一「加字」的項目，且加的是放行清單不是限制。
 
-**載入時機的 caveat（實作前必須先解）**：kernel 是 **on-invocation** 載入（「開發任務必讀」），不是常駐。放進 kernel 的 safe-local-actions 清單只在開發 turn 生效；非開發 turn（一般問答、查詢、運維指令）不會載入，F2 對那些 turn 沒有修好。三個選項：接受這個覆蓋範圍並在報告記錄、或把清單放進三份 entry file（Copilot 只剩 55B，DOA）、或只放 Claude + Codex 兩家 entry file 並接受不對稱。**建議取前者**——非開發 turn 本來就不走 S2 gate，重複的停頓語意在那裡影響較小。
+**載入時機的 caveat（實作前必須先解）**：kernel 是 **on-invocation** 載入（「開發任務必讀」），不是常駐。放進 kernel 的 safe-local-actions 清單只在開發 turn 生效；非開發 turn（一般問答、查詢、運維指令）不會載入，F2 對那些 turn 沒有修好。三個選項：接受這個覆蓋範圍並在報告記錄、或把清單放進三份 entry file（Copilot 只剩 54B，DOA）、或只放 Claude + Codex 兩家 entry file 並接受不對稱。**建議取前者**——非開發 turn 本來就不走 S2 gate，重複的停頓語意在那裡影響較小。
 
 ---
 
@@ -216,7 +216,7 @@ Plan mode 想得比一般 turn **少**一級。若意圖是「規劃時想深一
 
 1. **agents-config**（kernel）：F2 的 `[INT-3]` 收斂（保留 autopilot 條款）+ safe-local-actions 清單、F3 的 ledger 分級。改動須同步檢查 `tests/matt-thin-workflow.sh`、`tests/tier0-parity.sh`、`tests/mattpocock-workflow.sh`、`tests/pr-path-gate.sh`。
 2. **dotclaude**：F5 的 soft_deny 修正。單鍵改動，低風險。
-3. **dotcopilot**：F1 補審結論。**任何方案 net-negative 或落 kernel**（55B headroom）。
+3. **dotcopilot**：F1 補審結論。**任何方案 net-negative 或落 kernel**（54B headroom）。
 
 F4 是量測任務不是設定變更，F7 是 memory 修正，兩者不進 PR。
 

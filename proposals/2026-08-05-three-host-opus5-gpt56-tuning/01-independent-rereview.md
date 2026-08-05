@@ -128,7 +128,7 @@ Apply even when user just says "add login", "protect this endpoint" ...         
 ```
 OpenAI／Codex 文件 → `openai-docs`；其餘文件路由見 kernel S0。
 ```
-省 ~330B，且 `AGENTS.md` 無 byte gate 壓力（Copilot 的 55B headroom 問題不適用）。
+省 ~330B，且 `AGENTS.md` 無 byte gate 壓力（Copilot 的 54B headroom 問題不適用）。
 
 其餘條文（優先序鏈、tier0 九條、adapter 五點）逐條檢查後**無跨檔重複**——`AGENTS.md:23` 明文寫「本檔不重複」，實際執行到位。這一項既有報告的擔心可以結案。
 

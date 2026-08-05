@@ -4,7 +4,7 @@
 本檔未修改任何設定。所有判定附 live 指令與輸出。
 
 > **發布註記**：本檔保存 2026-08-05 的裁決證據，不宣稱表內 live counts／settings 仍是現在值。
-> 後續 `.agents` PR #57 已以 semantic capability parity 取代逐字 T2-6 parity；host-local 變更由
+> 後續 [agents-config PR #57](https://github.com/BriantsaiCoder/agents-config/pull/57) 已以 semantic capability parity 取代逐字 T2-6 parity；host-local 變更由
 > 各自 PR 擁有。未合併的排序項目只是 backlog，沒有自動延伸成實作授權；重用前先做 live probe。
 
 ### 發布後狀態 ledger
@@ -25,7 +25,7 @@
 
 **兩份都沒說中病灶。** Copilot 的「棘輪」診斷被自家測試檔實測推翻（`lacks` 是**只准放鬆**的釘，且降級實驗中維持 GREEN）；Codex 方向對，但三條主要建議中兩條的前提不成立、一條是重提你已否決的項目。
 
-真正被焊死的地方兩份都沒看到：`~/.copilot/tests/global-config-ownership.sh:138` 的 3600B 硬閘與 `~/.agents/tests/three-host-global-config-ownership.sh:84` 的逐字 T2-6 斷言**互相排斥**——滿足其一必然違反另一，算術差 **7 bytes**。而該 3600B 預算查無任何官方依據（§5-5），所以這個死結有零風險解。
+真正被焊死的地方兩份都沒看到：`~/.copilot/tests/global-config-ownership.sh:138` 的 3600B 硬閘與 `~/.agents/tests/three-host-global-config-ownership.sh:84` 的逐字 T2-6 斷言**互相排斥**——滿足其一必然違反另一，距可通過上限差 **8 bytes**。而該 3600B 預算查無任何官方依據（§5-5），所以這個死結有零風險解。
 
 ---
 
@@ -169,10 +169,10 @@ Copilot／Codex 共同丟失 4 個子句：`無空泛前後文`、`編號選項`
 ```
 copilot-instructions.md 現況 = 3545 B，headroom = 54 B
 還原 canonical T2-6 = +62 B（167 − 105）
-還原後 ≥ 3607 B  >  3600 B 硬閘
+還原後 = 3607 B，較可通過上限 3599 B 超出 8 B（62 − 54）
 ```
 
-**差 7 bytes。滿足 shared parity 斷言必然違反 Copilot byte 閘，反之亦然。** 這才是字面意義上「規則被焊死」——而且與 `MUST` 一個字都無關。
+**差 8 bytes。滿足 shared parity 斷言必然違反 Copilot byte 閘，反之亦然。** 這才是字面意義上「規則被焊死」——而且與 `MUST` 一個字都無關。
 
 ### 3-2 kernel byte 閘只剩 1 byte
 
