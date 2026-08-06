@@ -47,16 +47,15 @@ vendored_lock_record() {
 # Hash a skill tree using Git-relevant structure: path, type, executable mode, file content,
 # and symlink target. NUL separators keep unusual filenames unambiguous.
 #
-# `.claude/` is pruned. It is agent-harness scratch (`.claude/.cc-writes`, an empty directory
-# created whenever Claude Code writes into a skill folder) and is gitignored repo-wide, so it is
-# present on a working machine and absent from every clean checkout. Hashing it made the
+# `.claude/` and `.DS_Store` are pruned. They are gitignored runtime/OS metadata, so they may be
+# present on a working machine and absent from every clean checkout. Hashing `.claude/` made the
 # fingerprint a property of the ENVIRONMENT rather than of the committed payload: on 2026-08-01
 # `tests/matt-thin-workflow.sh` passed locally and failed in CI with a "<skill> tree differs from
 # the recorded fork fingerprint" error (then reported for the skill now named
 # `writing-for-agents`), because the recorded SHA had been computed on a
 # machine where 13 skill folders already carried the directory. The prune is deliberately narrow —
-# `tests/vendored-detection.sh` asserts both that `.claude/` is ignored AND that any other added
-# file still moves the SHA, so the exclusion cannot quietly widen into a hole.
+# `tests/vendored-detection.sh` asserts that both metadata classes are ignored AND that an
+# unlisted hidden file still moves the SHA, so the exclusion cannot quietly widen into a hole.
 vendored_tree_sha256() {
   local dir="$1" manifest rc entry mode file_sha subtree_payload
   [ -d "$dir" ] && [ ! -L "$dir" ] || return 1
@@ -65,16 +64,18 @@ vendored_tree_sha256() {
   (
     set -o pipefail
     cd "$dir" || exit 1
-    find . -mindepth 1 -type d -name .claude -prune -o -print0 |
+    find . -mindepth 1 \( -type d -name .claude -o -type f -name .DS_Store \) -prune -o -print0 |
       LC_ALL=C sort -z |
       while IFS= read -r -d '' entry; do
         if [ -L "$entry" ]; then
-          printf '%s\0%s\0%s\0%s\0' symlink "$entry" 120000 "$(readlink "$entry")"
+          printf '%s\0%s\0%s\0' symlink "$entry" 120000
+          readlink -n "$entry" || exit 1
+          printf '\0'
         elif [ -d "$entry" ]; then
           # Git does not track empty directories. Keep directory entries only when they contain
           # payload (excluding pruned harness scratch), so the same commit hashes identically in a
           # reused worktree and a clean checkout.
-          subtree_payload=$(find "$entry" -type d -name .claude -prune -o ! -type d -print) || exit 1
+          subtree_payload=$(find "$entry" \( -type d -name .claude -o -type f -name .DS_Store \) -prune -o ! -type d -print) || exit 1
           if [ -n "$subtree_payload" ]; then
             printf '%s\0%s\0%s\0%s\0' directory "$entry" 040000 -
           fi
@@ -91,7 +92,10 @@ vendored_tree_sha256() {
   ) > "$manifest"
   rc=$?
   if [ "$rc" -eq 0 ]; then
-    shasum -a 256 "$manifest" | awk '{ print $1 }'
+    (
+      set -o pipefail
+      shasum -a 256 "$manifest" | awk '{ print $1 }'
+    )
     rc=$?
   fi
   rm -f "$manifest"
