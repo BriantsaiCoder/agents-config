@@ -59,33 +59,83 @@ epoch_of() {
     date -u -d "$1" +%s 2>/dev/null
 }
 
+# head commit 是否已經舊到「該來的 run 早就該來了」。取不到時間、date 兩種語法都解析
+# 失敗、時鐘偏移讓年齡變成負數，全部回 false——判不出年齡就不准降級，方向一律保守。
+past_threshold() {
+  local d e
+  d=$(gh api "repos/$repo/commits/$head" --jq '.commit.committer.date' 2>/dev/null) || return 1
+  [[ -n "$d" ]] || return 1
+  e=$(epoch_of "$d") || return 1
+  [[ -n "$e" ]] || return 1
+  (( $(date -u +%s) - e >= CI_ABSENT_AFTER ))
+}
+
+# 被取消的 job 到底有沒有真的跑過。GitHub 不提供「誰取消了這個 run」——run 與 job 物件
+# 的欄位清單裡都沒有 cancelled_by，只有觸發者；個人帳號也沒有 audit log API。但 steps
+# 陣列給得出更有用的區分：
+#
+#   steps 為空   runner 拿到 job 卻一個 step 都沒開始，CI 等於從未執行，語意上與
+#                「零個 check」相同。2026-08-06 Actions 事故實測：job 掛了 15 分 3 秒、
+#                steps=0，公告寫的是 runners being assigned jobs that are no longer valid。
+#   steps 有內容 曾實際執行過。取消可能正好中斷了一個即將失敗的測試，那不是「拿不到
+#                結論」而是「結論被中斷」，必須照舊當 FAIL 擋死。
+#
+# 對照組（同一支 workflow 正常跑完）是 steps=7、每個 step 都有 conclusion，所以這個
+# 訊號分得開。查不到 jobs（第三方 check、API 失敗、根本找不到 cancelled run）一律回
+# false，不降級。
+cancelled_jobs_never_ran() {
+  local ids id steps
+  ids=$(gh api "repos/$repo/actions/runs?head_sha=$head" \
+    --jq '.workflow_runs[] | select(.conclusion == "cancelled") | .id' 2>/dev/null) || return 1
+  [[ -n "$ids" ]] || return 1
+  for id in $ids; do
+    steps=$(gh api "repos/$repo/actions/runs/$id/jobs" \
+      --jq '[.jobs[].steps | length] | add // 0' 2>/dev/null) || return 1
+    [[ "$steps" == 0 ]] || return 1
+  done
+  return 0
+}
+
 ci=PASS
 if [[ "$ci_states" == NONE ]]; then
-  # 預設仍是 WAIT。只有「確定超過門檻」才改判 ABSENT——取不到時間、時鐘偏移導致
-  # 年齡為負、date 兩種語法都失敗，全部維持 WAIT，方向一律保守。
+  # 預設仍是 WAIT，只有確定超過門檻才改判 ABSENT。
   ci=WAIT
-  head_date=$(gh api "repos/$repo/commits/$head" --jq '.commit.committer.date' 2>/dev/null) || head_date=""
-  if [[ -n "$head_date" ]]; then
-    head_epoch=$(epoch_of "$head_date") || head_epoch=""
-    if [[ -n "$head_epoch" ]]; then
-      age=$(( $(date -u +%s) - head_epoch ))
-      (( age >= CI_ABSENT_AFTER )) && ci=ABSENT
-    fi
-  fi
+  past_threshold && ci=ABSENT
 else
+  # 三種結果分開統計，不能邊掃邊覆寫 ci——CANCELLED 要不要降級得等全部掃完才知道，
+  # 而硬失敗與「還在跑」的優先序必須壓過它。
+  hard_fail=0
+  in_progress=0
+  cancelled=0
   IFS=',' read -r -a checks <<< "$ci_states"
   for check in "${checks[@]}"; do
     case "$check" in
       SUCCESS|NEUTRAL|SKIPPED) ;;
-      PENDING|IN_PROGRESS|QUEUED|EXPECTED|WAITING|REQUESTED|"")
-        [[ "$ci" == FAIL ]] || ci=WAIT
-        ;;
-      FAILURE|ERROR|CANCELLED|TIMED_OUT|ACTION_REQUIRED|STARTUP_FAILURE|STALE)
-        ci=FAIL
-        ;;
-      *) [[ "$ci" == FAIL ]] || ci=WAIT ;;
+      CANCELLED) cancelled=1 ;;
+      PENDING|IN_PROGRESS|QUEUED|EXPECTED|WAITING|REQUESTED|"") in_progress=1 ;;
+      FAILURE|ERROR|TIMED_OUT|ACTION_REQUIRED|STARTUP_FAILURE|STALE) hard_fail=1 ;;
+      # 沒見過的狀態當「還在跑」，不當通過也不當取消。
+      *) in_progress=1 ;;
     esac
   done
+  if [[ "$hard_fail" -eq 1 ]]; then
+    ci=FAIL
+  elif [[ "$in_progress" -eq 1 ]]; then
+    # 還有 check 在跑就繼續等，即使同時有 CANCELLED——重跑後的新 run 正是這個形狀。
+    ci=WAIT
+  elif [[ "$cancelled" -eq 1 ]]; then
+    # 取消且沒有別的 check 在跑。先看 job 有沒有真的執行過，再看等夠久了沒——順序
+    # 反過來的話，「跑到一半被取消」這種確定要擋的情況還要空等十分鐘才判得出來。
+    # cancelled_jobs_never_ran 在查不到資料時回 false，於是落到 FAIL，方向保守。
+    if ! cancelled_jobs_never_ran; then
+      ci=FAIL
+    elif past_threshold; then
+      ci=CANCELLED
+    else
+      # 從未執行過，但還沒等夠——這段時間內可能有人重跑，重跑後會變成 in_progress。
+      ci=WAIT
+    fi
+  fi
 fi
 
 latest_review=$(gh api "repos/$repo/pulls/$pr/reviews" \
@@ -162,9 +212,11 @@ fi
 # 是策略決定，屬於上層（hook／settings／人），不是這支工具能替它們決定的。
 # exit 12 同樣刻意非 0——只看 exit code 的呼叫端會當成不通過，那是正確的預設方向；
 # 要接受降級的呼叫端必須明確認得 PASS_NO_CI 這個字串。
-if [[ "$ci" == ABSENT ]]; then
-  printf 'STATE=PASS_NO_CI pr=%s head=%s ci=ABSENT review=CURRENT unresolved=0 url=%s\n' \
-    "$pr" "$head" "$url"
+# ci= 保留實際來源，不統一成一個字：ABSENT 是 run 根本沒被建立，CANCELLED 是 run 建立了
+# 但 job 一個 step 都沒跑就被取消。兩者都代表「拿不到 CI 結論」，但排查方向完全不同。
+if [[ "$ci" == ABSENT || "$ci" == CANCELLED ]]; then
+  printf 'STATE=PASS_NO_CI pr=%s head=%s ci=%s review=CURRENT unresolved=0 url=%s\n' \
+    "$pr" "$head" "$ci" "$url"
   exit 12
 fi
 

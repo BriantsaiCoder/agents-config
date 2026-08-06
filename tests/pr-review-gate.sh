@@ -19,6 +19,18 @@ elif [[ "$1 $2" == "pr view" ]]; then
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$FAKE_STATE" "$FAKE_DRAFT" "$FAKE_MERGEABLE" "$FAKE_HEAD" "$FAKE_CI" \
     "https://github.com/owner/repo/pull/42"
+elif [[ "$1" == api && "$*" == *"/jobs"* ]]; then
+  # 被取消的 job 跑過幾個 step。0 代表 runner 拿到 job 卻從未開始執行。
+  filter=${!#}
+  jq -nc --argjson n "$FAKE_CANCELLED_STEPS" \
+    '{jobs:[{steps:[range(0; $n) | {name:"step"}]}]}' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"head_sha="* ]]; then
+  # head 上 conclusion=cancelled 的 run。留空模擬查不到——那時 gate 不得降級。
+  filter=${!#}
+  jq -nc --arg ids "$FAKE_CANCELLED_RUN_IDS" '
+    {workflow_runs:
+      ($ids | if . == "" then [] else split(",") end
+        | map({id: (. | tonumber), conclusion: "cancelled"}))}' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"/commits/"* ]]; then
   # head commit 的時間，用來區分「CI 還在排程」與「run 根本沒被建立」。
   # FAKE_HEAD_DATE 留空模擬取不到時間——那時 gate 必須維持 WAIT（fail-closed）。
@@ -68,14 +80,21 @@ probe() {
   local draft="${9:-false}" has_next="${10:-false}" output rc request_count payload_ok=true
   # head commit 時間預設用「現在」，這樣既有的 CI=NONE 案例年齡是 0、仍走 WAIT。
   # 要測 ABSENT 就傳一個夠舊的日期進來，不必等真的過門檻。
-  local head_date="${11:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+  # 用 ${11-...} 而非 ${11:-...}：後者對空字串也套預設，於是「傳空字串模擬取不到時間」
+  # 那項其實拿到的是現在時間，測的變成「未達門檻」——兩種 fail-closed 路徑混成一種。
+  local head_date="${11-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+  # 被取消的 run id 清單與其 job 跑過的 step 數。預設空清單＝查不到 cancelled run，
+  # 那時 gate 不得降級，所以不傳這兩個參數的既有案例行為不變。
+  local cancelled_ids="${12:-}" cancelled_steps="${13:-0}"
 
   : > "$REQUEST_LOG"
   output=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
     FAKE_STATE=OPEN FAKE_DRAFT="$draft" FAKE_MERGEABLE=MERGEABLE \
     FAKE_HEAD=head-new FAKE_CI="$ci" FAKE_REVIEW="$review" \
     FAKE_REQUESTED="$requested" FAKE_UNRESOLVED="$unresolved" \
-    FAKE_HAS_NEXT="$has_next" FAKE_HEAD_DATE="$head_date" "$GATE" 42 2>&1)
+    FAKE_HAS_NEXT="$has_next" FAKE_HEAD_DATE="$head_date" \
+    FAKE_CANCELLED_RUN_IDS="$cancelled_ids" FAKE_CANCELLED_STEPS="$cancelled_steps" \
+    "$GATE" 42 2>&1)
   rc=$?
   request_count=$(wc -l < "$REQUEST_LOG" | tr -d ' ')
   if [[ "$want_requests" -gt 0 ]] &&
@@ -110,6 +129,23 @@ probe "unknown head date waits"     10 WAIT_CI     0 head-new 0 0 NONE false fal
 probe "future head date waits"      10 WAIT_CI     0 head-new 0 0 NONE false false 2099-01-01T00:00:00Z
 probe "failed CI blocks"            30 FAIL_CI     0 head-new 0 0 FAILURE
 probe "failure outranks pending CI" 30 FAIL_CI     0 head-new 0 0 FAILURE,PENDING
+
+# CANCELLED 的六種形狀。分水嶺是「job 有沒有真的跑過 step」，不是「誰取消的」——
+# GitHub 不提供取消者，但 steps 為空能區分「runner 拿到 job 卻沒開始」與「跑到一半被中斷」。
+OLD=2026-01-01T00:00:00Z
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+# runner 從未開始執行 + 等夠久 → 拿不到結論，降級。
+probe "cancelled without steps degrades" 12 PASS_NO_CI 0 head-new 0 0 CANCELLED false false "$OLD" 900001 0
+# 跑過 step 才被取消，可能中斷了一個正在失敗的測試——不必等門檻，直接擋死。
+probe "cancelled after steps blocks"     30 FAIL_CI    0 head-new 0 0 CANCELLED false false "$OLD" 900001 3
+# 從未執行但還沒等夠：這段時間內可能有人重跑。
+probe "cancelled before threshold waits" 10 WAIT_CI    0 head-new 0 0 CANCELLED false false "$NOW" 900001 0
+# 查不到 cancelled run（第三方 check、API 失敗）→ 無法確認，不降級。
+probe "cancelled lookup failure blocks"  30 FAIL_CI    0 head-new 0 0 CANCELLED false false "$OLD" ""     0
+# 還有 check 在跑就繼續等，即使同時有 CANCELLED——重跑後的新 run 正是這個形狀。
+probe "cancelled with pending waits"     10 WAIT_CI    0 head-new 0 0 CANCELLED,PENDING false false "$OLD" 900001 0
+# 硬失敗壓過一切，不因為旁邊有 CANCELLED 就降級。
+probe "failure outranks cancelled"       30 FAIL_CI    0 head-new 0 0 CANCELLED,FAILURE false false "$OLD" 900001 0
 probe "draft PR waits"              11 WAIT_READY  0 head-new 0 0 SUCCESS true
 probe "thread pagination fails safe" 30 UNAVAILABLE 0 head-new 0 0 SUCCESS false true
 
