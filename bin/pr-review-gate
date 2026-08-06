@@ -44,9 +44,34 @@ if [[ "$mergeable" == CONFLICTING ]]; then
   exit 30
 fi
 
+# 零個 check 有兩種完全不同的成因，舊版一律當 WAIT，於是第二種永遠沒有出口：
+#   1. run 還在排程——正常，等就好。
+#   2. run 根本沒被建立——GitHub 側停擺，等到天荒地老也不會有 check。
+# 2026-08-06 實測撞上第二種：head 連續三次（push、close/reopen、空 commit）都沒有建立
+# 任何 CI run，同時間 Copilot review 照常排隊，gate 卡在 WAIT_CI 沒有出口，最後只能由
+# 人手動 merge。用「head commit 推上來多久了」區分這兩種：本 repo 的 CI 全程 21-31 秒
+# 跑完，建立 run 是秒級，10 分鐘是給排程延遲的寬裕上限。
+CI_ABSENT_AFTER=${CI_ABSENT_AFTER:-600}
+
+# ISO8601 轉 epoch。BSD date（macOS）與 GNU date（Linux/CI）語法不同，兩種都試。
+epoch_of() {
+  date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$1" +%s 2>/dev/null ||
+    date -u -d "$1" +%s 2>/dev/null
+}
+
 ci=PASS
 if [[ "$ci_states" == NONE ]]; then
+  # 預設仍是 WAIT。只有「確定超過門檻」才改判 ABSENT——取不到時間、時鐘偏移導致
+  # 年齡為負、date 兩種語法都失敗，全部維持 WAIT，方向一律保守。
   ci=WAIT
+  head_date=$(gh api "repos/$repo/commits/$head" --jq '.commit.committer.date' 2>/dev/null) || head_date=""
+  if [[ -n "$head_date" ]]; then
+    head_epoch=$(epoch_of "$head_date") || head_epoch=""
+    if [[ -n "$head_epoch" ]]; then
+      age=$(( $(date -u +%s) - head_epoch ))
+      (( age >= CI_ABSENT_AFTER )) && ci=ABSENT
+    fi
+  fi
 else
   IFS=',' read -r -a checks <<< "$ci_states"
   for check in "${checks[@]}"; do
@@ -130,6 +155,17 @@ if [[ "$latest_review" != "$head" || "$requested" -gt 0 ]]; then
   printf 'STATE=WAIT_REVIEW pr=%s head=%s ci=%s review=STALE unresolved=0 url=%s\n' \
     "$pr" "$head" "$ci" "$url"
   exit 11
+fi
+
+# review 面全綠但 CI run 根本沒被建立時，回一個**與 PASS 不同**的狀態。這裡刻意不回
+# PASS：呼叫端若只看到 PASS，就分不出「CI 驗過了」與「CI 從來沒跑」，而後者要不要放行
+# 是策略決定，屬於上層（hook／settings／人），不是這支工具能替它們決定的。
+# exit 12 同樣刻意非 0——只看 exit code 的呼叫端會當成不通過，那是正確的預設方向；
+# 要接受降級的呼叫端必須明確認得 PASS_NO_CI 這個字串。
+if [[ "$ci" == ABSENT ]]; then
+  printf 'STATE=PASS_NO_CI pr=%s head=%s ci=ABSENT review=CURRENT unresolved=0 url=%s\n' \
+    "$pr" "$head" "$url"
+  exit 12
 fi
 
 printf 'STATE=PASS pr=%s head=%s ci=%s review=CURRENT unresolved=0 url=%s\n' \
