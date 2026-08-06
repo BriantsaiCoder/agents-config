@@ -49,15 +49,15 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 | Security | focused code／diff／path → `shared-security-review`；明示 whole-codebase audit／pen-test 且接受 artifacts → `security-audit`；SBOM／CI gate → `dependency-security-scan` |
 | 架構、deep module、seam 設計 | `codebase-design`；另命中上列明示 trigger 時才組合 `grilling` |
 | 陌生 repo | `acquire-codebase-knowledge` |
-| repo docs／host-native AI 指令 | `init-project-docs`；探索地圖另走 `acquire-codebase-knowledge` |
+| repo docs／host-native AI 指令的初始化或整體 refresh | `init-project-docs`；探索地圖另走 `acquire-codebase-knowledge` |
 | primary-source background research／citable Markdown evidence | `research` |
 | Microsoft concepts／tutorial／config；API signature／SDK sample | 前者 `microsoft-docs`；後者 `microsoft-code-reference` |
 | third-party library／SDK／API／CLI current lookup | provider-native official docs；absent／`UNAVAILABLE` 才 Context7 fallback（`context7-mcp`） |
 | 新 UI／redesign／缺 visual direction | `ui-ux-pro-max`；host ideation capability 接續 |
 | 單檔且 ≤3 tasks 的低風險 change | `sdd` |
-| 單一 skill behavior／invocation／description／pruning | `writing-great-skills`；skill scaffolding 歸 host creator |
+| 既有單一 skill behavior／invocation／description／pruning，或既有 AGENTS.md／CLAUDE.md／pointed-at agent doc 的 authoring 品質 | `writing-for-agents`；canonical placement 先由 host workflow 決定，skill scaffolding 歸 host creator |
 | skill folder keep／trim／delete／migrate 稽核 | `auditing-skill-folder`；verdict 不授權修改 |
-| 單一 skill trigger failure | MUST 有 preserved RED；caller 無則 `diagnosing-bugs` 建；Step 2c RED／diagnosis 後接 `writing-great-skills` |
+| 單一 skill trigger failure | MUST 有 preserved RED；caller 無則 `diagnosing-bugs` 建；Step 2c RED／diagnosis 後接 `writing-for-agents` |
 | 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
 先驗 path/frontmatter；route≠invoke。Intake、skill audit／VND、跨 session／ticket、research、handoff MUST 讀 [continuations](references/routing-continuations.md)。

@@ -15,21 +15,24 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
+| `ask-matt` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — keep the router thin and point phase/context transitions to the canonical shared continuation contract instead of vendoring a second authority; tree SHA-256 `beb486c313e815a3381d4fbc1b1a05e935ce6b4d957f7b50dabd0d8c33318d2f` | **Active** |
 | `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-08-02 — re-adjudicated thin fork: narrow Clean Code triggers, retain a 360-word judgment checklist, keep only self-consistent illustrative SOLID snippets, and remove duplicated async/editorconfig payload; tree SHA-256 `3f1cb3c62da34813c63d3d041feb0287044a5df5047f1cf824d95a25ba8f89b0` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
-| `diagnosing-bugs` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
+| `diagnosing-bugs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Retired to `attic/` 2026-08-02** |
 | `vueuse-functions` | github.com/serkodev (MIT, Copyright (c) 2026 SerKo) | LICENSE.md only; no upstream revision was ever recorded | 2026-08-02 — **user-authorized override**: the 11-row requirement map and the 6-entry high-frequency index both merged into `vue-best-practices/references/vueuse/INDEX.md`; the use-vs-hand-roll judgment and the SSR/PII guardrails merged into the same file; MIT notice carried with the payload and retained in the archive. Archived tree SHA-256 `95db99f6a5082d25b311154bf6410cf9e7cd3be306417005caf730fc986f8913`（`vendored_tree_sha256 attic/vueuse-functions`，與其他列同公式） | **Retired to `attic/` 2026-08-02** |
 | `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
 | `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; tree SHA-256 `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21` | **Active** |
 | `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
-| `grilling` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-04 — narrow the trigger to an explicit interview request, preserve the clarify path and default HITL flow, add re-estimated progress headers to every question, and retain the opt-in mode where the selected model adopts defensible decisions while keeping action authorization separate; payload SHA-256 `d92143d631e2915416bc3c4794414c8c09e4294fd610475ab2f97ae438a794e1` | **Active** |
-| `handoff` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
+| `grilling` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-04 — narrow the trigger to an explicit interview request, preserve the clarify path and default HITL flow, add re-estimated progress headers, retain delegated decisions with a separate action gate, and decline v1.2.2 design-tree/frontier rounds pending the canaried behavior PR; payload SHA-256 `d92143d631e2915416bc3c4794414c8c09e4294fd610475ab2f97ae438a794e1` | **Active** |
+| `handoff` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
-| `writing-great-skills` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-01 — **scope widened through four evidence-backed passes**: invocation metadata, factual body corrections, trigger ownership, branch-aware completion, executable checklist, glossary cleanup, and evidence-gated leading-word/canonical-term rules; tree SHA-256 `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa` | **Active** |
+| `prototype` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — adopt the self-contained HTML logic demo and add the local offline/synthetic-data/no-secret/no-production-build boundary; tree SHA-256 `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a` | **Active** |
+| `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
+| `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `c7868234fef06e338e4d1c463c5c50a33125637aaf366a6ba1802ce57a5cc3de` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
-| `code-review` | github.com/mattpocock/skills | `ed37663cc5fbef691ddfecd080dff42f7e7e350d` | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs and add the within-axis filter pass they defer to, per [S5-4]; same day, add the two house over-engineering baseline rules to the step-3 smell baseline, per [S5-3]; tree SHA-256 `35588c2ab47c07ff6ffcb2e8aecd90acd564cde8b2abf5769d666dd1b5ad6eee` | **Active** |
+| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; tree SHA-256 `d319107ccd5d4984c7974007f24afdf69f037feab03ee4835f6cd3ca3587c27c` | **Active** |
 | `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Active** |
 
 <!-- fork-index:end -->
@@ -280,16 +283,27 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 
 ---
 
-## Pinned Matt set — 17 unmodified + 5 recorded forks
+## Pinned Matt set — 14 unmodified + 8 recorded forks
 
-**`mattpocock/skills` stable 22 — active, pinned 2026-07-27.**
+**`mattpocock/skills` selected 22 — active, rebased to v1.2.2 on 2026-08-06.**
 
-- Source: `https://github.com/mattpocock/skills.git` at `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
-- Selection: `.claude-plugin/plugin.json` SHA-256 `e712cc026f5e78058067d17cd1fdf9665388d70db59dc50688286cb029e38eba`.
+- Source: `https://github.com/mattpocock/skills.git` at `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (`v1.2.2`).
+- Upstream manifest: `.claude-plugin/plugin.json` SHA-256 `85a5f2ad87b1070c13a97a9379887fc43e5e786a0ab7a3c0f0281d2b30f523b2` (25 published skills).
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
-- The 17 entries other than `code-review`, `diagnosing-bugs`, `grilling`, `handoff`, and `writing-great-skills` are byte-for-byte upstream and immutable.
-- The five recorded forks have exact payload fingerprints and re-merge procedures below.
+- Excluded from the 25 published skills: `wizard` (credential/migration side-effect generator overlaps protected house gates), `wait-what` (personal communication modifier, not engineering workflow), and `to-questionnaire` (unneeded outward async-document flow overlapping existing clarification routes). Re-entry requires a new decision record and canary.
+- The 14 entries other than `ask-matt`, `code-review`, `diagnosing-bugs`, `grilling`, `handoff`, `prototype`, `triage`, and `writing-for-agents` are byte-for-byte upstream and immutable.
+- The eight recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
+
+Fresh-clone evidence at `8b36d4f`: the lock/local/upstream `vendored_tree_sha256` replay returned
+`14 PASS / 0 FAIL`. The four upstream-identical trees visibly changed by this rebase were
+`setup-matt-pocock-skills=20fabc63…`, `tdd=807b29b3…`, `to-spec=7fe9db6b…`, and
+`wayfinder=8c91f90c…`; their complete hashes are the lock entries above. House tripwires cover
+selected upstream behavior in setup, TDD, spec terminology, wayfinder, and caller cadence; if a
+later upstream revision changes one, re-run the upstream comparison and make a fork decision
+instead of merely weakening the test. The temporary changed-file exceptions cover the assessed-
+commit rebase and the writing-skill rename only while `WORKFLOW_BASE` carries the prior state; the
+next workflow PR advances that base and removes both exceptions.
 
 ## Hybrid — house wrapper over vendored payload
 
@@ -401,6 +415,57 @@ Expected output includes `# arm=collision  skills loaded=76  runner=claude` and
 
 ---
 
+## ask-matt
+
+**Decision (2026-08-06): retain a thin router while rebasing to v1.2.2.**
+
+Upstream adds a second, detailed phase-boundary tree. The shared `dev-workflow` already owns
+continuations and authorization, so the local router carries one context pointer to
+`references/routing-continuations.md` and omits `PHASE-BOUNDARIES.md`. The pointer also states that
+routing does not grant implementation authorization.
+
+The router retains `/handoff` in its standalone index while leaving phase-boundary behavior with the
+canonical continuation owner.
+
+Approved tree SHA-256: `beb486c313e815a3381d4fbc1b1a05e935ce6b4d957f7b50dabd0d8c33318d2f`.
+
+On upstream update, start from the new `ask-matt/`, omit any duplicate phase-boundary body, keep the
+canonical continuation pointer, update renamed selected skills, then recompute the tree fingerprint.
+
+---
+
+## prototype
+
+**Decision (2026-08-06): adopt the v1.2.2 HTML logic demo with one local safety boundary.**
+
+The upstream universal HTML/JavaScript branch is retained even for non-JavaScript projects because
+its artifact opens without a project runtime. The local addition keeps fixture data synthetic and
+the artifact offline, excluding CDN, external network requests, remote assets, secrets, and
+production build-path dependencies. Existing prototype branch capture and non-production rules
+remain unchanged.
+
+Approved tree SHA-256: `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a`.
+
+On upstream update, replace the directory, reapply the single offline boundary only if absent, run
+relative-reference checks and `tests/mattpocock-workflow.sh`, then recompute the tree fingerprint.
+
+---
+
+## triage
+
+**Decision (2026-08-06): make the caller cadence-neutral.**
+
+`triage` invokes `grilling` and `domain-modeling`, but the canonical `grilling` contract owns whether
+questions are asked singly or in independent rounds. This prevents callers from drifting whenever
+the interview cadence changes.
+
+Approved tree SHA-256: `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4`.
+
+On upstream update, keep the cadence-neutral pointer unless upstream has equivalent wording, then
+recompute the tree fingerprint and run the Matt workflow tests.
+
+---
+
 ## code-review
 
 **Decision (2026-08-03): remove the sub-agent output cap, and give the aggregate step the filter the briefs now defer to.**
@@ -424,7 +489,10 @@ already pastes that baseline into the Standards sub-agent verbatim; one insertio
 duplication. Both binding rules of that baseline (repo overrides; always a judgement call) apply
 to them unchanged.
 
-Approved tree SHA-256: `35588c2ab47c07ff6ffcb2e8aecd90acd564cde8b2abf5769d666dd1b5ad6eee`.
+The v1.2.2 rebase also accepts upstream's PRD-to-spec terminology cleanup without changing either
+review axis.
+
+Approved tree SHA-256: `d319107ccd5d4984c7974007f24afdf69f037feab03ee4835f6cd3ca3587c27c`.
 Driving rules: `[S5-4]` and `[S5-3]` in `skills/dev-workflow/SKILL.md`.
 
 On upstream update, drop this fork if the new step-4 briefs carry no output cap and step 5 already
@@ -442,9 +510,11 @@ aggregate headings rather than the step numbers.
 **Decision (2026-08-01): add one trigger branch for Agent Skill invocation failures.**
 
 The generic upstream description names broken, failing, flaky, and slow software, but not an Agent
-Skill that fires unreliably. Routing canaries therefore let `writing-great-skills` steal the first
+Skill that fires unreliably. Routing canaries therefore let `writing-for-agents` steal the first
 step even though the canonical workflow requires a RED trigger canary first. The local change adds
 only that missing description branch; the body is untouched.
+
+The v1.1→v1.2.2 upstream comparison is empty: `git diff --exit-code ed37663cc5fbef691ddfecd080dff42f7e7e350d 8b36d4fb2635b3c21998dcd8144439c9e5ba7302 -- skills/diagnosing-bugs` returned 0.
 
 Approved tree SHA-256: `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba`.
 Evidence and the 21:00 control are recorded in
@@ -496,10 +566,16 @@ retirement depends on an explicit "clarify this" still reaching this skill witho
 and `/grill-me` remains the separate explicit-command entry point. The body is unchanged — cadence is
 handled by the kernel's Claude adapter, which routes decision questions through `AskUserQuestion`.
 
+**Rebase note (2026-08-06):** the provenance baseline is now v1.2.2. Its design-tree/frontier rounds
+remain deferred to the separately canaried behavior PR; this baseline PR preserves the proven local
+trigger, one-question HITL default, delegated-decision branch, and action-authorization boundary.
+
 ### Re-merge procedure (when upstream moves)
 
 1. Diff the new upstream `grilling/SKILL.md` against pinned commit
-   `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
+   `8b36d4fb2635b3c21998dcd8144439c9e5ba7302`.
+   This baseline already contains design-tree/frontier rounds that the local fork deliberately
+   declines; adopting them requires the separate canaried behavior PR, not a routine re-merge.
 2. Replace the pinned Matt set normally, then reapply the progress-header rule,
    delegated-decision paragraphs, and clarify trigger only if upstream still lacks equivalent behavior.
 3. Run `tests/matt-thin-workflow.sh`, `tests/vendored-detection.sh`, and the skill validator.
@@ -510,6 +586,8 @@ handled by the kernel's Claude adapter, which routes decision questions through 
 ## handoff
 
 **Decision (2026-07-31): accept the fork.**
+
+The v1.1→v1.2.2 upstream comparison is empty: `git diff --exit-code ed37663cc5fbef691ddfecd080dff42f7e7e350d 8b36d4fb2635b3c21998dcd8144439c9e5ba7302 -- skills/handoff` returned 0.
 
 Upstream writes the handoff document to the OS temp directory and stops there. Nothing tells the
 user where it landed or what to say next, so the bridge between two sessions depends on the user
@@ -544,7 +622,7 @@ reworded.
 ### Re-merge procedure (when upstream moves)
 
 1. Diff the new upstream `handoff/SKILL.md` against pinned commit
-   `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
+   `8b36d4fb2635b3c21998dcd8144439c9e5ba7302`.
 2. Replace the pinned Matt set normally, then reapply the final paragraph only if upstream still
    emits no start prompt for the next session.
 3. Run `tests/matt-thin-workflow.sh` and `tests/vendored-detection.sh`; confirm `check-vendored.sh`
@@ -553,7 +631,17 @@ reworded.
 
 ---
 
-## writing-great-skills
+## writing-for-agents
+
+**Decision (2026-08-06): accept the upstream rename and generalize the local contract.**
+
+The current payload covers Agent Skills, `AGENTS.md`, `CLAUDE.md`, and pointed-at documents. It
+retains the local RED ownership, model-invocation metadata, branch-aware completion, evidence-gated
+leading words, and glossary. `SKILL-MECHANICS.md` carries skill-only packaging; the top level remains
+under the 500-word house budget. The live environment informs discoverable facts, while the lockfile
+remains authoritative for approved provenance. The shared `dev-workflow` still decides canonical
+placement and authorization. Historical decisions below explain the retained skill-authoring fork;
+this paragraph supersedes their old name and narrower frontmatter description for current behavior.
 
 **Decision (2026-07-31): accept the model-invocation metadata fork.**
 **Decision (2026-08-01): widen the scope to body corrections. Supersedes the above.**
@@ -597,7 +685,7 @@ two rejected prompt-contaminated attempts, resolution limits, and host-canary ev
 `proposals/2026-08-01-two-skill-tuning-audit/05-post-landing-review.md`. This does not validate or
 restore the 28 removed `_Avoid_:` aliases.
 
-Approved tree SHA-256: `3a4945d7c29f0318d556eb01d7c5d9da80b998c88f950c8a4c099857011c32aa`.
+Approved tree SHA-256: `c7868234fef06e338e4d1c463c5c50a33125637aaf366a6ba1802ce57a5cc3de`.
 
 ### Local changes
 
@@ -668,7 +756,7 @@ word can collapse, but accepts the word only after a canary improves invocation 
 `GLOSSARY.md` now directs authors to use each heading's exact term, preserving canonical vocabulary
 without restoring its 28 negative alias lists.
 
-`SKILL.md` is 442 words against the 500-word budget.
+`SKILL.md` is 466 words against the 500-word budget.
 
 **Historical upstream report.** The description-mechanic correction (6 sites) was reported in
 `mattpocock/skills#714`, then closed at the user's request on 2026-08-02; no upstream follow-up is
@@ -678,8 +766,8 @@ description is the opposite: house-authored, so upstream has nothing to fix.
 
 ### Re-merge procedure (when upstream moves)
 
-1. Diff the new upstream `writing-great-skills/` against pinned commit
-   `ed37663cc5fbef691ddfecd080dff42f7e7e350d`.
+1. Diff the new upstream `writing-for-agents/` against pinned commit
+   `8b36d4fb2635b3c21998dcd8144439c9e5ba7302`.
 2. Replace the pinned Matt set, then reapply invocation metadata, every still-live row of the
    body-corrections table, the second-pass trigger ownership/structural trim, and the third-/fourth-
    pass corrections. Check each correction against the new upstream first — a row upstream has

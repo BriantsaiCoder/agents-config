@@ -14,10 +14,11 @@ GRILLING="$AGENTS/skills/grilling/SKILL.md"
 HANDOFF="$AGENTS/skills/handoff/SKILL.md"
 DIAGNOSING="$AGENTS/skills/diagnosing-bugs/SKILL.md"
 DIAGNOSING_DIR="$AGENTS/skills/diagnosing-bugs"
-WRITING_SKILLS="$AGENTS/skills/writing-great-skills/SKILL.md"
-WRITING_SKILLS_DIR="$AGENTS/skills/writing-great-skills"
+WRITING_SKILLS="$AGENTS/skills/writing-for-agents/SKILL.md"
+WRITING_SKILLS_DIR="$AGENTS/skills/writing-for-agents"
 WRITING_GLOSSARY="$WRITING_SKILLS_DIR/GLOSSARY.md"
-WRITING_SKILLS_POLICY="$AGENTS/skills/writing-great-skills/agents/openai.yaml"
+WRITING_MECHANICS="$WRITING_SKILLS_DIR/SKILL-MECHANICS.md"
+WRITING_SKILLS_POLICY="$AGENTS/skills/writing-for-agents/agents/openai.yaml"
 AUDIT_SKILL="$AGENTS/skills/auditing-skill-folder/SKILL.md"
 AUDIT_VENDORED_GATE="$AGENTS/skills/auditing-skill-folder/step0-vendored-gate.md"
 AUDIT_VERDICT_GUIDE="$AGENTS/skills/auditing-skill-folder/step1-verdict-guide.md"
@@ -164,7 +165,7 @@ while IFS='=' read -r key skill; do
 done < "$AGENTS/mattpocock-skills.lock"
 
 ! rg -q '^disable-model-invocation:[[:space:]]*true$' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills is not model-invoked'
+  fail 'writing-for-agents is not model-invoked'
 rg -q '^description: .*Agent Skill fires unreliably.*RED trigger canary before rewrite' "$DIAGNOSING" ||
   fail 'diagnosing-bugs lacks the skill-trigger failure branch'
 fork_recorded diagnosing-bugs ||
@@ -178,53 +179,73 @@ expected_diagnosing_tree_sha="$(
 actual_diagnosing_tree_sha="$(vendored_tree_sha256 "$DIAGNOSING_DIR")"
 [ "$actual_diagnosing_tree_sha" = "$expected_diagnosing_tree_sha" ] ||
   fail 'diagnosing-bugs tree differs from the recorded fork fingerprint'
-rg -q "^description: Agent Skill authoring\. Use when editing one existing Agent Skill's model/user invocation mode.*another skill routes an already-red single-target behavior rewrite here.*Existing-skill invocation edits stay here.*host creator owns new-skill scaffolding.*folder auditor owns directory audits" "$WRITING_SKILLS" ||
-  fail 'writing-great-skills lacks its identity clause, disambiguated authoring, or post-RED triggers'
+rg -q '^description: Writing documents for agents\..*Agent Skill.*AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc' "$WRITING_SKILLS" ||
+  fail 'writing-for-agents lacks its generalized document trigger branches'
+rg -q 'Existing-skill invocation edits stay here.*host creator owns new-skill scaffolding.*folder auditor owns directory audits' "$WRITING_SKILLS" ||
+  fail 'writing-for-agents lost the local skill-authoring ownership boundary'
 rg -q '^\*\*REQUIRED PRECONDITION:\*\*.*preserved RED trigger canary.*Step 2c RED satisfies this gate' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills does not accept a caller-provided Step 2c RED'
+  fail 'writing-for-agents does not accept a caller-provided Step 2c RED'
 rg -q '^\*\*REQUIRED SUB-SKILL:\*\* For a misbehavior rewrite with no caller-supplied RED, invoke `diagnosing-bugs` first' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills does not scope the trigger-diagnosis dependency to a misbehavior rewrite'
+  fail 'writing-for-agents does not scope the trigger-diagnosis dependency to a misbehavior rewrite'
 rg -q 'full.*record a verdict for every applicable section' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills lacks the full-audit completion criterion'
+  fail 'writing-for-agents lacks the full-audit completion criterion'
 rg -q 'scoped edit.*only the named branch' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills expands scoped edits into full audits'
+  fail 'writing-for-agents expands scoped edits into full audits'
 rg -q 'trigger RED canary.*GREEN' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills does not preserve RED to GREEN evidence'
+  fail 'writing-for-agents does not preserve RED to GREEN evidence'
 writing_words=$(LC_ALL=C wc -w < "$WRITING_SKILLS" | tr -d ' ')
 [ "$writing_words" -le 500 ] ||
-  fail "writing-great-skills exceeds its 500-word budget: $writing_words"
+  fail "writing-for-agents exceeds its 500-word budget: $writing_words"
 [ -r "$WRITING_GLOSSARY" ] ||
-  fail 'writing-great-skills glossary is missing or unreadable'
+  fail 'writing-for-agents glossary is missing or unreadable'
+[ -r "$WRITING_MECHANICS" ] ||
+  fail 'writing-for-agents skill-mechanics branch is missing or unreadable'
+rg -Fq '[Granularity](GLOSSARY.md#granularity)' "$WRITING_MECHANICS" ||
+  fail 'writing-for-agents skill mechanics has a dead granularity pointer'
+rg -q 'Split by sequence only when an observed rush survives a sharper completion criterion' "$WRITING_MECHANICS" ||
+  fail 'writing-for-agents lost its evidence-gated sequence split'
+rg -q 'Criteria that sweep a set are exhaustive' "$WRITING_SKILLS" ||
+  fail 'writing-for-agents lost its exhaustive set criterion'
+rg -q 'AGENTS\.md.*CLAUDE\.md.*pointed-at files use the same object' "$WRITING_GLOSSARY" ||
+  fail 'writing-for-agents glossary did not generalize context pointers beyond skills'
+rg -Fq 'Outside Invocation, every term applies to any agent-facing document' "$WRITING_GLOSSARY" ||
+  fail 'writing-for-agents glossary leaves non-invocation terms skill-only'
 rg -Fq '](GLOSSARY.md)' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills no longer points to its glossary'
+  fail 'writing-for-agents no longer points to its glossary'
+rg -Fq '](SKILL-MECHANICS.md)' "$WRITING_SKILLS" ||
+  fail 'writing-for-agents no longer discloses skill-only mechanics'
+rg -q 'environment.*source of truth|environment.*canonical source' "$WRITING_SKILLS" ||
+  fail 'writing-for-agents does not treat the live environment as a source of truth'
+rg -q 'pinned provenance|lockfile.*precedence|lock.*provenance' "$WRITING_SKILLS" ||
+  fail 'writing-for-agents lets environment lookup overwrite pinned provenance'
 rg -Fq 'Look for repeated phrasing a **leading word** can collapse; keep it only when a canary shows improved invocation or execution.' "$WRITING_SKILLS" ||
-  fail 'writing-great-skills no longer searches for evidence-gated leading words'
+  fail 'writing-for-agents no longer searches for evidence-gated leading words'
 rg -Fq "Use each heading's exact term for that concept; synonyms dilute its **leading word**." "$WRITING_GLOSSARY" ||
-  fail 'writing-great-skills no longer preserves canonical glossary terminology'
+  fail 'writing-for-agents no longer preserves canonical glossary terminology'
 ! rg -q '^_Avoid_:' "$WRITING_GLOSSARY" ||
-  fail 'writing-great-skills glossary still carries negation sediment'
+  fail 'writing-for-agents glossary still carries negation sediment'
 ! rg -q '_comprehensive_, _thorough_' "$WRITING_GLOSSARY" ||
-  fail 'writing-great-skills still presents thorough as both weak and effective'
+  fail 'writing-for-agents still presents thorough as both weak and effective'
 rg -q '^[[:space:]]*allow_implicit_invocation:[[:space:]]*true$' \
   "$WRITING_SKILLS_POLICY" ||
-  fail 'Codex policy blocks writing-great-skills implicit invocation'
-fork_recorded writing-great-skills ||
-  fail 'writing-great-skills fork is not recorded inside the fork index'
+  fail 'Codex policy blocks writing-for-agents implicit invocation'
+fork_recorded writing-for-agents ||
+  fail 'writing-for-agents fork is not recorded inside the fork index'
 expected_writing_tree_sha="$(
-  sed -n '/^## writing-great-skills$/,/^---$/p' "$AGENTS/vendored-forks.md" |
+  sed -n '/^## writing-for-agents$/,/^---$/p' "$AGENTS/vendored-forks.md" |
     sed -n 's/.*tree SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p'
 )"
 [ -n "$expected_writing_tree_sha" ] ||
-  fail 'writing-great-skills fork record lacks an approved tree SHA-256'
+  fail 'writing-for-agents fork record lacks an approved tree SHA-256'
 indexed_writing_tree_sha="$(
-  sed -n '/^| `writing-great-skills` |/s/.*tree SHA-256 `\([a-f0-9]\{64\}\)`.*/\1/p' \
+  sed -n '/^| `writing-for-agents` |/s/.*tree SHA-256 `\([a-f0-9]\{64\}\)`.*/\1/p' \
     "$AGENTS/vendored-forks.md"
 )"
 [ "$indexed_writing_tree_sha" = "$expected_writing_tree_sha" ] ||
-  fail 'writing-great-skills fork index and detailed fingerprint disagree'
+  fail 'writing-for-agents fork index and detailed fingerprint disagree'
 actual_writing_tree_sha="$(vendored_tree_sha256 "$WRITING_SKILLS_DIR")"
 [ "$actual_writing_tree_sha" = "$expected_writing_tree_sha" ] ||
-  fail 'writing-great-skills tree differs from the recorded fork fingerprint'
+  fail 'writing-for-agents tree differs from the recorded fork fingerprint'
 
 rg -q '\.\./dev-workflow/SKILL\.md' "$AUDIT_SKILL" ||
   fail 'auditing-skill-folder does not route through the canonical dev-workflow path'
@@ -396,9 +417,6 @@ actual_code_review_tree_sha="$(vendored_tree_sha256 "$CODE_REVIEW_DIR")"
 grep -qF 'Under 400 words' "$CODE_REVIEW_DIR/SKILL.md" &&
   fail 'code-review sub-agent brief still carries an output cap ([S5-4])'
 
-rg -q '17 unmodified.*5 recorded forks' "$AGENTS/vendored-forks.md" ||
-  fail 'Matt set summary does not distinguish all recorded forks'
-
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
   fail 'implement route does not return to S4-S6'
 rg -q 'implement.*(isolated worktree|branch)' "$KERNEL" ||
@@ -532,13 +550,57 @@ rg -q 'unfamiliar area.*system map|system map.*unfamiliar area' \
 git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- skills/mp-zoom-out ||
   fail 'mp-zoom-out changed'
 
+fork_count=0
+expected_upstream_tree_count=$(grep -c '^upstream_tree_sha256=' "$AGENTS/mattpocock-skills.lock")
+upstream_tree_count=0
+verified_upstream_skills=
+base_assessed_commit=$(git -C "$AGENTS" show "$WORKFLOW_BASE:mattpocock-skills.lock" 2>/dev/null | sed -n 's/^assessed_commit=//p')
+current_assessed_commit=$(sed -n 's/^assessed_commit=//p' "$AGENTS/mattpocock-skills.lock")
+matt_rebase_active=0
+if [ -n "$base_assessed_commit" ] && [ "$base_assessed_commit" != "$current_assessed_commit" ]; then
+  matt_rebase_active=1
+fi
+# Full-tree hashing is deliberate: provenance checks pay this small cost so any
+# file, mode, or symlink drift in an upstream-identical skill fails closed.
 while IFS='=' read -r key skill; do
   [ "$key" = skill ] || continue
-  if ! git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- "skills/$skill"; then
-    fork_recorded "$skill" ||
-      fail "unrecorded Matt upstream skill change: $skill"
+  if fork_recorded "$skill"; then
+    fork_count=$((fork_count + 1))
+    indexed_fork_tree_sha="$(
+      sed -n "/^| \`$skill\` |/s/.*tree SHA-256 \`\([a-f0-9]\{64\}\)\`.*/\1/p" \
+        "$AGENTS/vendored-forks.md"
+    )"
+    if [ -n "$indexed_fork_tree_sha" ]; then
+      [ "$(vendored_tree_sha256 "$AGENTS/skills/$skill")" = "$indexed_fork_tree_sha" ] ||
+        fail "Matt fork tree differs from its recorded fingerprint: $skill"
+    else
+      indexed_fork_payload_sha="$(fork_payload_sha "$skill")"
+      [ -n "$indexed_fork_payload_sha" ] ||
+        fail "Matt fork lacks a recorded tree or payload fingerprint: $skill"
+      [ "$(shasum -a 256 "$AGENTS/skills/$skill/SKILL.md" | awk '{ print $1 }')" = "$indexed_fork_payload_sha" ] ||
+        fail "Matt fork payload differs from its recorded fingerprint: $skill"
+    fi
+    continue
   fi
+  expected_upstream_tree="$(
+    sed -n "s/^upstream_tree_sha256=${skill}:\([a-f0-9]\{64\}\)$/\1/p" \
+      "$AGENTS/mattpocock-skills.lock"
+  )"
+  [ -n "$expected_upstream_tree" ] ||
+    fail "unrecorded Matt upstream skill lacks a pinned tree: $skill"
+  [ "$(printf '%s\n' "$expected_upstream_tree" | grep -c .)" -eq 1 ] ||
+    fail "Matt upstream skill has duplicate pinned trees: $skill"
+  actual_upstream_tree="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
+  [ "$actual_upstream_tree" = "$expected_upstream_tree" ] ||
+    fail "Matt upstream skill differs from its pinned tree: $skill"
+  verified_upstream_skills="${verified_upstream_skills}${skill}
+"
+  upstream_tree_count=$((upstream_tree_count + 1))
 done < "$AGENTS/mattpocock-skills.lock"
+[ "$upstream_tree_count" -eq "$expected_upstream_tree_count" ] ||
+  fail "Matt upstream-identical tree count drifted: $upstream_tree_count"
+rg -q "${upstream_tree_count} unmodified.*${fork_count} recorded forks" "$AGENTS/vendored-forks.md" ||
+  fail 'Matt set summary does not match the verified upstream/fork counts'
 
 # 最後兩個 pattern 是 2026-07-30 rules/ 退役加入的：那兩處只移除指向 ~/.agents/rules/
 # 的死路徑，改成不帶路徑的「家規」措辭（規則內容本來就內聯在同一段）。兩者都是 house
@@ -788,6 +850,21 @@ while IFS= read -r changed; do
       changed_skill="${changed#skills/}"
       changed_skill="${changed_skill%%/*}"
       if fork_recorded "$changed_skill"; then
+        continue
+      fi
+      # Transitional rename exception: remove after WORKFLOW_BASE includes the
+      # writing-for-agents rename; an active legacy directory is never allowed.
+      if [ "$changed_skill" = writing-great-skills ] &&
+         [ ! -e "$AGENTS/skills/writing-great-skills" ] &&
+         [ -d "$AGENTS/skills/writing-for-agents" ] &&
+         grep -Fqx 'skill=writing-for-agents' "$AGENTS/mattpocock-skills.lock"; then
+        continue
+      fi
+      # Transitional rebase exception: only active while WORKFLOW_BASE still
+      # carries the prior assessed commit. The next workflow PR advances
+      # WORKFLOW_BASE to this landed rebase, closing the exception.
+      if [ "$matt_rebase_active" -eq 1 ] &&
+         printf '%s' "$verified_upstream_skills" | grep -Fxq "$changed_skill"; then
         continue
       fi
       printf '%s\n' "$b2_skills" | grep -Fxq "$changed_skill" ||

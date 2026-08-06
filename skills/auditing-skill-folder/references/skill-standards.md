@@ -7,7 +7,7 @@ This is the automatically loadable house authority for skill audits. Third-party
 | Source | Binding scope |
 |---|---|
 | [Agent Skills specification](https://agentskills.io/specification) | Portable format: `SKILL.md`, required `name` / `description`, name constraints, 1024-character description limit, relative references, progressive disclosure |
-| Matt `writing-great-skills` | Guidance: model-vs-user invocation, trigger-rich descriptions, information hierarchy, checkable completion criteria, pruning |
+| Matt `writing-for-agents` (`SKILL.md`, `SKILL-MECHANICS.md`, `GLOSSARY.md`) | Guidance: model-vs-user invocation, trigger-rich descriptions, information hierarchy, checkable completion criteria, pruning |
 | House policy | Vendored gate, word budgets, required-marker syntax for house cross-skill dependencies, mechanical checks before judgement |
 
 ## Audit rules

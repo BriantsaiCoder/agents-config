@@ -1,8 +1,8 @@
-# Glossary — Building Great Skills
+# Glossary — Writing for agents
 
-The domain model for what makes a skill great. A skill exists to wrangle determinism out of a stochastic system; the root virtue is **Predictability**, and every term below is a lever on it. This is the disclosed reference for [`writing-great-skills`](SKILL.md).
+The domain model for writing documents agents consume. The root virtue is **Predictability**, and every term below is a lever on it. This is the disclosed reference for [`writing-for-agents`](SKILL.md).
 
-The terms are grouped by axis: **Invocation** (how a skill is reached), **Information Hierarchy** (how its content is arranged), **Steering** (how the agent's runtime behaviour is shaped), and **Pruning** (how it is kept lean). Each **failure mode** lives beside the lever that cures it, tagged _failure mode_.
+The terms are grouped by axis: **Invocation** (how an agent-facing document is reached), **Information Hierarchy** (how its content is arranged), **Steering** (how the agent's runtime behaviour is shaped), and **Pruning** (how it is kept lean). Skill-only invocation terms are marked by their skill subject. Outside Invocation, every term applies to any agent-facing document; read "skill" as "document" and `SKILL.md` as the document's main file. Each **failure mode** lives beside the lever that cures it, tagged _failure mode_.
 
 **Bold terms** in any definition are themselves defined in this glossary; find them by their heading. Use each heading's exact term for that concept; synonyms dilute its **leading word**.
 
@@ -20,7 +20,7 @@ A skill that keeps its **description** field, so the agent can see it and fire i
 
 ### User-Invoked
 
-A skill with its **description** withheld from the agent — invisible in the agent's index and invocable only by the human typing its name (user-_only_, where **model-invoked** is user-_and-agent_). Trades agent-discoverability for zero **context load**. Because the agent never sees it, no other skill can fire it.
+A skill with its **description** withheld from the agent — invisible in the agent's index and invocable only by the human typing its name (user-_only_, where **model-invoked** is user-_and-agent_). Trades agent-discoverability for zero always-loaded **context load**. Because the agent never sees it, no other skill can fire it.
 
 ### Description
 
@@ -28,15 +28,15 @@ The skill's machine-readable trigger, and the one **context pointer** a **model-
 
 ### Context Pointer
 
-A reference held in the agent's context that names some out-of-context material and encodes the condition for reaching it. The **description** is the top-level context pointer (context window → skill); pointers to disclosed files are the same object one level down. Its wording, not the target, decides _when_ the agent reaches — and _how reliably_. A must-have target behind a weakly worded pointer is a variance bug: fix the wording first, and inline the material only if sharpening fails.
+A reference held in the agent's context that names some out-of-context material and encodes the condition for reaching it. A skill **description** is one top-level pointer; AGENTS.md, CLAUDE.md, and their pointed-at files use the same object at different levels. Its wording, not the target, decides _when_ the agent reaches — and _how reliably_. A must-have target behind a weakly worded pointer is a variance bug: fix the wording first, and inline the material only if sharpening fails.
 
 ### Context Load
 
-The cost a **model-invoked** skill imposes on the agent's context window — its **description**, always loaded, spending both tokens and attention. What **user-invoked** skills escape by keeping their description out of the agent's reach, and the brake on splitting into more model-invoked skills.
+The tokens and attention an agent-facing document keeps loaded on each applicable turn. For a **model-invoked** skill this includes its always-loaded **description**; **user-invoked** skills escape that part by keeping their description out of the agent's reach. This load is the brake on always-loaded host rules and on splitting into more model-invoked skills.
 
 ### Cognitive Load
 
-The cost a **user-invoked** skill imposes on the human — what they must hold in their head: which skills exist and when to reach for each (the human is the index). What **model-invocation** removes by being agent-discoverable, and the brake on splitting into more user-invoked skills. Not a cost to minimise: it is the price of human agency, the reason some skills stay user-invoked. Spend it where human judgement matters; remove it where it does not.
+What a human must remember to reach the right skill, command, or pointed-at document. **Model-invocation** and strong context pointers remove that burden; weak routing and more user-invoked skills increase it. Not a cost to minimise: it is the price of human agency. Spend it where human judgement matters; remove it where it does not.
 
 ### Router Skill
 
@@ -74,7 +74,7 @@ Material the agent refers to on demand — definitions, facts, parameters, examp
 
 ### Progressive Disclosure
 
-Moving **reference** down the ladder — out of SKILL.md and behind a **context pointer** — so the top stays legible. Not primarily a token optimisation; it is how the **information hierarchy** is protected. Licensed by **branching**: disclose what only some branches need, inline what every path needs, and if a pointer fires unreliably on must-have material, sharpen its wording, and pull it back inline only if that fails.
+Moving **reference** down the ladder — out of SKILL.md and behind a **context pointer** — so the top stays legible. Not primarily a token optimisation; it is how the **information hierarchy** is protected. Licensed by **branch**: disclose what only some branches need, inline what every path needs, and if a pointer fires unreliably on must-have material, sharpen its wording, and pull it back inline only if that fails.
 
 ### Co-location
 
@@ -90,13 +90,13 @@ The levers that shape the agent's runtime behaviour toward **Predictability**.
 
 ### Branch
 
-A distinct way a skill can be invoked — a case the skill handles — so different runs take different paths through it. A skill with many steps may carry many branches; a linear one has none.
+A distinct case an agent-facing document handles, so different runs take different paths through it. For a skill this may be a distinct invocation; for AGENTS.md, CLAUDE.md, or a pointed-at document it is a routed condition. A document with many steps may carry many branches; a linear one has none.
 
 ### Leading Word
 
-A compact concept — also called a _Leitwort_ — already living in the model's pretraining, that the agent thinks with while running the skill. It encodes a behavioural principle in the fewest possible tokens by invoking priors the model already holds (e.g. _lesson_, _proximal zone of development_, _fog of war_, _tracer bullets_). Repeated as a token, never as a sentence, it accumulates a distributed definition across the skill and anchors a whole region of behaviour. Coining your own works if you define it clearly, but a made-up word recruits no priors — you pay in definition tokens what a pretrained word gives free. Reach for an existing word first.
+A compact concept — also called a _Leitwort_ — already living in the model's pretraining, that the agent thinks with while following a document. It encodes a behavioural principle in the fewest possible tokens by invoking priors the model already holds (e.g. _lesson_, _proximal zone of development_, _fog of war_, _tracer bullets_). Repeated as a token, never as a sentence, it accumulates a distributed definition across the document and anchors a whole region of behaviour. Coining your own works if you define it clearly, but a made-up word recruits no priors — you pay in definition tokens what a pretrained word gives free. Reach for an existing word first.
 
-A leading word serves **predictability** twice. In the body it anchors **execution** — the agent reaches for the same behaviour every time the concept appears, and inside flat reference it focuses attention on a class of thing to look for, recruiting the right checks each run. In the **description** it anchors **invocation** — and not only within the skill: when the same word lives in your prompts, your docs, and your codebase, the agent links that shared language to the skill and fires it more reliably. Word a description with the leading words you actually use when you want the skill.
+A leading word serves **predictability** twice. In the body it anchors execution — the agent reaches for the same behaviour every time the concept appears, and inside flat reference it focuses attention on a class of thing to look for, recruiting the right checks each run. In the **description** it anchors **invocation** — and not only within the skill: when the same word lives in your prompts, your docs, and your codebase, the agent links that shared language to the skill and fires it more reliably. Word a description with the leading words you actually use when you want the skill.
 
 ### Completion Criterion
 
