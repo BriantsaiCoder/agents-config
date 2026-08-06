@@ -218,7 +218,7 @@ rg -q 'environment.*source of truth|environment.*canonical source' "$WRITING_SKI
   fail 'writing-for-agents does not treat the live environment as a source of truth'
 rg -q 'pinned provenance|lockfile.*precedence|lock.*provenance' "$WRITING_SKILLS" ||
   fail 'writing-for-agents lets environment lookup overwrite pinned provenance'
-rg -Fq 'Look for repeated phrasing a **leading word** can collapse; keep it only when a canary shows improved invocation or execution.' "$WRITING_SKILLS" ||
+rg -Fq 'Look for repeated phrasing a **Leading Word** can collapse; keep it only when a canary shows improved invocation or execution.' "$WRITING_SKILLS" ||
   fail 'writing-for-agents no longer searches for evidence-gated leading words'
 rg -Fq "Use each heading's exact term for that concept; synonyms dilute its **leading word**." "$WRITING_GLOSSARY" ||
   fail 'writing-for-agents no longer preserves canonical glossary terminology'

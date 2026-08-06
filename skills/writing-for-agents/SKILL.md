@@ -32,6 +32,6 @@ Put ordered **Steps** and their checkable **Completion Criterion** in the main f
 
 ## Pruning
 
-Keep each meaning in one **Single Source of Truth**. Remove **Duplication**, stale **Sediment**, irrelevant branches, and instructions that are a model **No-Op**. State target behavior positively. Look for repeated phrasing a **leading word** can collapse; keep it only when a canary shows improved invocation or execution.
+Keep each meaning in one **Single Source of Truth**. Remove **Duplication**, stale **Sediment**, irrelevant branches, and instructions that are a model **No-Op**. State target behavior positively. Look for repeated phrasing a **Leading Word** can collapse; keep it only when a canary shows improved invocation or execution.
 
 The live environment is a source of truth for discoverable commands, paths, config, and layout; prose that repeats those facts is only a cache. Inspect the environment before refreshing such prose. A lockfile or recorded pin retains precedence for pinned provenance: current files explain behavior, not which upstream revision was approved.
