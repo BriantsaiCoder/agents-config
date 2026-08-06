@@ -2,7 +2,7 @@
 set -euo pipefail
 
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
-WORKFLOW_BASE="${WORKFLOW_BASE:-d6fd1f1}"
+WORKFLOW_BASE="${WORKFLOW_BASE:-d2e78888787e1bd0534cff363442e336e5c609d9}"
 B2_SKILLS_LOCK="$AGENTS/stage-b2-skills.lock"
 WRAPPER_PARITY_EVIDENCE="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow/49-three-host-global-config-ownership-split-candidate-evidence.md"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
@@ -353,8 +353,16 @@ rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
   fail 'grilling does not offer compact options with the recommendation first'
 rg -q 'Prefix every question with a progress header.*Question N of ~M.*running estimate.*Re-estimate M' "$GRILLING" ||
   fail 'grilling does not show a re-estimated question progress header'
-rg -q 'By default, ask decision questions one at a time.*wait for feedback.*wait for explicit confirmation before acting' "$GRILLING" ||
-  fail 'grilling does not preserve the default interactive HITL flow'
+rg -q 'Map decisions as a design tree.*frontier.*prerequisites.*settled' "$GRILLING" ||
+  fail 'grilling does not define the design tree frontier'
+rg -q 'By default, work interactively one frontier decision at a time.*Ask one eligible question.*wait for feedback.*wait for explicit confirmation before acting' "$GRILLING" ||
+  fail 'grilling does not preserve one-question HITL on the current frontier'
+rg -q 'depends on another unresolved decision.*later turn' "$GRILLING" ||
+  fail 'grilling does not defer dependent questions'
+rg -q 'Keep dependent decisions.*off the frontier.*prerequisites settle' "$GRILLING" ||
+  fail 'grilling can silently lose deferred dependency branches'
+rg -q 'frontier is empty.*every branch.*nothing left silently assumed' "$GRILLING" ||
+  fail 'grilling lacks its design-tree completion criterion'
 rg -q 'explicitly authorizes.*answer every decision.*ask only when blocked' "$GRILLING" ||
   fail 'grilling lacks opt-in delegated decision-making'
 rg -q 'In delegated-decision mode.*Ask only when no defensible recommendation remains.*material fact or user-only constraint.*user-only preference or authority.*low-confidence' "$GRILLING" ||
@@ -553,13 +561,6 @@ git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- skills/mp-zoom-out ||
 fork_count=0
 expected_upstream_tree_count=$(grep -c '^upstream_tree_sha256=' "$AGENTS/mattpocock-skills.lock")
 upstream_tree_count=0
-verified_upstream_skills=
-base_assessed_commit=$(git -C "$AGENTS" show "$WORKFLOW_BASE:mattpocock-skills.lock" 2>/dev/null | sed -n 's/^assessed_commit=//p')
-current_assessed_commit=$(sed -n 's/^assessed_commit=//p' "$AGENTS/mattpocock-skills.lock")
-matt_rebase_active=0
-if [ -n "$base_assessed_commit" ] && [ "$base_assessed_commit" != "$current_assessed_commit" ]; then
-  matt_rebase_active=1
-fi
 # Full-tree hashing is deliberate: provenance checks pay this small cost so any
 # file, mode, or symlink drift in an upstream-identical skill fails closed.
 while IFS='=' read -r key skill; do
@@ -593,8 +594,6 @@ while IFS='=' read -r key skill; do
   actual_upstream_tree="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
   [ "$actual_upstream_tree" = "$expected_upstream_tree" ] ||
     fail "Matt upstream skill differs from its pinned tree: $skill"
-  verified_upstream_skills="${verified_upstream_skills}${skill}
-"
   upstream_tree_count=$((upstream_tree_count + 1))
 done < "$AGENTS/mattpocock-skills.lock"
 [ "$upstream_tree_count" -eq "$expected_upstream_tree_count" ] ||
@@ -850,21 +849,6 @@ while IFS= read -r changed; do
       changed_skill="${changed#skills/}"
       changed_skill="${changed_skill%%/*}"
       if fork_recorded "$changed_skill"; then
-        continue
-      fi
-      # Transitional rename exception: remove after WORKFLOW_BASE includes the
-      # writing-for-agents rename; an active legacy directory is never allowed.
-      if [ "$changed_skill" = writing-great-skills ] &&
-         [ ! -e "$AGENTS/skills/writing-great-skills" ] &&
-         [ -d "$AGENTS/skills/writing-for-agents" ] &&
-         grep -Fqx 'skill=writing-for-agents' "$AGENTS/mattpocock-skills.lock"; then
-        continue
-      fi
-      # Transitional rebase exception: only active while WORKFLOW_BASE still
-      # carries the prior assessed commit. The next workflow PR advances
-      # WORKFLOW_BASE to this landed rebase, closing the exception.
-      if [ "$matt_rebase_active" -eq 1 ] &&
-         printf '%s' "$verified_upstream_skills" | grep -Fxq "$changed_skill"; then
         continue
       fi
       printf '%s\n' "$b2_skills" | grep -Fxq "$changed_skill" ||
