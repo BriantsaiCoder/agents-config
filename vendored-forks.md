@@ -301,8 +301,8 @@ Fresh-clone evidence at `8b36d4f`: the lock/local/upstream `vendored_tree_sha256
 `wayfinder=8c91f90c…`; their complete hashes are the lock entries above. House tripwires cover
 selected upstream behavior in setup, TDD, spec terminology, wayfinder, and caller cadence; if a
 later upstream revision changes one, re-run the upstream comparison and make a fork decision
-instead of merely weakening the test. The follow-up grilling PR advances `WORKFLOW_BASE` to the
-landed rebase and removes the temporary assessed-commit and writing-skill rename exceptions.
+instead of merely weakening the test. The follow-up grilling PR advanced `WORKFLOW_BASE` to the
+landed rebase and removed the temporary assessed-commit and writing-skill rename exceptions.
 
 ## Hybrid — house wrapper over vendored payload
 

@@ -354,7 +354,7 @@ rg -q '2.?3.*options.*recommended.*first' "$GRILLING" ||
 rg -q 'Prefix every question with a progress header.*Question N of ~M.*running estimate.*Re-estimate M' "$GRILLING" ||
   fail 'grilling does not show a re-estimated question progress header'
 rg -q 'Map decisions as a design tree.*frontier.*prerequisites.*settled' "$GRILLING" ||
-  fail 'grilling does not define the design-tree frontier'
+  fail 'grilling does not define the design tree frontier'
 rg -q 'By default, work interactively one frontier decision at a time.*Ask one eligible question.*wait for feedback.*wait for explicit confirmation before acting' "$GRILLING" ||
   fail 'grilling does not preserve one-question HITL on the current frontier'
 rg -q 'depends on another unresolved decision.*later turn' "$GRILLING" ||
