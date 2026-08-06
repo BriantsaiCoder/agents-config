@@ -123,6 +123,20 @@ tree_hash_second_link="$(vendored_tree_sha256 "$d")"
 [ "$tree_hash_first_link" != "$tree_hash_second_link" ] &&
   ok "symlink target 變更 -> tree SHA 變更" ||
   bad "symlink target 變更" "different SHA" "$tree_hash_second_link"
+ln -snf 'trailing-newline-target' "$d/link"
+tree_hash_without_trailing_newline="$(vendored_tree_sha256 "$d")"
+ln -snf $'trailing-newline-target\n' "$d/link"
+tree_hash_with_trailing_newline="$(vendored_tree_sha256 "$d")"
+[ "$tree_hash_without_trailing_newline" != "$tree_hash_with_trailing_newline" ] &&
+  ok "symlink target 尾端 newline -> tree SHA 變更" ||
+  bad "symlink target 尾端 newline" "different SHA" "$tree_hash_with_trailing_newline"
+readlink() { return 7; }
+vendored_tree_sha256 "$d" >/dev/null 2>&1
+readlink_error_rc=$?
+unset -f readlink
+[ "$readlink_error_rc" -ne 0 ] &&
+  ok "symlink target 讀取錯誤 -> tree SHA fail closed" ||
+  bad "symlink target 讀取錯誤" "nonzero" "$readlink_error_rc"
 ln -s "$d" "$TMP/tree-hash-root-link"
 if vendored_tree_sha256 "$TMP/tree-hash-root-link" >/dev/null 2>&1; then
   bad "skill root 換成 symlink" "rejected" "accepted"
@@ -141,6 +155,14 @@ tree_hash_clean="$(vendored_tree_sha256 "$d")"
 mkdir -p "$d/.claude/.cc-writes"
 tree_hash_scratch="$(vendored_tree_sha256 "$d")"
 check "harness scratch .claude/ 不改變 tree SHA" "$tree_hash_clean" "$tree_hash_scratch"
+
+# Finder 會在已瀏覽的資料夾留下 repo-wide ignored 的 .DS_Store。它和 .claude/
+# 一樣不是 committed payload；巢狀資料夾若只含這個檔案，也不應因此進入 manifest。
+printf 'finder metadata\n' > "$d/.DS_Store"
+mkdir -p "$d/nested-finder-metadata"
+printf 'nested finder metadata\n' > "$d/nested-finder-metadata/.DS_Store"
+tree_hash_ds_store="$(vendored_tree_sha256 "$d")"
+check "ignored .DS_Store 不改變 tree SHA" "$tree_hash_clean" "$tree_hash_ds_store"
 
 # Git 不追蹤空目錄；同一 commit 在不同 checkout 可能保留或移除它。指紋不得因此漂移。
 d=$(mkskill tree-hash-empty-directory)
@@ -176,12 +198,30 @@ unset -f find
   ok "root 掃描錯誤 -> tree SHA fail closed" ||
   bad "root 掃描錯誤" "nonzero" "$root_find_error_rc"
 
-# 但 .claude 以外的新增內容仍必須改變指紋——排除範圍不得擴散。
-printf 'x\n' > "$d/extra.md"
+# 但允許的環境 metadata 以外，新增內容仍必須改變指紋——排除範圍不得擴散。
+printf 'x\n' > "$d/.unexpected-metadata"
 tree_hash_extra="$(vendored_tree_sha256 "$d")"
 [ "$tree_hash_before_find_error" != "$tree_hash_extra" ] &&
-  ok "非 .claude 的新增檔仍改變 tree SHA" ||
-  bad "非 .claude 的新增檔仍改變 tree SHA" "different SHA" "$tree_hash_extra"
+  ok "未列入 allowlist 的 hidden 檔仍改變 tree SHA" ||
+  bad "未列入 allowlist 的 hidden 檔仍改變 tree SHA" "different SHA" "$tree_hash_extra"
+
+# 函式本身必須保證 final manifest hash fail closed，不得依賴 caller 的 pipefail。
+d=$(mkskill tree-hash-final-shasum-error)
+(
+  set +o pipefail
+  shasum() {
+    local last="${!#}"
+    case "$last" in
+      */vendored-tree.*) return 9 ;;
+      *) command shasum "$@" ;;
+    esac
+  }
+  vendored_tree_sha256 "$d"
+) >/dev/null 2>&1
+final_shasum_error_rc=$?
+[ "$final_shasum_error_rc" -ne 0 ] &&
+  ok "final manifest hash 錯誤 -> tree SHA fail closed" ||
+  bad "final manifest hash 錯誤" "nonzero" "$final_shasum_error_rc"
 
 echo
 echo "── vendored_flag：不可誤判（false positive 防線）──"
@@ -283,6 +323,8 @@ if [ -d "$AGENTS/skills" ]; then
     check "generic provenance lock 的 skill 數量" "7" "$generic_count"
     while IFS=$'\t' read -r skill source revision expected_payload_sha expected_tree_sha; do
       case "$skill" in \#*|"") continue ;; esac
+      # 前面的 test-only shasum override 僅存在於該 subshell。
+      # shellcheck disable=SC2033
       actual_payload_sha=$(
         cd "$AGENTS/skills/$skill" &&
           find . -type f -print0 |
