@@ -129,12 +129,51 @@ has "backend release rollout routes to shared authorization gate" '`dev-workflow
 has "container rollout routes to shared authorization gate" '`dev-workflow`.*\[T0-8\].*S2' skills/containerization/SKILL.md
 lacks "backend release has no dead CLAUDE.md plan pointer" 'CLAUDE\.md.*Plan first' skills/backend-release-verification/SKILL.md
 lacks "containerization has no dead CLAUDE.md plan pointer" 'CLAUDE\.md.*Plan first' skills/containerization/SKILL.md
-has "single-skill behavioral authoring routes to writing-great-skills" '單一 skill.*behavior.*invocation.*description.*pruning.*`writing-great-skills`' skills/dev-workflow/SKILL.md
+has "single-skill behavioral authoring routes to writing-for-agents" '單一 skill.*behavior.*invocation.*description.*pruning.*`writing-for-agents`' skills/dev-workflow/SKILL.md
+has "existing agent documents route to writing-for-agents" '既有 AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc.*`writing-for-agents`' skills/dev-workflow/SKILL.md
+has "project-doc initialization stays with init-project-docs" '初始化或整體 refresh.*`init-project-docs`' skills/dev-workflow/SKILL.md
 has "skill scaffolding stays with the host creator" 'skill scaffolding.*host creator' skills/dev-workflow/SKILL.md
 has "skill-folder lifecycle audit routes to auditing-skill-folder" 'skill folder.*keep.*trim.*delete.*migrate.*`auditing-skill-folder`' skills/dev-workflow/SKILL.md
 has "skill audit loads VND continuation" 'skill audit／VND.*continuations' skills/dev-workflow/SKILL.md
-has "single-skill trigger failure requires caller-compatible RED" '單一 skill.*trigger failure.*MUST.*preserved RED.*caller.*`diagnosing-bugs`.*Step 2c RED.*`writing-great-skills`' skills/dev-workflow/SKILL.md
-lacks "audit no longer requests explicit writing-skill invocation" 'explicitly invoke `writing-great-skills`|明示.*`writing-great-skills`' skills/auditing-skill-folder/SKILL.md
+has "single-skill trigger failure requires caller-compatible RED" '單一 skill.*trigger failure.*MUST.*preserved RED.*caller.*`diagnosing-bugs`.*Step 2c RED.*`writing-for-agents`' skills/dev-workflow/SKILL.md
+lacks "audit no longer requests explicit writing-skill invocation" 'explicitly invoke `writing-for-agents`|明示.*`writing-for-agents`' skills/auditing-skill-folder/SKILL.md
+has "writing-for-agents covers host and pointed-at instructions" 'AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc' skills/writing-for-agents/SKILL.md
+has "writing-for-agents requires canonical placement first" 'canonical placement is chosen' skills/writing-for-agents/SKILL.md
+has "host policy writing returns to the shared authorization gate" 'Before writing a host policy file.*dev-workflow.*S2.*T0-8' skills/writing-for-agents/SKILL.md
+if rg --hidden -n 'writing-great-skills' "$ROOT" \
+     --glob '!attic/**' --glob '!proposals/**' --glob '!tests/**' \
+     --glob '!vendored-forks.md' --glob '!.git/**' >/dev/null 2>&1; then
+  ng "active writing surfaces no longer use the retired name"
+else
+  active_retired_name_rc=$?
+  case "$active_retired_name_rc" in
+    1) ok "active writing surfaces no longer use the retired name" ;;
+    *) ng "active writing surfaces retired-name scan completes" ;;
+  esac
+fi
+[ ! -e "$ROOT/skills/writing-great-skills" ] && ok "retired writing skill directory is absent" || ng "retired writing skill directory is absent"
+has "Codex metadata uses the new writing name" 'display_name: "Writing for Agents"' skills/writing-for-agents/agents/openai.yaml
+has "Codex metadata covers generalized writing scope" 'short_description:.*skills.*agent-facing documents' skills/writing-for-agents/agents/openai.yaml
+has "setup no longer names retired qa" 'Skills like `to-tickets`, `triage`, and `to-spec`' skills/setup-matt-pocock-skills/SKILL.md
+lacks "setup has no retired qa dependency" '`qa`' skills/setup-matt-pocock-skills/SKILL.md
+lacks "code-review uses spec terminology" 'PRD' skills/code-review/SKILL.md
+lacks "to-spec uses spec terminology" 'PRD' skills/to-spec/SKILL.md
+has "tdd points architecture vocabulary to codebase-design" 'shape of that interface.*`?/codebase-design`?.*vocabulary' skills/tdd/SKILL.md
+has "logic prototype is a self-contained HTML file" 'single, self-contained HTML file' skills/prototype/LOGIC.md
+has "logic prototype stays offline" 'no CDN.*network.*secret|offline.*CDN.*secret' skills/prototype/LOGIC.md
+has "logic prototype uses synthetic non-sensitive fixtures" 'Fixture state uses synthetic, non-sensitive data' skills/prototype/LOGIC.md
+has "logic prototype translates validated shape for non-JavaScript hosts" 'another language.*validated states.*transitions.*invariants.*native implementation' skills/prototype/LOGIC.md
+has "prototype delivery returns to the shared authorization gate" 'delivery outside the local session.*dev-workflow.*authorization gate' skills/prototype/LOGIC.md
+has "triage delegates cadence to grilling" 'canonical `/grilling` contract own question cadence' skills/triage/SKILL.md
+lacks "triage does not duplicate grilling cadence" 'one question at a time|round of questions at a time' skills/triage/SKILL.md
+lacks "wayfinder does not duplicate grilling cadence" 'one question at a time|round of questions at a time' skills/wayfinder/SKILL.md
+lacks "grill-with-docs does not duplicate grilling cadence" 'one question at a time|round of questions at a time' skills/grill-with-docs/SKILL.md
+lacks "ask-matt does not own a second phase-boundary file" 'PHASE-BOUNDARIES\.md' skills/ask-matt/SKILL.md
+has "routing continuation owns phase-boundary choice" '[Pp]hase boundary.*Continue.*clear.*handoff.*subagent.*compact' skills/dev-workflow/references/routing-continuations.md
+has "routing continuation avoids a hard token threshold" 'grilling.*to-spec.*to-tickets.*同一 context.*不設固定 token threshold' skills/dev-workflow/references/routing-continuations.md
+has "mid-phase compaction routes through handoff" 'compact.*只在 phase boundary.*mid-phase.*handoff' skills/dev-workflow/references/routing-continuations.md
+[ "$(grep -c '^skill=' "$ROOT/mattpocock-skills.lock")" -eq 22 ] && ok "Matt selected set contains 22 skills" || ng "Matt selected set contains 22 skills"
+lacks "unselected Matt additions remain excluded" '^skill=(wizard|wait-what|to-questionnaire)$' mattpocock-skills.lock
 # explicit route: grill-with-docs 由第 67 行的「明示.*`grill-with-docs`」涵蓋（措辭更精確），
 # 不再重複斷言 —— S0 表用反引號而非斜線前綴，原本的 '/grill-with-docs' 在此不成立。
 has "explicit route: improve-codebase-architecture" 'improve-codebase-architecture.*explicit-only' skills/dev-workflow/SKILL.md

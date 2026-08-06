@@ -6,6 +6,8 @@
 
 Question eligibility：MUST 先查既有 context、code 與 sensible defaults，只問真正阻擋下一步且屬 user-owned 的 decision。其餘澄清不進 `grilling`，依 S2 判 plan gate 後由 host plan mode 承接；提問載體與批次規則見 host adapter。`ask-matt` 只涵蓋 Matt subset，缺項回 S0 表。
 
+Phase boundary 依序選成本最低且有效的 transition：Continue 用於下一階段仍需要目前 primary context 且 context 仍可用；`clear` 用於既有 context 已無關；`handoff` 只用於跨 harness／directory／person 或可攜式 mid-phase split；`subagent` 只用於 [INT-4] 下的 independent scope；`compact` 用於同一任務的相關 context 必須延續且沒有更便宜的分支。`compact` 只在 phase boundary 使用；mid-phase 必須保留脈絡時走 `handoff`。`grilling` → `to-spec` → `to-tickets` 只要 reasoning context 仍可用就留在同一 context；否則在最近的 phase boundary 依前述順序選擇，不設固定 token threshold。Transition 不擴張也不機械式抹除 authorization；S2 只重用 exact、evidenced scope。驗證：`tests/mattpocock-workflow.sh` 的 routing continuation assertions。
+
 Route 到 `research` 時，background agent 依 [INT-4] 自主判定；將 findings 寫入 repo Markdown 仍受 S2 authorization，未獲授權不得落盤。
 
 - `triage`、`grilling` 或 `wayfinder` 釐清需求後，單一 session 可完成的 coherent vertical slice 直接進 S2，不等待額外 skill invocation。

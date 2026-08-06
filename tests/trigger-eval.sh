@@ -523,22 +523,42 @@ if [ -r "$REALCASES" ]; then
                     || bad "cases.jsonl 指涉的 skill 全部存在" "找不到：$missing"
   jq -e 'select(.id=="fire-diagnosing-skill-pre-red" and .skill=="diagnosing-bugs" and .expect=="fire")' "$REALCASES" >/dev/null &&
     ok "pre-RED 由 diagnosing-bugs fire" || bad "pre-RED 由 diagnosing-bugs fire" "case 缺失或 contract 漂移"
-  jq -e 'select(.id=="quiet-writing-skill-pre-red" and .skill=="writing-great-skills" and .expect=="quiet")' "$REALCASES" >/dev/null &&
-    ok "pre-RED 時 writing-great-skills quiet" || bad "pre-RED 時 writing-great-skills quiet" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="quiet-writing-skill-pre-red" and .skill=="writing-for-agents" and .expect=="quiet")' "$REALCASES" >/dev/null &&
+    ok "pre-RED 時 writing-for-agents quiet" || bad "pre-RED 時 writing-for-agents quiet" "case 缺失或 contract 漂移"
   pre_red_fire_prompt=$(jq -r 'select(.id=="fire-diagnosing-skill-pre-red") | .prompt' "$REALCASES")
   pre_red_quiet_prompt=$(jq -r 'select(.id=="quiet-writing-skill-pre-red") | .prompt' "$REALCASES")
   eq "pre-RED fire/quiet 使用同一 prompt" "$pre_red_fire_prompt" "$pre_red_quiet_prompt"
-  jq -e 'select(.id=="fire-writing-skill-after-red" and .skill=="writing-great-skills" and .expect=="fire")' "$REALCASES" >/dev/null &&
-    ok "post-RED 由 writing-great-skills fire" || bad "post-RED 由 writing-great-skills fire" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="fire-diagnosing-agents-doc-pre-red" and .skill=="diagnosing-bugs" and .expect=="fire")' "$REALCASES" >/dev/null &&
+    ok "agent doc pre-RED 由 diagnosing-bugs fire" || bad "agent doc pre-RED 由 diagnosing-bugs fire" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="quiet-writing-agents-doc-pre-red" and .skill=="writing-for-agents" and .expect=="quiet")' "$REALCASES" >/dev/null &&
+    ok "agent doc pre-RED 時 writing-for-agents quiet" || bad "agent doc pre-RED 時 writing-for-agents quiet" "case 缺失或 contract 漂移"
+  agent_doc_pre_red_fire=$(jq -r 'select(.id=="fire-diagnosing-agents-doc-pre-red") | .prompt' "$REALCASES")
+  agent_doc_pre_red_quiet=$(jq -r 'select(.id=="quiet-writing-agents-doc-pre-red") | .prompt' "$REALCASES")
+  eq "agent doc pre-RED fire/quiet 使用同一 prompt" "$agent_doc_pre_red_fire" "$agent_doc_pre_red_quiet"
+  jq -e 'select(.id=="fire-writing-skill-after-red" and .skill=="writing-for-agents" and .expect=="fire")' "$REALCASES" >/dev/null &&
+    ok "post-RED 由 writing-for-agents fire" || bad "post-RED 由 writing-for-agents fire" "case 缺失或 contract 漂移"
   jq -e 'select(.id=="fire-auditing-skill-folder" and .skill=="auditing-skill-folder" and .expect=="fire")' "$REALCASES" >/dev/null &&
     ok "folder audit 由 auditing-skill-folder fire" || bad "folder audit 由 auditing-skill-folder fire" "case 缺失或 contract 漂移"
-  jq -e 'select(.id=="quiet-writing-great-skills-folder" and .skill=="writing-great-skills" and .expect=="quiet")' "$REALCASES" >/dev/null &&
-    ok "folder audit 時 writing-great-skills quiet" || bad "folder audit 時 writing-great-skills quiet" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="quiet-writing-for-agents-folder" and .skill=="writing-for-agents" and .expect=="quiet")' "$REALCASES" >/dev/null &&
+    ok "folder audit 時 writing-for-agents quiet" || bad "folder audit 時 writing-for-agents quiet" "case 缺失或 contract 漂移"
   folder_fire_prompt=$(jq -r 'select(.id=="fire-auditing-skill-folder") | .prompt' "$REALCASES")
-  folder_quiet_prompt=$(jq -r 'select(.id=="quiet-writing-great-skills-folder") | .prompt' "$REALCASES")
+  folder_quiet_prompt=$(jq -r 'select(.id=="quiet-writing-for-agents-folder") | .prompt' "$REALCASES")
   eq "folder fire/quiet 使用同一 prompt" "$folder_fire_prompt" "$folder_quiet_prompt"
-  jq -e 'select(.id=="fire-writing-skill-user-only" and .skill=="writing-great-skills" and .expect=="fire")' "$REALCASES" >/dev/null &&
-    ok "純 metadata 編輯由 writing-great-skills fire" || bad "純 metadata 編輯由 writing-great-skills fire" "case 缺失或 contract 漂移"
+  jq -e 'select(.id=="fire-writing-skill-user-only" and .skill=="writing-for-agents" and .expect=="fire")' "$REALCASES" >/dev/null &&
+    ok "純 metadata 編輯由 writing-for-agents fire" || bad "純 metadata 編輯由 writing-for-agents fire" "case 缺失或 contract 漂移"
+  for generalized_suffix in agents-md claude-md pointed-doc; do
+    generalized_fire="fire-writing-$generalized_suffix"
+    generalized_quiet="quiet-init-project-docs-writing-$generalized_suffix"
+    jq -e --arg id "$generalized_fire" 'select(.id==$id and .skill=="writing-for-agents" and .expect=="fire")' "$REALCASES" >/dev/null &&
+      ok "writing-for-agents generalized fire: $generalized_suffix" ||
+      bad "writing-for-agents generalized fire: $generalized_suffix" "case 缺失或 contract 漂移"
+    jq -e --arg id "$generalized_quiet" 'select(.id==$id and .skill=="init-project-docs" and .expect=="quiet")' "$REALCASES" >/dev/null &&
+      ok "init-project-docs generalized quiet: $generalized_suffix" ||
+      bad "init-project-docs generalized quiet: $generalized_suffix" "case 缺失或 contract 漂移"
+    generalized_fire_prompt=$(jq -r --arg id "$generalized_fire" 'select(.id==$id) | .prompt' "$REALCASES")
+    generalized_quiet_prompt=$(jq -r --arg id "$generalized_quiet" 'select(.id==$id) | .prompt' "$REALCASES")
+    eq "generalized fire/quiet 使用同一 prompt: $generalized_suffix" "$generalized_fire_prompt" "$generalized_quiet_prompt"
+  done
   jq -e 'select(.id=="quiet-diagnosing-skill-user-only" and .skill=="diagnosing-bugs" and .expect=="quiet")' "$REALCASES" >/dev/null &&
     ok "純 metadata 編輯時 diagnosing-bugs quiet" || bad "純 metadata 編輯時 diagnosing-bugs quiet" "case 缺失或 contract 漂移"
   user_only_fire_prompt=$(jq -r 'select(.id=="fire-writing-skill-user-only") | .prompt' "$REALCASES")

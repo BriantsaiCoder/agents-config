@@ -51,8 +51,9 @@ vendored_lock_record() {
 # created whenever Claude Code writes into a skill folder) and is gitignored repo-wide, so it is
 # present on a working machine and absent from every clean checkout. Hashing it made the
 # fingerprint a property of the ENVIRONMENT rather than of the committed payload: on 2026-08-01
-# `tests/matt-thin-workflow.sh` passed locally and failed in CI with "writing-great-skills tree
-# differs from the recorded fork fingerprint", because the recorded SHA had been computed on a
+# `tests/matt-thin-workflow.sh` passed locally and failed in CI with a "<skill> tree differs from
+# the recorded fork fingerprint" error (then reported for the skill now named
+# `writing-for-agents`), because the recorded SHA had been computed on a
 # machine where 13 skill folders already carried the directory. The prune is deliberately narrow —
 # `tests/vendored-detection.sh` asserts both that `.claude/` is ignored AND that any other added
 # file still moves the SHA, so the exclusion cannot quietly widen into a hole.
