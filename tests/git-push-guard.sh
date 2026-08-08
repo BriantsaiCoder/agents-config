@@ -230,7 +230,7 @@ done
 # ── 唯讀 cwd：切詞機制不得因暫存檔建不起來而讓整段掃描被跳過 ──────────────
 #
 # 2026-08-08 實測的 fail-open：guard 原本用 here-string（`<<<`）切詞，而 macOS 的
-# bash 3.2 把 here-doc／here-string 的暫存檔開在 **cwd** 而非 $TMPDIR。cwd 唯讀時
+# bash 3.2 把 here-doc／here-string 的暫存檔開在 **cwd** 而非 ${TMPDIR}。cwd 唯讀時
 # redirect 失敗 → 陣列留空 → 掃描迴圈一次都不跑 → 落到檔尾 exit 0＝放行。
 # 同一個 `git push --force origin main` payload：cwd 可寫回 rc=2 攔截，cwd 唯讀回
 # rc=0 放行，而且無聲——錯誤訊息進 stderr，host 只看 exit code。
