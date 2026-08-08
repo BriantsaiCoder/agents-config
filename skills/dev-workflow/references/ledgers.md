@@ -34,7 +34,7 @@
 - merge 順序由 stack 底部往上，P2 的 `--base` 指 P1 的分支。
 - **merge 方法由父 PR 決定，不由自己決定**：P2 的 baseline 存亡取決於 P1 怎麼被 merge——P1 一旦 squash，P2 的 merge-base 就退回 P1 之前，P2 自己屬於哪個範圍完全不影響這件事。所以判準看父 PR：
   - 父 PR 不在 [INT-10] 範圍（一般 product code）→ 父 PR MUST 用 merge commit 合併，不用 squash。這是對 Postflight「squash merge 預設」的具名例外。merge commit 讓父 PR 的 commit 真的落在 main 的祖先鏈上，retarget 後 `merge-base` 自動仍等於原 baseline，零補救；squash 則使那些 commit 從未進入 main，GitHub retarget 後呈現的 diff 會把父 PR 的變更整份帶回來，正是「Closeout 後的新 commit」要防的事改由 retarget 造成。
-  - 父 PR 在 [INT-10] 範圍（全域／security config，含本 repo 的 kernel 與 references）→ 該條把 squash merge 釘進五步路徑，不得以本節豁免，其所有子 PR 一律走 rebase 補救，即使子 PR 自己不在 [INT-10] 範圍內。混合 stack 沒有中間狀態：stack 上只要有一層是全域 config，它以上的每一層都得付。
+  - 父 PR 在 [INT-10] 範圍（全域／security config，含本 repo 的 kernel 與 references）→ 該條把 squash merge 釘進五步路徑，不得以本節豁免，其所有子 PR 一律走 rebase 補救，即使子 PR 自己不在 [INT-10] 範圍內。混合 stack 沒有中間狀態：stack 上只要有一層是全域 config，它以上的每一層都得付。上層付的是**父分支被改寫的 cascade**（P1 squash → P2 rebase → P2 被 force-push → P3 的 base 歷史跟著變），與 P2 自己用什麼 merge 方法無關——所以三層以上的 stack 不能逐層各判各的。
   - rebase 補救的內容：每次 merge 後 MUST rebase 到 main、重記 baseline SHA 再重驗。rebase 若內容中性（無 conflict resolution、無新 commit），S5 findings 沿用前次並註明原 baseline SHA；但 HEAD SHA 已變，CI 與 bot review 依「Closeout 後的新 commit」一律失效，MUST 於新 head 重查——每層 stack 因此多一輪 CI。不想付這個成本就別把全域 config 拆成 stack。
 - retarget 後 MUST 實查一次 `gh pr view <n> --json baseRefOid --jq .baseRefOid`，確認 `merge-base(base, HEAD)` 仍等於記錄的 baseline——retarget 不動 HEAD，「Closeout 後的新 commit」的 `git merge-base --is-ancestor` 在 base 被換掉時仍為真，單靠它會回假 PASS。這是人工驗證項：`bin/pr-review-gate` 目前不取 base，stack 若成為常態，應把 `baseRefOid` 併進該 gate 既有的 `--json` 清單，而不是讓這條停留在散文。
 
@@ -51,7 +51,7 @@
 | 3 | **Diff self-review** | 每行變更已逐行看過；無自己殘留的 debug / TODO / dead code（unused import / var / func）| `git diff` 走查摘要；自造 dead code 已清（pre-existing 只標不刪）|
 | 4 | **Self-simplification** | S4 四檢核通過：無 unrequested abstraction、無新依賴、無單一使用點抽象層、無 speculative config | 四項逐一標記結果；有新依賴時附選型理由（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）|
 | 5 | **Tests evidence** | 適用的 risk-tier verification 已跑綠；BUGFIX 依 [INT-2] 證 RED→GREEN 或同一 repro before／after | 確切測試／repro 指令 + exit code + 通過數；stable／valuable seam 附 RED→GREEN 順序，否則附同一 repro before／after 與不採 RED 的理由 |
-| 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要；0 條未處理 actionable |
+| 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要；0 條未處理 actionable（「處理」的定義與未採納項的逐條理由見 `reviewer-template.md` 的「回饋處理」與「S5 EXIT 判準」）|
 | 7 | **Security-release gates** | 會部署的變更已跑 `*-release-verification` + `dependency-security-scan`（正交必跑，非三選一）| 列出跑了哪些 gate + 結果；不部署則標 SKIPPED 附「本次不部署」理由 |
 | 8 | **Residual risks** | 已知但接受的殘留風險已列舉；中高風險附 rollback | 風險清單（「無」是明述斷言不是留白）；中高風險變更附 rollback 註記（[T0-6]）|
 

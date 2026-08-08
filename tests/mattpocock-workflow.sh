@@ -140,9 +140,13 @@ lacks "audit no longer requests explicit writing-skill invocation" 'explicitly i
 has "writing-for-agents covers host and pointed-at instructions" 'AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc' skills/writing-for-agents/SKILL.md
 has "writing-for-agents requires canonical placement first" 'canonical placement is chosen' skills/writing-for-agents/SKILL.md
 has "host policy writing returns to the shared authorization gate" 'Before writing a host policy file.*dev-workflow.*S2.*T0-8' skills/writing-for-agents/SKILL.md
-if rg --hidden -n 'writing-great-skills' "$ROOT" \
+# cd 進 $ROOT 再用相對路徑掃：`rg <absolute-path> --glob '!proposals/**'` 的 glob 只在 cwd
+# 位於 $ROOT 之上時比得到，換個 cwd 執行同一支腳本，排除失效、proposals/ 的歷史命中會讓
+# 這條誤 FAIL（2026-08-08 實測：worktree 內 281 PASS / 0 FAIL，git archive 到別處 280/1）。
+# 方向是 fail-closed 不會放行，但「同一份 code 依執行目錄給不同結果」本身就不該留著。
+if (cd "$ROOT" && rg --hidden -n 'writing-great-skills' . \
      --glob '!attic/**' --glob '!proposals/**' --glob '!tests/**' \
-     --glob '!vendored-forks.md' --glob '!.git/**' >/dev/null 2>&1; then
+     --glob '!vendored-forks.md' --glob '!.git/**') >/dev/null 2>&1; then
   ng "active writing surfaces no longer use the retired name"
 else
   active_retired_name_rc=$?
@@ -314,6 +318,11 @@ has "S5 EXIT criteria live where S5 can read them" '^## S5 EXIT 判準' skills/d
 # 出口若是 reviewer 自標 prefix 的函數，等於把 gate 交給單一 agent 自行決定，而「多一輪」
 # 的成本全落在 caller 身上，誘因一律指向低標。
 has "S5 EXIT level is the caller's final call" 'reviewer 自標僅為初值' skills/dev-workflow/references/reviewer-template.md
+# 判準的三條各釘一次義務句而非描述句：只釘標題與第一句時，其餘 bullet 可整段刪除仍全綠
+# （2026-08-08 實測）。第二條特別重要——第一版判準寫「EXIT 時各軸標 PASS」「UNAVAILABLE
+# 不得 EXIT」，等於關掉 kernel 明許的 SKIPPED／UNAVAILABLE 續行路徑，是條文自己造的 bug。
+has "S5 EXIT keeps the four terminal states" '仍依 \[S5-1\] 的四態' skills/dev-workflow/references/reviewer-template.md
+has "S5 EXIT requires disclosing unadopted findings" 'MUST 逐條列進 PR body 的 Preflight row 6' skills/dev-workflow/references/reviewer-template.md
 # 錨定整行：同檔「怎麼用」第 1 步的說明文字裡就引用了這兩個 marker 字串，不錨行首行尾的
 # 話 has 會命中那句描述、sed range 也會從那行起算——marker 本身被改名依然全綠。
 has "reviewer prompt block has an opening marker" '^── reviewer prompt 開始 ──$' skills/dev-workflow/references/reviewer-template.md

@@ -3,7 +3,7 @@
 # review-triage — bot-review triage 合併規格
 
 > S6 CLOSEOUT 的 Bot-review triage 引用本檔。合併兩條實戰教訓：異步等待（勿把延遲誤判為「無」）＋ thread-aware 逐條處理。
-> 讀者是 AI 模型。merge 前 MUST 走完本檔全流程，四態皆 PASS 才允許 merge——merge 方法（squash 或 merge commit，見 `ledgers.md` 的 stack 條款）不影響本 gate 是否觸發。
+> 讀者是 AI 模型。merge 前 MUST 走完本檔全流程，四態皆 PASS 才允許 merge——merge 方法（squash 或 merge commit，見 `ledgers.md` 的「Stacked PR 的 diff scoping」）不影響本 gate 是否觸發。
 
 ## 為何存在（不讀就會踩的雷）
 

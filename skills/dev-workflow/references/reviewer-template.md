@@ -4,7 +4,7 @@
 
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。
-> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent，不需要下方的 prompt 區塊；但「五條 baseline 的設計註記」與「審查者 MUST 記錄」兩節對它們一樣有約束力——[S5-3] 的等價性判準就寫在「五條 baseline 的設計註記」裡。
+> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent，**豁免的只有 prompt 區塊本身**——本檔其餘各節（設計註記、審查者 MUST 記錄、回饋處理、S5 EXIT 判準）對它們一樣有約束力。用列舉會漏：這行原本只列兩節，後來新增的兩節就掉在外面。
 
 ## 怎麼用
 
@@ -87,11 +87,10 @@
 
 ## S5 EXIT 判準（迴圈的出口）
 
-修 findings 會產生新 diff，新 diff 又要重審——沒有出口的迴圈與沒有迴圈一樣糟。判準如下，**在回饋處理完成之後**才判，不是拿 reviewer 交件當下的標籤判：
+修 findings 會產生新 diff，新 diff 又要重審——沒有出口的迴圈與沒有迴圈一樣糟。判準三條，**在回饋處理完成之後**才判：
 
-- **級別以 caller 技術評估後的最終值為準，reviewer 自標僅為初值。** caller MUST 逐條確認沒有 `issue:` 被低標成 `suggestion:`。這條不是形式：EXIT 與否是自標 prefix 的函數，而「多一輪」的成本全落在 caller 身上，誘因一律指向低標；把出口交給單一 reviewer 自行決定等於沒有 gate。
-- 最終級別全為 `suggestion:`／`nitpick:`／`question:` 即 EXIT。任一軸仍有 `issue:` **且該 issue 的處置產生了新 diff** 時 MUST 再審一輪——以技術理由駁回而不修者不產生新 diff，不觸發下一輪。
-- 任一軸為 `UNAVAILABLE` 時不得 EXIT：那是「沒審成」，不是「審過沒問題」。
-- 依據是實測而非推論：`issue:` 級的修復確實會引入新的 `issue:`（補 fail-open 守衛的第一版自己是假綠，第二版才真的咬）。以下級別的修復不改變 gate 結論，但若某條 `suggestion:` 的採納導致跨檔重構，caller MUST 自行升級處理，判準不替代判斷。
-- EXIT 時各軸標 `PASS`。未採納或未解答的 `suggestion:`／`nitpick:`／`question:` MUST 在 PR body 逐條列出並附理由——「於 thread 有據駁回」與「列進 PR body」是同一個義務的兩種載體，不得只做一半，也不得靜默丟棄。
-- apply pass（如 Claude 的 `simplify`）產生的 diff 視為新一輪的輸入，其 findings 一併適用本判準；該 pass 未產生改動時直接 EXIT。
+- 兩軸的 finding 經 caller 技術評估後沒有 `issue:` 即 EXIT；仍有 `issue:` 且其處置改了 code，MUST 再審一輪。**級別以 caller 的評估為準，reviewer 自標僅為初值**——出口若是自標 prefix 的函數，等於把 gate 交給單一 agent 自行決定，而「多一輪」的成本全落在 caller 身上，誘因一律指向低標。
+- 各軸的終局狀態仍依 [S5-1] 的四態，本判準不改變它：`PASS`、`SKIPPED`（附理由）、`UNAVAILABLE`（附 probe）都可續行，`FAIL` 不可。
+- 未採納或未解答的 finding（含被 caller 駁回的 `issue:`）MUST 逐條列進 PR body 的 Preflight row 6 並附理由；級別經 caller 改動者一併寫出 reviewer 初值，否則降級後與原生的 `suggestion:` 同形，事後無從分辨。
+
+依據是實測而非推論：`issue:` 級的修復確實會引入新的 `issue:`（2026-08-08，`beebb6b`——補 fail-open 守衛的第一版自己是假綠）。

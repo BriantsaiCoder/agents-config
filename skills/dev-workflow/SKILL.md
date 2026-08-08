@@ -114,7 +114,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 | [authorization matrix](references/authorization-matrix.md) | mutation／side effect 的 S2 分類；checkpoint commit |
 | `references/ledgers.md` | push／PR／merge／closeout 或其後新 commit |
 | `references/review-triage.md` | Ready PR 準備 merge |
-| `references/reviewer-template.md` | 非 SKIPPED S5 reviewer prompt |
+| `references/reviewer-template.md` | 非 SKIPPED S5 review |
 | `references/dirty-review-package.md` | working tree dirty review |
 | [delegation](references/delegation.md) | 考慮 delegation／agents |
 | [host adapters](references/host-adapters.md) | active host tools／commands／handoff／hooks |
