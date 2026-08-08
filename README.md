@@ -61,6 +61,14 @@ bash hooks/install-hooks.sh --remove-global-pre-push
 ## Verification
 
 ```sh
+bin/ci-local
+```
+
+`bin/ci-local` 是唯一入口：CI 步驟由 `.github/workflows/ci.yml` 解析而來，另加一段 **local-only gates**——讀 live `~/.claude` ／ `~/.codex` ／ `~/.copilot`、runner 上跑不動、因此永遠不會出現在 `ci.yml` 的測試（目前是 `three-host-global-config-ownership.sh` 與 `codex-git-push-guard.sh`）。這份清單同樣是推導的：`tests/*.sh` 減去 `ci.yml` 引用者，再減去一張附理由的排除表。新增測試忘了接執行點時，它會出現在 local-only 清單而不是靜默消失。
+
+需要單跑時：
+
+```sh
 bash tests/three-host-global-config-ownership.sh
 AGENTS_HOME="$PWD" bash tests/agents-branch.sh
 bash tests/conformance.sh
