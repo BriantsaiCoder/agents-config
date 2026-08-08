@@ -4,7 +4,7 @@
 
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。
-> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent，**豁免的只有 prompt 區塊本身**——本檔其餘各節（設計註記、審查者 MUST 記錄、回饋處理、S5 EXIT 判準）對它們一樣有約束力。用列舉會漏：這行原本只列兩節，後來新增的兩節就掉在外面。
+> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent。**豁免的是 prompt 區塊本身、以及「怎麼用」中以該區塊為前提的步驟**；本檔其餘各節對它們一樣有約束力。這裡不列舉是哪幾節——這行原本列了兩節，後來新增的節就掉在外面，列舉本身就是那個 bug。
 
 ## 怎麼用
 
@@ -87,10 +87,10 @@
 
 ## S5 EXIT 判準（迴圈的出口）
 
-修 findings 會產生新 diff，新 diff 又要重審——沒有出口的迴圈與沒有迴圈一樣糟。判準三條，**在回饋處理完成之後**才判：
+修 findings 會產生新 diff，新 diff 又要重審——沒有出口的迴圈與沒有迴圈一樣糟。判準如下，**在回饋處理完成之後**才判：
 
-- 兩軸的 finding 經 caller 技術評估後沒有 `issue:` 即 EXIT；仍有 `issue:` 且其處置改了 code，MUST 再審一輪。**級別以 caller 的評估為準，reviewer 自標僅為初值**——出口若是自標 prefix 的函數，等於把 gate 交給單一 agent 自行決定，而「多一輪」的成本全落在 caller 身上，誘因一律指向低標。
-- 各軸的終局狀態仍依 kernel S5 節的四態，本判準不改變它：`PASS`、`SKIPPED`（附理由）、`UNAVAILABLE`（附 probe）都可續行，`FAIL` 不可。
+- 兩軸的 finding 經 caller 技術評估後沒有 `issue:` 即 EXIT；仍有 `issue:` **且其處置產生了新 diff**，MUST 再審一輪。用 diff 而不是「改了 code」當判準：規則檔、文件、測試斷言的 repo 沒有「code」可言，照字面判會讓這條在那些 repo 永不觸發，而它們正是最需要它的地方。**級別以 caller 的評估為準，reviewer 自標僅為初值**——出口若是自標 prefix 的函數，等於把 gate 交給單一 agent 自行決定，而「多一輪」的成本全落在 caller 身上，誘因一律指向低標。
+- 各軸的終局狀態不由本判準決定，仍是 kernel 定義的四態：`PASS`、`SKIPPED`（附理由）、`UNAVAILABLE`（附 probe）都可續行，`FAIL` 不可。四態直接寫在這裡而不指向出處：它在 kernel 是一條無 ID 的裸 bullet，指過去等於指一個沒有穩定性保證的位置。
 - host 有 apply pass（如 Claude 的 `simplify`）時，其 diff 依該 host adapter 一併納入本輪，不另起一輪。
 - 未採納或未解答的 finding（含被 caller 駁回的 `issue:`）MUST 逐條列進 PR body 的 Preflight row 6 並附理由；級別經 caller 改動者一併寫出 reviewer 初值，否則降級後與原生的 `suggestion:` 同形，事後無從分辨。
 
