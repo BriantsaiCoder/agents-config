@@ -136,6 +136,16 @@ Y
   hasq "排除理由失效點名已失去執行點"  "$o" "靜默失去執行點"
   chk  "排除理由失效 → exit=1" 1 "$rc"
 
+  # ci.yml 的**註解**提到某支測試不算執行點。2026-08-08 實測踩過：把一支測試從 ci.yml
+  # 移除、只在註解說明理由，raw-YAML 比對就讓它靜默消失在 local-only 清單裡。
+  mk locomment <<'Y'
+# 說明：tests/orphan.sh 刻意不接進來，理由見 PR 討論
+jobs: {verify: {steps: [{name: ok, run: "true"}]}}
+Y
+  mkt locomment orphan.sh 'exit 0'
+  o=$(run_st locomment)
+  hasq "ci.yml 註解提及不算執行點" "$o" "PASS  orphan.sh"
+
   mk locovered <<'Y'
 jobs: {verify: {steps: [{name: covered, run: "bash tests/covered.sh"}]}}
 Y
@@ -340,9 +350,14 @@ if [ -d "$AGENTS/tests" ]; then
   for f in "$AGENTS"/tests/*.sh; do
     [ -f "$f" ] || continue
     b=${f##*/}
-    # 子字串比對的失敗方向是 fail-open：若某個 basename 是另一個的後綴，被涵蓋者會被
-    # 靜默移出 local-only。目前檔名集合沒有這種配對；新增測試時這是要檢查的方向。
-    grep -qF "tests/$b" "$WORKFLOW" && continue
+    # 比對已解析的 step（${STEPS_FILE}）而非 raw YAML：2026-08-08 實測踩過——把
+    # tests/phase4-canary-launcher.sh 從 ci.yml 移除、只在**註解**裡說明為什麼移除，
+    # 那行註解就讓 grep 命中，該測試於是被靜默移出 local-only 清單。「在 ci.yml 被提到」
+    # 不等於「有執行點」，只有 step 才是。$STEPS_FILE 只含 name 與 run body，沒有註解。
+    #
+    # 剩餘的 fail-open 方向：子字串比對下若某 basename 是另一個的後綴，被涵蓋者會被
+    # 靜默移出。目前檔名集合沒有這種配對；新增測試時這是要檢查的方向。
+    grep -qF "tests/$b" "$STEPS_FILE" && continue
     caller=$(excluded_by "$b")
     lo_total=$((lo_total + 1))
     if [ -n "$caller" ]; then
