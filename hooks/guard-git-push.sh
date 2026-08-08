@@ -102,7 +102,7 @@ check_seg() {
   local seg="$1" win_seg="$2" t win_t
   local IFS=$' \t\n'
   local -a toks=() win_toks=() args=()
-  # 不用 here-string 切詞：macOS 的 bash 3.2 把 `<<<` 的暫存檔開在 **cwd** 而非 $TMPDIR，
+  # 不用 here-string 切詞：macOS 的 bash 3.2 把 `<<<` 的暫存檔開在 **cwd** 而非 ${TMPDIR}，
   # cwd 唯讀時 redirect 失敗 → 陣列留空 → 下面的迴圈一次都不跑 → 落到檔尾 exit 0＝放行。
   # 2026-08-08 實測：cwd=/tmp（可寫）對 `git push --force origin main` 回 rc=2 攔截，
   # cwd=~/.claude（sandbox 下唯讀）同一 payload 回 rc=0 放行。這是 [T0-3] 的 fail-open，
