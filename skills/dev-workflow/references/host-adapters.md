@@ -11,7 +11,7 @@ Host adapter 對本 kernel 只可加嚴，MUST NOT 放鬆其 MUST 或無條件�
 <!-- capability-parity:start -->
 ```tsv
 CAP-WORKFLOW	Shared workflow 是唯一方法來源	dev-workflow/SKILL.md^host-local prose 不複製 method	dev-workflow/SKILL.md^程序只由該 skill 維護	dev-workflow/SKILL.md^workflow 方法與 gates 唯一來源
-CAP-LOCAL-AUTONOMY	安全、local、reversible 工作可自主完成	Low／Medium-risk、local、reversible^可自主完成	Low／Medium-risk^local、reversible^可直接實作	Low／Medium-risk^local、reversible^可直接實作
+CAP-LOCAL-AUTONOMY	安全、local、reversible 工作 MUST 一次執行至完成（[INT-8]）	local、reversible^MUST 一次執行至完成	local、reversible^MUST 一次執行至完成^可直接實作	local、reversible^MUST 一次執行至完成^可直接實作
 CAP-DELEGATION	Delegation 由 AI 自主判定且無須先問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問
 CAP-RESPONSE	Outcome-first 且決策列出 recommendation 與 trade-off	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨
 ```
