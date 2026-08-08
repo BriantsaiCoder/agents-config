@@ -227,6 +227,42 @@ for f in codex claude; do
   probe_nojq "$f" allow "ls -la"
 done
 
+# ── 唯讀 cwd：切詞機制不得因暫存檔建不起來而讓整段掃描被跳過 ──────────────
+#
+# 2026-08-08 實測的 fail-open：guard 原本用 here-string（`<<<`）切詞，而 macOS 的
+# bash 3.2 把 here-doc／here-string 的暫存檔開在 **cwd** 而非 $TMPDIR。cwd 唯讀時
+# redirect 失敗 → 陣列留空 → 掃描迴圈一次都不跑 → 落到檔尾 exit 0＝放行。
+# 同一個 `git push --force origin main` payload：cwd 可寫回 rc=2 攔截，cwd 唯讀回
+# rc=0 放行，而且無聲——錯誤訊息進 stderr，host 只看 exit code。
+#
+# 這條測的是「機制壞掉時的方向」，不是某個 payload 的判定，所以只需一個 deny 案例
+# 加一個 allow 案例（確認修法沒把一般 push 也擋掉）。
+readonly_dir="$REPO/readonly-cwd"
+mkdir -p "$readonly_dir"
+chmod 500 "$readonly_dir"
+if ( cd "$readonly_dir" && : > .probe-write ) 2>/dev/null; then
+  rm -f "$readonly_dir/.probe-write"
+  printf '  SKIP  唯讀 cwd 案例：本環境下 chmod 500 仍可寫（root？），無法建立條件\n'
+else
+  ro_probe() {  # $1=expected $2=command
+    local expected="$1" command="$2" rc actual
+    "$JQ" -nc --arg command "$command" --arg cwd "$REPO" \
+      '{tool_input:{command:$command},cwd:$cwd}' |
+      ( cd "$readonly_dir" && bash "$GUARD" --format=claude ) \
+        >"$PROBE_STDOUT" 2>"$PROBE_STDERR"
+    rc=$?
+    actual=$(classify_output claude "$rc" "$PROBE_STDOUT" "$PROBE_STDERR")
+    if [ "$actual" = "$expected" ]; then
+      pass=$((pass + 1)); printf '  PASS %-6s %-5s (唯讀 cwd) %s\n' claude "$expected" "$command"
+    else
+      fail=$((fail + 1)); printf '  FAIL %-6s want=%s got=%s (唯讀 cwd) %s\n' claude "$expected" "$actual" "$command"
+    fi
+  }
+  ro_probe deny  "git push --force origin main"
+  ro_probe allow "git push origin feat/safe"
+fi
+chmod 700 "$readonly_dir" 2>/dev/null || true
+
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，
 # 那是本測試自己的 fail-open（2026-08-02 稽核 Follow-up 3）。
