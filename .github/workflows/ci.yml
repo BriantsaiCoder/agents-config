@@ -196,6 +196,9 @@ jobs:
       - name: 三家 semantic capability 等價
         run: bash tests/three-host-capability-parity.sh --selftest
 
+      - name: Ponytail 三家啟用與內容等價
+        run: bash tests/ponytail-host-parity.sh --selftest
+
       # [INT-10] 全域設定變更走 PR 路徑。整條路徑的每一步本來就有規範（[INT-6] branch、
       # [T1-8] Ready PR、review-triage.md 的 bot gate、[T0-9] merge、ledgers.md:86 刪
       # branch），缺的是入口守門員：沒有條文規定什麼變更必須走上去。[T0-9] 的觸發是

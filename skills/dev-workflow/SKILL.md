@@ -117,5 +117,5 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 | `references/reviewer-template.md` | 非 SKIPPED S5 review |
 | `references/dirty-review-package.md` | working tree dirty review |
 | [delegation](references/delegation.md) | 考慮 delegation／agents |
-| [host adapters](references/host-adapters.md) | active host tools／commands／handoff／hooks |
+| [host adapters](references/host-adapters.md) | active host 或 S5 outcome |
 | [routing continuations](references/routing-continuations.md) | intake/skill audit/VND/跨 session/research/handoff |

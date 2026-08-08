@@ -55,7 +55,7 @@ check_host() {
     done
   done < <(mapping_rows)
 
-  if [ "$total" -lt 4 ]; then
+  if [ "$total" -lt 5 ]; then
     printf 'FAIL %s: canonical mapping has only %d capabilities\n' "$label" "$total" >&2
     fail=$((fail + 1))
   elif [ "$missing" -eq 0 ]; then
@@ -69,6 +69,10 @@ check_host() {
 
 run_checks() {
   [ -r "$MAPPING" ] || { printf 'FAIL canonical mapping unavailable: %s\n' "$MAPPING" >&2; return 1; }
+  mapping_rows | grep -q $'^CAP-PONYTAIL\t' || {
+    printf 'FAIL canonical mapping lacks CAP-PONYTAIL\n' >&2
+    return 1
+  }
   check_host Claude  "${CLAUDE_INSTRUCTIONS:-$HOME/.claude/CLAUDE.md}"
   check_host Codex   "${CODEX_INSTRUCTIONS:-$HOME/.codex/AGENTS.md}"
   check_host Copilot "${COPILOT_INSTRUCTIONS:-$HOME/.copilot/copilot-instructions.md}"
@@ -84,7 +88,7 @@ selftest() {
     { printf 'FAIL selftest: 無法建立暫存目錄，fixture 未建立\n' >&2; return 1; }
   trap "rm -rf '$scratch'" EXIT
   count=$(mapping_count)
-  [ "$count" -ge 4 ] || { printf 'FAIL selftest: canonical mapping has only %s capabilities\n' "$count" >&2; return 1; }
+  [ "$count" -ge 5 ] || { printf 'FAIL selftest: canonical mapping has only %s capabilities\n' "$count" >&2; return 1; }
 
   : > "$scratch/claude.md"; : > "$scratch/codex.md"; : > "$scratch/copilot.md"
   first_clause=""
