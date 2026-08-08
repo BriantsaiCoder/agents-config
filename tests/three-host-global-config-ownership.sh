@@ -146,10 +146,19 @@ mkdir -p "$shadow_shared/.claude/.cc-writes"
 for link in "$CLAUDE_CANDIDATE"/skills/*; do
   mkdir -p "$shadow_shared/$(basename "$link")"
 done
-(
+# 2026-08-08：原本把 repo-integrity.sh 的任何非 0 退出都斷言成「inventory 把 skills/.claude
+# 當 skill」，並把輸出丟進 /dev/null。那支測試有 66 條斷言，其中只有一條與 .claude 有關——
+# 實測一次 dotclaude CLAUDE.md 條文漂移（無關 .claude）就被這行改寫成 .claude 的問題，整條
+# 追查方向被帶偏。skills/.claude 專屬的覆蓋已在上方 126-135 行（bootstrap／doctor／不建 link），
+# 這裡只需驗「shadow root 形狀下 repo-integrity 整體仍綠」，並把真正的 FAIL 行印出來。
+integrity_log="$scratch/claude-repo-integrity.log"
+if ! (
   cd "$CLAUDE_CANDIDATE"
-  SHARED_SKILLS_ROOT="$shadow_shared" bash tests/repo-integrity.sh >/dev/null
-) || fail 'Claude inventory treated exact skills/.claude as a skill'
+  SHARED_SKILLS_ROOT="$shadow_shared" bash tests/repo-integrity.sh
+) > "$integrity_log" 2>&1; then
+  grep -F 'FAIL' "$integrity_log" >&2 || cat "$integrity_log" >&2
+  fail 'Claude repo-integrity failed under the skills/.claude shadow root（上列為實際 FAIL 行）'
+fi
 
 for sentinel in \
   "$scratch/home/.claude/CLAUDE.md" \
@@ -213,6 +222,11 @@ diff -u "$sentinel_before" "$sentinel_after" >/dev/null ||
 # 禁止 agents-sync 擁有 host global config——整包放行會讓 host config 引用 agents-sync 不再被
 # 偵測。故只放行 [T1-10] 實際強制的那一個工具路徑，其餘七支仍在守備範圍。
 #
+# 2026-08-08：`bin/pr-review-gate` 同理單點放行。它與 agents-branch 同類——[T0-9] merge gate
+# 實際強制執行的那一支工具，hard_deny 條文必須指名可執行路徑才可稽核（`~/.claude/settings.json`
+# 自 PR #14 起即引用，一直被前面兩條先死的斷言遮住）。放行仍只列這兩個確切工具路徑，
+# core／rules／hooks／hosts／dist 與 bin 其餘六支不變。
+#
 # 用 grep 而非 rg：本條是「找到就 FAIL」的反向斷言，寫成 `if rg …; then fail` 時缺 rg 會讓
 # 整段靜默跳過（rg 非 0 → if 不成立 → 假綠）。bin/ci-local 已記錄過這個事故類別。grep 是
 # POSIX 必然存在。終止字元加入空白與全形句讀，否則 `~/.agents/core。` 這類 zh-TW 散文寫法
@@ -224,7 +238,7 @@ control_plane_hits="$(
     "$CODEX_CANDIDATE/AGENTS.md" \
     "$CODEX_CANDIDATE/hooks.json" \
     "$COPILOT_CANDIDATE/copilot-instructions.md" 2>/dev/null |
-    grep -vF '.agents/bin/agents-branch' || true
+    grep -vE '\.agents/bin/(agents-branch|pr-review-gate)' || true
 )"
 [ -z "$control_plane_hits" ] ||
   fail "active host global config still references .agents control plane: $control_plane_hits"
