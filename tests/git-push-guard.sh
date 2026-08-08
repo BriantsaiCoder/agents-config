@@ -254,10 +254,16 @@ done
 #             復發守衛。只掃非註解行，否則守衛自己的說明會讓它恆紅。
 #   行為案例  保留，但先探測 /tmp 是否可寫；可寫就 SKIP，不給沒有意義的綠。
 #
-# pattern 不對 delimiter 的字元集合做假設：只要求 `<<` 後第一個非空白字元不是 `=`
-# （那是左移賦值 `<<=`）。第一版寫成 `.?[A-Za-z_]`，漏掉 delimiter 以數字開頭的
-# `<<1` 與 `<<'1'`——那是可繞過的守衛（2026-08-08 PR #71 review 指出並實測確認）。
-# 代價是算術左移 `$((a << 2))` 會誤報；本檔守備的是安全閘，噪音比靜默漏放便宜。
+# pattern 不對 delimiter 的字元集合做任何假設。第一版寫成 `.?[A-Za-z_]`，漏掉
+# delimiter 以數字開頭的 `<<1` 與 `<<'1'`；第二版改成 `[^=[:space:]]`，又漏掉
+# `<<=EOF` 與 `<< =`（兩者都是合法 here-doc，delimiter 分別是 `=EOF` 與 `=`）。
+# 兩次都是可繞過的守衛（2026-08-08 PR #71／#23 review 指出並實測確認）。
+# 不排除任何 delimiter 字元，連 `=` 也不排除。第一版寫成 `[^=[:space:]]`，理由是避開
+# 算術左移 `$((a <<= 2))` 的誤報——那是錯的：shell 沒有 `<<=` 這個 redirect 運算子，
+# `cmd <<=EOF` 是 delimiter 為 `=EOF` 的**合法 here-doc**（實測 `read -r -a arr <<=EOF`
+# 確實填滿陣列），`cmd << =` 同理。為了少一個誤報而在安全斷言上開一個可用的繞過口，
+# 方向剛好相反。誤報是噪音，繞過是靜默失去防線。
+# 代價是算術左移 `$((a << 2))`／`$((a <<= 2))` 會誤報；本檔守備的是安全閘。
 # 檔名前的 `--` 不可省：GUARD 可由環境覆寫，值以 `-` 開頭時（例如 GUARD=--version）
 # grep 會把它當 option，輸出自己的說明而非守衛內容，hits 為空 → 靜態斷言靜默通過。
 # 上面的 [ -r ] 已擋掉大部分，`--` 是同一件事的第二道（2026-08-08 PR #71 review）。
@@ -273,7 +279,7 @@ guard_src="$(grep -vE '^[[:space:]]*#' -- "$GUARD")" || guard_rc=$?
 if [ "$guard_rc" -ge 2 ]; then
   fail=$((fail + 1)); printf '  FAIL 靜態掃描讀不到守衛內容（grep rc=%s）：%s\n' "$guard_rc" "$GUARD"
 else
-  guard_src_hits="$(printf '%s\n' "$guard_src" | grep -E '<<-?[[:space:]]*[^=[:space:]]')" || guard_hits_rc=$?
+  guard_src_hits="$(printf '%s\n' "$guard_src" | grep -E '<<-?[[:space:]]*[^[:space:]]')" || guard_hits_rc=$?
   if [ "$guard_hits_rc" -ge 2 ]; then
     fail=$((fail + 1)); printf '  FAIL 靜態掃描自身失敗（grep rc=%s）\n' "$guard_hits_rc"
   elif [ -z "$guard_src_hits" ]; then
