@@ -12,6 +12,18 @@
 set -ufo pipefail
 
 GUARD=${GUARD:-"$HOME/.agents/hooks/guard-git-push.sh"}
+# GUARD 可由環境覆寫，值壞掉時整份測試的意義就沒了——先擋住，別讓它變成一百多筆
+# BADEXIT 或（更糟）讓下面的靜態斷言把 grep 的 option 輸出當成「乾淨的守衛」。
+#
+# 必須同時是 regular file：只驗 [ -r ] 時目錄與 FIFO 都會通過，而
+#   目錄 → grep 報錯，被 `|| guard_src_hits=""` 接住 → 靜態斷言回 PASS
+#   FIFO → grep 可能阻塞，整份測試卡住
+# 前者實測過：GUARD 指向目錄時「切詞路徑不依賴暫存檔 redirect」報 PASS，其餘
+# 150 條全紅——會說謊的正好是那條靜態斷言（2026-08-08 PR #71 review）。
+if [ ! -f "$GUARD" ] || [ ! -r "$GUARD" ]; then
+  printf 'FAIL: GUARD 不是可讀的實體檔案：%s\n' "$GUARD" >&2
+  exit 1
+fi
 JQ="$(command -v jq)"
 pass=0
 fail=0
@@ -227,22 +239,69 @@ for f in codex claude; do
   probe_nojq "$f" allow "ls -la"
 done
 
-# ── 唯讀 cwd：切詞機制不得因暫存檔建不起來而讓整段掃描被跳過 ──────────────
+# ── 切詞機制不得依賴暫存檔 ─────────────────────────────────────────────────
 #
 # 2026-08-08 實測的 fail-open：guard 原本用 here-string（`<<<`）切詞，而 macOS 的
-# bash 3.2 把 here-doc／here-string 的暫存檔開在 **cwd** 而非 ${TMPDIR}。cwd 唯讀時
-# redirect 失敗 → 陣列留空 → 掃描迴圈一次都不跑 → 落到檔尾 exit 0＝放行。
-# 同一個 `git push --force origin main` payload：cwd 可寫回 rc=2 攔截，cwd 唯讀回
-# rc=0 放行，而且無聲——錯誤訊息進 stderr，host 只看 exit code。
+# bash 3.2 把 here-doc／here-string 的暫存檔放在 **/tmp**（忽略 TMPDIR），/tmp 不可寫
+# 時才退回 cwd。兩者皆不可寫時 redirect 失敗 → 陣列留空 → 掃描迴圈一次都不跑 →
+# 落到檔尾 exit 0＝放行，而且無聲（錯誤訊息進 stderr，host 只看 exit code）。
 #
-# 這條測的是「機制壞掉時的方向」，不是某個 payload 的判定，所以只需一個 deny 案例
-# 加一個 allow 案例（確認修法沒把一般 push 也擋掉）。
+# 本區塊第一版只有下面的行為案例，那是假綠：把守衛換回修正前版本，它們在 /tmp 可寫
+# 的環境（Linux CI、一般 macOS shell）**全部仍然 PASS**——chmod 擋得住 cwd，擋不住
+# /tmp。所以改成兩層：
+#
+#   靜態斷言  切詞路徑不得出現 here-doc／here-string。到哪都成立，是唯一可攜的
+#             復發守衛。只掃非註解行，否則守衛自己的說明會讓它恆紅。
+#   行為案例  保留，但先探測 /tmp 是否可寫；可寫就 SKIP，不給沒有意義的綠。
+#
+# pattern 不對 delimiter 的字元集合做任何假設。第一版寫成 `.?[A-Za-z_]`，漏掉
+# delimiter 以數字開頭的 `<<1` 與 `<<'1'`；第二版改成 `[^=[:space:]]`，又漏掉
+# `<<=EOF` 與 `<< =`（兩者都是合法 here-doc，delimiter 分別是 `=EOF` 與 `=`）。
+# 兩次都是可繞過的守衛（2026-08-08 PR #71／#23 review 指出並實測確認）。
+# 不排除任何 delimiter 字元，連 `=` 也不排除。第一版寫成 `[^=[:space:]]`，理由是避開
+# 算術左移 `$((a <<= 2))` 的誤報——那是錯的：shell 沒有 `<<=` 這個 redirect 運算子，
+# `cmd <<=EOF` 是 delimiter 為 `=EOF` 的**合法 here-doc**（實測 `read -r -a arr <<=EOF`
+# 確實填滿陣列），`cmd << =` 同理。為了少一個誤報而在安全斷言上開一個可用的繞過口，
+# 方向剛好相反。誤報是噪音，繞過是靜默失去防線。
+# 代價是算術左移 `$((a << 2))`／`$((a <<= 2))` 會誤報；本檔守備的是安全閘。
+# 檔名前的 `--` 不可省：GUARD 可由環境覆寫，值以 `-` 開頭時（例如 GUARD=--version）
+# grep 會把它當 option，輸出自己的說明而非守衛內容，hits 為空 → 靜態斷言靜默通過。
+# 上面的 [ -r ] 已擋掉大部分，`--` 是同一件事的第二道（2026-08-08 PR #71 review）。
+# grep 的 rc 必須分辨，不能一律當成「無命中」：
+#   rc=0 有命中 → FAIL（守衛裡真的還有 here-doc）
+#   rc=1 無命中 → PASS
+#   rc>=2 錯誤  → FAIL（讀不到就是沒驗過，不是乾淨）
+# 而且兩個 grep 要拆開跑：`set -o pipefail` 回的是**最右**的非零狀態，第一個 grep
+# 因錯誤退出 rc=2 時，第二個 grep 拿到空輸入回 rc=1，pipeline 就回 1——錯誤被
+# no-match 遮掉，「掃不到就當乾淨」的假綠原封不動回來（2026-08-08 實測確認）。
+guard_src=""; guard_src_hits=""; guard_rc=0; guard_hits_rc=0
+guard_src="$(grep -vE '^[[:space:]]*#' -- "$GUARD")" || guard_rc=$?
+if [ "$guard_rc" -ge 2 ]; then
+  fail=$((fail + 1)); printf '  FAIL 靜態掃描讀不到守衛內容（grep rc=%s）：%s\n' "$guard_rc" "$GUARD"
+else
+  guard_src_hits="$(printf '%s\n' "$guard_src" | grep -E '<<-?[[:space:]]*[^[:space:]]')" || guard_hits_rc=$?
+  if [ "$guard_hits_rc" -ge 2 ]; then
+    fail=$((fail + 1)); printf '  FAIL 靜態掃描自身失敗（grep rc=%s）\n' "$guard_hits_rc"
+  elif [ -z "$guard_src_hits" ]; then
+    pass=$((pass + 1)); printf '  PASS 切詞路徑不依賴暫存檔 redirect\n'
+  else
+    fail=$((fail + 1)); printf '  FAIL 切詞路徑仍有 here-doc／here-string（/tmp 與 cwd 皆不可寫時會 fail-open）：\n'
+    printf '%s\n' "$guard_src_hits" | head -3 | sed 's/^/       /'
+  fi
+fi
+
 readonly_dir="$REPO/readonly-cwd"
 mkdir -p "$readonly_dir"
 chmod 500 "$readonly_dir"
-if ( cd "$readonly_dir" && : > .probe-write ) 2>/dev/null; then
+# 用 mktemp 而非固定檔名探測：固定名有 symlink／hardlink 風險，root 執行時可能
+# 誤覆寫任意檔案。用帶目錄的 template 而非 `mktemp -p`——後者的語意在 BSD 與 GNU
+# 之間有過差異，template 形式兩邊都確定。
+if tmp_probe="$(mktemp /tmp/gpguard-tmpwrite.XXXXXX 2>/dev/null)"; then
+  rm -f "$tmp_probe"
+  printf '  SKIP  唯讀 cwd 行為案例：/tmp 可寫，此環境重現不了 here-doc fallback\n'
+elif ( cd "$readonly_dir" && : > .probe-write ) 2>/dev/null; then
   rm -f "$readonly_dir/.probe-write"
-  printf '  SKIP  唯讀 cwd 案例：本環境下 chmod 500 仍可寫（root？），無法建立條件\n'
+  printf '  SKIP  唯讀 cwd 行為案例：chmod 500 仍可寫（root？），條件建不起來\n'
 else
   ro_probe() {  # $1=expected $2=command
     local expected="$1" command="$2" rc actual
