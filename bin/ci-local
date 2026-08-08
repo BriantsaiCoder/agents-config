@@ -98,11 +98,15 @@ Y
   # 所以它自己更不能靜默失效：清單推導壞掉的方向正好是「local-only 清單變空 → 看起來全綠」。
   mkt() { mkdir -p "$t/$1/tests"; printf '#!/usr/bin/env bash\n%s\n' "$3" > "$t/$1/tests/$2"; }
 
+  # conformance.sh 由 ci.yml 引用（所以不進 local-only），且內容真的引用
+  # relative-references.sh——排除表宣稱的呼叫關係必須在 fixture 裡成立，否則驗到的是
+  # 下面那條「理由失效」而不是這條。
   mk lo <<'Y'
-jobs: {verify: {steps: [{name: ok, run: "true"}]}}
+jobs: {verify: {steps: [{name: conf, run: "bash tests/conformance.sh"}]}}
 Y
   mkt lo orphan.sh              'exit 0'
   mkt lo relative-references.sh 'echo should-not-run; exit 1'
+  mkt lo conformance.sh         'echo tests/relative-references.sh >/dev/null; exit 0'
   o=$(run_st lo); rc=$?
   hasq "無執行點的測試進 local-only 並被執行" "$o" "PASS  orphan.sh"
   hasq "排除表項目標 SKIP 並附理由"           "$o" "SKIP  relative-references.sh"
@@ -112,11 +116,25 @@ Y
   mk lofail <<'Y'
 jobs: {verify: {steps: [{name: ok, run: "true"}]}}
 Y
-  mkt lofail orphan.sh 'echo lo-boom >&2; exit 4'
+  # 多行輸出才有鑑別力：單行 fixture 下 tail -1 與 tail -12 完全等價，這條 case 會
+  # 兩種寫法都綠。真實的 ownership gate 正是「原因在上、條數在下」的形狀。
+  mkt lofail orphan.sh 'printf "cause-line\nmiddle\n" >&2; echo lo-tail >&2; exit 4'
   o=$(run_st lofail); rc=$?
   hasq "local-only 失敗標 FAIL" "$o" "FAIL  orphan.sh"
-  hasq "local-only 失敗附上輸出片段" "$o" "lo-boom"
+  hasq "local-only 失敗印出收尾行" "$o" "lo-tail"
+  hasq "local-only 失敗不只印收尾行（原因不得被切掉）" "$o" "cause-line"
   chk  "local-only 有 FAIL → exit=1" 1 "$rc"
+
+  # 排除理由失效必須是 FAIL 不是 SKIP：宣稱的呼叫者不再引用它，等於靜默失去執行點。
+  mk lostale <<'Y'
+jobs: {verify: {steps: [{name: ok, run: "true"}]}}
+Y
+  mkt lostale relative-references.sh 'exit 0'
+  mkt lostale conformance.sh         'exit 0'
+  o=$(run_st lostale); rc=$?
+  hasq "排除理由失效標 FAIL 而非 SKIP" "$o" "FAIL  relative-references.sh"
+  hasq "排除理由失效點名已失去執行點"  "$o" "靜默失去執行點"
+  chk  "排除理由失效 → exit=1" 1 "$rc"
 
   mk locovered <<'Y'
 jobs: {verify: {steps: [{name: covered, run: "bash tests/covered.sh"}]}}
@@ -299,13 +317,18 @@ done < "$STEPS_FILE"
 # 這也是 three-host-global-config-ownership.sh 三個 FAIL 疊了數週的另一半成因——另一半是
 # 它自己 fail-fast，一個 FAIL 遮住其餘，已於同批修正。
 #
-# 排除表要小、要有理由，形狀同上面的 alias_bin。無法歸類時寧可讓它留在清單裡吵：猜錯的
-# 方向是「以為驗過了」。
-excluded_reason() {
+# 排除表要小，形狀同上面的 alias_bin。無法歸類時寧可讓它留在清單裡吵：猜錯的方向是
+# 「以為驗過了」。
+#
+# 記的是**呼叫者檔名**而不是一句散文理由：散文沒有人驗，conformance.sh 哪天不再呼叫
+# relative-references.sh，那句「由 tests/conformance.sh 呼叫」就變成謊言，而該測試靜默
+# 失去執行點——正是本區塊要治的缺陷換個位置重現。記檔名才能在下面機械驗證，理由不成立
+# 時報 FAIL 而不是 SKIP。
+excluded_by() {
   case "$1" in
-    relative-references.sh)   echo '由 tests/conformance.sh 呼叫' ;;
-    host-skill-resolver.sh)   echo '由 tests/mattpocock-workflow.sh 呼叫' ;;
-    phase4-canary-harness.sh) echo '由 tests/matt-thin-workflow.sh 當 Phase 4 凍結 artifact 比對' ;;
+    relative-references.sh)   echo 'tests/conformance.sh' ;;
+    host-skill-resolver.sh)   echo 'tests/mattpocock-workflow.sh' ;;
+    phase4-canary-harness.sh) echo 'tests/matt-thin-workflow.sh' ;;
     *)                        echo '' ;;
   esac
 }
@@ -317,12 +340,21 @@ if [ -d "$AGENTS/tests" ]; then
   for f in "$AGENTS"/tests/*.sh; do
     [ -f "$f" ] || continue
     b=${f##*/}
+    # 子字串比對的失敗方向是 fail-open：若某個 basename 是另一個的後綴，被涵蓋者會被
+    # 靜默移出 local-only。目前檔名集合沒有這種配對；新增測試時這是要檢查的方向。
     grep -qF "tests/$b" "$WORKFLOW" && continue
-    reason=$(excluded_reason "$b")
+    caller=$(excluded_by "$b")
     lo_total=$((lo_total + 1))
-    if [ -n "$reason" ]; then
-      printf '     SKIP  %-46s %s\n' "$b" "$reason"
-      lo_skipped=$((lo_skipped + 1)); continue
+    if [ -n "$caller" ]; then
+      if grep -qF "tests/$b" "$AGENTS/$caller" 2>/dev/null; then
+        printf '     SKIP  %-46s %s\n' "$b" "由 $caller 呼叫"
+        lo_skipped=$((lo_skipped + 1))
+      else
+        printf '     FAIL  %-46s %s\n' "$b" \
+          "排除理由已失效：$caller 未引用它（或不存在），該測試已靜默失去執行點"
+        lo_failed=$((lo_failed + 1))
+      fi
+      continue
     fi
     if [ "$LIST_ONLY" -eq 1 ]; then
       printf '     RUN   %s\n' "$b"; lo_ran=$((lo_ran + 1)); continue
@@ -331,14 +363,18 @@ if [ -d "$AGENTS/tests" ]; then
     out=$(cd "$AGENTS" && AGENTS_HOME="$AGENTS" bash "$f" 2>&1); rc=$?
     dur=$(( $(date +%s) - start ))
     lo_ran=$((lo_ran + 1))
+    # 與主迴圈同一分工：PASS 只印收尾條數行，FAIL 印 tail -12。共用 tail -1 會把
+    # 失敗原因整段切掉——ownership gate 的收尾行是「13 PASS / 1 FAIL」，真正要看的
+    # 那條路徑在它上面。
     if [ "$rc" -eq 0 ]; then
       printf '     PASS  %-46s %ss\n' "$b" "$dur"
       lo_passed=$((lo_passed + 1))
+      printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -1 | sed 's/^/       │ /'
     else
       printf '     FAIL  %-46s %ss (exit=%s)\n' "$b" "$dur" "$rc"
       lo_failed=$((lo_failed + 1))
+      printf '%s\n' "$out" | tail -12 | sed 's/^/       │ /'
     fi
-    printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -1 | sed 's/^/       │ /'
   done
 fi
 
