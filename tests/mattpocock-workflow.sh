@@ -140,9 +140,15 @@ lacks "audit no longer requests explicit writing-skill invocation" 'explicitly i
 has "writing-for-agents covers host and pointed-at instructions" 'AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc' skills/writing-for-agents/SKILL.md
 has "writing-for-agents requires canonical placement first" 'canonical placement is chosen' skills/writing-for-agents/SKILL.md
 has "host policy writing returns to the shared authorization gate" 'Before writing a host policy file.*dev-workflow.*S2.*T0-8' skills/writing-for-agents/SKILL.md
-if rg --hidden -n 'writing-great-skills' "$ROOT" \
+# cd 進 $ROOT 再用相對路徑掃：`rg <absolute-path> --glob '!proposals/**'` 的 glob 只在 cwd
+# 位於 $ROOT 之上時比得到，換個 cwd 執行同一支腳本，排除失效、proposals/ 的歷史命中會讓
+# 這條誤 FAIL（2026-08-08 實測：worktree 內 281 PASS / 0 FAIL，git archive 到別處 280/1）。
+# 方向是 fail-closed 不會放行，但「同一份 code 依執行目錄給不同結果」本身就不該留著。
+# `|| exit 3` 而非 `&&`：cd 失敗時 subshell 回 1，與 rg 的「無命中」同碼，會在完全沒掃描
+# 的情況下落進 ok 分支。回 3 讓下方的 `*) ng` 接住。
+if (cd "$ROOT" || exit 3; rg --hidden -n 'writing-great-skills' . \
      --glob '!attic/**' --glob '!proposals/**' --glob '!tests/**' \
-     --glob '!vendored-forks.md' --glob '!.git/**' >/dev/null 2>&1; then
+     --glob '!vendored-forks.md' --glob '!.git/**') >/dev/null 2>&1; then
   ng "active writing surfaces no longer use the retired name"
 else
   active_retired_name_rc=$?
@@ -264,9 +270,10 @@ rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.
 has "reviewer template owns severity and confidence" '全部回報、下游過濾.*severity.*confidence|全部回報、下游過濾.*確信度' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template keeps axes separate" '單一 review 軸內.*跨軸不合併、不重排' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template carries the complete-report contract" '全部回報、下游過濾.*不設字數或條數上限.*確信度.*高／中／低' skills/dev-workflow/references/reviewer-template.md
-# [S5-3] 要求兩條 baseline 逐字進「每一個」reviewer prompt，但在 2026-08-03 之前零測試
-# 守它——同日 reviewer-template.md 被編輯注入 [S5-4] 時，[S5-3] 的兩條仍被漏掉，單純是
-# 注意力都在 S5-4，沒有守衛擋。規則沒有機械守衛就會在下一次編輯再漏一次。
+# [S5-3] 要求 baseline 逐字進 Standards 軸的 reviewer prompt（2026-08-03 當時兩條、現為
+# 五條），但在 2026-08-03 之前零測試守它——同日 reviewer-template.md 被編輯注入 [S5-4] 時，
+# [S5-3] 的兩條仍被漏掉，單純是注意力都在 S5-4，沒有守衛擋。規則沒有機械守衛就會在下一次
+# 編輯再漏一次。
 # host-local review agent（~/.claude/agents/*.md、~/.codex/agents/*.toml）的同名注入由各
 # host repo 的自檢負責，跨 repo 不可斷言。
 # 比對兩條「全文」含 `→` 之後的動作句：只比對前半（「手刻標準庫或平台已提供的功能」）時，
@@ -275,6 +282,77 @@ has "reviewer template carries the Reinvented Stdlib baseline" 'Reinvented Stdli
 has "reviewer template carries the Redundant Dependency baseline" 'Redundant Dependency.*為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。' skills/dev-workflow/references/reviewer-template.md
 has "code-review Standards baseline carries Reinvented Stdlib" 'Reinvented Stdlib.*手刻標準庫或平台已提供的功能 → 指名該 API 取代。' skills/code-review/SKILL.md
 has "code-review Standards baseline carries Redundant Dependency" 'Redundant Dependency.*為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。' skills/code-review/SKILL.md
+# 2026-08-08：baseline 擴為五條，新三條同樣需要守衛。
+has "reviewer template carries the Unused Local Reuse baseline" 'Unused Local Reuse.*→ 指名既有符號並改呼叫它。' skills/dev-workflow/references/reviewer-template.md
+# 這條在兩個檔的定義刻意不同，pattern 不能共用：reviewer-template 沒有 Fowler 清單，它的
+# 定義前半（只做轉發的中間層、為 spec 沒有的需求預留）是 Codex／Copilot 唯一的 Middle Man
+# 與 Speculative Generality 載體。只釘共通的動作句時，把它換成 code-review 的窄版仍會 PASS。
+has "reviewer template carries the Needless Indirection baseline" 'Needless Indirection.*只做轉發的中間層.*為 spec 沒有的需求.*→ 內聯回去' skills/dev-workflow/references/reviewer-template.md
+has "reviewer template carries the Wrong Altitude baseline" 'Wrong Altitude.*→ 把該決策移回它該在的層。' skills/dev-workflow/references/reviewer-template.md
+has "code-review Standards baseline carries Unused Local Reuse" 'Unused Local Reuse.*→ 指名既有符號並改呼叫它。' skills/code-review/SKILL.md
+has "code-review Standards baseline carries Needless Indirection" 'Needless Indirection.*→ 內聯回去，等真的第二個使用點出現再抽。' skills/code-review/SKILL.md
+has "code-review Standards baseline carries Wrong Altitude" 'Wrong Altitude.*→ 把該決策移回它該在的層。' skills/code-review/SKILL.md
+# code-review 沒有優先序清單，reviewer-template 的優先序第 3、4 級（performance、
+# correctness）在該路徑本來無落點——security 由 S0 route 到 shared-security-review、
+# breaking changes 到 deps-check，只有這兩級無家可歸。upstream rebase 會靜默把 clause
+# 掉回原狀，而症狀只是「review 不再報效能／不再報邊界條件」，沒人會發現。
+has "code-review Standards brief carries the performance clause" 'performance regressions the diff introduces' skills/code-review/SKILL.md
+has "code-review Standards brief carries the correctness clause" 'correctness defects — boundary conditions' skills/code-review/SKILL.md
+# 設計註記 MUST 留在 prompt 區塊外：在區塊內時 Codex／Copilot 會把「不含 efficiency 維」
+# 一起複製進 reviewer prompt，對 reviewer 讀起來就是「這一維不用看」。用標題 grep 證明不了
+# 位置（整段搬到區塊之前也會 PASS），所以直接掃區塊內容。
+#
+# 兩個 marker 先各自釘住：sed range 靠它們定界，marker 被改名或刪掉時 range 產出 0 行、
+# grep 找不到、直接落進 ok 分支回綠——守衛在自己的定界消失時 fail-open，而全庫唯一寫著
+# 這兩個字串的地方就是下面這段檢查本身。range 非空也一併斷言，兩道都過才驗內容。
+# stack 的 merge-commit 例外與 [INT-10] 的 squash 五步路徑（tests/pr-path-gate.sh 釘著）
+# 直接對立，兩邊各自綠燈時矛盾無人察覺。釘住「例外指名 [INT-10] 為排除範圍」這件事本身。
+has "ledgers scopes the merge-commit exception by parent PR" '父 PR 不在 \[INT-10\] 範圍.*MUST 用 merge commit 合併，不用 squash' "$ledgers_ref"
+has "ledgers keeps INT-10 parents on the rebase path" '父 PR 在 \[INT-10\] 範圍.*所有子 PR 一律走 rebase 補救' "$ledgers_ref"
+# apply pass 要釘兩處。只釘句首時，把「重新納入 S5」那整段後綴刪掉測試仍全綠——而那半句
+# 才是 [S5-1] 不被繞過的保證；被靜默刪掉的症狀只是「S5 之後沒人動手改」或更糟的「一批
+# code 沒進過 review」，兩者都不會有人發現。實測過。
+has "Claude adapter binds simplify as the S5 apply pass" 'MUST 跑 .simplify.*當 apply pass' "$host_adapters_ref"
+has "simplify output re-enters S5" '重新納入 S5.*繞過 \[S5-1\]' "$host_adapters_ref"
+# 以下這批守衛的 pattern 一律釘「會翻轉的子句」，不釘引入語。教訓是同一個撰寫方法會換
+# 外觀復發：未錨行首行尾 → 只釘句首 → 釘住錯誤引用 → 極性反轉。判準是「把這句改成相反
+# 意思，pattern 還能不能命中」；每一條都做過這個反轉測試才留下。
+#
+# 實測：下面三條同時還原成前一版寫法，283 條測試全綠——而 reviewer-template 第 7 行一
+# 還原，Claude 路徑就再次豁免掉整份 reference，沒有任何 FAIL。
+has "reviewer-template exempts only the prompt block" '豁免的是 prompt 區塊本身.*本檔其餘各節對它們一樣有約束力' skills/dev-workflow/references/reviewer-template.md
+# 釘 cell 尾的 `|`：`非 SKIPPED S5 review` 是修復前的錯誤字串 `非 SKIPPED S5 reviewer prompt`
+# 的嚴格前綴，不釘邊界的話還原成那個 bug 一樣全綠（2026-08-08 實測，六條反向斷言裡唯獨
+# 這條沒 FAIL）。
+has "reviewer-template load-when covers all S5 review" 'references/reviewer-template.md` \| 非 SKIPPED S5 review \|' skills/dev-workflow/SKILL.md
+has "Claude adapter binds the whole reviewer-template" '不豁免 `references/reviewer-template.md`.*其餘各節對 Claude 一樣有約束力' "$host_adapters_ref"
+has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` 的「回饋處理」' "$ledgers_ref"
+# cascade 子句掛在只釘句首的斷言後面，整段刪掉仍全綠（實測）——同一支檔上面才寫過這個教訓。
+has "ledgers explains the cascade cost" '三層以上的 stack 不能逐層各判各的' "$ledgers_ref"
+# review-triage 引用的是這個標題的逐字形式，改名會靜默斷鏈。
+has "stacked PR section heading is stable" '^## Stacked PR 的 diff scoping' "$ledgers_ref"
+# 錨定整行：同檔「怎麼用」第 1 步的說明文字裡就引用了這兩個 marker 字串，不錨行首行尾的
+# 話 has 會命中那句描述、sed range 也會從那行起算——marker 本身被改名依然全綠。
+has "reviewer prompt block has an opening marker" '^── reviewer prompt 開始 ──$' skills/dev-workflow/references/reviewer-template.md
+has "reviewer prompt block has a closing marker" '^── reviewer prompt 結束 ──$' skills/dev-workflow/references/reviewer-template.md
+prompt_block="$(sed -n '/^── reviewer prompt 開始 ──$/,/^── reviewer prompt 結束 ──$/p' \
+  "$ROOT/skills/dev-workflow/references/reviewer-template.md")"
+# 數行而不是只檢查 -z：sed 的 range 一定含兩個 marker 行，所以把 prompt 內容整段清空
+# 之後 `-z` 仍不成立，守衛會比它自稱的弱。> 2 行才代表 marker 之間真的有東西。
+prompt_lines=0
+[ -n "$prompt_block" ] && prompt_lines="$(printf '%s\n' "$prompt_block" | wc -l | tr -d ' ')"
+if [ "$prompt_lines" -le 2 ]; then
+  ng "reviewer prompt block is non-empty"
+  # range 空或只剩 marker 時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓
+  # 總條數隨檔案狀態浮動，看起來像「少跑了一條」而不是「守衛失去依據」。
+  ng "baseline design notes live outside the reviewer prompt"
+elif printf '%s' "$prompt_block" | grep -q '設計註記'; then
+  ok "reviewer prompt block is non-empty"
+  ng "baseline design notes live outside the reviewer prompt"
+else
+  ok "reviewer prompt block is non-empty"
+  ok "baseline design notes live outside the reviewer prompt"
+fi
 # B 層（2026-08-03）：兩條「放寬」型修正，各自要有守衛——放寬比收緊更需要，因為退回舊
 # 版本不會有人察覺，只會表現為「又開始整份重跑／整份重述」。
 #
@@ -333,7 +411,7 @@ has "security report card carries a Verdict slot" 'Verdict: exploitable / mitiga
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
 has "skill changes require invocation canaries" 'Skill change.*frontmatter.*relative references.*positive/negative.*trigger canary' skills/dev-workflow/SKILL.md
 has "references declare load conditions" 'Load when' skills/dev-workflow/SKILL.md
-lacks "kernel does not inline reviewer baselines" 'Reinvented Stdlib|Redundant Dependency' skills/dev-workflow/SKILL.md
+lacks "kernel does not inline reviewer baselines" 'Reinvented Stdlib|Redundant Dependency|Unused Local Reuse|Needless Indirection|Wrong Altitude' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' "$host_adapters_ref"
 has "Copilot S5 delegates dirty reviews adaptively" 'working tree dirty 時，依 \[INT-4\] 由 AI 自主決定是否、何時及使用多少 read-only `task`' "$host_adapters_ref"
 has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' "$host_adapters_ref"

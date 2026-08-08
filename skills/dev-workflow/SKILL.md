@@ -92,7 +92,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 - [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
 - [S5-2] Working tree dirty review MUST 在讀任何 raw diff 前完成 `references/dirty-review-package.md`；任一 finding 即 FAIL。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
-- [S5-3] 非 SKIPPED 的 review prompt MUST 套用 `references/reviewer-template.md` 的 canonical over-engineering contract；專屬 reviewer 也須收到等價完整 contract。觸發：S5 review。例外：無。驗證：prompt evidence。
+- [S5-3] 非 SKIPPED 的 Standards 軸 prompt MUST 套用 `references/reviewer-template.md` 的 canonical over-engineering contract；專屬 reviewer 也須收到等價完整 contract。觸發：S5 review。例外：無。驗證：prompt evidence。
 - [S5-4] Reviewer output MUST 套用 `references/reviewer-template.md` 的「全部回報、下游過濾」與單軸 aggregate contract。觸發：任何 review agent prompt。例外：無。驗證：review output evidence。
 - 各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
 - Spec 不存在可標 SKIPPED；缺 reviewer capability 必須附 UNAVAILABLE probe，不得假裝自審等價。
@@ -114,7 +114,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 | [authorization matrix](references/authorization-matrix.md) | mutation／side effect 的 S2 分類；checkpoint commit |
 | `references/ledgers.md` | push／PR／merge／closeout 或其後新 commit |
 | `references/review-triage.md` | Ready PR 準備 merge |
-| `references/reviewer-template.md` | 非 SKIPPED S5 reviewer prompt |
+| `references/reviewer-template.md` | 非 SKIPPED S5 review |
 | `references/dirty-review-package.md` | working tree dirty review |
 | [delegation](references/delegation.md) | 考慮 delegation／agents |
 | [host adapters](references/host-adapters.md) | active host tools／commands／handoff／hooks |
