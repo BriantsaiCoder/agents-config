@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
-TMP=$(mktemp -d)
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/agents-branch.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT
 
 REPO="$TMP/agents"

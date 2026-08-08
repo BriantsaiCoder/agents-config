@@ -141,6 +141,23 @@ jobs:
       - name: agents-branch portable isolation
         run: bash tests/agents-branch.sh
 
+      # 2026-08-08：本支原本不在任何執行點——既不在本檔，也沒有其他測試呼叫它。
+      # 它不讀 live host 樹（ROOT-relative，無 $HOME 依賴），本來就該在 CI 跑。
+      # 首次接進來時在 ubuntu runner 上紅過一次（BSD `stat -f` 語法），已改為 GNU／BSD
+      # 皆可；那正是「沒有執行點的測試會靜默腐化」的實證。
+      #
+      # tests/phase4-canary-launcher.sh 刻意**不**接進來：它同樣沒有 live 樹依賴，但
+      # bin/phase4-canary-launcher:6 把 RUNTIME_ROOT 硬綁在 /private/tmp/phase4-canary-v2
+      # （macOS 對 /tmp 的正規路徑），測試在 6 處斷言該前綴。那是結構性的平台相依，不是
+      # 一行可修，強行改可攜等於改寫 Phase 4 canary 的隔離契約。它改由 bin/ci-local 的
+      # local-only 區塊承接——推導式清單會自動收走「不在本檔且無其他呼叫者」的測試，
+      # 所以這裡不需要任何排除設定，移除 step 就是全部動作。
+      #
+      # 防復發同樣由該區塊負責：新增測試忘了接執行點會出現在 local-only 清單而不是
+      # 靜默消失。
+      - name: Copilot plugin simulation 隔離
+        run: AGENTS_HOME="$GITHUB_WORKSPACE" bash tests/copilot-plugin-simulation-isolation.sh
+
       - name: PR review gate 回歸
         run: bash tests/pr-review-gate.sh
 

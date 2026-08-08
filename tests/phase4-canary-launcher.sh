@@ -5,7 +5,10 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
 LAUNCHER="$ROOT/bin/phase4-canary-launcher"
 MATRIX="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/27-phase4-v2-canary-matrix.jsonl"
 SCHEMA="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/26-phase4-v2-result-schema.json"
-TMP=$(mktemp -d)
+# 本檔沒有 set -e：mktemp 失敗時 $TMP 為空，後續 "$TMP/no-case.json" 會落到
+# /no-case.json，而 trap 也只是 rm -rf ''。fail-fast 且 trap 只在建立成功後安裝。
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/phase4-canary-launcher.XXXXXX") ||
+  { printf 'FAIL: 無法建立暫存目錄，測試未執行\n' >&2; exit 1; }
 trap 'rm -rf "$TMP"' EXIT
 
 pass=0

@@ -31,7 +31,7 @@ ok()  { PASS=$((PASS+1)); printf '  PASS  %s\n' "$1"; }
 bad() { FAIL=$((FAIL+1)); printf '  FAIL  %s\n     期望=%s 實得=%s\n' "$1" "$2" "$3"; }
 check() { [ "$2" = "$3" ] && ok "$1" || bad "$1" "$2" "$3"; }
 
-TMP=$(mktemp -d) || exit 1
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/description-lint.XXXXXX") || exit 1
 trap 'rm -rf "$TMP"' EXIT
 
 CORPUS="$TMP/corpus"

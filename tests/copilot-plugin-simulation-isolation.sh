@@ -53,8 +53,21 @@ printf 'simulation-sentinel\n' > "$simulation_cache/SIMULATION"
 rewritten_cache=$(jq -er '.installedPlugins[0].cache_path' "$simulation_home/config.json")
 [ "$rewritten_cache" = "$simulation_cache" ] ||
   fail "cache_path was not rewritten into the simulation root: $rewritten_cache"
-[ "$(stat -f '%Lp' "$simulation_home/config.json")" = 600 ] ||
-  fail 'rewritten simulation config is not mode 0600'
+# stat 的權限格式 BSD 與 GNU 不同（macOS `-f '%Lp'`、Linux `-c '%a'`），兩者對 0600
+# 都輸出 600。本檔 2026-08-08 首次進 CI 時踩了這裡，且修的第一版又踩第二個坑，兩個都記下：
+#
+#   1. 原本只寫 `stat -f '%Lp'`：GNU 的 -f 是「檔案系統狀態」不是 format，ubuntu runner 上
+#      報 `cannot read file system information for '%Lp'`。
+#   2. 第一版改成 `$(stat -f … 2>/dev/null || stat -c …)`：GNU 的 -f **先把整段 filesystem
+#      dump 印到 stdout 才失敗**，於是 command substitution 把兩邊輸出黏成一串，值變成
+#      「dump + 600」而斷言照樣紅。
+#
+# 所以順序必須是先 GNU 後 BSD，而且兩次賦值要分開寫——實測 macOS 的 `stat -c` 是乾淨失敗
+# （exit 1、stdout 空），GNU 的 `stat -f` 不是。判準仍是「哪個 stat 真的答得出來」而非猜 uname。
+config_mode="$(stat -c '%a' "$simulation_home/config.json" 2>/dev/null)" ||
+  config_mode="$(stat -f '%Lp' "$simulation_home/config.json")"
+[ "$config_mode" = 600 ] ||
+  fail "rewritten simulation config is not mode 0600: $config_mode"
 
 case "$rewritten_cache" in
   "$scratch"/simulation/.copilot/*) ;;

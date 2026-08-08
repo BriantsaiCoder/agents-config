@@ -3,7 +3,9 @@ set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 GATE="$ROOT/bin/pr-review-gate"
-FAKEBIN=$(mktemp -d "${TMPDIR:-/tmp}/pr-review-gate.XXXXXX")
+# 本檔沒有 set -e：mktemp 失敗時 $FAKEBIN 為空，REQUEST_LOG 會變成 /requests.log。
+FAKEBIN=$(mktemp -d "${TMPDIR:-/tmp}/pr-review-gate.XXXXXX") ||
+  { printf 'FAIL: 無法建立 fake bin 目錄，測試未執行\n' >&2; exit 1; }
 REQUEST_LOG="$FAKEBIN/requests.log"
 trap 'rm -rf "$FAKEBIN"' EXIT
 

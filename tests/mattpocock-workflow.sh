@@ -360,7 +360,9 @@ has "CI runs the Stage B2 skill checkpoint" 'bash tests/matt-thin-workflow.sh' .
 lacks "Stage B2 test has no local-only commit dependency" \
   'B2_SKILLS_BASE|7080450715c0e5f264e19ab60a48da9c4437c0af|/private/tmp/three-host-global-config-split-wrapper-parity\.tsv' \
   tests/matt-thin-workflow.sh
-resolver_fixture="$(mktemp -d "${TMPDIR:-/tmp}/host-resolver-fixture.XXXXXX")"
+# 本檔沒有 set -e：mktemp 失敗時 fixture 路徑會落到 / 底下而斷言照跑。
+resolver_fixture="$(mktemp -d "${TMPDIR:-/tmp}/host-resolver-fixture.XXXXXX")" ||
+  { ng 'host resolver fixture: 無法建立暫存目錄，斷言未執行'; exit 1; }
 printf 'skill=missing-skill\n' > "$resolver_fixture/mattpocock-skills.lock"
 resolver_output="$(
   AGENTS_HOME="$resolver_fixture" CLAUDE_SKILLS_ROOT="$resolver_fixture/no-claude" \
@@ -386,7 +388,8 @@ lacks "kernel does not duplicate PR command" 'pr-review-gate' skills/dev-workflo
 has "review triage owns exact PR command" '~/\.agents/bin/pr-review-gate' skills/dev-workflow/references/review-triage.md
 
 if command -v gitleaks >/dev/null 2>&1; then
-  scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/matt-secret-fixture.XXXXXX")"
+  scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/matt-secret-fixture.XXXXXX")" ||
+    { ng 'gitleaks fixture: 無法建立暫存目錄，斷言未執行'; exit 1; }
   printf 'ghp_%s%s\n' '123456789012345678' '901234567890123456' > "$scan_fixture/leak.txt"
   if gitleaks dir --redact --no-banner --no-color "$scan_fixture" >/dev/null 2>&1; then
     ng "gitleaks fixture blocks a review package"

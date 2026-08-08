@@ -16,6 +16,10 @@
 #      要跑加 --with-side-effects。
 #   3. actions/* 這類非 run: 步驟（checkout 等）——本機工作區就是 checkout 的結果。
 #
+# 反過來的第四類：**只有本機跑得動的 gate**（local-only）。它們讀 live ~/.claude ／
+# ~/.codex ／ ~/.copilot，runner 上不存在，所以永遠不會出現在 ci.yml。這類同樣用推導而非
+# 硬編清單——見下方 excluded_reason 上的說明。
+#
 # 用法：
 #   ci-local                      跑全部可在本機跑的 step
 #   ci-local --with-side-effects  連 install-hooks.sh 一起跑
@@ -35,7 +39,7 @@ die() { printf 'ci-local: %s\n' "$*" >&2; exit 2; }
 if [ "${1:-}" = "--selftest" ]; then
   # 一個永遠回綠的 CI 包裝器比沒有更糟：它讓「本機驗過了」這句話變成噪音。這裡用假 workflow
   # 把失敗語意釘死——尤其是「缺工具算 FAIL 不算 SKIP」，因為缺工具的失敗方向是假綠。
-  t=$(mktemp -d) || exit 1
+  t=$(mktemp -d "${TMPDIR:-/tmp}/ci-local.XXXXXX") || exit 1
   trap 'rm -rf "$t"' EXIT
   P=0; F=0
   mk() { mkdir -p "$t/$1/.github/workflows"; cat > "$t/$1/.github/workflows/ci.yml"; }
@@ -89,6 +93,68 @@ Y
   o=$(run_st nonrun)
   hasq "非 run: 步驟標 SKIP" "$o" "SKIP  uses:actions/checkout@v4"
   hasq "非 run: 不計入 RAN" "$o" "RAN=1"
+
+  # local-only 推導。這個區塊要治的缺陷是「一支測試沒有執行點時沒有任何東西會出聲」，
+  # 所以它自己更不能靜默失效：清單推導壞掉的方向正好是「local-only 清單變空 → 看起來全綠」。
+  mkt() { mkdir -p "$t/$1/tests"; printf '#!/usr/bin/env bash\n%s\n' "$3" > "$t/$1/tests/$2"; }
+
+  # conformance.sh 由 ci.yml 引用（所以不進 local-only），且內容真的引用
+  # relative-references.sh——排除表宣稱的呼叫關係必須在 fixture 裡成立，否則驗到的是
+  # 下面那條「理由失效」而不是這條。
+  mk lo <<'Y'
+jobs: {verify: {steps: [{name: conf, run: "bash tests/conformance.sh"}]}}
+Y
+  mkt lo orphan.sh              'exit 0'
+  mkt lo relative-references.sh 'echo should-not-run; exit 1'
+  mkt lo conformance.sh         'echo tests/relative-references.sh >/dev/null; exit 0'
+  o=$(run_st lo); rc=$?
+  hasq "無執行點的測試進 local-only 並被執行" "$o" "PASS  orphan.sh"
+  hasq "排除表項目標 SKIP 並附理由"           "$o" "SKIP  relative-references.sh"
+  hasq "排除表項目不被執行"                   "$o" "LOCAL-ONLY=2  RAN=1"
+  chk  "local-only 全過 → exit=0" 0 "$rc"
+
+  mk lofail <<'Y'
+jobs: {verify: {steps: [{name: ok, run: "true"}]}}
+Y
+  # 多行輸出才有鑑別力：單行 fixture 下 tail -1 與 tail -12 完全等價，這條 case 會
+  # 兩種寫法都綠。真實的 ownership gate 正是「原因在上、條數在下」的形狀。
+  mkt lofail orphan.sh 'printf "cause-line\nmiddle\n" >&2; echo lo-tail >&2; exit 4'
+  o=$(run_st lofail); rc=$?
+  hasq "local-only 失敗標 FAIL" "$o" "FAIL  orphan.sh"
+  hasq "local-only 失敗印出收尾行" "$o" "lo-tail"
+  hasq "local-only 失敗不只印收尾行（原因不得被切掉）" "$o" "cause-line"
+  chk  "local-only 有 FAIL → exit=1" 1 "$rc"
+
+  # 排除理由失效必須是 FAIL 不是 SKIP：宣稱的呼叫者不再引用它，等於靜默失去執行點。
+  mk lostale <<'Y'
+jobs: {verify: {steps: [{name: ok, run: "true"}]}}
+Y
+  mkt lostale relative-references.sh 'exit 0'
+  mkt lostale conformance.sh         'exit 0'
+  o=$(run_st lostale); rc=$?
+  hasq "排除理由失效標 FAIL 而非 SKIP" "$o" "FAIL  relative-references.sh"
+  hasq "排除理由失效點名已失去執行點"  "$o" "靜默失去執行點"
+  chk  "排除理由失效 → exit=1" 1 "$rc"
+
+  # ci.yml 的**註解**提到某支測試不算執行點。2026-08-08 實測踩過：把一支測試從 ci.yml
+  # 移除、只在註解說明理由，raw-YAML 比對就讓它靜默消失在 local-only 清單裡。
+  mk locomment <<'Y'
+# 說明：tests/orphan.sh 刻意不接進來，理由見 PR 討論
+jobs: {verify: {steps: [{name: ok, run: "true"}]}}
+Y
+  mkt locomment orphan.sh 'exit 0'
+  o=$(run_st locomment)
+  hasq "ci.yml 註解提及不算執行點" "$o" "PASS  orphan.sh"
+
+  mk locovered <<'Y'
+jobs: {verify: {steps: [{name: covered, run: "bash tests/covered.sh"}]}}
+Y
+  mkt locovered covered.sh 'exit 0'
+  o=$(run_st locovered)
+  case "$o" in
+    *LOCAL-ONLY*) printf '  FAIL  已被 ci.yml 引用者不得再進 local-only\n'; F=$((F+1)) ;;
+    *)            printf '  PASS  已被 ci.yml 引用者不得再進 local-only\n'; P=$((P+1)) ;;
+  esac
 
   printf '總計：PASS=%s FAIL=%s\n' "$P" "$F"
   # 「至少跑到了」自證：chk/hasq 全數沒執行時上面會印 PASS=0 FAIL=0 卻 exit 0，
@@ -248,9 +314,91 @@ EOF
   fi
 done < "$STEPS_FILE"
 
+# ── local-only gates ─────────────────────────────────────────────────────────
+# CI 跑不到、但仍必須有固定執行點的測試。它們讀 live ~/.claude ／ ~/.codex ／
+# ~/.copilot，runner 上不存在（tests/repo-integrity.sh:160-166 記錄了這個分工）。
+#
+# 集合是**推導**的，不是另抄一份清單——檔頭第 8 行那條「抄一份就是第二個真實來源」在這裡
+# 一樣成立。更關鍵的是硬編只治得了你當下想到的那一支：2026-08-08 實測有 7 支 tests/*.sh
+# 不在 ci.yml，其中 4 支完全沒有執行點，而 three-host-global-config-ownership.sh 只是其中
+# 一支（另外兩支根本不讀 live 樹，是純遺漏，已補進 ci.yml）。真正缺的機制是「一支測試沒有
+# 執行點時沒有任何東西會出聲」。推導的失敗方向是噪音：新增測試忘了接執行點就會出現在這裡。
+#
+# 這也是 three-host-global-config-ownership.sh 三個 FAIL 疊了數週的另一半成因——另一半是
+# 它自己 fail-fast，一個 FAIL 遮住其餘，已於同批修正。
+#
+# 排除表要小，形狀同上面的 alias_bin。無法歸類時寧可讓它留在清單裡吵：猜錯的方向是
+# 「以為驗過了」。
+#
+# 記的是**呼叫者檔名**而不是一句散文理由：散文沒有人驗，conformance.sh 哪天不再呼叫
+# relative-references.sh，那句「由 tests/conformance.sh 呼叫」就變成謊言，而該測試靜默
+# 失去執行點——正是本區塊要治的缺陷換個位置重現。記檔名才能在下面機械驗證，理由不成立
+# 時報 FAIL 而不是 SKIP。
+excluded_by() {
+  case "$1" in
+    relative-references.sh)   echo 'tests/conformance.sh' ;;
+    host-skill-resolver.sh)   echo 'tests/mattpocock-workflow.sh' ;;
+    phase4-canary-harness.sh) echo 'tests/matt-thin-workflow.sh' ;;
+    *)                        echo '' ;;
+  esac
+}
+
+lo_total=0; lo_ran=0; lo_passed=0; lo_failed=0; lo_skipped=0
+if [ -d "$AGENTS/tests" ]; then
+  echo
+  printf 'local-only gates（CI 跑不到；由 %s 未引用者推導）\n' "${WORKFLOW##*/}"
+  for f in "$AGENTS"/tests/*.sh; do
+    [ -f "$f" ] || continue
+    b=${f##*/}
+    # 比對已解析的 step（${STEPS_FILE}）而非 raw YAML：2026-08-08 實測踩過——把
+    # tests/phase4-canary-launcher.sh 從 ci.yml 移除、只在**註解**裡說明為什麼移除，
+    # 那行註解就讓 grep 命中，該測試於是被靜默移出 local-only 清單。「在 ci.yml 被提到」
+    # 不等於「有執行點」，只有 step 才是。$STEPS_FILE 只含 name 與 run body，沒有註解。
+    #
+    # 剩餘的 fail-open 方向：子字串比對下若某 basename 是另一個的後綴，被涵蓋者會被
+    # 靜默移出。目前檔名集合沒有這種配對；新增測試時這是要檢查的方向。
+    grep -qF "tests/$b" "$STEPS_FILE" && continue
+    caller=$(excluded_by "$b")
+    lo_total=$((lo_total + 1))
+    if [ -n "$caller" ]; then
+      if grep -qF "tests/$b" "$AGENTS/$caller" 2>/dev/null; then
+        printf '     SKIP  %-46s %s\n' "$b" "由 $caller 呼叫"
+        lo_skipped=$((lo_skipped + 1))
+      else
+        printf '     FAIL  %-46s %s\n' "$b" \
+          "排除理由已失效：$caller 未引用它（或不存在），該測試已靜默失去執行點"
+        lo_failed=$((lo_failed + 1))
+      fi
+      continue
+    fi
+    if [ "$LIST_ONLY" -eq 1 ]; then
+      printf '     RUN   %s\n' "$b"; lo_ran=$((lo_ran + 1)); continue
+    fi
+    start=$(date +%s)
+    out=$(cd "$AGENTS" && AGENTS_HOME="$AGENTS" bash "$f" 2>&1); rc=$?
+    dur=$(( $(date +%s) - start ))
+    lo_ran=$((lo_ran + 1))
+    # 與主迴圈同一分工：PASS 只印收尾條數行，FAIL 印 tail -12。共用 tail -1 會把
+    # 失敗原因整段切掉——ownership gate 的收尾行是「13 PASS / 1 FAIL」，真正要看的
+    # 那條路徑在它上面。
+    if [ "$rc" -eq 0 ]; then
+      printf '     PASS  %-46s %ss\n' "$b" "$dur"
+      lo_passed=$((lo_passed + 1))
+      printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -1 | sed 's/^/       │ /'
+    else
+      printf '     FAIL  %-46s %ss (exit=%s)\n' "$b" "$dur" "$rc"
+      lo_failed=$((lo_failed + 1))
+      printf '%s\n' "$out" | tail -12 | sed 's/^/       │ /'
+    fi
+  done
+fi
+
 echo
 printf 'TOTAL=%s  RAN=%s  PASS=%s  FAIL=%s  SKIPPED=%s\n' \
   "$total" "$ran" "$passed" "$failed" "$skipped"
+[ "$lo_total" -gt 0 ] &&
+  printf 'LOCAL-ONLY=%s  RAN=%s  PASS=%s  FAIL=%s  SKIPPED=%s\n' \
+    "$lo_total" "$lo_ran" "$lo_passed" "$lo_failed" "$lo_skipped"
 [ "$unresolved" -gt 0 ] &&
   printf 'UNRESOLVED=%s：有 provisioning 步驟無法判斷提供哪個執行檔，等同未驗證。\n' "$unresolved"
 [ "$missing" -gt 0 ] &&
@@ -258,5 +406,5 @@ printf 'TOTAL=%s  RAN=%s  PASS=%s  FAIL=%s  SKIPPED=%s\n' \
 [ "$WITH_SIDE_EFFECTS" -eq 0 ] &&
   printf '註：install-hooks.sh 步驟未跑（會寫 .git/hooks）。要完全對齊 CI 請加 --with-side-effects。\n'
 
-[ "$failed" -eq 0 ] && [ "$unresolved" -eq 0 ] && exit 0
+[ "$failed" -eq 0 ] && [ "$unresolved" -eq 0 ] && [ "$lo_failed" -eq 0 ] && exit 0
 exit 1

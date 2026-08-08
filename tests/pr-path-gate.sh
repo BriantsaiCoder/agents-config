@@ -74,7 +74,10 @@ check_kernel() {
 
 selftest() {
   local scratch rc=0
-  scratch="$(mktemp -d)"
+  # 本檔沒有 set -e：mktemp 失敗時 $scratch 為空，fixture 會寫到 /good.md 這種絕對路徑
+  # 而斷言照跑。假綠加污染根目錄，必須顯式擋。
+  scratch="$(mktemp -d "${TMPDIR:-/tmp}/pr-path-gate.XXXXXX")" ||
+    { printf '  FAIL  selftest: 無法建立暫存目錄，正反向斷言完全未執行\n' >&2; return 1; }
 
   cat > "${scratch}/good.md" <<'FIX'
 ## Always-on guards

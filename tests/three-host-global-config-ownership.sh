@@ -4,10 +4,27 @@ set -euo pipefail
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "$0")/.." && pwd -P)}"
 PLAN="$AGENTS/proposals/2026-07-27-mattpocock-skills-workflow/48-three-host-global-config-ownership-split-plan.md"
 
-fail() {
-  printf 'FAIL: %s\n' "$*" >&2
-  exit 1
-}
+# 2026-08-08：由 fail-fast 改為累加彙總。原本 fail() 直接 exit 1，於是同時存在的多個違規
+# 只會現形第一個——實測三個 FAIL 疊了數週，每修好一個才露出下一個（CAP-LOCAL-AUTONOMY
+# anchor 漂移 → ~/.claude repo-integrity.sh 條文 pin → settings.json 控制面引用）。
+# 本檔第 296 行附近的註解早就記錄過同一個教訓：前面先死，後面的 control-plane 斷言與
+# UNAVAILABLE 分支從未被跑到。慣例對齊 tests/conformance.sh 與 ~/.claude/tests/repo-integrity.sh
+# 的 ok()／bad()；收尾行「N PASS / M FAIL」是 bin/ci-local:242 唯一不會過期的條數來源。
+pass=0
+fail=0
+unavailable=0
+ok()  { printf '  PASS  %s\n' "$*"; pass=$((pass + 1)); }
+# bad 必須 return 0：本檔開了 set -e，`X || bad '…'` 若回非零會讓整份在第一個違規處
+# 中止，等於改回 fail-fast。
+bad() { printf '  FAIL  %s\n' "$*" >&2; fail=$((fail + 1)); return 0; }
+# die 只留給「留著也只會產生同一根因雜訊」的前置條件（plan 檔缺失、host 樹不存在、
+# scratch 建不起來），不用於任何 drift 斷言。
+die() { printf 'FATAL: %s\n' "$*" >&2; exit 1; }
+# 分節收斂：沒有新增 FAIL 才記一次 PASS，然後把水位推到現值。逐條 ok() 要動 56 個
+# 呼叫點且每個都得再想一句標籤；分節讓「N PASS」代表「N 個檢查群完整通過」，
+# 同時給收尾行一個不會恆為 0 的分子——0 PASS / 0 FAIL 是本 repo 反覆點名的假綠形狀。
+_wm=0
+sect() { [ "$fail" -eq "$_wm" ] && ok "$*"; _wm=$fail; }
 
 skills_manifests_match() {
   local before="$1" after="$2" expected_metadata="$3" label="$4"
@@ -32,39 +49,41 @@ skills_manifests_match() {
   fi
 }
 
-[ -f "$PLAN" ] || fail "ownership plan missing: $PLAN"
+[ -f "$PLAN" ] || die "ownership plan missing: $PLAN"
 rg -Fq '只將 exact relative path `.DS_Store` 從 semantic skills payload gate 分離' "$PLAN" ||
-  fail 'Plan 48 does not separate only exact .DS_Store from semantic skills payload'
+  bad 'Plan 48 does not separate only exact .DS_Store from semantic skills payload'
 rg -Fq '禁止 `*.DS_Store`、hidden-file wildcard與directory-wide exclusion' "$PLAN" ||
-  fail 'Plan 48 does not prohibit wildcard skills exclusions'
+  bad 'Plan 48 does not prohibit wildcard skills exclusions'
 rg -Fq '不得把 pre-cutover `UNAVAILABLE` 改寫成 `PASS`' "$PLAN" ||
-  fail 'Plan 48 rewrites unavailable runtime evidence'
+  bad 'Plan 48 rewrites unavailable runtime evidence'
 rg -Fq 'runtime no-load只在cutover transaction內逐host驗證' "$PLAN" ||
-  fail 'Plan 48 does not defer runtime no-load to the cutover transaction'
+  bad 'Plan 48 does not defer runtime no-load to the cutover transaction'
 rg -Fq '依Claude → Codex → Copilot固定順序' "$PLAN" ||
-  fail 'Plan 48 does not preserve the fixed host order'
+  bad 'Plan 48 does not preserve the fixed host order'
 rg -Fq '確認Superpowers absent為PASS後才可進下一host' "$PLAN" ||
-  fail 'Plan 48 advances before per-host plugin absence passes'
+  bad 'Plan 48 advances before per-host plugin absence passes'
 rg -Fq '任一host FAIL／UNAVAILABLE立即停止後續writes／probes並執行coordinated rollback' "$PLAN" ||
-  fail 'Plan 48 does not fail fast into coordinated rollback'
+  bad 'Plan 48 does not fail fast into coordinated rollback'
 rg -Fq 'fixed 6-run canary仍需獨立明示授權' "$PLAN" ||
-  fail 'Plan 48 does not keep SaaS canaries separately authorized'
+  bad 'Plan 48 does not keep SaaS canaries separately authorized'
 rg -Fq '只從 skill-directory enumeration排除 exact top-level `skills/.claude` runtime directory' "$PLAN" ||
-  fail 'Plan 48 does not define the exact skills/.claude runtime exclusion'
+  bad 'Plan 48 does not define the exact skills/.claude runtime exclusion'
 rg -Fq '禁止 hidden-directory wildcard' "$PLAN" ||
-  fail 'Plan 48 does not prohibit wildcard runtime-directory exclusions'
+  bad 'Plan 48 does not prohibit wildcard runtime-directory exclusions'
 rg -Fq '不得以 `.in_use` directory count = 0作為maintenance gate' "$PLAN" ||
-  fail 'Plan 48 treats persistent .in_use directories as active locks'
+  bad 'Plan 48 treats persistent .in_use directories as active locks'
 rg -Fq 'Claude process count = 0、active marker-owner intersection = 0、兩個exact Superpowers trees open-handle count = 0' "$PLAN" ||
-  fail 'Plan 48 does not define the active-owner maintenance gate'
+  bad 'Plan 48 does not define the active-owner maintenance gate'
 rg -Fq '禁止刪除、清空或wildcard處理任何 `.in_use`' "$PLAN" ||
-  fail 'Plan 48 permits destructive .in_use cleanup'
+  bad 'Plan 48 permits destructive .in_use cleanup'
+sect 'Plan 48 條文（13 條）'
 
 if rg -q \
   'TARGETS=|\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md|refresh_claude_stamp|assemble_body|render_target' \
   "$AGENTS/bin/agents-sync"; then
-  fail 'agents-sync still owns host global config'
+  bad 'agents-sync still owns host global config'
 fi
+sect 'agents-sync 不擁有 host global config'
 
 # 2026-08-03：candidate 改為直接指向 live host 目錄。原本用 `resolve_worktree` 去找
 # `codex/three-host-global-config-split-{claude,codex,copilot}` 三個分支的 worktree，
@@ -77,14 +96,15 @@ CODEX_CANDIDATE="${CODEX_CANDIDATE:-$HOME/.codex}"
 COPILOT_CANDIDATE="${COPILOT_CANDIDATE:-$HOME/.copilot}"
 
 for candidate in "$CLAUDE_CANDIDATE" "$CODEX_CANDIDATE" "$COPILOT_CANDIDATE"; do
-  [ -d "$candidate" ] || fail "host candidate missing: $candidate"
+  [ -d "$candidate" ] || die "host candidate missing: $candidate"
 done
 
 CLAUDE_INSTRUCTIONS="$CLAUDE_CANDIDATE/CLAUDE.md" \
   CODEX_INSTRUCTIONS="$CODEX_CANDIDATE/AGENTS.md" \
   COPILOT_INSTRUCTIONS="$COPILOT_CANDIDATE/copilot-instructions.md" \
   bash "$AGENTS/tests/three-host-capability-parity.sh" --check ||
-  fail 'host candidates do not provide equivalent semantic capabilities'
+  bad 'host candidates do not provide equivalent semantic capabilities'
+sect '三家 semantic capability 等價'
 
 # 2026-07-30：移除對 $AGENTS/core/tier2-style.md 的 SHA 比對。core/ 三家 runtime 都不讀
 # （本檔的 control_plane_hits 反向斷言已禁止 host config 引用 .agents control plane），已退役至
@@ -101,13 +121,14 @@ CLAUDE_INSTRUCTIONS="$CLAUDE_CANDIDATE/CLAUDE.md" \
 expected_tier2_rule='[T2-6] 回覆 SHOULD outcome-first、無空泛前後文；決策列編號選項／推薦／取捨，單字或數字即為完整回答，推測標記，已決不列替案。觸發：所有回覆。例外：安全確認／[T0-5] 澄清可先問。驗證：首段有結論／結果／阻塞／問題，結尾非客套。'
 claude_tier2_src="$CLAUDE_CANDIDATE/core/tier2-style.md"
 [ -f "$claude_tier2_src" ] ||
-  fail "Claude candidate lacks the T2-6 source file: $claude_tier2_src"
+  bad "Claude candidate lacks the T2-6 source file: $claude_tier2_src"
 grep -Fqx -- "$expected_tier2_rule" "$claude_tier2_src" ||
-  fail 'Claude candidate does not materialize exact current T2-6 source bytes'
+  bad 'Claude candidate does not materialize exact current T2-6 source bytes'
 grep -Fq -- '<!-- FP:STYLE-T2-2026Q3 -->' "$claude_tier2_src" ||
-  fail 'Claude candidate lost the tier2 FP fingerprint (CONVENTIONS 規則 6)'
+  bad 'Claude candidate lost the tier2 FP fingerprint (CONVENTIONS 規則 6)'
 rg -Fq 'current T2-6只保留到三家host-local active config；不得恢復 `.agents` control-plane ownership' "$PLAN" ||
-  fail 'Plan 48 does not preserve T2-6 under host-local ownership'
+  bad 'Plan 48 does not preserve T2-6 under host-local ownership'
+sect 'Claude tier2 T2-6 條文本體與 FP 指紋'
 
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/agents-ownership.XXXXXX")"
 trap 'chmod -R u+rwX "$scratch" 2>/dev/null || true; rm -rf "$scratch"' EXIT
@@ -125,21 +146,22 @@ chmod 755 "$runtime_agents/bin/agents-sync"
 printf '%s\n' '# example' > "$runtime_agents/skills/example-skill/SKILL.md"
 HOME="$runtime_home" AGENTS_HOME="$runtime_agents" \
   "$runtime_agents/bin/agents-sync" --bootstrap >/dev/null 2>&1 ||
-  fail 'agents-sync rejected exact skills/.claude runtime directory'
+  bad 'agents-sync rejected exact skills/.claude runtime directory'
 HOME="$runtime_home" AGENTS_HOME="$runtime_agents" \
   "$runtime_agents/bin/agents-sync" --doctor >/dev/null 2>&1 ||
-  fail 'agents-sync doctor counted exact skills/.claude as a skill'
+  bad 'agents-sync doctor counted exact skills/.claude as a skill'
 [ -L "$runtime_home/.claude/skills/example-skill" ] ||
-  fail 'agents-sync did not bootstrap the real skill beside skills/.claude'
+  bad 'agents-sync did not bootstrap the real skill beside skills/.claude'
 [ ! -e "$runtime_home/.claude/skills/.claude" ] ||
-  fail 'agents-sync created a Claude link for skills/.claude'
+  bad 'agents-sync created a Claude link for skills/.claude'
 
 mkdir -p "$runtime_agents/skills/.unexpected-runtime"
 if HOME="$runtime_home" AGENTS_HOME="$runtime_agents" \
   "$runtime_agents/bin/agents-sync" --check >/dev/null 2>&1; then
-  fail 'agents-sync excluded an unknown hidden directory'
+  bad 'agents-sync excluded an unknown hidden directory'
 fi
 rm -rf "$runtime_agents/skills/.unexpected-runtime"
+sect 'agents-sync 對 exact skills/.claude 的處置'
 
 shadow_shared="$scratch/shared-skills-live-shape"
 mkdir -p "$shadow_shared/.claude/.cc-writes"
@@ -157,8 +179,9 @@ if ! (
   SHARED_SKILLS_ROOT="$shadow_shared" bash tests/repo-integrity.sh
 ) > "$integrity_log" 2>&1; then
   grep -F 'FAIL' "$integrity_log" >&2 || cat "$integrity_log" >&2
-  fail 'Claude repo-integrity failed under the skills/.claude shadow root（上列為實際 FAIL 行）'
+  bad 'Claude repo-integrity failed under the skills/.claude shadow root（上列為實際 FAIL 行）'
 fi
+sect 'Claude repo-integrity 在 shadow root 下整體仍綠'
 
 for sentinel in \
   "$scratch/home/.claude/CLAUDE.md" \
@@ -179,26 +202,26 @@ done
 
 for mode in --check --doctor --bootstrap; do
   HOME="$scratch/home" AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" "$mode" >/dev/null 2>&1 ||
-    fail "skills-only mode failed: $mode"
+    bad "skills-only mode failed: $mode"
 done
 for mode in default --deploy --only; do
   case "$mode" in
     default)
       if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
         "$AGENTS/bin/agents-sync" >/dev/null 2>&1; then
-        fail "retired interface did not fail loud: $mode"
+        bad "retired interface did not fail loud: $mode"
       fi
       ;;
     --only)
       if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
         "$AGENTS/bin/agents-sync" --only codex >/dev/null 2>&1; then
-        fail "retired interface did not fail loud: $mode"
+        bad "retired interface did not fail loud: $mode"
       fi
       ;;
     *)
       if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
         "$AGENTS/bin/agents-sync" "$mode" >/dev/null 2>&1; then
-        fail "retired interface did not fail loud: $mode"
+        bad "retired interface did not fail loud: $mode"
       fi
       ;;
   esac
@@ -211,7 +234,8 @@ for sentinel in \
   stat -f '%N	%z	%Lp' "$sentinel" >> "$sentinel_after"
 done
 diff -u "$sentinel_before" "$sentinel_after" >/dev/null ||
-  fail 'skills-only modes changed host global config metadata'
+  bad 'skills-only modes changed host global config metadata'
+sect 'skills-only 模式不觸碰 host global config'
 
 # 2026-08-03：`bin/agents-branch` 單點放行，`bin` 其餘路徑仍禁止。
 #
@@ -244,7 +268,7 @@ diff -u "$sentinel_before" "$sentinel_after" >/dev/null ||
 # 可規避偵測。
 control_plane_allow=(agents-branch pr-review-gate)
 [ "${#control_plane_allow[@]}" -le 2 ] ||
-  fail "control-plane allowlist 超過 2 筆上限（要放寬請連同上方理由一起改）: ${control_plane_allow[*]}"
+  bad "control-plane allowlist 超過 2 筆上限（要放寬請連同上方理由一起改）: ${control_plane_allow[*]}"
 control_plane_allow_re="\\.agents/bin/($(IFS='|'; printf '%s' "${control_plane_allow[*]}"))([^A-Za-z0-9_./-]|$)"
 
 # selftest：兩個方向都要驗。只驗「確切路徑被放行」會漏掉子字串過寬，只驗「近似路徑被擋」
@@ -254,7 +278,7 @@ allow_selftest="$(printf '%s\n' \
   'x:2:`~/.agents/bin/agents-branch` 建立分支' |
   grep -vE "$control_plane_allow_re" || true)"
 [ -z "$allow_selftest" ] ||
-  fail "control-plane allowlist 未放行確切工具路徑: $allow_selftest"
+  bad "control-plane allowlist 未放行確切工具路徑: $allow_selftest"
 deny_selftest="$({ printf '%s\n' \
   'x:1:~/.agents/bin/pr-review-gate_v2 x' \
   'x:2:~/.agents/bin/agents-branch-old x' \
@@ -263,7 +287,8 @@ deny_selftest="$({ printf '%s\n' \
   'x:5:~/.agents/bin/pr-review-gate/README x' |
   grep -vE "$control_plane_allow_re" || true; } | wc -l | tr -d ' ')"
 [ "$deny_selftest" -eq 5 ] ||
-  fail "control-plane allowlist 把近似路徑當成確切工具放行（僅 $deny_selftest/5 仍被偵測）"
+  bad "control-plane allowlist 把近似路徑當成確切工具放行（僅 $deny_selftest/5 仍被偵測）"
+sect 'control-plane allowlist 上限與正反向 selftest'
 
 control_plane_hits="$(
   grep -nE '\.agents/(core|rules|hooks|hosts|dist|bin)(/|`|$|[[:space:]]|，|。|、)' \
@@ -275,33 +300,37 @@ control_plane_hits="$(
     grep -vE "$control_plane_allow_re" || true
 )"
 [ -z "$control_plane_hits" ] ||
-  fail "active host global config still references .agents control plane: $control_plane_hits"
+  bad "active host global config still references .agents control plane: $control_plane_hits"
+sect 'host global config 未引用 .agents control plane'
 
 for dir in core rules hooks; do
   if find "$CLAUDE_CANDIDATE/$dir" -maxdepth 1 -type l -print -quit | grep -q .; then
-    fail "Claude $dir still contains symlink"
+    bad "Claude $dir still contains symlink"
   fi
 done
 for link in "$CLAUDE_CANDIDATE"/skills/*; do
-  [ -L "$link" ] || fail "Claude skill is not symlink: $link"
+  [ -L "$link" ] || bad "Claude skill is not symlink: $link"
   expected="../../.agents/skills/$(basename "$link")"
-  [ "$(readlink "$link")" = "$expected" ] || fail "Claude skill target changed: $link"
+  [ "$(readlink "$link")" = "$expected" ] || bad "Claude skill target changed: $link"
 done
+sect 'Claude core/rules/hooks 無 symlink、skill link 目標正確'
 
 head -1 "$CODEX_CANDIDATE/AGENTS.md" | grep -q '^<!-- GENERATED by ~/.agents/bin/agents-sync' &&
-  fail 'Codex generated banner still present'
+  bad 'Codex generated banner still present'
 head -1 "$COPILOT_CANDIDATE/copilot-instructions.md" | grep -q '^<!-- GENERATED by ~/.agents/bin/agents-sync' &&
-  fail 'Copilot generated banner still present'
+  bad 'Copilot generated banner still present'
+sect 'Codex／Copilot 無 generated banner'
 
 for candidate in "$CODEX_CANDIDATE" "$COPILOT_CANDIDATE"; do
   for rule in cookbook cpp dotnet frontend-spa infra testing typescript winforms; do
-    [ -f "$candidate/rules/$rule.md" ] || fail "local stack rule missing: $candidate/rules/$rule.md"
+    [ -f "$candidate/rules/$rule.md" ] || bad "local stack rule missing: $candidate/rules/$rule.md"
   done
 done
+sect 'Codex／Copilot local stack rules 齊備'
 
 for retired in dist hosts; do
   if [ -e "$AGENTS/$retired" ]; then
-    fail "retired generated surface reappeared: $AGENTS/$retired"
+    bad "retired generated surface reappeared: $AGENTS/$retired"
   fi
 done
 
@@ -309,11 +338,12 @@ done
 # （分離時刻意清空）。因此存在性是硬要求，非空不是——內容檢查只在它被重新
 # 填入時才有意義。
 [ -f "$AGENTS/attic/dist/manifest.tsv" ] ||
-  fail 'retired manifest missing: attic/dist/manifest.tsv'
+  bad 'retired manifest missing: attic/dist/manifest.tsv'
 if [ -s "$AGENTS/attic/dist/manifest.tsv" ] &&
   rg -q '\.codex/AGENTS\.md|\.copilot/copilot-instructions\.md' "$AGENTS/attic/dist/manifest.tsv"; then
-  fail 'retired manifest still contains host global config'
+  bad 'retired manifest still contains host global config'
 fi
+sect '退役 surface 未復活、attic manifest 中性'
 
 skills_before="${OWNERSHIP_SKILLS_BEFORE:-/private/tmp/three-host-global-config-split-impl-skills-before.tsv}"
 skills_after="${OWNERSHIP_SKILLS_AFTER:-/private/tmp/three-host-global-config-split-ownership-after.tsv}"
@@ -333,16 +363,19 @@ skills_metadata="${OWNERSHIP_DS_STORE_METADATA:-}"
 authentic_skills_before_sha='f7a3595ed6cbe8ff691fc094438aaed48e0cb8fdaa04b3a87a4c1a1ba37da12b'
 if [ -f "$skills_before" ] && [ -f "$skills_after" ]; then
   [ "$(shasum -a 256 "$skills_before" | awk '{ print $1 }')" = "$authentic_skills_before_sha" ] ||
-    fail "ownership skills baseline is not the recorded 2026-07-29 snapshot: $skills_before"
+    bad "ownership skills baseline is not the recorded 2026-07-29 snapshot: $skills_before"
   skills_manifests_match "$skills_before" "$skills_after" "$skills_metadata" candidate ||
-    fail 'ownership semantic skills manifest changed'
+    bad 'ownership semantic skills manifest changed'
+  sect 'ownership skills manifest 與 2026-07-29 快照一致'
 elif [ -n "${OWNERSHIP_SKILLS_BEFORE+set}${OWNERSHIP_SKILLS_AFTER+set}${OWNERSHIP_DS_STORE_METADATA+set}" ]; then
   # 用 `+set` 而非 `:-`：export 成空字串也算「呼叫者明確要求跑這個 gate」，不得降級。
   # 三個變數都要納入——OWNERSHIP_DS_STORE_METADATA 設定的是同一道 gate。
-  fail "ownership skills manifest explicitly requested but missing: $skills_before / $skills_after"
+  bad "ownership skills manifest explicitly requested but missing: $skills_before / $skills_after"
+  _wm=$fail
 else
   printf 'UNAVAILABLE  ownership skills manifest：2026-07-29 一次性快照已隨 /private/tmp 清空、從未進版控、計畫書禁止 rebaseline。probe：ls %s → No such file。設 OWNERSHIP_SKILLS_BEFORE／OWNERSHIP_SKILLS_AFTER 指向真本（SHA-256 %s）可恢復。\n' \
     "$skills_before" "$authentic_skills_before_sha"
+  unavailable=$((unavailable + 1))
 fi
 
 accepted_metadata=$'.DS_Store\tfile\tabac08d6445bcc8848a10a5e0e2a406629d2dea627e500c8e6006f720a647606\t57348\t644\t-'
@@ -355,25 +388,26 @@ printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile
 printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tstable\t1\t644\t-\n' \
   "$accepted_metadata" > "$fixture_after"
 skills_manifests_match "$fixture_before" "$fixture_after" "$accepted_metadata" accepted ||
-  fail 'exact .DS_Store reconciliation did not pass'
+  bad 'exact .DS_Store reconciliation did not pass'
 
 printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tstable\t1\t644\t-\n' \
   $'.DS_Store\tfile\tchanged\t57348\t644\t-' > "$fixture_drift"
 if skills_manifests_match "$fixture_before" "$fixture_drift" "$accepted_metadata" metadata-drift; then
-  fail 'changed .DS_Store metadata was accepted'
+  bad 'changed .DS_Store metadata was accepted'
 fi
 
 printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tstable\t1\t644\t-\nnested/.DS_Store\tfile\tchanged\t1\t644\t-\n' \
   "$accepted_metadata" > "$fixture_drift"
 if skills_manifests_match "$fixture_before" "$fixture_drift" "$accepted_metadata" nested-drift; then
-  fail 'nested .DS_Store was excluded as a wildcard'
+  bad 'nested .DS_Store was excluded as a wildcard'
 fi
 
 printf 'path\ttype\tsha256\tsize\tmode\tsymlink_target\n%s\nskill/SKILL.md\tfile\tchanged\t1\t644\t-\n' \
   "$accepted_metadata" > "$fixture_drift"
 if skills_manifests_match "$fixture_before" "$fixture_drift" "$accepted_metadata" semantic-drift; then
-  fail 'semantic skills drift was accepted'
+  bad 'semantic skills drift was accepted'
 fi
+sect '.DS_Store 對帳 fixture 自我測試（4 種漂移）'
 
 # 2026-07-30：rules/ 退役至 attic/ 後，typescript.md 與 frontend-spa.md 從此清單移除。
 # 它們原本被列為 carrier 是因為兩個 skill 內文引用了那兩條路徑；那兩處引用已改成不帶
@@ -381,7 +415,8 @@ fi
 # issue-tracker.md 保留——它是 [INT-5] fallback 的真消費者：Matt skill 先讀 repo 的
 # docs/agents/issue-tracker.md，不存在才落到這裡。
 carrier="$AGENTS/docs/agents/issue-tracker.md"
-[ -f "$carrier" ] || fail "compatibility carrier missing: $carrier"
+[ -f "$carrier" ] || bad "compatibility carrier missing: $carrier"
+sect 'compatibility carrier 存在'
 
 historical_before="${HISTORICAL_BEFORE:-/private/tmp/three-host-global-config-split-historical-before.tsv}"
 historical_after="${HISTORICAL_AFTER:-/private/tmp/three-host-global-config-split-historical-after.tsv}"
@@ -391,13 +426,16 @@ historical_after="${HISTORICAL_AFTER:-/private/tmp/three-host-global-config-spli
 authentic_historical_before_sha='6b75b8a337f51b7bc94e53c59f3a15d65255f0f42eea0b50607c71a57c1593cf'
 if [ -f "$historical_before" ] && [ -f "$historical_after" ]; then
   [ "$(shasum -a 256 "$historical_before" | awk '{ print $1 }')" = "$authentic_historical_before_sha" ] ||
-    fail "historical baseline is not the recorded 2026-07-29 snapshot: $historical_before"
-  diff -u "$historical_before" "$historical_after" >/dev/null || fail 'historical artifacts changed'
+    bad "historical baseline is not the recorded 2026-07-29 snapshot: $historical_before"
+  diff -u "$historical_before" "$historical_after" >/dev/null || bad 'historical artifacts changed'
+  sect 'historical artifacts 與 2026-07-29 快照一致'
 elif [ -n "${HISTORICAL_BEFORE+set}${HISTORICAL_AFTER+set}" ]; then
-  fail "historical manifest explicitly requested but missing: $historical_before / $historical_after"
+  bad "historical manifest explicitly requested but missing: $historical_before / $historical_after"
+  _wm=$fail
 else
   printf 'UNAVAILABLE  historical artifacts：一次性快照不可重建（同上）。設 HISTORICAL_BEFORE／HISTORICAL_AFTER 指向真本（SHA-256 %s）可恢復。\n' \
     "$authentic_historical_before_sha"
+  unavailable=$((unavailable + 1))
 fi
 
 live_before="${LIVE_BEFORE:-/private/tmp/three-host-global-config-split-live-before.tsv}"
@@ -406,13 +444,22 @@ live_after="${LIVE_AFTER:-/private/tmp/three-host-global-config-split-live-after
 authentic_live_before_sha='3426b877845913a2ebbc5c9f6cf3ac2876aa29f2df9a46171e6b475446897217'
 if [ -f "$live_before" ] && [ -f "$live_after" ]; then
   [ "$(shasum -a 256 "$live_before" | awk '{ print $1 }')" = "$authentic_live_before_sha" ] ||
-    fail "live baseline is not the recorded 2026-07-29 snapshot: $live_before"
-  diff -u "$live_before" "$live_after" >/dev/null || fail 'live repo fingerprints changed'
+    bad "live baseline is not the recorded 2026-07-29 snapshot: $live_before"
+  diff -u "$live_before" "$live_after" >/dev/null || bad 'live repo fingerprints changed'
+  sect 'live repo fingerprints 與 2026-07-29 快照一致'
 elif [ -n "${LIVE_BEFORE+set}${LIVE_AFTER+set}" ]; then
-  fail "live fingerprint explicitly requested but missing: $live_before / $live_after"
+  bad "live fingerprint explicitly requested but missing: $live_before / $live_after"
+  _wm=$fail
 else
   printf 'UNAVAILABLE  live repo fingerprints：一次性快照不可重建（同上）。設 LIVE_BEFORE／LIVE_AFTER 指向真本（SHA-256 %s）可恢復。\n' \
     "$authentic_live_before_sha"
+  unavailable=$((unavailable + 1))
 fi
 
-printf 'PASS: three-host global-config ownership contract\n'
+printf '\n%d PASS / %d FAIL / %d UNAVAILABLE\n' "$pass" "$fail" "$unavailable"
+# 「至少跑到了」自證：所有分節都沒跑到時上面會印 0 PASS / 0 FAIL 卻 exit 0，正是
+# bin/ci-local 檔頭點名的「永遠回綠的包裝器比沒有更糟」。只釘下限不釘固定條數——
+# 把條數寫死實測漂移過兩次（版本絆線 28→45、guard parity 11→13），維護成本高於
+# 它擋下的東西。
+[ "$((pass + fail))" -gt 0 ] || die '沒有任何檢查群執行'
+[ "$fail" -eq 0 ]

@@ -78,7 +78,11 @@ run_checks() {
 
 selftest() {
   local scratch count id meaning claude codex copilot label target field first_clause pos_rc neg_rc empty_rc unavailable_rc rc=0
-  scratch=$(mktemp -d); trap "rm -rf '$scratch'" EXIT
+  # 本檔只有 set -uo pipefail：mktemp 失敗時 $scratch 為空，`: > "$scratch/claude.md"`
+  # 會落到 /claude.md。trap 也必須在建立成功之後才裝，否則 rm -rf '' 是無意義的清理。
+  scratch=$(mktemp -d "${TMPDIR:-/tmp}/three-host-capability-parity.XXXXXX") ||
+    { printf 'FAIL selftest: 無法建立暫存目錄，fixture 未建立\n' >&2; return 1; }
+  trap "rm -rf '$scratch'" EXIT
   count=$(mapping_count)
   [ "$count" -ge 4 ] || { printf 'FAIL selftest: canonical mapping has only %s capabilities\n' "$count" >&2; return 1; }
 
