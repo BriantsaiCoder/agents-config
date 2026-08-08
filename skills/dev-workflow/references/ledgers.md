@@ -19,7 +19,7 @@
 
 - Checkpoint 不重設 baseline，也不使未跑的 S5／CI／review 變成 PASS；publication 一律以原 baseline 到 current HEAD 的累積 diff 判定。
 - 第一次 checkpoint 前在 Preflight ledger 記錄 immutable baseline SHA（target merge-base）；publication 先用 `git merge-base --is-ancestor <baseline> HEAD` 驗證，失敗即 gate FAIL，重新確認 target merge-base 後跑全套重驗。
-- PR 的 `--base` MUST 解析到該 baseline SHA，S5 審查範圍即 `git diff <baseline>..HEAD`。base 與 baseline 不一致時，GitHub 呈現的 diff 會含入 baseline 之前的 commit，「這個 PR 的 diff」就有兩種讀法——要嘛同一份 code 被重複審，要嘛因為「看起來審過了」被略過。用分支名而非 SHA 指稱起點對不回去：分支會被 force-push 更新，也會在 merge 後依 Postflight 刪除。
+- `git merge-base <PR base> HEAD` MUST 等於記錄的 baseline SHA，S5 審查範圍即 `git diff <baseline>..HEAD`。不相等時 GitHub 呈現的 diff 會含入 baseline 之前的 commit，「這個 PR 的 diff」就有兩種讀法——要嘛同一份 code 被重複審，要嘛因為「看起來審過了」被略過。比對 merge-base 而非 base 本身：base 換了但祖先鏈仍含 baseline 時（PR 被 retarget 到已含前一批變更的 main）range 其實沒變，比對 base 會誤報。用分支名指稱起點則對不回去：分支會被 force-push 更新，也會在 merge 後依 Postflight 刪除。
 - S4 依 `git diff --name-only <前次 closeout SHA>..HEAD` 的累積影響重新判 risk tier 並重跑適用 checks；不得因新 commit 很小而降低整體風險。
 - S5 只重審該 diff 觸及的檔案與其 transitive impact；未觸及範圍可沿用前次 findings 並註明 baseline SHA，範圍不得由 reviewer 任意縮小。
 - S6 重出完整六項 ledger；未受影響項目可引用 baseline SHA。Current-head CI／review 結果一律失效並依 `review-triage.md` 重查。
@@ -31,8 +31,9 @@
 一次交付拆成多個相依 PR 時（P2 建在 P1 之上），上節的 base↔baseline 一致性有兩個 stack 特有的破法。
 
 - merge 順序由 stack 底部往上，P2 的 `--base` 指 P1 的分支。
-- **P1 一旦 squash merge，P2 的 base 即失效**：squash 使 P1 的原始 commit 從未進入 main，`merge-base(main, P2)` 退回 P1 之前，GitHub retarget 後呈現的 diff 會把 P1 的變更整份帶回來。retarget 後 MUST 把 P2 rebase 到 main、以新的 merge-base 重記 baseline SHA，再依上節重驗。
-- 上節的機械檢查偵測不到這個失效：retarget 不動 HEAD，`git merge-base --is-ancestor` 仍為真，會回假 PASS。retarget 後 MUST 另外用 `gh pr view <n> --json baseRefOid --jq .baseRefOid` 取實際 base 與記錄的 baseline 比對。這是人工驗證項——`bin/pr-review-gate` 目前不取 base，stack 若成為常態，應把 `baseRefOid` 併進該 gate 既有的 `--json` 清單，而不是讓這條停留在散文。
+- **stack 上的 PR MUST 用 merge commit 合併，不用 squash**——這是對 Postflight「squash merge 預設」的具名例外，只在 stack 成立。squash 會使 P1 的原始 commit 從未進入 main，`merge-base(main, P2)` 退回 P1 之前，GitHub 把 P2 retarget 到 main 後呈現的 diff 就把 P1 的變更整份帶回來，正是上節要防的事改由 retarget 造成；補救要每次 merge 後 rebase 加重記 baseline，stack 有多深就付幾次。merge commit 讓 P1 的 commit 真的落在 main 的祖先鏈上，retarget 後 `merge-base` 自動仍等於原 baseline，上節的檢查照常成立，零補救。
+- **例外的例外**：[INT-10] 範圍（全域／security config）把 squash merge 釘進五步路徑，不得以本節豁免。那種 stack 每次 merge 後 MUST rebase 到 main、重記 baseline SHA 再重驗；不想付這個成本就別把全域 config 拆成 stack。
+- retarget 後 MUST 實查一次 `gh pr view <n> --json baseRefOid --jq .baseRefOid`，確認 `merge-base(base, HEAD)` 仍等於記錄的 baseline——retarget 不動 HEAD，上節的 `git merge-base --is-ancestor` 在 base 被換掉時仍為真，單靠它會回假 PASS。這是人工驗證項：`bin/pr-review-gate` 目前不取 base，stack 若成為常態，應把 `baseRefOid` 併進該 gate 既有的 `--json` 清單，而不是讓這條停留在散文。
 
 ---
 
@@ -119,7 +120,7 @@
 
 merge 完成後，回覆一行帶過兩項：
 
-1. **刪分支**：合併後刪除該 PR 分支（remote + 已併入的 local），squash merge 預設。
+1. **刪分支**：合併後刪除該 PR 分支（remote + 已併入的 local），squash merge 預設（stack 的具名例外見「Stacked PR 的 diff scoping」）。
 2. **BUGFIX settlement 指標**：若為 BUGFIX 鏈，MUST 已跑 `bug-fix-settlement` 並輸出評估摘要——沉澱去向（cookbook / memory / workflow）或明述「評估後不需沉澱」；非 BUGFIX 免此項。
 
 ### 範例（已填）
