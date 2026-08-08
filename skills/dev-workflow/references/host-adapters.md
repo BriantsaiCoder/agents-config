@@ -25,8 +25,8 @@ Tier0 安全內容由 `tests/tier0-parity.sh` 驗；model、effort、permission 
 - 同一 ready frontier 上彼此獨立的 1–4 個 blocker MUST 合併在同一次 `AskUserQuestion`；dependent 題等前一批回答。Skip／dismiss MUST NOT 視為答案、核准或採用預設值。
 - user-only skill command = `/<skill-name>`。
 - S5 Standards／Spec outcomes 仍須覆蓋；是否平行與 subagent 數量依 [INT-4] 自主決定，review agent 保持 read-only；`uiux-reviewer` 是 Claude-only。
-- 用專屬 review agent 不豁免 `references/reviewer-template.md`：豁免的是 prompt 區塊本身與「怎麼用」中以該區塊為前提的步驟，其餘各節對 Claude 一樣有約束力，MUST 在維護 `code-review` 的 baseline 或判 S5 EXIT 時讀。不在此列舉是哪幾節——列舉會漏，新增的節就掉在外面。
-- 兩軸 findings 處理完後 MUST 跑 `simplify`（Claude-only）當 apply pass：兩軸只報不修，這一步會動手改 [S5-3] baseline 落到實體 code 的部分。它在 review gate 之後動手，產出的 diff 卻一樣進 PR，所以 MUST 回 S4 重驗**並**依 `references/ledgers.md` 的「Closeout 後的新 commit」把該 diff 觸及的檔案重新納入 S5——只回 S4 等於讓一批 code 繞過 [S5-1]。該 pass 未產生改動時無此義務，EXIT 判準見 `references/reviewer-template.md` 的「S5 EXIT 判準」。
+- 用專屬 review agent 不豁免 `references/reviewer-template.md`：豁免的是 prompt 區塊本身與「怎麼用」中以該區塊為前提的步驟，其餘各節對 Claude 一樣有約束力，MUST 在維護 `code-review` 的 baseline 或判 S5 EXIT 時讀。不在此列舉是哪幾節——列舉會漏，新增的節就掉在外面。這條與 `simplify` 綁定都不因專屬 agent 而豁免。
+- 兩軸 findings 處理完後 MUST 跑 `simplify`（Claude-only）當 apply pass：兩軸只報不修，這一步會動手改 [S5-3] baseline 落到實體 code 的部分。它在 review gate 之後動手，產出的 diff 卻一樣進 PR，所以 MUST 回 S4 重驗**並**依 `references/ledgers.md` 的「Closeout 後的新 commit」把該 diff 觸及的檔案重新納入 S5——只回 S4 等於讓一批 code 繞過 [S5-1]。該 pass 未產生改動時無此義務，但 MUST 明述 no-op（[T0-2]：沒跑過與跑了沒動，證據不同）。
 
 ## Codex
 
