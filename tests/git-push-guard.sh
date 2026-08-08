@@ -17,8 +17,11 @@ pass=0
 fail=0
 
 # 固定分支的臨時 repo：讓「無明示 refspec」的案例可預期地解析到當前分支
-REPO="$(mktemp -d "${TMPDIR:-/tmp}/gpguard.XXXXXX")"
-FAKEBIN="$(mktemp -d "${TMPDIR:-/tmp}/gpfake.XXXXXX")"
+# 本檔沒有 set -e：mktemp 失敗時變數為空，後續路徑會落到 / 底下而斷言照跑。
+REPO="$(mktemp -d "${TMPDIR:-/tmp}/gpguard.XXXXXX")" ||
+  { printf 'FAIL: 無法建立暫存 repo，測試未執行\n' >&2; exit 1; }
+FAKEBIN="$(mktemp -d "${TMPDIR:-/tmp}/gpfake.XXXXXX")" ||
+  { rm -rf "$REPO"; printf 'FAIL: 無法建立 fake bin 目錄，測試未執行\n' >&2; exit 1; }
 trap 'rm -rf "$REPO" "$FAKEBIN"' EXIT   # 不清會在 /tmp 累積 gpguard.* / gpfake.*
 PROBE_STDOUT="$REPO/probe.stdout"
 PROBE_STDERR="$REPO/probe.stderr"

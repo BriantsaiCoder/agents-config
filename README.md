@@ -64,7 +64,9 @@ bash hooks/install-hooks.sh --remove-global-pre-push
 bin/ci-local
 ```
 
-`bin/ci-local` 是唯一入口：CI 步驟由 `.github/workflows/ci.yml` 解析而來，另加一段 **local-only gates**——讀 live `~/.claude` ／ `~/.codex` ／ `~/.copilot`、runner 上跑不動、因此永遠不會出現在 `ci.yml` 的測試（目前是 `three-host-global-config-ownership.sh` 與 `codex-git-push-guard.sh`）。這份清單同樣是推導的：`tests/*.sh` 減去 `ci.yml` 引用者，再減去一張附理由的排除表。新增測試忘了接執行點時，它會出現在 local-only 清單而不是靜默消失。
+`bin/ci-local` 是唯一入口：CI 步驟由 `.github/workflows/ci.yml` 解析而來，另加一段 **local-only gates**——在 GitHub runner 上跑不動、因此永遠不會出現在 `ci.yml` 的測試。跑不動的原因目前有兩類：讀 live `~/.claude` ／ `~/.codex` ／ `~/.copilot`（runner 沒有那三棵樹），或綁 macOS 專屬路徑與工具。
+
+這份清單是推導的：`tests/*.sh` 減去 `ci.yml` **已解析 step** 所引用者（註解提到不算），再減去一張排除表——排除表記的是呼叫者檔名並機械驗證該引用仍存在，理由失效時報 FAIL 而非 SKIP。清單不寫進本檔：列舉會漂移而沒有東西會提醒你更新，跑 `bin/ci-local` 看輸出即為當下實況。新增測試忘了接執行點時，它會出現在 local-only 區塊而不是靜默消失。
 
 需要單跑時：
 
