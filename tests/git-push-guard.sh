@@ -227,22 +227,37 @@ for f in codex claude; do
   probe_nojq "$f" allow "ls -la"
 done
 
-# ── 唯讀 cwd：切詞機制不得因暫存檔建不起來而讓整段掃描被跳過 ──────────────
+# ── 切詞機制不得依賴暫存檔 ─────────────────────────────────────────────────
 #
 # 2026-08-08 實測的 fail-open：guard 原本用 here-string（`<<<`）切詞，而 macOS 的
-# bash 3.2 把 here-doc／here-string 的暫存檔開在 **cwd** 而非 ${TMPDIR}。cwd 唯讀時
-# redirect 失敗 → 陣列留空 → 掃描迴圈一次都不跑 → 落到檔尾 exit 0＝放行。
-# 同一個 `git push --force origin main` payload：cwd 可寫回 rc=2 攔截，cwd 唯讀回
-# rc=0 放行，而且無聲——錯誤訊息進 stderr，host 只看 exit code。
+# bash 3.2 把 here-doc／here-string 的暫存檔放在 **/tmp**（忽略 TMPDIR），/tmp 不可寫
+# 時才退回 cwd。兩者皆不可寫時 redirect 失敗 → 陣列留空 → 掃描迴圈一次都不跑 →
+# 落到檔尾 exit 0＝放行，而且無聲（錯誤訊息進 stderr，host 只看 exit code）。
 #
-# 這條測的是「機制壞掉時的方向」，不是某個 payload 的判定，所以只需一個 deny 案例
-# 加一個 allow 案例（確認修法沒把一般 push 也擋掉）。
+# 本區塊第一版只有下面的行為案例，那是假綠：把守衛換回修正前版本，它們在 /tmp 可寫
+# 的環境（Linux CI、一般 macOS shell）**全部仍然 PASS**——chmod 擋得住 cwd，擋不住
+# /tmp。所以改成兩層：
+#
+#   靜態斷言  切詞路徑不得出現 here-doc／here-string。到哪都成立，是唯一可攜的
+#             復發守衛。只掃非註解行，否則守衛自己的說明會讓它恆紅。
+#   行為案例  保留，但先探測 /tmp 是否可寫；可寫就 SKIP，不給沒有意義的綠。
+guard_src_hits="$(grep -vE '^[[:space:]]*#' "$GUARD" | grep -E '<<<|<<-?[[:space:]]*.?[A-Za-z_]')" || guard_src_hits=""
+if [ -z "$guard_src_hits" ]; then
+  pass=$((pass + 1)); printf '  PASS 切詞路徑不依賴暫存檔 redirect\n'
+else
+  fail=$((fail + 1)); printf '  FAIL 切詞路徑仍有 here-doc／here-string（/tmp 與 cwd 皆不可寫時會 fail-open）：\n'
+  printf '%s\n' "$guard_src_hits" | head -3 | sed 's/^/       /'
+fi
+
 readonly_dir="$REPO/readonly-cwd"
 mkdir -p "$readonly_dir"
 chmod 500 "$readonly_dir"
-if ( cd "$readonly_dir" && : > .probe-write ) 2>/dev/null; then
+if ( : > /tmp/.gpguard-tmpwrite ) 2>/dev/null; then
+  rm -f /tmp/.gpguard-tmpwrite
+  printf '  SKIP  唯讀 cwd 行為案例：/tmp 可寫，此環境重現不了 here-doc fallback\n'
+elif ( cd "$readonly_dir" && : > .probe-write ) 2>/dev/null; then
   rm -f "$readonly_dir/.probe-write"
-  printf '  SKIP  唯讀 cwd 案例：本環境下 chmod 500 仍可寫（root？），無法建立條件\n'
+  printf '  SKIP  唯讀 cwd 行為案例：chmod 500 仍可寫（root？），條件建不起來\n'
 else
   ro_probe() {  # $1=expected $2=command
     local expected="$1" command="$2" rc actual
