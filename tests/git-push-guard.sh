@@ -12,6 +12,9 @@
 set -ufo pipefail
 
 GUARD=${GUARD:-"$HOME/.agents/hooks/guard-git-push.sh"}
+# GUARD 可由環境覆寫，值壞掉時整份測試的意義就沒了——先擋住，別讓它變成一百多筆
+# BADEXIT 或（更糟）讓下面的靜態斷言把 grep 的 option 輸出當成「乾淨的守衛」。
+[ -r "$GUARD" ] || { printf 'FAIL: GUARD 不是可讀檔案：%s\n' "$GUARD" >&2; exit 1; }
 JQ="$(command -v jq)"
 pass=0
 fail=0
@@ -246,7 +249,10 @@ done
 # （那是左移賦值 `<<=`）。第一版寫成 `.?[A-Za-z_]`，漏掉 delimiter 以數字開頭的
 # `<<1` 與 `<<'1'`——那是可繞過的守衛（2026-08-08 PR #71 review 指出並實測確認）。
 # 代價是算術左移 `$((a << 2))` 會誤報；本檔守備的是安全閘，噪音比靜默漏放便宜。
-guard_src_hits="$(grep -vE '^[[:space:]]*#' "$GUARD" | grep -E '<<-?[[:space:]]*[^=[:space:]]')" || guard_src_hits=""
+# 檔名前的 `--` 不可省：GUARD 可由環境覆寫，值以 `-` 開頭時（例如 GUARD=--version）
+# grep 會把它當 option，輸出自己的說明而非守衛內容，hits 為空 → 靜態斷言靜默通過。
+# 上面的 [ -r ] 已擋掉大部分，`--` 是同一件事的第二道（2026-08-08 PR #71 review）。
+guard_src_hits="$(grep -vE '^[[:space:]]*#' -- "$GUARD" | grep -E '<<-?[[:space:]]*[^=[:space:]]')" || guard_src_hits=""
 if [ -z "$guard_src_hits" ]; then
   pass=$((pass + 1)); printf '  PASS 切詞路徑不依賴暫存檔 redirect\n'
 else
