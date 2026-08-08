@@ -286,9 +286,12 @@ has "reviewer template carries the Wrong Altitude baseline" 'Wrong Altitude.*→
 has "code-review Standards baseline carries Unused Local Reuse" 'Unused Local Reuse.*→ 指名既有符號並改呼叫它。' skills/code-review/SKILL.md
 has "code-review Standards baseline carries Needless Indirection" 'Needless Indirection.*→ 內聯回去，等真的第二個使用點出現再抽。' skills/code-review/SKILL.md
 has "code-review Standards baseline carries Wrong Altitude" 'Wrong Altitude.*→ 把該決策移回它該在的層。' skills/code-review/SKILL.md
-# code-review 沒有優先序清單，efficiency 在該路徑本來無落點，這個 clause 是補上的落點。
-# upstream rebase 會靜默把它掉回原狀，而症狀只是「review 不再報效能」，沒人會發現。
+# code-review 沒有優先序清單，reviewer-template 的優先序第 3、4 級（performance、
+# correctness）在該路徑本來無落點——security 由 S0 route 到 shared-security-review、
+# breaking changes 到 deps-check，只有這兩級無家可歸。upstream rebase 會靜默把 clause
+# 掉回原狀，而症狀只是「review 不再報效能／不再報邊界條件」，沒人會發現。
 has "code-review Standards brief carries the performance clause" 'performance regressions the diff introduces' skills/code-review/SKILL.md
+has "code-review Standards brief carries the correctness clause" 'correctness defects — boundary conditions' skills/code-review/SKILL.md
 # 設計註記 MUST 留在 prompt 區塊外：在區塊內時 Codex／Copilot 會把「不含 efficiency 維」
 # 一起複製進 reviewer prompt，對 reviewer 讀起來就是「這一維不用看」。用標題 grep 證明不了
 # 位置（整段搬到區塊之前也會 PASS），所以直接掃區塊內容。

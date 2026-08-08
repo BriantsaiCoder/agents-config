@@ -22,6 +22,7 @@
 - `git merge-base <PR base> HEAD` MUST 等於記錄的 baseline SHA，S5 審查範圍即 `git diff <baseline>..HEAD`。不相等時 GitHub 呈現的 diff 會含入 baseline 之前的 commit，「這個 PR 的 diff」就有兩種讀法——要嘛同一份 code 被重複審，要嘛因為「看起來審過了」被略過。比對 merge-base 而非 base 本身：base 換了但祖先鏈仍含 baseline 時（PR 被 retarget 到已含前一批變更的 main）range 其實沒變，比對 base 會誤報。用分支名指稱起點則對不回去：分支會被 force-push 更新，也會在 merge 後依 Postflight 刪除。
 - S4 依 `git diff --name-only <前次 closeout SHA>..HEAD` 的累積影響重新判 risk tier 並重跑適用 checks；不得因新 commit 很小而降低整體風險。
 - S5 只重審該 diff 觸及的檔案與其 transitive impact；未觸及範圍可沿用前次 findings 並註明 baseline SHA，範圍不得由 reviewer 任意縮小。
+- **S5 重審的終止條件**：某一輪兩軸的 findings 全為 `suggestion:`／`nitpick:`／`question:` 級即 EXIT，該輪的修復不再觸發下一輪；任一軸出現 `issue:` 則修完 MUST 再審一輪。修 `issue:` 的改動本身會引入新 `issue:`（實測發生過：補 fail-open 守衛的第一版自己是假綠），而低於該級別的修復不改變 gate 結論。未採納的 `suggestion:`／`nitpick:` MUST 在 PR body 列出並附不修的理由，不得靜默丟棄——沒有出口的迴圈與沒有迴圈一樣糟。
 - S6 重出完整六項 ledger；未受影響項目可引用 baseline SHA。Current-head CI／review 結果一律失效並依 `review-triage.md` 重查。
 
 ---

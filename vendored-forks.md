@@ -32,7 +32,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
 | `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
-| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance clause to the Standards brief; tree SHA-256 `3230d0a4e899e844a97e36928a16cd2bd80a56a8097cedf374411d9db501b4e0` | **Active** |
+| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance clause to the Standards brief; tree SHA-256 `78ae14e7f5ff0338ed57ccb81f392a06b82b93b8a6ae7c1624e265949a172308` | **Active** |
 | `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Active** |
 
 <!-- fork-index:end -->
@@ -501,21 +501,24 @@ carries all five in full.
 Mapping the overlapping rule onto the Fowler list above was tried and rejected as not equivalent —
 the boundary is written into the entry itself rather than restated here.
 
-The same edit adds performance regressions to the Standards sub-agent brief. The house baseline
+The same edit adds performance and correctness to the Standards sub-agent brief. The house baseline
 leaves efficiency out on the grounds that the reviewer's priority list already carries it — sound
-for the host-neutral template, which has such a list, but this skill never did. Of that list's four
-other levels, security routes to `shared-security-review` and breaking changes to `deps-check` via
-S0 routing, so both have a home; **correctness does not, on this path**. That gap is recorded, not
-fixed — widening the brief further is its own decision, not a side effect of this one.
+for the host-neutral template, which has such a list, but this skill never did. Walking that list's
+five levels against this path: security routes to `shared-security-review` and breaking changes to
+`deps-check` via S0, so both have a home elsewhere; stack-specific checks are what the Fowler
+baseline above already covers; **performance and correctness had nowhere to land at all**. Both are
+now clauses (c) and (d) of the step-4 Standards brief. Adding only performance would have left the
+same hole one level down, for the same reason.
 
-Approved tree SHA-256: `3230d0a4e899e844a97e36928a16cd2bd80a56a8097cedf374411d9db501b4e0`.
+Approved tree SHA-256: `78ae14e7f5ff0338ed57ccb81f392a06b82b93b8a6ae7c1624e265949a172308`.
 Driving rules: `[S5-4]` and `[S5-3]` in `skills/dev-workflow/SKILL.md`.
 
 On upstream update, drop this fork if the new step-4 briefs carry no output cap and step 5 already
 defines a within-axis filter; otherwise reapply every edit listed here — delete any word/finding-count
 limit from every sub-agent brief, keep the report-everything + severity/confidence wording, re-add
 the within-axis filter paragraph to the aggregate step, re-add all five baseline rules to the
-step-3 smell baseline, and re-add the performance clause to the Standards brief — then recompute
+step-3 smell baseline, and re-add the performance and correctness clauses to the Standards brief —
+then recompute
 the tree fingerprint with
 `vendored_tree_sha256 skills/code-review` and update both this section and the index row. If
 upstream renumbers the steps, re-anchor on the brief text and the `## Standards` / `## Spec`
