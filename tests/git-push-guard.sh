@@ -14,7 +14,16 @@ set -ufo pipefail
 GUARD=${GUARD:-"$HOME/.agents/hooks/guard-git-push.sh"}
 # GUARD 可由環境覆寫，值壞掉時整份測試的意義就沒了——先擋住，別讓它變成一百多筆
 # BADEXIT 或（更糟）讓下面的靜態斷言把 grep 的 option 輸出當成「乾淨的守衛」。
-[ -r "$GUARD" ] || { printf 'FAIL: GUARD 不是可讀檔案：%s\n' "$GUARD" >&2; exit 1; }
+#
+# 必須同時是 regular file：只驗 [ -r ] 時目錄與 FIFO 都會通過，而
+#   目錄 → grep 報錯，被 `|| guard_src_hits=""` 接住 → 靜態斷言回 PASS
+#   FIFO → grep 可能阻塞，整份測試卡住
+# 前者實測過：GUARD 指向目錄時「切詞路徑不依賴暫存檔 redirect」報 PASS，其餘
+# 150 條全紅——會說謊的正好是那條靜態斷言（2026-08-08 PR #71 review）。
+if [ ! -f "$GUARD" ] || [ ! -r "$GUARD" ]; then
+  printf 'FAIL: GUARD 不是可讀的實體檔案：%s\n' "$GUARD" >&2
+  exit 1
+fi
 JQ="$(command -v jq)"
 pass=0
 fail=0
