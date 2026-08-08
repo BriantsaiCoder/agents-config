@@ -91,7 +91,7 @@
 
 - 兩軸的 finding 經 caller 技術評估後沒有 `issue:` 即 EXIT；仍有 `issue:` **且其處置產生了新 diff**，MUST 再審一輪。用 diff 而不是「改了 code」當判準：規則檔、文件、測試斷言的 repo 沒有「code」可言，照字面判會讓這條在那些 repo 永不觸發，而它們正是最需要它的地方。**級別以 caller 的評估為準，reviewer 自標僅為初值**——出口若是自標 prefix 的函數，等於把 gate 交給單一 agent 自行決定，而「多一輪」的成本全落在 caller 身上，誘因一律指向低標。
 - 各軸的終局狀態不由本判準決定，仍是 kernel 定義的四態：`PASS`、`SKIPPED`（附理由）、`UNAVAILABLE`（附 probe）都可續行，`FAIL` 不可。四態直接寫在這裡而不指向出處：它在 kernel 是一條無 ID 的裸 bullet，指過去等於指一個沒有穩定性保證的位置。
-- host 有 apply pass（如 Claude 的 `simplify`）時，其 diff 依該 host adapter 一併納入本輪，不另起一輪。
+- host 有 apply pass（如 Claude 的 `simplify`）時，其 diff 依該 host adapter 一併納入本輪的兩軸範圍，不遞增輪次計數——「不另起一輪」指的是計數，不是豁免審查。該 pass 未產生改動時，MUST 明述 no-op（[T0-2]：沒跑過與跑了沒動，證據不同）。
 - 未採納或未解答的 finding（含被 caller 駁回的 `issue:`）MUST 逐條列進 PR body 的 Preflight row 6 並附理由；級別經 caller 改動者一併寫出 reviewer 初值，否則降級後與原生的 `suggestion:` 同形，事後無從分辨。
 
 依據是實測而非推論：`issue:` 級的修復確實會引入新的 `issue:`（2026-08-08，`beebb6b`——補 fail-open 守衛的第一版自己是假綠）。

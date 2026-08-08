@@ -323,18 +323,26 @@ has "S5 EXIT level is the caller's final call" 'reviewer 自標僅為初值' ski
 # 判準的三條各釘一次義務句而非描述句：只釘標題與第一句時，其餘 bullet 可整段刪除仍全綠
 # （2026-08-08 實測）。第二條特別重要——第一版判準寫「EXIT 時各軸標 PASS」「UNAVAILABLE
 # 不得 EXIT」，等於關掉 kernel 明許的 SKIPPED／UNAVAILABLE 續行路徑，是條文自己造的 bug。
-has "S5 EXIT keeps the four terminal states" '不由本判準決定，仍是 kernel 定義的四態' skills/dev-workflow/references/reviewer-template.md
+# 以下這批守衛的 pattern 一律釘「會翻轉的子句」，不釘引入語。前六輪的教訓是同一個撰寫
+# 方法每輪換一種外觀復發：未錨行首行尾 → 只釘句首 → 釘住錯誤引用 → 極性反轉。判準是
+# 「把這句改成相反意思，pattern 還能不能命中」；每一條都做過這個反轉測試才留下。
+has "S5 EXIT keeps the four terminal states" '`SKIPPED`（附理由）、`UNAVAILABLE`（附 probe）都可續行，`FAIL` 不可' skills/dev-workflow/references/reviewer-template.md
 has "S5 EXIT requires disclosing unadopted findings" 'MUST 逐條列進 PR body 的 Preflight row 6' skills/dev-workflow/references/reviewer-template.md
 # 重審的觸發條件用 diff 不用「改了 code」：規則檔／文件／測試斷言的 repo 沒有 code 可言，
 # 照字面判會讓這條在那些 repo 永不觸發——本 repo 自己就是那種 repo（2026-08-08 實測）。
-has "S5 EXIT triggers on diff, not on the word code" '其處置產生了新 diff' skills/dev-workflow/references/reviewer-template.md
+has "S5 EXIT triggers on diff, not on the word code" '其處置產生了新 diff\*\*，MUST 再審一輪' skills/dev-workflow/references/reviewer-template.md
 # 以下三條守的是「EXIT 判準對誰有效」這條鏈。實測過：三行同時還原成前一版寫法，283 條
 # 測試全綠——而 :7 一還原，Claude 路徑就再次豁免掉 EXIT 判準與回饋處理，沒有任何 FAIL。
-has "reviewer-template exempts only the prompt block" '豁免的是 prompt 區塊本身' skills/dev-workflow/references/reviewer-template.md
-has "reviewer-template load-when covers all S5 review" 'references/reviewer-template.md.*非 SKIPPED S5 review' skills/dev-workflow/SKILL.md
+has "reviewer-template exempts only the prompt block" '豁免的是 prompt 區塊本身.*本檔其餘各節對它們一樣有約束力' skills/dev-workflow/references/reviewer-template.md
+# 釘 cell 尾的 `|`：`非 SKIPPED S5 review` 是修復前的錯誤字串 `非 SKIPPED S5 reviewer prompt`
+# 的嚴格前綴，不釘邊界的話還原成那個 bug 一樣全綠（2026-08-08 實測，六條反向斷言裡唯獨
+# 這條沒 FAIL）。
+has "reviewer-template load-when covers all S5 review" 'references/reviewer-template.md` \| 非 SKIPPED S5 review \|' skills/dev-workflow/SKILL.md
+has "Claude adapter binds the whole reviewer-template" '不豁免 `references/reviewer-template.md`.*其餘各節對 Claude 一樣有約束力' "$host_adapters_ref"
+has "S5 EXIT scopes the apply-pass carve-out" 'apply pass.*一併納入本輪' skills/dev-workflow/references/reviewer-template.md
 has "Preflight row 6 points at the resolved definition" 'reviewer-template.md.*回饋處理.*S5 EXIT 判準' "$ledgers_ref"
 # cascade 子句掛在只釘句首的斷言後面，整段刪掉仍全綠（實測）——同一支檔上面才寫過這個教訓。
-has "ledgers explains the cascade cost" '父分支被改寫的 cascade.*三層以上' "$ledgers_ref"
+has "ledgers explains the cascade cost" '三層以上的 stack 不能逐層各判各的' "$ledgers_ref"
 # review-triage 引用的是這個標題的逐字形式，改名會靜默斷鏈。
 has "stacked PR section heading is stable" '^## Stacked PR 的 diff scoping' "$ledgers_ref"
 # 錨定整行：同檔「怎麼用」第 1 步的說明文字裡就引用了這兩個 marker 字串，不錨行首行尾的
