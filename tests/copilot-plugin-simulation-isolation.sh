@@ -53,8 +53,14 @@ printf 'simulation-sentinel\n' > "$simulation_cache/SIMULATION"
 rewritten_cache=$(jq -er '.installedPlugins[0].cache_path' "$simulation_home/config.json")
 [ "$rewritten_cache" = "$simulation_cache" ] ||
   fail "cache_path was not rewritten into the simulation root: $rewritten_cache"
-[ "$(stat -f '%Lp' "$simulation_home/config.json")" = 600 ] ||
-  fail 'rewritten simulation config is not mode 0600'
+# stat 的權限格式 BSD 與 GNU 不同（macOS `-f '%Lp'`、Linux `-c '%a'`），兩者對 0600
+# 都輸出 600。本檔 2026-08-08 首次進 CI 時就是踩這裡：ubuntu runner 上 `-f` 被當成
+# 「檔案系統資訊」而報 `cannot read file system information for '%Lp'`，斷言連帶 FAIL。
+# 用 `||` 串接而非偵測 uname：判準是「哪個 stat 真的答得出來」，比猜平台可靠。
+config_mode="$(stat -f '%Lp' "$simulation_home/config.json" 2>/dev/null ||
+  stat -c '%a' "$simulation_home/config.json")"
+[ "$config_mode" = 600 ] ||
+  fail "rewritten simulation config is not mode 0600: $config_mode"
 
 case "$rewritten_cache" in
   "$scratch"/simulation/.copilot/*) ;;
