@@ -37,10 +37,10 @@ probe() {  # $1=host標籤 $2=env指派 $3=expect $4=檔案路徑 $5=locale
   local rc actual=allow reason_seen=no out err
   # 分開兩次並各自處理：串成 && 時，第一個成功第二個失敗會直接 return，把已建立的
   # $out 留在檔案系統上（每個 case 洩漏一個檔）。
-  out=$(mktemp) || {
+  out=$(mktemp "${TMPDIR:-/tmp}/protect-files-reachability.XXXXXX") || {
     ng "$(printf '%-8s 無法建立 fixture（mktemp 失敗）' "$label")"; return
   }
-  err=$(mktemp) || {
+  err=$(mktemp "${TMPDIR:-/tmp}/protect-files-reachability.XXXXXX") || {
     rm -f "$out"
     ng "$(printf '%-8s 無法建立 fixture（mktemp 失敗）' "$label")"; return
   }
@@ -94,7 +94,7 @@ printf '\n── 解析器缺席：無從判斷即 fail-closed ──\n'
 # 「jq 不在 PATH」。實測當時 rc=0（放行）——敏感檔案保護對整個缺 jq 的環境失效。
 # 同 repo 的 hooks/guard-git-push.sh 檔頭早已明訂相反方向（解析失敗保守拒絕），
 # 兩支 guard 對同一情境的處理不該相反。
-NOJQ=$(mktemp -d) || exit 1
+NOJQ=$(mktemp -d "${TMPDIR:-/tmp}/protect-files-reachability.XXXXXX") || exit 1
 for _t in bash cat basename mktemp env printf grep sed; do
   _p=$(command -v "$_t" 2>/dev/null) && ln -sf "$_p" "$NOJQ/$_t"
 done
@@ -106,8 +106,8 @@ nojq_probe() {  # $1=標籤 $2=payload $3=expect $4=額外env
   # 講這件事，新加的 probe 卻沒做（2026-08-02 Copilot review 抓到）。
   local label="$1" payload="$2" want="$3" extra="$4" rc actual=allow reason_seen=no
   local out err
-  out=$(mktemp) || { ng "$label 無法建立 fixture"; return; }
-  err=$(mktemp) || { rm -f "$out"; ng "$label 無法建立 fixture"; return; }
+  out=$(mktemp "${TMPDIR:-/tmp}/protect-files-reachability.XXXXXX") || { ng "$label 無法建立 fixture"; return; }
+  err=$(mktemp "${TMPDIR:-/tmp}/protect-files-reachability.XXXXXX") || { rm -f "$out"; ng "$label 無法建立 fixture"; return; }
   printf '%s' "$payload" |
     env -i PATH="$NOJQ" HOME="$HOME" LC_ALL=en_US.UTF-8 CLAUDECODE=1 $extra bash "$HOOK" \
     >"$out" 2>"$err"
@@ -139,8 +139,8 @@ rm -f "$NOJQ/jq"
 # 這兩條用真 jq：payload 本身不是合法 JSON，jq 解析失敗
 badjson_probe() {  # $1=標籤 $2=payload $3=expect
   local rc actual=allow reason_seen=no out err
-  out=$(mktemp) || { ng "$1 無法建立 fixture"; return; }
-  err=$(mktemp) || { rm -f "$out"; ng "$1 無法建立 fixture"; return; }
+  out=$(mktemp "${TMPDIR:-/tmp}/protect-files-reachability.XXXXXX") || { ng "$1 無法建立 fixture"; return; }
+  err=$(mktemp "${TMPDIR:-/tmp}/protect-files-reachability.XXXXXX") || { rm -f "$out"; ng "$1 無法建立 fixture"; return; }
   printf '%s' "$2" | env -i PATH="$PATH" HOME="$HOME" LC_ALL=en_US.UTF-8 CLAUDECODE=1 \
     bash "$HOOK" >"$out" 2>"$err"
   rc=$?

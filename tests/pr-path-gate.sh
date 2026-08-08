@@ -74,7 +74,7 @@ check_kernel() {
 
 selftest() {
   local scratch rc=0
-  scratch="$(mktemp -d)"
+  scratch="$(mktemp -d "${TMPDIR:-/tmp}/pr-path-gate.XXXXXX")"
 
   cat > "${scratch}/good.md" <<'FIX'
 ## Always-on guards

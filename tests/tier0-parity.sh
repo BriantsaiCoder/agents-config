@@ -91,7 +91,7 @@ check_host() {
 
 # ── selftest：對 fixture 驗證正反兩個方向都真的會觸發 ──────────────
 selftest() {
-  local scratch; scratch="$(mktemp -d)"
+  local scratch; scratch="$(mktemp -d "${TMPDIR:-/tmp}/tier0-parity.XXXXXX")"
   local rc=0
 
   # 正向 fixture：含 autonomy exception、risk trigger、review outcome 與五要素，應全數 PASS。

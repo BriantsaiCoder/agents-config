@@ -5,7 +5,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)
 LAUNCHER="$ROOT/bin/phase4-canary-launcher"
 MATRIX="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/27-phase4-v2-canary-matrix.jsonl"
 SCHEMA="$ROOT/proposals/2026-07-27-mattpocock-skills-workflow/26-phase4-v2-result-schema.json"
-TMP=$(mktemp -d)
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/phase4-canary-launcher.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT
 
 pass=0

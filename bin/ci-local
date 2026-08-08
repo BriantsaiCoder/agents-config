@@ -35,7 +35,7 @@ die() { printf 'ci-local: %s\n' "$*" >&2; exit 2; }
 if [ "${1:-}" = "--selftest" ]; then
   # 一個永遠回綠的 CI 包裝器比沒有更糟：它讓「本機驗過了」這句話變成噪音。這裡用假 workflow
   # 把失敗語意釘死——尤其是「缺工具算 FAIL 不算 SKIP」，因為缺工具的失敗方向是假綠。
-  t=$(mktemp -d) || exit 1
+  t=$(mktemp -d "${TMPDIR:-/tmp}/ci-local.XXXXXX") || exit 1
   trap 'rm -rf "$t"' EXIT
   P=0; F=0
   mk() { mkdir -p "$t/$1/.github/workflows"; cat > "$t/$1/.github/workflows/ci.yml"; }

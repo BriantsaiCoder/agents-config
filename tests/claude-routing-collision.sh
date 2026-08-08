@@ -24,7 +24,7 @@ check_file() {
 
 selftest() {
   local rc
-  selftest_tmp="$(mktemp -d)"
+  selftest_tmp="$(mktemp -d "${TMPDIR:-/tmp}/claude-routing-collision.XXXXXX")"
   trap 'rm -rf "$selftest_tmp"' EXIT
 
   printf '%s\n' \

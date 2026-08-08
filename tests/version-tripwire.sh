@@ -90,7 +90,7 @@ if [ "${1:-}" = "--selftest" ]; then
   if ! git rev-parse --verify "$BASE_COMMIT^{commit}" >/dev/null 2>&1; then
     echo "SKIP  基準線 $BASE_COMMIT 不在本地（CI 需 fetch-depth: 0）"; exit 0
   fi
-  tmp=$(mktemp -d) || exit 1
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/version-tripwire.XXXXXX") || exit 1
   # 逐一 archive 並容忍個別失敗，至少要成功一個。
   # 這是為未來的 SCAN_DIRS 增修留的：今天四個目錄在 8d701ca 都存在（git ls-tree 可驗），
   # 所以這個容忍分支目前不會走到。日後若加入基準線當時還沒有的目錄，沒有它會整支 exit 1

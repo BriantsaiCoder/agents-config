@@ -300,7 +300,7 @@ else
   # canary：pattern 寫壞就永遠是綠的。fixture 同時驗正向抓得到與反向不誤報，且與
   # 實掃共用同一個 VARNAME_PAT，改壞 pattern 這裡會先紅。fixture 用 mktemp 不放 tests/：
   # 後者會被下面的實掃掃到。全形字元用 printf octal 組出來，不寫字面，同理。
-  canary_dir="$(mktemp -d)" || canary_dir=""
+  canary_dir="$(mktemp -d "${TMPDIR:-/tmp}/conformance.XXXXXX")" || canary_dir=""
   if [ -n "$canary_dir" ]; then
     fw="$(printf '\357\274\211')"
     printf 'echo "x$v%sy"\n' "$fw" > "$canary_dir/bad.sh"
