@@ -75,7 +75,10 @@ has_askfirst() {
 }
 
 selftest() {
-  local scratch; scratch="$(mktemp -d "${TMPDIR:-/tmp}/delegation-policy-parity.XXXXXX")"
+  # 本檔沒有 set -e：mktemp 失敗時 $scratch 為空，fixture 會寫到 / 底下而斷言照跑。
+  # 用 ng 而非只 return——finish 依 fail 計數決定 exit code，靜默 return 會變成假綠。
+  local scratch; scratch="$(mktemp -d "${TMPDIR:-/tmp}/delegation-policy-parity.XXXXXX")" ||
+    { ng 'selftest: 無法建立暫存目錄，正反向斷言完全未執行'; return 1; }
 
   printf '併發數 ≤ 2\n' > "$scratch/concurrency-limit.md"
   printf '同一 S 階段內累計 delegation ≤ 6\n' > "$scratch/stage-limit.md"
@@ -199,7 +202,9 @@ case "${1:-}" in
     # CI 模式：注入合格與不合格的假 host 檔，讓 host 判定邏輯在沒有真實 host 目錄的
     # runner 上被真的執行。正向組必須全綠且無 SKIP，反向組必須紅——後者若沒紅，
     # 代表 host 半邊整段沒跑，而那正是本測試存在的理由。
-    scratch="$(mktemp -d "${TMPDIR:-/tmp}/delegation-policy-parity.XXXXXX")"; trap 'rm -rf "$scratch"' EXIT
+    scratch="$(mktemp -d "${TMPDIR:-/tmp}/delegation-policy-parity.XXXXXX")" ||
+      { printf 'FAIL: 無法建立暫存目錄，fixture 未注入\n' >&2; exit 1; }
+    trap 'rm -rf "$scratch"' EXIT
     printf 'Delegation 依 shared `dev-workflow` [INT-4]：無條件約束不變；AI 自主判定是否、何時及使用多少 subagent，不設固定數量／時機限制，直接執行不必先問。\n' \
       > "$scratch/good.md"
     printf '未獲授權時，不使用 subagent。\n' > "$scratch/bad.md"
@@ -236,7 +241,8 @@ int4="$(grep -F '[INT-4]' "$KERNEL" | head -1)"
 printf '%s\n' "$int4" | grep -qE 'MUST.*觸發：.*例外：.*驗證：' || {
   printf 'FAIL: [INT-4] lost five-element rule contract\n' >&2; exit 1;
 }
-policy_file="$(mktemp "${TMPDIR:-/tmp}/delegation-policy-parity.XXXXXX")"
+policy_file="$(mktemp "${TMPDIR:-/tmp}/delegation-policy-parity.XXXXXX")" ||
+  { printf 'FAIL: cannot create policy scratch file\n' >&2; exit 1; }
 { printf '%s\n' "$int4"; cat "$DELEGATION_REF"; } > "$policy_file" || {
   rm -f "$policy_file"; printf 'FAIL: cannot assemble delegation policy\n' >&2; exit 1;
 }

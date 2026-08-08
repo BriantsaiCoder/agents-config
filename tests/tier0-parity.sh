@@ -91,7 +91,10 @@ check_host() {
 
 # ── selftest：對 fixture 驗證正反兩個方向都真的會觸發 ──────────────
 selftest() {
-  local scratch; scratch="$(mktemp -d "${TMPDIR:-/tmp}/tier0-parity.XXXXXX")"
+  # 本檔沒有 set -e：mktemp 失敗時 $scratch 會是空字串，下面的 fixture 就寫到 /good.md
+  # 等絕對路徑，而斷言仍然照跑——失敗方向是假綠加上污染根目錄。必須顯式擋。
+  local scratch; scratch="$(mktemp -d "${TMPDIR:-/tmp}/tier0-parity.XXXXXX")" ||
+    { printf '  FAIL  selftest: 無法建立暫存目錄，正反向斷言完全未執行\n' >&2; return 1; }
   local rc=0
 
   # 正向 fixture：含 autonomy exception、risk trigger、review outcome 與五要素，應全數 PASS。
