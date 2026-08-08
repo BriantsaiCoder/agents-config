@@ -138,10 +138,30 @@ else
   fi
 fi
 
-latest_review=$(gh api "repos/$repo/pulls/$pr/reviews" \
+# 同一次呼叫一併取出 latest review 的 commit_id 與 **suppressed comments 數**。
+#
+# 為什麼要取後者：Copilot 會把部分 finding 收進 review body 的 "Suppressed comments"
+# 摺疊區，那些**不會**產生 review thread，因此不計入下面的 unresolved。2026-08-08
+# 一輪跨四 repo 的守衛修正中，六條 finding 有四條在該區塊，而 gate 在同一輪回過三次
+# STATE=PASS——每次都有未修的 fail-open。只看 unresolved 會漏掉整類。
+#
+# 不阻擋、只呈報：suppressed 沒有 resolve 機制，拿它當 blocking 條件會變成永久死鎖。
+# 呈報在這行輸出上，是因為它是 push 後 hook 會自動印、且所有人都會讀的那一行。
+# scan 而非 capture：後者在無命中時會 raise error，前者回空陣列。
+latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
   --jq '[.[] | select(.user.login | ascii_downcase | contains("copilot"))]
-    | sort_by(.submitted_at) | last | .commit_id // ""') ||
+    | sort_by(.submitted_at) | last
+    | [ (.commit_id // ""),
+        ((.body // "") | [scan("Suppressed comments \\(([0-9]+)\\)")]
+          | if length > 0 then .[0][0] else "0" end)
+      ] | @tsv') ||
   unavailable review_probe_failed
+# 用 cut 而非 here-string：後者在 /tmp 與 cwd 皆不可寫時建不出暫存檔（macOS bash 3.2），
+# read 不執行、變數維持 unset，set -u 會讓整支中止。那是 fail-closed 沒錯，但沒必要
+# 為了拆兩個欄位引入一個會炸的相依。
+latest_review=$(printf '%s' "$latest_review_state" | cut -f1)
+suppressed=$(printf '%s' "$latest_review_state" | cut -f2)
+[[ "$suppressed" =~ ^[0-9]+$ ]] || suppressed=0
 requested=$(gh api "repos/$repo/pulls/$pr/requested_reviewers" \
   --jq '[.users[] | select(.login | ascii_downcase | contains("copilot"))] | length') ||
   unavailable requested_reviewer_probe_failed
@@ -215,10 +235,10 @@ fi
 # ci= 保留實際來源，不統一成一個字：ABSENT 是 run 根本沒被建立，CANCELLED 是 run 建立了
 # 但 job 一個 step 都沒跑就被取消。兩者都代表「拿不到 CI 結論」，但排查方向完全不同。
 if [[ "$ci" == ABSENT || "$ci" == CANCELLED ]]; then
-  printf 'STATE=PASS_NO_CI pr=%s head=%s ci=%s review=CURRENT unresolved=0 url=%s\n' \
-    "$pr" "$head" "$ci" "$url"
+  printf 'STATE=PASS_NO_CI pr=%s head=%s ci=%s review=CURRENT unresolved=0 suppressed=%s url=%s\n' \
+    "$pr" "$head" "$ci" "$suppressed" "$url"
   exit 12
 fi
 
-printf 'STATE=PASS pr=%s head=%s ci=%s review=CURRENT unresolved=0 url=%s\n' \
-  "$pr" "$head" "$ci" "$url"
+printf 'STATE=PASS pr=%s head=%s ci=%s review=CURRENT unresolved=0 suppressed=%s url=%s\n' \
+  "$pr" "$head" "$ci" "$suppressed" "$url"

@@ -41,9 +41,9 @@ elif [[ "$1" == api && "$*" == *"/commits/"* ]]; then
   jq -nc --arg d "$FAKE_HEAD_DATE" '{commit:{committer:{date:$d}}}' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"/reviews"* ]]; then
   filter=${!#}
-  jq -nc --arg latest "$FAKE_REVIEW" '
+  jq -nc --arg latest "$FAKE_REVIEW" --arg body "${FAKE_REVIEW_BODY:-}" '
     [
-      {user:{login:"copilot-pull-request-reviewer[bot]"},commit_id:$latest,submitted_at:"2026-01-03T00:00:00Z"},
+      {user:{login:"copilot-pull-request-reviewer[bot]"},commit_id:$latest,body:$body,submitted_at:"2026-01-03T00:00:00Z"},
       {user:{login:"Copilot"},commit_id:"review-old",submitted_at:"2026-01-01T00:00:00Z"},
       {user:{login:"human"},commit_id:"human-head",submitted_at:"2026-01-04T00:00:00Z"}
     ]' | jq -r "$filter"
@@ -172,6 +172,41 @@ if [[ "$out" == *"repo=unresolved"* ]]; then
 else
   ((fail += 1)); printf 'FAIL repo probe failure says unresolved, not empty: output=%s\n' "$out"
 fi
+
+# ── suppressed comments 必須出現在 PASS 那行 ────────────────────────────────
+#
+# Copilot 會把部分 finding 收進 review body 的 "Suppressed comments" 摺疊區，那些
+# **不會**產生 review thread，因此不計入 unresolved。2026-08-08 一輪跨四 repo 的守衛
+# 修正中，六條 finding 有四條在該區塊，而 gate 在同一輪回過三次 STATE=PASS——每次都
+# 有未修的 fail-open。這兩條釘死「數字要出現在那行輸出上」。
+#
+# 不驗「suppressed>0 就 block」：suppressed 沒有 resolve 機制，拿它當 blocking 條件
+# 會變成永久死鎖。呈報 + review-triage 的人工閱讀義務才是這裡的契約。
+suppressed_probe() { # $1=名稱 $2=review body $3=期望的 suppressed 值
+  local name="$1" body="$2" want="$3" out
+  out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    FAKE_HEAD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+    FAKE_REVIEW_BODY="$body" "$GATE" 42 2>&1)
+  if [[ "$out" == *"suppressed=$want"* ]]; then
+    ((pass += 1)); printf 'PASS %s\n' "$name"
+  else
+    ((fail += 1)); printf 'FAIL %s: want suppressed=%s output=%s\n' "$name" "$want" "$out"
+  fi
+}
+suppressed_probe "無 suppressed 區塊時報 0" "看起來一切正常的 review body" 0
+suppressed_probe "有 suppressed 區塊時報實際數量" \
+  '## Pull request overview
+
+<details>
+<summary>Suppressed comments (2)</summary>
+
+**a.sh:1**
+* something
+</details>' 2
 
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，
