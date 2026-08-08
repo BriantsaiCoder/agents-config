@@ -261,12 +261,27 @@ done
 # 檔名前的 `--` 不可省：GUARD 可由環境覆寫，值以 `-` 開頭時（例如 GUARD=--version）
 # grep 會把它當 option，輸出自己的說明而非守衛內容，hits 為空 → 靜態斷言靜默通過。
 # 上面的 [ -r ] 已擋掉大部分，`--` 是同一件事的第二道（2026-08-08 PR #71 review）。
-guard_src_hits="$(grep -vE '^[[:space:]]*#' -- "$GUARD" | grep -E '<<-?[[:space:]]*[^=[:space:]]')" || guard_src_hits=""
-if [ -z "$guard_src_hits" ]; then
-  pass=$((pass + 1)); printf '  PASS 切詞路徑不依賴暫存檔 redirect\n'
+# grep 的 rc 必須分辨，不能一律當成「無命中」：
+#   rc=0 有命中 → FAIL（守衛裡真的還有 here-doc）
+#   rc=1 無命中 → PASS
+#   rc>=2 錯誤  → FAIL（讀不到就是沒驗過，不是乾淨）
+# 而且兩個 grep 要拆開跑：`set -o pipefail` 回的是**最右**的非零狀態，第一個 grep
+# 因錯誤退出 rc=2 時，第二個 grep 拿到空輸入回 rc=1，pipeline 就回 1——錯誤被
+# no-match 遮掉，「掃不到就當乾淨」的假綠原封不動回來（2026-08-08 實測確認）。
+guard_src=""; guard_src_hits=""; guard_rc=0; guard_hits_rc=0
+guard_src="$(grep -vE '^[[:space:]]*#' -- "$GUARD")" || guard_rc=$?
+if [ "$guard_rc" -ge 2 ]; then
+  fail=$((fail + 1)); printf '  FAIL 靜態掃描讀不到守衛內容（grep rc=%s）：%s\n' "$guard_rc" "$GUARD"
 else
-  fail=$((fail + 1)); printf '  FAIL 切詞路徑仍有 here-doc／here-string（/tmp 與 cwd 皆不可寫時會 fail-open）：\n'
-  printf '%s\n' "$guard_src_hits" | head -3 | sed 's/^/       /'
+  guard_src_hits="$(printf '%s\n' "$guard_src" | grep -E '<<-?[[:space:]]*[^=[:space:]]')" || guard_hits_rc=$?
+  if [ "$guard_hits_rc" -ge 2 ]; then
+    fail=$((fail + 1)); printf '  FAIL 靜態掃描自身失敗（grep rc=%s）\n' "$guard_hits_rc"
+  elif [ -z "$guard_src_hits" ]; then
+    pass=$((pass + 1)); printf '  PASS 切詞路徑不依賴暫存檔 redirect\n'
+  else
+    fail=$((fail + 1)); printf '  FAIL 切詞路徑仍有 here-doc／here-string（/tmp 與 cwd 皆不可寫時會 fail-open）：\n'
+    printf '%s\n' "$guard_src_hits" | head -3 | sed 's/^/       /'
+  fi
 fi
 
 readonly_dir="$REPO/readonly-cwd"
