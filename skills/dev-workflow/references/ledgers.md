@@ -22,7 +22,7 @@
 - `git merge-base <PR base> HEAD` MUST 等於記錄的 baseline SHA，S5 審查範圍即 `git diff <baseline>..HEAD`。不相等時 GitHub 呈現的 diff 會含入 baseline 之前的 commit，「這個 PR 的 diff」就有兩種讀法——要嘛同一份 code 被重複審，要嘛因為「看起來審過了」被略過。比對 merge-base 而非 base 本身：base 換了但祖先鏈仍含 baseline 時（PR 被 retarget 到已含前一批變更的 main）range 其實沒變，比對 base 會誤報。用分支名指稱起點則對不回去：分支會被 force-push 更新，也會在 merge 後依 Postflight 刪除。
 - S4 依 `git diff --name-only <前次 closeout SHA>..HEAD` 的累積影響重新判 risk tier 並重跑適用 checks；不得因新 commit 很小而降低整體風險。
 - S5 只重審該 diff 觸及的檔案與其 transitive impact；未觸及範圍可沿用前次 findings 並註明 baseline SHA，範圍不得由 reviewer 任意縮小。
-- **S5 重審的終止條件**：某一輪兩軸的 findings 全為 `suggestion:`／`nitpick:`／`question:` 級即 EXIT，該輪的修復不再觸發下一輪；任一軸出現 `issue:` 則修完 MUST 再審一輪。修 `issue:` 的改動本身會引入新 `issue:`（實測發生過：補 fail-open 守衛的第一版自己是假綠），而低於該級別的修復不改變 gate 結論。未採納的 `suggestion:`／`nitpick:` MUST 在 PR body 列出並附不修的理由，不得靜默丟棄——沒有出口的迴圈與沒有迴圈一樣糟。
+- S5 重審的終止條件定義在 `reviewer-template.md` 的「S5 EXIT 判準」，不在本檔——它必須在 S5 判 EXIT 的當下可讀，而本檔的載入時機是 push／PR／merge／closeout，第一輪 S5 在那之前。
 - S6 重出完整六項 ledger；未受影響項目可引用 baseline SHA。Current-head CI／review 結果一律失效並依 `review-triage.md` 重查。
 
 ---
@@ -32,8 +32,10 @@
 一次交付拆成多個相依 PR 時（P2 建在 P1 之上），「Closeout 後的新 commit」的 base↔baseline 一致性有兩個 stack 特有的破法。
 
 - merge 順序由 stack 底部往上，P2 的 `--base` 指 P1 的分支。
-- **[INT-10] 範圍外（一般 product code）的 stack MUST 用 merge commit 合併，不用 squash**——這是對 Postflight「squash merge 預設」的具名例外。squash 會使 P1 的原始 commit 從未進入 main，`merge-base(main, P2)` 退回 P1 之前，GitHub 把 P2 retarget 到 main 後呈現的 diff 就把 P1 的變更整份帶回來，正是「Closeout 後的新 commit」要防的事改由 retarget 造成；補救要每次 merge 後 rebase 加重記 baseline，stack 有多深就付幾次。merge commit 讓 P1 的 commit 真的落在 main 的祖先鏈上，retarget 後 `merge-base` 自動仍等於原 baseline，零補救。
-- **[INT-10] 範圍內（全域／security config，含本 repo 的 kernel 與 references）不適用上一條**：該條把 squash merge 釘進五步路徑，不得以本節豁免。那種 stack 每次 merge 後 MUST rebase 到 main、重記 baseline SHA 再重驗。rebase 若內容中性（無 conflict resolution、無新 commit），S5 findings 沿用前次並註明原 baseline SHA；但 HEAD SHA 已變，CI 與 bot review 依「Closeout 後的新 commit」一律失效，MUST 於新 head 重查——每層 stack 因此多一輪 CI。不想付這個成本就別把全域 config 拆成 stack。
+- **merge 方法由父 PR 決定，不由自己決定**：P2 的 baseline 存亡取決於 P1 怎麼被 merge——P1 一旦 squash，P2 的 merge-base 就退回 P1 之前，P2 自己屬於哪個範圍完全不影響這件事。所以判準看父 PR：
+  - 父 PR 不在 [INT-10] 範圍（一般 product code）→ 父 PR MUST 用 merge commit 合併，不用 squash。這是對 Postflight「squash merge 預設」的具名例外。merge commit 讓父 PR 的 commit 真的落在 main 的祖先鏈上，retarget 後 `merge-base` 自動仍等於原 baseline，零補救；squash 則使那些 commit 從未進入 main，GitHub retarget 後呈現的 diff 會把父 PR 的變更整份帶回來，正是「Closeout 後的新 commit」要防的事改由 retarget 造成。
+  - 父 PR 在 [INT-10] 範圍（全域／security config，含本 repo 的 kernel 與 references）→ 該條把 squash merge 釘進五步路徑，不得以本節豁免，其所有子 PR 一律走 rebase 補救，即使子 PR 自己不在 [INT-10] 範圍內。混合 stack 沒有中間狀態：stack 上只要有一層是全域 config，它以上的每一層都得付。
+  - rebase 補救的內容：每次 merge 後 MUST rebase 到 main、重記 baseline SHA 再重驗。rebase 若內容中性（無 conflict resolution、無新 commit），S5 findings 沿用前次並註明原 baseline SHA；但 HEAD SHA 已變，CI 與 bot review 依「Closeout 後的新 commit」一律失效，MUST 於新 head 重查——每層 stack 因此多一輪 CI。不想付這個成本就別把全域 config 拆成 stack。
 - retarget 後 MUST 實查一次 `gh pr view <n> --json baseRefOid --jq .baseRefOid`，確認 `merge-base(base, HEAD)` 仍等於記錄的 baseline——retarget 不動 HEAD，「Closeout 後的新 commit」的 `git merge-base --is-ancestor` 在 base 被換掉時仍為真，單靠它會回假 PASS。這是人工驗證項：`bin/pr-review-gate` 目前不取 base，stack 若成為常態，應把 `baseRefOid` 併進該 gate 既有的 `--json` 清單，而不是讓這條停留在散文。
 
 ---

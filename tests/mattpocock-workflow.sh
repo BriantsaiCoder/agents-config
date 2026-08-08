@@ -301,10 +301,19 @@ has "code-review Standards brief carries the correctness clause" 'correctness de
 # 這兩個字串的地方就是下面這段檢查本身。range 非空也一併斷言，兩道都過才驗內容。
 # stack 的 merge-commit 例外與 [INT-10] 的 squash 五步路徑（tests/pr-path-gate.sh 釘著）
 # 直接對立，兩邊各自綠燈時矛盾無人察覺。釘住「例外指名 [INT-10] 為排除範圍」這件事本身。
-has "ledgers stack exemption is scoped outside INT-10" '\[INT-10\] 範圍外.*MUST 用 merge commit 合併，不用 squash' "$ledgers_ref"
-has "ledgers keeps INT-10 scope on the squash path" '\[INT-10\] 範圍內.*不適用上一條' "$ledgers_ref"
-# apply pass 沒有守衛時，被靜默刪掉的症狀只是「S5 之後沒人動手改」，不會有人發現。
+has "ledgers scopes the merge-commit exception by parent PR" '父 PR 不在 \[INT-10\] 範圍.*MUST 用 merge commit 合併，不用 squash' "$ledgers_ref"
+has "ledgers keeps INT-10 parents on the rebase path" '父 PR 在 \[INT-10\] 範圍.*所有子 PR 一律走 rebase 補救' "$ledgers_ref"
+# apply pass 要釘兩處。只釘句首時，把「重新納入 S5」那整段後綴刪掉測試仍全綠——而那半句
+# 才是 [S5-1] 不被繞過的保證；被靜默刪掉的症狀只是「S5 之後沒人動手改」或更糟的「一批
+# code 沒進過 review」，兩者都不會有人發現。實測過。
 has "Claude adapter binds simplify as the S5 apply pass" 'MUST 跑 .simplify.*當 apply pass' "$host_adapters_ref"
+has "simplify output re-enters S5" '重新納入 S5.*繞過 \[S5-1\]' "$host_adapters_ref"
+# S5 EXIT 判準是本批最具後果的規則。它必須待在 S5 判 EXIT 當下讀得到的檔案裡——放進
+# ledgers.md 時 S5 走不到（那份的載入時機是 push／PR／merge／closeout，第一輪 S5 在之前）。
+has "S5 EXIT criteria live where S5 can read them" '^## S5 EXIT 判準' skills/dev-workflow/references/reviewer-template.md
+# 出口若是 reviewer 自標 prefix 的函數，等於把 gate 交給單一 agent 自行決定，而「多一輪」
+# 的成本全落在 caller 身上，誘因一律指向低標。
+has "S5 EXIT level is the caller's final call" 'reviewer 自標僅為初值' skills/dev-workflow/references/reviewer-template.md
 # 錨定整行：同檔「怎麼用」第 1 步的說明文字裡就引用了這兩個 marker 字串，不錨行首行尾的
 # 話 has 會命中那句描述、sed range 也會從那行起算——marker 本身被改名依然全綠。
 has "reviewer prompt block has an opening marker" '^── reviewer prompt 開始 ──$' skills/dev-workflow/references/reviewer-template.md
@@ -313,6 +322,9 @@ prompt_block="$(sed -n '/^── reviewer prompt 開始 ──$/,/^── review
   "$ROOT/skills/dev-workflow/references/reviewer-template.md")"
 if [ -z "$prompt_block" ]; then
   ng "reviewer prompt block is non-empty"
+  # range 為空時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓總條數隨
+  # 檔案狀態浮動，看起來像「少跑了一條」而不是「守衛失去依據」。
+  ng "baseline design notes live outside the reviewer prompt"
 elif printf '%s' "$prompt_block" | grep -q '設計註記'; then
   ok "reviewer prompt block is non-empty"
   ng "baseline design notes live outside the reviewer prompt"

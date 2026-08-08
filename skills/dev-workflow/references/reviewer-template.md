@@ -84,3 +84,14 @@
 - 禁表演式同意——不做無理由的「好的我改」；也不做無理由的「不用改」。
 - finding 是 bug → 回 S3；有 stable／valuable seam 時先補 RED，否則用同一 repro 留 before／after 並記錄理由（[INT-2]）。
 - 全部 findings 皆已 resolved（修掉或有據駁回並回覆）才可回 SKILL.md S5 判 EXIT。
+
+## S5 EXIT 判準（迴圈的出口）
+
+修 findings 會產生新 diff，新 diff 又要重審——沒有出口的迴圈與沒有迴圈一樣糟。判準如下，**在回饋處理完成之後**才判，不是拿 reviewer 交件當下的標籤判：
+
+- **級別以 caller 技術評估後的最終值為準，reviewer 自標僅為初值。** caller MUST 逐條確認沒有 `issue:` 被低標成 `suggestion:`。這條不是形式：EXIT 與否是自標 prefix 的函數，而「多一輪」的成本全落在 caller 身上，誘因一律指向低標；把出口交給單一 reviewer 自行決定等於沒有 gate。
+- 最終級別全為 `suggestion:`／`nitpick:`／`question:` 即 EXIT。任一軸仍有 `issue:` **且該 issue 的處置產生了新 diff** 時 MUST 再審一輪——以技術理由駁回而不修者不產生新 diff，不觸發下一輪。
+- 任一軸為 `UNAVAILABLE` 時不得 EXIT：那是「沒審成」，不是「審過沒問題」。
+- 依據是實測而非推論：`issue:` 級的修復確實會引入新的 `issue:`（補 fail-open 守衛的第一版自己是假綠，第二版才真的咬）。以下級別的修復不改變 gate 結論，但若某條 `suggestion:` 的採納導致跨檔重構，caller MUST 自行升級處理，判準不替代判斷。
+- EXIT 時各軸標 `PASS`。未採納或未解答的 `suggestion:`／`nitpick:`／`question:` MUST 在 PR body 逐條列出並附理由——「於 thread 有據駁回」與「列進 PR body」是同一個義務的兩種載體，不得只做一半，也不得靜默丟棄。
+- apply pass（如 Claude 的 `simplify`）產生的 diff 視為新一輪的輸入，其 findings 一併適用本判準；該 pass 未產生改動時直接 EXIT。
