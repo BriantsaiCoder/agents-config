@@ -241,7 +241,12 @@ done
 #   靜態斷言  切詞路徑不得出現 here-doc／here-string。到哪都成立，是唯一可攜的
 #             復發守衛。只掃非註解行，否則守衛自己的說明會讓它恆紅。
 #   行為案例  保留，但先探測 /tmp 是否可寫；可寫就 SKIP，不給沒有意義的綠。
-guard_src_hits="$(grep -vE '^[[:space:]]*#' "$GUARD" | grep -E '<<<|<<-?[[:space:]]*.?[A-Za-z_]')" || guard_src_hits=""
+#
+# pattern 不對 delimiter 的字元集合做假設：只要求 `<<` 後第一個非空白字元不是 `=`
+# （那是左移賦值 `<<=`）。第一版寫成 `.?[A-Za-z_]`，漏掉 delimiter 以數字開頭的
+# `<<1` 與 `<<'1'`——那是可繞過的守衛（2026-08-08 PR #71 review 指出並實測確認）。
+# 代價是算術左移 `$((a << 2))` 會誤報；本檔守備的是安全閘，噪音比靜默漏放便宜。
+guard_src_hits="$(grep -vE '^[[:space:]]*#' "$GUARD" | grep -E '<<-?[[:space:]]*[^=[:space:]]')" || guard_src_hits=""
 if [ -z "$guard_src_hits" ]; then
   pass=$((pass + 1)); printf '  PASS 切詞路徑不依賴暫存檔 redirect\n'
 else
@@ -252,8 +257,11 @@ fi
 readonly_dir="$REPO/readonly-cwd"
 mkdir -p "$readonly_dir"
 chmod 500 "$readonly_dir"
-if ( : > /tmp/.gpguard-tmpwrite ) 2>/dev/null; then
-  rm -f /tmp/.gpguard-tmpwrite
+# 用 mktemp 而非固定檔名探測：固定名有 symlink／hardlink 風險，root 執行時可能
+# 誤覆寫任意檔案。用帶目錄的 template 而非 `mktemp -p`——後者的語意在 BSD 與 GNU
+# 之間有過差異，template 形式兩邊都確定。
+if tmp_probe="$(mktemp /tmp/gpguard-tmpwrite.XXXXXX 2>/dev/null)"; then
+  rm -f "$tmp_probe"
   printf '  SKIP  唯讀 cwd 行為案例：/tmp 可寫，此環境重現不了 here-doc fallback\n'
 elif ( cd "$readonly_dir" && : > .probe-write ) 2>/dev/null; then
   rm -f "$readonly_dir/.probe-write"
