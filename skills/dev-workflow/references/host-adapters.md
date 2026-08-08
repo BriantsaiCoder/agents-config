@@ -25,6 +25,7 @@ Tier0 安全內容由 `tests/tier0-parity.sh` 驗；model、effort、permission 
 - 同一 ready frontier 上彼此獨立的 1–4 個 blocker MUST 合併在同一次 `AskUserQuestion`；dependent 題等前一批回答。Skip／dismiss MUST NOT 視為答案、核准或採用預設值。
 - user-only skill command = `/<skill-name>`。
 - S5 Standards／Spec outcomes 仍須覆蓋；是否平行與 subagent 數量依 [INT-4] 自主決定，review agent 保持 read-only；`uiux-reviewer` 是 Claude-only。
+- 兩軸 findings 處理完後跑 `simplify`（Claude-only）當 apply pass：兩軸只報不修，這一步會動手改 [S5-3] baseline 落到實體 code 的部分，改完回 S4 重驗。
 
 ## Codex
 

@@ -1,10 +1,10 @@
-<!-- tier: workflow-reference | consumed-by: codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-04 -->
+<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-08 -->
 
 # S5 泛用 reviewer prompt（host 中立）
 
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。
-> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent，不需要本檔。
+> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent，不需要下方的 prompt 區塊；但「五條 baseline 的設計註記」與「審查者 MUST 記錄」兩節對它們一樣有約束力——[S5-3] 的等價性判準就寫在前者。
 
 ## 怎麼用
 
@@ -43,11 +43,14 @@
 - `nitpick:` — 微小、可選，通常不阻擋合併。
 - `question:` — 我不確定，需要作者澄清意圖或確認假設。
 
-**依 [S5-3]：house over-engineering baseline 兩條，逐字適用於本 prompt。** 與上方「優先序」不同，這兩條要求你**多報**而非少報：
+**依 [S5-3]：house over-engineering baseline 五條，逐字適用於本 prompt。** 與上方「優先序」不同，這五條要求你**多報**而非少報：
 - **Reinvented Stdlib** — 手刻標準庫或平台已提供的功能 → 指名該 API 取代。
 - **Redundant Dependency** — 為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。
+- **Unused Local Reuse** — 這個 repo 裡已經有的 helper／type／pattern 被重寫一份。與「同一 diff 內重複」不同，這條看的是 diff 對**既有資產**的重複 → 指名既有符號並改呼叫它。
+- **Needless Indirection** — 單一使用點的抽象層、只做轉發的中間層、或為 spec 沒有的需求預留的參數與 hook → 內聯回去，等真的第二個使用點出現再抽。
+- **Wrong Altitude** — 抽象層級錯置：實作細節洩漏進高層介面，或高層策略埋進低層工具 → 把該決策移回它該在的層。
 
-兩條皆為 judgement call；documented repo standard 覆寫之。
+五條皆為 judgement call；documented repo standard 覆寫之。
 
 **依 [S5-4]：全部回報、下游過濾。** 命中項一律回報（含 `nitpick:` 與 `question:`），不設字數或條數上限，不在本階段自行丟棄。每條除上述前綴外另標確信度 `確信：高／中／低`。篩選與排序由 main context 於單一 review 軸內另跑一 pass；Standards／Spec 跨軸不合併、不重排。
 
@@ -57,6 +60,11 @@
 **收斂前自我核對**：若本次改到高扇入共用函式的反模式，不要只看被 diff 標到的行；枚舉全部呼叫端逐一核對同類問題（bot / 單次掃描只覆蓋子集）。
 
 ── reviewer prompt 結束 ──
+
+## 五條 baseline 的設計註記（寫給 config 作者，MUST NOT 混進上方 prompt）
+
+- **不含 efficiency 維**：冗餘計算與複雜度惡化由 prompt 內優先序第 3 級（performance regression）承擔，另立一條只會讓同一 finding 在兩處打架。**前提是該 reviewer 真的收到那份優先序**——沒有優先序清單的專屬 reviewer 不適用此推論，必須另行確認 efficiency 有落點。
+- **專屬 reviewer 的等價性**（[S5-3] 要求的「等價完整 contract」怎麼算數）：有自己 smell 清單的 host reviewer 若某條已被既有條目承擔，MUST 在該清單就地寫出對應關係，並確認被指派的條目**真的涵蓋原條目的每個 clause**——只寫「由 X 承擔」而 X 的判準漏掉某個子類，等於無聲少給。不必重複同一段文字：reviewer 讀到同一個概念兩次會把它加權兩次。
 
 ## 審查者 MUST 記錄（S5 gate 機械複核用）
 

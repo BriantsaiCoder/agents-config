@@ -55,10 +55,13 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man** — a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest** — a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-Two more, not from Fowler — the house over-engineering baseline, mandatory in every reviewer prompt per `[S5-3]` in `../dev-workflow/SKILL.md` (host path: `~/.agents/skills/dev-workflow/SKILL.md`). Same two binding rules above apply (repo overrides; judgement call):
+The house over-engineering baseline — **five items**, mandatory in every reviewer prompt per `[S5-3]` in `../dev-workflow/SKILL.md` (host path: `~/.agents/skills/dev-workflow/SKILL.md`). Same binding rules above apply (repo overrides; judgement call):
 
 - **Reinvented Stdlib** — 手刻標準庫或平台已提供的功能 → 指名該 API 取代。
 - **Redundant Dependency** — 為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。
+- **Unused Local Reuse** — 這個 repo 裡已經有的 helper／type／pattern 被重寫一份。與上方 **Duplicated Code** 不同：那條看同一 diff 內的重複，這條看 diff 對**既有資產**的重複 → 指名既有符號並改呼叫它。
+- **Needless Indirection** — 只有一個呼叫端的抽象層（即使它確實做事、也確實是 spec 要的——那正是上方 **Middle Man** 與 **Speculative Generality** 都不命中的情況）→ 內聯回去，等真的第二個使用點出現再抽。
+- **Wrong Altitude** — 抽象層級錯置：實作細節洩漏進高層介面，或高層策略埋進低層工具 → 把該決策移回它該在的層。
 
 ### 4. Spawn both sub-agents in parallel
 
@@ -68,7 +71,7 @@ Send a single message with two `Agent` tool calls. Use the `general-purpose` sub
 
 - The full diff command and commit list.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full — the sub-agent has no other access to it.
-- The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Report every hit, nitpicks included; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters."
+- The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); (b) any baseline smell you spot: name it and quote the hunk; and (c) performance regressions the diff introduces — N+1, full scans, blocking calls on a hot path, worse algorithmic complexity, needless repeated work. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Report every hit, nitpicks included; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters."
 
 **Spec sub-agent prompt** — include:
 
