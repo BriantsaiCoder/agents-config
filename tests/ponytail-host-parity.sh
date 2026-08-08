@@ -166,32 +166,50 @@ run_check() {
   if [ -z "$codex_root" ]; then
     if [ -n "$codex_runtime_version" ]; then
       codex_root="$codex_home/plugins/cache/ponytail/ponytail/$codex_runtime_version"
+      if [ ! -d "$codex_root" ]; then
+        na "Codex runtime-selected Ponytail cache missing: $codex_root"
+        codex_root=""
+      fi
     else
       na 'Codex runtime-selected Ponytail version unavailable'
     fi
   fi
 
-  if ! command -v jq >/dev/null 2>&1; then
-    na 'Codex plugin manifest probe needs jq'
-  elif [ -r "$codex_root/.codex-plugin/plugin.json" ] &&
-       jq -e '.name == "ponytail" and .skills == "./skills/"' "$codex_root/.codex-plugin/plugin.json" >/dev/null 2>&1; then
-    ok 'Codex Ponytail plugin manifest shape'
-  else
-    bad 'Codex Ponytail plugin manifest missing or invalid'
+  if [ -n "$codex_root" ]; then
+    if ! command -v jq >/dev/null 2>&1; then
+      na 'Codex plugin manifest probe needs jq'
+    elif [ -r "$codex_root/.codex-plugin/plugin.json" ] &&
+         jq -e '.name == "ponytail" and .skills == "./skills/"' "$codex_root/.codex-plugin/plugin.json" >/dev/null 2>&1; then
+      ok 'Codex Ponytail plugin manifest shape'
+    else
+      bad 'Codex Ponytail plugin manifest missing or invalid'
+    fi
   fi
 
-  claude_skill="$claude_root/skills/ponytail/SKILL.md"
-  codex_skill="$codex_root/skills/ponytail/SKILL.md"
-  copilot_skill="$copilot_root/skills/ponytail/SKILL.md"
-  check_skill Claude "$claude_skill"
-  check_skill Codex "$codex_skill"
-  check_skill Copilot "$copilot_skill"
+  claude_skill=""
+  codex_skill=""
+  copilot_skill=""
+  if [ -n "$claude_root" ]; then
+    claude_skill="$claude_root/skills/ponytail/SKILL.md"
+    check_skill Claude "$claude_skill"
+  fi
+  if [ -n "$codex_root" ]; then
+    codex_skill="$codex_root/skills/ponytail/SKILL.md"
+    check_skill Codex "$codex_skill"
+  fi
+  if [ -n "$copilot_root" ]; then
+    copilot_skill="$copilot_root/skills/ponytail/SKILL.md"
+    check_skill Copilot "$copilot_skill"
+  fi
 
-  if [ -r "$claude_skill" ] && [ -r "$codex_skill" ] && [ -r "$copilot_skill" ] &&
-     cmp -s "$claude_skill" "$codex_skill" && cmp -s "$codex_skill" "$copilot_skill"; then
-    ok 'Ponytail effective skill bytes identical'
+  if [ -r "$claude_skill" ] && [ -r "$codex_skill" ] && [ -r "$copilot_skill" ]; then
+    if cmp -s "$claude_skill" "$codex_skill" && cmp -s "$codex_skill" "$copilot_skill"; then
+      ok 'Ponytail effective skill bytes identical'
+    else
+      bad 'Ponytail effective skill bytes differ across hosts'
+    fi
   else
-    bad 'Ponytail effective skill bytes differ across hosts'
+    na 'Ponytail effective skill bytes unavailable'
   fi
 
   printf '%d PASS / %d FAIL / %d UNAVAILABLE\n' "$pass" "$fail" "$unavailable"
@@ -268,6 +286,19 @@ ACTIVE EVERY RESPONSE. No drift.
   printf 'ponytail 注入=通用慣例\n' > "$scratch/claude/CLAUDE.md"
   printf 'ponytail=通用慣例\n' > "$scratch/codex/AGENTS.md"
   printf 'ponytail=慣例\n' > "$scratch/copilot/copilot-instructions.md"
+
+  mv "$codex_plugin" "$codex_plugin.missing"
+  out=$(fixture_check "$scratch" 2>&1); test_rc=$?
+  if [ "$test_rc" -eq 0 ] ||
+     ! grep -Fq 'UNAVAILABLE Codex runtime-selected Ponytail cache missing' <<< "$out" ||
+     ! grep -Fq 'UNAVAILABLE Ponytail effective skill bytes unavailable' <<< "$out" ||
+     grep -q '^FAIL ' <<< "$out" ||
+     grep -Fq 'Ponytail plugin manifest missing or invalid' <<< "$out" ||
+     grep -Fq 'Ponytail skill missing:' <<< "$out"; then
+    printf '%s\n' "$out"
+    rc=1
+  fi
+  mv "$codex_plugin.missing" "$codex_plugin"
 
   printf 'MUST NOT treat ponytail=通用慣例；\n' > "$scratch/codex/AGENTS.md"
   expect_fixture_failure "$scratch" 'FAIL Codex Ponytail instruction anchor missing' || rc=1
