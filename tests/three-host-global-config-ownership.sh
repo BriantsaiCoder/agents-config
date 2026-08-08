@@ -227,10 +227,40 @@ diff -u "$sentinel_before" "$sentinel_after" >/dev/null ||
 # 自 PR #14 起即引用，一直被前面兩條先死的斷言遮住）。放行仍只列這兩個確切工具路徑，
 # core／rules／hooks／hosts／dist 與 bin 其餘六支不變。
 #
+# allowlist 上限 2（2026-08-08）：整包放行 `bin/` 是上一段明確否決過的方案，而 allowlist 逐筆
+# 長大就是慢動作版的整包放行——第三、第四筆各自都有「這支也是必要工具」的理由，加完就回到
+# 被否決的狀態。上限不是鎖，是絆線：要加第三筆就得同時改這行並寫下為什麼，讓「悄悄多一筆」
+# 變成「明確放寬一次」。
+#
+# 錨在完整工具名（2026-08-08 PR #67 review 實測）：純子字串排除會連 `pr-review-gate_v2`、
+# `agents-branch-old` 這類近似路徑一起放行，與「只放行兩個確切工具路徑」自相矛盾。終止條件
+# 用「不能延續工具名的字元」而非列舉標點，因為引用脈絡有 backtick、空白、JSON 引號等多種。
+#
 # 用 grep 而非 rg：本條是「找到就 FAIL」的反向斷言，寫成 `if rg …; then fail` 時缺 rg 會讓
 # 整段靜默跳過（rg 非 0 → if 不成立 → 假綠）。bin/ci-local 已記錄過這個事故類別。grep 是
 # POSIX 必然存在。終止字元加入空白與全形句讀，否則 `~/.agents/core。` 這類 zh-TW 散文寫法
 # 可規避偵測。
+control_plane_allow=(agents-branch pr-review-gate)
+[ "${#control_plane_allow[@]}" -le 2 ] ||
+  fail "control-plane allowlist 超過 2 筆上限（要放寬請連同上方理由一起改）: ${control_plane_allow[*]}"
+control_plane_allow_re="\\.agents/bin/($(IFS='|'; printf '%s' "${control_plane_allow[*]}"))([^A-Za-z0-9_.-]|$)"
+
+# selftest：兩個方向都要驗。只驗「確切路徑被放行」會漏掉子字串過寬，只驗「近似路徑被擋」
+# 會漏掉錨過頭讓真正的引用回頭 FAIL——那會讓整條斷言恆紅而被下一個人整段註解掉。
+allow_selftest="$(printf '%s\n' \
+  'x:1:~/.agents/bin/pr-review-gate reported STATE=PASS' \
+  'x:2:`~/.agents/bin/agents-branch` 建立分支' |
+  grep -vE "$control_plane_allow_re" || true)"
+[ -z "$allow_selftest" ] ||
+  fail "control-plane allowlist 未放行確切工具路徑: $allow_selftest"
+deny_selftest="$({ printf '%s\n' \
+  'x:1:~/.agents/bin/pr-review-gate_v2 x' \
+  'x:2:~/.agents/bin/agents-branch-old x' \
+  'x:3:~/.agents/bin/agents-sync x' |
+  grep -vE "$control_plane_allow_re" || true; } | wc -l | tr -d ' ')"
+[ "$deny_selftest" -eq 3 ] ||
+  fail "control-plane allowlist 把近似路徑當成確切工具放行（僅 $deny_selftest/3 仍被偵測）"
+
 control_plane_hits="$(
   grep -nE '\.agents/(core|rules|hooks|hosts|dist|bin)(/|`|$|[[:space:]]|，|。|、)' \
     "$CLAUDE_CANDIDATE/CLAUDE.md" \
@@ -238,7 +268,7 @@ control_plane_hits="$(
     "$CODEX_CANDIDATE/AGENTS.md" \
     "$CODEX_CANDIDATE/hooks.json" \
     "$COPILOT_CANDIDATE/copilot-instructions.md" 2>/dev/null |
-    grep -vE '\.agents/bin/(agents-branch|pr-review-gate)' || true
+    grep -vE "$control_plane_allow_re" || true
 )"
 [ -z "$control_plane_hits" ] ||
   fail "active host global config still references .agents control plane: $control_plane_hits"
