@@ -235,6 +235,8 @@ diff -u "$sentinel_before" "$sentinel_after" >/dev/null ||
 # 錨在完整工具名（2026-08-08 PR #67 review 實測）：純子字串排除會連 `pr-review-gate_v2`、
 # `agents-branch-old` 這類近似路徑一起放行，與「只放行兩個確切工具路徑」自相矛盾。終止條件
 # 用「不能延續工具名的字元」而非列舉標點，因為引用脈絡有 backtick、空白、JSON 引號等多種。
+# `/` 算「可延續」（#67 review 第二輪）：兩支都是檔案不是目錄，`.agents/bin/agents-branch/x`
+# 這種帶 path segment 的引用不是那個確切工具路徑，必須照樣被偵測。
 #
 # 用 grep 而非 rg：本條是「找到就 FAIL」的反向斷言，寫成 `if rg …; then fail` 時缺 rg 會讓
 # 整段靜默跳過（rg 非 0 → if 不成立 → 假綠）。bin/ci-local 已記錄過這個事故類別。grep 是
@@ -243,7 +245,7 @@ diff -u "$sentinel_before" "$sentinel_after" >/dev/null ||
 control_plane_allow=(agents-branch pr-review-gate)
 [ "${#control_plane_allow[@]}" -le 2 ] ||
   fail "control-plane allowlist 超過 2 筆上限（要放寬請連同上方理由一起改）: ${control_plane_allow[*]}"
-control_plane_allow_re="\\.agents/bin/($(IFS='|'; printf '%s' "${control_plane_allow[*]}"))([^A-Za-z0-9_.-]|$)"
+control_plane_allow_re="\\.agents/bin/($(IFS='|'; printf '%s' "${control_plane_allow[*]}"))([^A-Za-z0-9_./-]|$)"
 
 # selftest：兩個方向都要驗。只驗「確切路徑被放行」會漏掉子字串過寬，只驗「近似路徑被擋」
 # 會漏掉錨過頭讓真正的引用回頭 FAIL——那會讓整條斷言恆紅而被下一個人整段註解掉。
@@ -256,10 +258,12 @@ allow_selftest="$(printf '%s\n' \
 deny_selftest="$({ printf '%s\n' \
   'x:1:~/.agents/bin/pr-review-gate_v2 x' \
   'x:2:~/.agents/bin/agents-branch-old x' \
-  'x:3:~/.agents/bin/agents-sync x' |
+  'x:3:~/.agents/bin/agents-sync x' \
+  'x:4:~/.agents/bin/agents-branch/anything x' \
+  'x:5:~/.agents/bin/pr-review-gate/README x' |
   grep -vE "$control_plane_allow_re" || true; } | wc -l | tr -d ' ')"
-[ "$deny_selftest" -eq 3 ] ||
-  fail "control-plane allowlist 把近似路徑當成確切工具放行（僅 $deny_selftest/3 仍被偵測）"
+[ "$deny_selftest" -eq 5 ] ||
+  fail "control-plane allowlist 把近似路徑當成確切工具放行（僅 $deny_selftest/5 仍被偵測）"
 
 control_plane_hits="$(
   grep -nE '\.agents/(core|rules|hooks|hosts|dist|bin)(/|`|$|[[:space:]]|，|。|、)' \
