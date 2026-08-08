@@ -18,14 +18,44 @@ if [[ "$1 $2" == "repo view" ]]; then
   [[ -n "${GH_FAKE_REPO_FAIL:-}" ]] && exit 1
   printf 'owner/repo\n'
 elif [[ "$1 $2" == "pr view" ]]; then
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$FAKE_STATE" "$FAKE_DRAFT" "$FAKE_MERGEABLE" "$FAKE_HEAD" "$FAKE_CI" \
-    "https://github.com/owner/repo/pull/42"
+  filter=${!#}
+  jq -nc --arg state "$FAKE_STATE" --arg draft "$FAKE_DRAFT" \
+    --arg mergeable "$FAKE_MERGEABLE" --arg head "$FAKE_HEAD" \
+    --arg ci "$FAKE_CI" --arg urls "${FAKE_FAILED_URLS:-NONE}" '
+    ($ci | if . == "NONE" then [] else split(",") end) as $states |
+    ($urls | if . == "NONE" then [] else split(",") end) as $check_urls |
+    {state:$state, isDraft:($draft == "true"), mergeable:$mergeable, headRefOid:$head,
+     statusCheckRollup:[range(0; $states | length) as $i |
+       ($check_urls[$i] // "") as $details |
+       {__typename:"CheckRun", conclusion:$states[$i],
+        workflowName:(if ($details | startswith("EXTERNAL:")) or
+                           (($details | length) > 0 and ($details | startswith("https://github.com/owner/repo/actions/runs/") | not))
+                      then null else "CI" end),
+        detailsUrl:(if ($details | startswith("EXTERNAL:")) then ($details | ltrimstr("EXTERNAL:")) else $details end)}],
+     url:"https://github.com/owner/repo/pull/42"}' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/check-runs/"*"/annotations"* ]]; then
+  [[ -z "${FAKE_ANNOTATION_FAIL:-}" ]] || exit 1
+  filter=${!#}
+  jq -nc --arg message "${FAKE_FAILURE_ANNOTATION:-}" \
+    '[{message:$message}]' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/actions/jobs/"* ]]; then
+  [[ -z "${FAKE_JOB_FAIL:-}" ]] || exit 1
+  filter=${!#}
+  jq -nc --arg conclusion "${FAKE_FAILURE_CONCLUSION:-failure}" \
+    --argjson n "${FAKE_FAILURE_STEPS:-0}" --arg shape "${FAKE_JOB_SHAPE:-valid}" '
+    {id:900002,run_id:900002,head_sha:"head-new",conclusion:$conclusion,
+     steps:[range(0; $n) | {name:"step"}]}
+    | if $shape == "missing_steps" then del(.steps)
+      elif $shape == "null_steps" then .steps = null
+      elif $shape == "missing_conclusion" then del(.conclusion)
+      elif $shape == "stale_head" then .head_sha = "head-old"
+      elif $shape == "mismatched_run" then .run_id = 900003
+      else . end' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"/jobs"* ]]; then
   # 被取消的 job 跑過幾個 step。0 代表 runner 拿到 job 卻從未開始執行。
   filter=${!#}
   jq -nc --argjson n "$FAKE_CANCELLED_STEPS" \
-    '{jobs:[{steps:[range(0; $n) | {name:"step"}]}]}' | jq -r "$filter"
+    '{jobs:[{id:900002,steps:[range(0; $n) | {name:"step"}]}]}' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"head_sha="* ]]; then
   # head 上 conclusion=cancelled 的 run。留空模擬查不到——那時 gate 不得降級。
   filter=${!#}
@@ -88,14 +118,29 @@ probe() {
   # 被取消的 run id 清單與其 job 跑過的 step 數。預設空清單＝查不到 cancelled run，
   # 那時 gate 不得降級，所以不傳這兩個參數的既有案例行為不變。
   local cancelled_ids="${12:-}" cancelled_steps="${13:-0}"
+  local failure_job_id="${14:-}" failure_steps="${15:-0}" failure_annotation="${16:-}"
+  local review_body="${17:-}"
+  local failed_urls="${18:-}" annotation_fail="${19:-}" job_fail="${20:-}"
+  local want_fragment="${21:-}" forbid_fragment="${22:-}" failure_conclusion="${23:-failure}"
+  local failure_job_shape="${24:-valid}"
+  if [[ -z "$failed_urls" ]]; then
+    if [[ -n "$failure_job_id" ]]; then
+      failed_urls="https://github.com/owner/repo/actions/runs/900002/job/$failure_job_id"
+    else
+      failed_urls=NONE
+    fi
+  fi
 
   : > "$REQUEST_LOG"
   output=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
     FAKE_STATE=OPEN FAKE_DRAFT="$draft" FAKE_MERGEABLE=MERGEABLE \
-    FAKE_HEAD=head-new FAKE_CI="$ci" FAKE_REVIEW="$review" \
+    FAKE_HEAD=head-new FAKE_CI="$ci" FAKE_FAILED_URLS="$failed_urls" FAKE_REVIEW="$review" \
     FAKE_REQUESTED="$requested" FAKE_UNRESOLVED="$unresolved" \
     FAKE_HAS_NEXT="$has_next" FAKE_HEAD_DATE="$head_date" \
     FAKE_CANCELLED_RUN_IDS="$cancelled_ids" FAKE_CANCELLED_STEPS="$cancelled_steps" \
+    FAKE_FAILURE_STEPS="$failure_steps" FAKE_FAILURE_CONCLUSION="$failure_conclusion" \
+    FAKE_FAILURE_ANNOTATION="$failure_annotation" FAKE_ANNOTATION_FAIL="$annotation_fail" \
+    FAKE_JOB_FAIL="$job_fail" FAKE_JOB_SHAPE="$failure_job_shape" FAKE_REVIEW_BODY="$review_body" \
     "$GATE" 42 2>&1)
   rc=$?
   request_count=$(wc -l < "$REQUEST_LOG" | tr -d ' ')
@@ -105,13 +150,15 @@ probe() {
   fi
 
   if [[ "$rc" -eq "$want_rc" && "$output" == STATE="$want_state"* &&
+        ( -z "$want_fragment" || "$output" == *"$want_fragment"* ) &&
+        ( -z "$forbid_fragment" || "$output" != *"$forbid_fragment"* ) &&
         "$request_count" -eq "$want_requests" && "$payload_ok" == true ]]; then
     ((pass += 1))
     printf 'PASS %s\n' "$name"
   else
     ((fail += 1))
-    printf 'FAIL %s: want_rc=%s want_state=%s want_requests=%s got_rc=%s got_requests=%s output=%s\n' \
-      "$name" "$want_rc" "$want_state" "$want_requests" "$rc" "$request_count" "$output"
+    printf 'FAIL %s: want_rc=%s want_state=%s want_requests=%s want_fragment=%s forbid_fragment=%s got_rc=%s got_requests=%s output=%s\n' \
+      "$name" "$want_rc" "$want_state" "$want_requests" "$want_fragment" "$forbid_fragment" "$rc" "$request_count" "$output"
   fi
 }
 
@@ -136,6 +183,28 @@ probe "failure outranks pending CI" 30 FAIL_CI     0 head-new 0 0 FAILURE,PENDIN
 # GitHub 不提供取消者，但 steps 為空能區分「runner 拿到 job 卻沒開始」與「跑到一半被中斷」。
 OLD=2026-01-01T00:00:00Z
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+BILLING="The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings"
+BILLING_REVIEW="The job was not started because recent GitHub Actions payments have failed or your spending limit needs to be increased."
+probe "billing failure without steps degrades" 12 PASS_NO_CI 0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "ci=BILLING_QUOTA review=CURRENT" "STATE=PASS "
+probe "non-billing zero-step failure blocks"   30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "runner assignment failed"
+probe "billing failure after a step blocks"    30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 1 "$BILLING"
+probe "single-clause near miss blocks"         30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "The job was not started because runner maintenance"
+probe "payment-only near miss blocks"          30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "Recent account payments have failed or your spending limit needs to be increased."
+probe "mixed external failure blocks"          30 FAIL_CI    0 head-new 0 0 FAILURE,ERROR false false "$NOW" "" 0 900002 0 "$BILLING" "" "https://github.com/owner/repo/actions/runs/900002/job/900002,https://checks.example/failure"
+probe "external spoofed Actions URL blocks"    30 FAIL_CI    0 head-new 0 0 FAILURE,ERROR false false "$NOW" "" 0 900002 0 "$BILLING" "" "https://github.com/owner/repo/actions/runs/900002/job/900002,EXTERNAL:https://github.com/owner/repo/actions/runs/900002/job/900002"
+probe "missing failure URL blocks"             30 FAIL_CI    0 head-new 0 0 FAILURE,ERROR false false "$NOW" "" 0 900002 0 "$BILLING" "" "https://github.com/owner/repo/actions/runs/900002/job/900002,MISSING"
+probe "empty failure URL field blocks"         30 FAIL_CI    0 head-new 0 0 FAILURE,ERROR false false "$NOW" "" 0 900002 0 "$BILLING" "" "https://github.com/owner/repo/actions/runs/900002/job/900002,"
+probe "annotation query failure blocks"        30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" 1
+probe "job query failure blocks"               30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" 1
+probe "non-failure job conclusion blocks"      30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" success
+probe "missing steps schema blocks"            30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" failure missing_steps
+probe "null steps schema blocks"               30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" failure null_steps
+probe "missing conclusion schema blocks"       30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" failure missing_conclusion
+probe "stale-head job blocks"                  30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" failure stale_head
+probe "mismatched-run job blocks"              30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" failure mismatched_run
+probe "billing body is not a code review"      30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_REVIEW" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
+MIXED_REVIEW="$BILLING_REVIEW"$'\nissue: real finding'
+probe "mixed review body remains current"       0 PASS 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$MIXED_REVIEW" "" "" "" "review=CURRENT" "STATE=UNAVAILABLE"
 # runner 從未開始執行 + 等夠久 → 拿不到結論，降級。
 probe "cancelled without steps degrades" 12 PASS_NO_CI 0 head-new 0 0 CANCELLED false false "$OLD" 900001 0
 # 跑過 step 才被取消，可能中斷了一個正在失敗的測試——不必等門檻，直接擋死。

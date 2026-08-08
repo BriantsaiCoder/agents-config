@@ -28,11 +28,19 @@ name=${repo#*/}
 
 pr_state=$(gh pr view "$pr" --repo "$repo" \
   --json state,isDraft,mergeable,headRefOid,statusCheckRollup,url \
-  --jq '[.state, (.isDraft | tostring), .mergeable, .headRefOid,
-    (if (.statusCheckRollup | length) == 0 then "NONE"
-     else [.statusCheckRollup[] | (.conclusion // .state // "PENDING")] | join(",")
-     end), .url] | @tsv') || unavailable pr_probe_failed
-IFS=$'\t' read -r state draft mergeable head ci_states url <<< "$pr_state"
+  --jq '.statusCheckRollup as $checks |
+    [.state, (.isDraft | tostring), .mergeable, .headRefOid,
+     (if ($checks | length) == 0 then "NONE"
+      else [$checks[] | (.conclusion // .state // "PENDING")] | join(",") end),
+     ([$checks[]
+       | (.conclusion // .state // "PENDING") as $result
+       | select(["FAILURE","ERROR","TIMED_OUT","ACTION_REQUIRED","STARTUP_FAILURE","STALE"] | index($result))
+       | if (.__typename != "CheckRun" or ((.workflowName // "") | length) == 0) then "UNTRUSTED"
+         elif ((.detailsUrl // "") | length) == 0 then "MISSING"
+         else .detailsUrl end]
+      | if length == 0 then "NONE" else join(",") end),
+     .url] | @tsv') || unavailable pr_probe_failed
+IFS=$'\t' read -r state draft mergeable head ci_states failed_urls url <<< "$pr_state"
 
 [[ "$state" == OPEN ]] || unavailable pr_not_open
 if [[ "$draft" == true ]]; then
@@ -96,6 +104,43 @@ cancelled_jobs_never_ran() {
   return 0
 }
 
+# Actions quota／billing failure 的 job 不會執行任何 step；只有 rollup 裡每個 hard failure
+# 都直接指向符合該形狀、且 annotation 命中 GitHub 固定訊息的 Actions job 時才降級。
+# 第三方 check、任一 API／annotation／step 不符都回 false，繼續當真正 CI failure 擋住。
+billing_failure_never_ran() {
+  local url path run_id job_id job conclusion steps job_head job_run_id
+  local -a urls
+  [[ -n "$failed_urls" && "$failed_urls" != NONE ]] || return 1
+  case "$failed_urls" in ,*|*,|*,,*) return 1 ;; esac
+  IFS=',' read -r -a urls < <(printf '%s\n' "$failed_urls")
+  for url in "${urls[@]}"; do
+    case "$url" in
+      "https://github.com/$repo/actions/runs/"*"/job/"*) ;;
+      *) return 1 ;;
+    esac
+    path=${url#"https://github.com/$repo/actions/runs/"}
+    run_id=${path%%/job/*}
+    job_id=${path##*/job/}; job_id=${job_id%%\?*}
+    [[ "$run_id" =~ ^[0-9]+$ && "$job_id" =~ ^[0-9]+$ ]] || return 1
+    job=$(gh api "repos/$repo/actions/jobs/$job_id" \
+      --jq 'if ((.conclusion | type) == "string" and (.steps | type) == "array" and
+                (.head_sha | type) == "string" and (.run_id | type) == "number")
+            then [.conclusion, (.steps | length), .head_sha, (.run_id | tostring)] | @tsv
+            else error("invalid job shape") end' 2>/dev/null) || return 1
+    conclusion=$(printf '%s' "$job" | cut -f1)
+    steps=$(printf '%s' "$job" | cut -f2)
+    job_head=$(printf '%s' "$job" | cut -f3)
+    job_run_id=$(printf '%s' "$job" | cut -f4)
+    [[ "$conclusion" == failure && "$steps" == 0 &&
+       "$job_head" == "$head" && "$job_run_id" == "$run_id" ]] || return 1
+    gh api "repos/$repo/check-runs/$job_id/annotations" --jq '
+      any(.[];
+        ((.message // "") | ascii_downcase | contains("job was not started")) and
+        ((.message // "") | ascii_downcase | contains("payments have failed or your spending limit needs to be increased")))' \
+      2>/dev/null | grep -qx true || return 1
+  done
+}
+
 ci=PASS
 if [[ "$ci_states" == NONE ]]; then
   # 預設仍是 WAIT，只有確定超過門檻才改判 ABSENT。
@@ -119,7 +164,11 @@ else
     esac
   done
   if [[ "$hard_fail" -eq 1 ]]; then
-    ci=FAIL
+    if [[ "$in_progress" -eq 0 && "$cancelled" -eq 0 ]] && billing_failure_never_ran; then
+      ci=BILLING_QUOTA
+    else
+      ci=FAIL
+    fi
   elif [[ "$in_progress" -eq 1 ]]; then
     # 還有 check 在跑就繼續等，即使同時有 CANCELLED——重跑後的新 run 正是這個形狀。
     ci=WAIT
@@ -154,6 +203,9 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
     | [ (.commit_id // ""),
         ((.body // "") | [scan("Suppressed comments \\(([0-9]+)\\)")]
           | if length > 0 then .[0][0] else "0" end)
+        , ((.body // "") | ascii_downcase
+          | (. == "the job was not started because recent github actions payments have failed or your spending limit needs to be increased." or
+             . == "the job was not started because recent account payments have failed or your spending limit needs to be increased."))
       ] | @tsv') ||
   unavailable review_probe_failed
 # 用 cut 而非 here-string：後者在 /tmp 與 cwd 皆不可寫時建不出暫存檔（macOS bash 3.2），
@@ -161,6 +213,7 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
 # 為了拆兩個欄位引入一個會炸的相依。
 latest_review=$(printf '%s' "$latest_review_state" | cut -f1)
 suppressed=$(printf '%s' "$latest_review_state" | cut -f2)
+billing_review=$(printf '%s' "$latest_review_state" | cut -f3)
 [[ "$suppressed" =~ ^[0-9]+$ ]] || suppressed=0
 requested=$(gh api "repos/$repo/pulls/$pr/requested_reviewers" \
   --jq '[.users[] | select(.login | ascii_downcase | contains("copilot"))] | length') ||
@@ -191,7 +244,9 @@ IFS=$'\t' read -r unresolved has_next <<< "$thread_state"
 
 review=CURRENT
 requested_now=false
-if [[ "$latest_review" != "$head" ]]; then
+if [[ "$billing_review" == true ]]; then
+  review=UNAVAILABLE
+elif [[ "$latest_review" != "$head" ]]; then
   review=STALE
   if [[ "$requested" -eq 0 ]]; then
     gh api --method POST "repos/$repo/pulls/$pr/requested_reviewers" \
@@ -216,6 +271,16 @@ if [[ "$ci" == WAIT || "$mergeable" == UNKNOWN ]]; then
     "$pr" "$head" "$ci" "$review" "$url"
   exit 10
 fi
+if [[ "$review" == UNAVAILABLE ]]; then
+  if [[ "$ci" == BILLING_QUOTA ]]; then
+    printf 'STATE=PASS_NO_CI pr=%s head=%s ci=%s review=UNAVAILABLE reason=actions_billing_or_quota unresolved=0 suppressed=%s url=%s\n' \
+      "$pr" "$head" "$ci" "$suppressed" "$url"
+    exit 12
+  fi
+  printf 'STATE=UNAVAILABLE repo=%s pr=%s head=%s ci=%s review=UNAVAILABLE reason=review_actions_billing_or_quota unresolved=0 url=%s\n' \
+    "$repo" "$pr" "$head" "$ci" "$url"
+  exit 30
+fi
 if [[ "$requested_now" == true ]]; then
   printf 'STATE=REQUESTED pr=%s head=%s ci=%s review=STALE unresolved=0 url=%s\n' \
     "$pr" "$head" "$ci" "$url"
@@ -234,7 +299,7 @@ fi
 # 要接受降級的呼叫端必須明確認得 PASS_NO_CI 這個字串。
 # ci= 保留實際來源，不統一成一個字：ABSENT 是 run 根本沒被建立，CANCELLED 是 run 建立了
 # 但 job 一個 step 都沒跑就被取消。兩者都代表「拿不到 CI 結論」，但排查方向完全不同。
-if [[ "$ci" == ABSENT || "$ci" == CANCELLED ]]; then
+if [[ "$ci" == ABSENT || "$ci" == CANCELLED || "$ci" == BILLING_QUOTA ]]; then
   printf 'STATE=PASS_NO_CI pr=%s head=%s ci=%s review=CURRENT unresolved=0 suppressed=%s url=%s\n' \
     "$pr" "$head" "$ci" "$suppressed" "$url"
   exit 12

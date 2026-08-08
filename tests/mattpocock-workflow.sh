@@ -390,6 +390,28 @@ has "missing E2E or isolation mechanism is explicit SKIPPED" '無 E2E.*isolation
 has "Preflight records isolated E2E or a reasoned skip" 'Tests evidence.*isolation boundary.*SKIPPED' "$ledgers_ref"
 has "E2E gate does not require speculative infrastructure" 'E2E.*不得只為 gate 新造測試基礎設施' "$ledgers_ref"
 has "current-head PR gates remain whole" 'current `head\.sha`.*CI.*review|current HEAD.*CI.*review' skills/dev-workflow/references/review-triage.md
+has "quota fallback requires exact zero-step evidence" 'PASS_NO_CI ci=BILLING_QUOTA.*0 steps.*job was not started.*payments have failed' skills/dev-workflow/references/review-triage.md
+has "quota fallback reminds then continues" 'MUST 提醒使用者.*提醒不是停止點.*直接往下' skills/dev-workflow/references/review-triage.md
+has "quota fallback keeps hosted CI unavailable" 'Hosted CI 保持 `UNAVAILABLE`.*MUST NOT 改寫成 PASS' skills/dev-workflow/references/review-triage.md
+has "quota fallback requires current-head local and independent gates" 'current `head\.sha`.*full local CI-equivalent.*Standards \+ Spec independent review PASS.*0 unresolved' skills/dev-workflow/references/review-triage.md
+has "billing review cannot masquerade as current" 'Billing failure.*review 標 `UNAVAILABLE`.*MUST NOT 當 `CURRENT`' skills/dev-workflow/references/review-triage.md
+has "non-quota CI failures stay blocked" '任一 failed job 跑過 step.*訊息不符.*其他 failure.*probe 不完整.*`FAIL_CI`.*不得 fallback' skills/dev-workflow/references/review-triage.md
+quota_section=$(sed -n '/^2\. \*\*Actions billing／quota/,/^3\. \*\*Bot unavailable/p' "$ROOT/skills/dev-workflow/references/review-triage.md")
+if printf '%s\n' "$quota_section" | rg -q '^\s*- Hosted CI (是|視為|改寫成|標記為) `?PASS'; then
+  ng "quota section forbids hosted CI affirmative PASS"
+else
+  ok "quota section forbids hosted CI affirmative PASS"
+fi
+if printf '%s\n' "$quota_section" | rg -q '提醒(後)?(就是|是|成為)停止點|提醒後.*(停止|等待)|等待使用者確認'; then
+  ng "quota reminder cannot become a stop gate"
+else
+  ok "quota reminder cannot become a stop gate"
+fi
+if printf '%s\n' "$quota_section" | rg -q '^\s*- Billing failure.*(是|視為|標為|當成) `?CURRENT'; then
+  ng "quota section forbids billing review affirmative CURRENT"
+else
+  ok "quota section forbids billing review affirmative CURRENT"
+fi
 
 has "bot fallback is independent and read-only" 'independent read-only reviewer.*current `head\.sha`' skills/dev-workflow/references/review-triage.md
 has "bot transient states cannot fallback" 'REQUESTED.*WAIT_REVIEW.*MUST NOT fallback' skills/dev-workflow/references/review-triage.md
