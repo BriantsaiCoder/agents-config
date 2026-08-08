@@ -48,6 +48,19 @@ rule_has() {
   rule_has_in "$1" "$2" "$3" skills/dev-workflow/SKILL.md
 }
 
+section_has() {
+  local label="$1" section="$2" pattern="$3" file="$4"
+  if awk -v heading="## $section" '
+    $0 == heading { active=1; next }
+    active && /^## / { exit }
+    active { print }
+  ' "$ROOT/$file" | grep -qE "$pattern"; then
+    ok "$label"
+  else
+    ng "$label"
+  fi
+}
+
 dirty_review=skills/dev-workflow/references/dirty-review-package.md
 delegation_ref=skills/dev-workflow/references/delegation.md
 host_adapters_ref=skills/dev-workflow/references/host-adapters.md
@@ -312,8 +325,19 @@ has "ledgers keeps INT-10 parents on the rebase path" '父 PR 在 \[INT-10\] 範
 # apply pass 要釘兩處。只釘句首時，把「重新納入 S5」那整段後綴刪掉測試仍全綠——而那半句
 # 才是 [S5-1] 不被繞過的保證；被靜默刪掉的症狀只是「S5 之後沒人動手改」或更糟的「一批
 # code 沒進過 review」，兩者都不會有人發現。實測過。
-has "Claude adapter binds simplify as the S5 apply pass" 'MUST 跑 .simplify.*當 apply pass' "$host_adapters_ref"
+section_has "Claude adapter binds simplify as the S5 apply pass" Claude 'MUST 跑 .simplify.*當 apply pass' "$host_adapters_ref"
 has "simplify output re-enters S5" '重新納入 S5.*繞過 \[S5-1\]' "$host_adapters_ref"
+has "shared simplification outcome has a canonical section" '^## S5 simplification apply outcome$' "$host_adapters_ref"
+has "shared simplification outcome records changed or no-op" '結果 MUST 記為 `changed` 或 `no-op`' "$host_adapters_ref"
+has "every changed simplification pass re-enters S4 and affected S5" '`changed` 回 S4 並把 affected diff 重新納入 S5' "$host_adapters_ref"
+section_has "Codex maps the simplification outcome to an explicit apply pass" Codex '^\- S5 simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
+section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot 'simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
+common_simplification="$(sed -n '/^## S5 simplification apply outcome$/,/^## Claude$/p' "$ROOT/$host_adapters_ref" | sed '$d')"
+if printf '%s\n' "$common_simplification" | rg -q 'Claude|Codex|Copilot'; then
+  ng "shared simplification method stays host-neutral"
+else
+  ok "shared simplification method stays host-neutral"
+fi
 # 以下這批守衛的 pattern 一律釘「會翻轉的子句」，不釘引入語。教訓是同一個撰寫方法會換
 # 外觀復發：未錨行首行尾 → 只釘句首 → 釘住錯誤引用 → 極性反轉。判準是「把這句改成相反
 # 意思，pattern 還能不能命中」；每一條都做過這個反轉測試才留下。
@@ -361,7 +385,33 @@ fi
 has "S4 defines low medium high risk tiers" 'Low.*Medium.*High' skills/dev-workflow/SKILL.md
 has "S4 expands targeted affected full by risk" 'targeted.*affected.*full CI|targeted.*affected.*full suite' skills/dev-workflow/SKILL.md
 lacks "S4 no longer always reruns everything" 'S4 MUST 全跑|Build／test／lint 與 task-specific probes 全跑' skills/dev-workflow/SKILL.md
+has "applicable E2E records a repo-defined isolation boundary" 'Tests evidence.*E2E.*repo-defined isolation boundary.*cleanup' "$ledgers_ref"
+has "missing E2E or isolation mechanism is explicit SKIPPED" '無 E2E.*isolation mechanism.*SKIPPED.*理由' "$ledgers_ref"
+has "Preflight records isolated E2E or a reasoned skip" 'Tests evidence.*isolation boundary.*SKIPPED' "$ledgers_ref"
+has "E2E gate does not require speculative infrastructure" 'E2E.*不得只為 gate 新造測試基礎設施' "$ledgers_ref"
 has "current-head PR gates remain whole" 'current `head\.sha`.*CI.*review|current HEAD.*CI.*review' skills/dev-workflow/references/review-triage.md
+has "quota fallback requires exact zero-step evidence" 'PASS_NO_CI ci=BILLING_QUOTA.*0 steps.*job was not started.*payments have failed' skills/dev-workflow/references/review-triage.md
+has "quota fallback reminds then continues" 'MUST 提醒使用者.*提醒不是停止點.*直接往下' skills/dev-workflow/references/review-triage.md
+has "quota fallback keeps hosted CI unavailable" 'Hosted CI 保持 `UNAVAILABLE`.*MUST NOT 改寫成 PASS' skills/dev-workflow/references/review-triage.md
+has "quota fallback requires current-head local and independent gates" 'current `head\.sha`.*full local CI-equivalent.*Standards \+ Spec independent review PASS.*0 unresolved' skills/dev-workflow/references/review-triage.md
+has "billing review cannot masquerade as current" 'Billing failure.*review 標 `UNAVAILABLE`.*MUST NOT 當 `CURRENT`' skills/dev-workflow/references/review-triage.md
+has "non-quota CI failures stay blocked" '任一 failed job 跑過 step.*訊息不符.*其他 failure.*probe 不完整.*`FAIL_CI`.*不得 fallback' skills/dev-workflow/references/review-triage.md
+quota_section=$(sed -n '/^2\. \*\*Actions billing／quota/,/^3\. \*\*Bot unavailable/p' "$ROOT/skills/dev-workflow/references/review-triage.md")
+if printf '%s\n' "$quota_section" | rg -q '^\s*- Hosted CI (是|視為|改寫成|標記為) `?PASS'; then
+  ng "quota section forbids hosted CI affirmative PASS"
+else
+  ok "quota section forbids hosted CI affirmative PASS"
+fi
+if printf '%s\n' "$quota_section" | rg -q '提醒(後)?(就是|是|成為)停止點|提醒後.*(停止|等待)|等待使用者確認'; then
+  ng "quota reminder cannot become a stop gate"
+else
+  ok "quota reminder cannot become a stop gate"
+fi
+if printf '%s\n' "$quota_section" | rg -q '^\s*- Billing failure.*(是|視為|標為|當成) `?CURRENT'; then
+  ng "quota section forbids billing review affirmative CURRENT"
+else
+  ok "quota section forbids billing review affirmative CURRENT"
+fi
 
 has "bot fallback is independent and read-only" 'independent read-only reviewer.*current `head\.sha`' skills/dev-workflow/references/review-triage.md
 has "bot transient states cannot fallback" 'REQUESTED.*WAIT_REVIEW.*MUST NOT fallback' skills/dev-workflow/references/review-triage.md
@@ -419,6 +469,21 @@ lacks "delegation has no fixed numeric or stage fan-out" '併發(數)?[[:space:]
 has "host resolver derives the user-only count" 'expected_user_only_count=.*0' tests/host-skill-resolver.sh
 lacks "host resolver has no hard-coded user-only count" '13/13|-eq 13' tests/host-skill-resolver.sh
 has "host resolver compares complete skill directories" 'diff -qr.*skill_path.*AGENTS/skills' tests/host-skill-resolver.sh
+has "Ponytail host parity has a portable selftest" '^case .*--selftest|--selftest.*selftest' tests/ponytail-host-parity.sh
+has "Ponytail host parity checks full mode" 'ponytail-active.*full|mode.*full' tests/ponytail-host-parity.sh
+has "Ponytail host parity checks enabled plugin state" 'enabledPlugins.*ponytail@ponytail' tests/ponytail-host-parity.sh
+has "Ponytail host parity reads the canonical capability mapping" 'host-adapters\.md' tests/ponytail-host-parity.sh
+has "Ponytail host parity selects the CAP-PONYTAIL row" 'CAP-PONYTAIL' tests/ponytail-host-parity.sh
+has "Ponytail host parity calls the Codex runtime inventory" 'codex plugin list --json' tests/ponytail-host-parity.sh
+has "Ponytail host parity resolves the Codex plugin id" 'pluginId == .ponytail@ponytail.' tests/ponytail-host-parity.sh
+has "Ponytail host parity requires Codex installed and enabled" '\.installed == true and \.enabled == true' tests/ponytail-host-parity.sh
+has "Ponytail host parity binds Codex cache to runtime version" 'cache/ponytail/ponytail/\$codex_runtime_version' tests/ponytail-host-parity.sh
+has "Ponytail host parity rejects unpaired Codex config override" 'custom CODEX_CONFIG_ROOT requires CODEX_PLUGIN_LIST_JSON' tests/ponytail-host-parity.sh
+lacks "Ponytail host parity cannot override the runtime-selected Codex root" 'CODEX_PONYTAIL_ROOT' tests/ponytail-host-parity.sh
+has "Ponytail host parity splits multi-clause anchors" 'clause=\$\{rest%%\^\*\}' tests/ponytail-host-parity.sh
+has "Ponytail host parity compares clauses literally" 'parts\[i\] == wanted' tests/ponytail-host-parity.sh
+has "Ponytail host parity compares effective skill bytes" 'cmp -s.*claude.*codex|cmp -s.*CODEX.*COPILOT' tests/ponytail-host-parity.sh
+has "CI exercises Ponytail host parity selftest" 'tests/ponytail-host-parity\.sh --selftest' .github/workflows/ci.yml
 has "CI installs the ripgrep test dependency" \
   '^[[:space:]]*run:[[:space:]]*sudo apt-get update && sudo apt-get install -y ripgrep[[:space:]]*$' \
   .github/workflows/ci.yml
