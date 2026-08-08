@@ -337,10 +337,14 @@ has "reviewer prompt block has an opening marker" '^── reviewer prompt 開�
 has "reviewer prompt block has a closing marker" '^── reviewer prompt 結束 ──$' skills/dev-workflow/references/reviewer-template.md
 prompt_block="$(sed -n '/^── reviewer prompt 開始 ──$/,/^── reviewer prompt 結束 ──$/p' \
   "$ROOT/skills/dev-workflow/references/reviewer-template.md")"
-if [ -z "$prompt_block" ]; then
+# 數行而不是只檢查 -z：sed 的 range 一定含兩個 marker 行，所以把 prompt 內容整段清空
+# 之後 `-z` 仍不成立，守衛會比它自稱的弱。> 2 行才代表 marker 之間真的有東西。
+prompt_lines=0
+[ -n "$prompt_block" ] && prompt_lines="$(printf '%s\n' "$prompt_block" | wc -l | tr -d ' ')"
+if [ "$prompt_lines" -le 2 ]; then
   ng "reviewer prompt block is non-empty"
-  # range 為空時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓總條數隨
-  # 檔案狀態浮動，看起來像「少跑了一條」而不是「守衛失去依據」。
+  # range 空或只剩 marker 時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓
+  # 總條數隨檔案狀態浮動，看起來像「少跑了一條」而不是「守衛失去依據」。
   ng "baseline design notes live outside the reviewer prompt"
 elif printf '%s' "$prompt_block" | grep -q '設計註記'; then
   ok "reviewer prompt block is non-empty"
