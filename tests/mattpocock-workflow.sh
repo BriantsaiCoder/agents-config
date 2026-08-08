@@ -264,9 +264,10 @@ rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.
 has "reviewer template owns severity and confidence" '全部回報、下游過濾.*severity.*confidence|全部回報、下游過濾.*確信度' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template keeps axes separate" '單一 review 軸內.*跨軸不合併、不重排' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template carries the complete-report contract" '全部回報、下游過濾.*不設字數或條數上限.*確信度.*高／中／低' skills/dev-workflow/references/reviewer-template.md
-# [S5-3] 要求兩條 baseline 逐字進「每一個」reviewer prompt，但在 2026-08-03 之前零測試
-# 守它——同日 reviewer-template.md 被編輯注入 [S5-4] 時，[S5-3] 的兩條仍被漏掉，單純是
-# 注意力都在 S5-4，沒有守衛擋。規則沒有機械守衛就會在下一次編輯再漏一次。
+# [S5-3] 要求 baseline 逐字進 Standards 軸的 reviewer prompt（2026-08-03 當時兩條、現為
+# 五條），但在 2026-08-03 之前零測試守它——同日 reviewer-template.md 被編輯注入 [S5-4] 時，
+# [S5-3] 的兩條仍被漏掉，單純是注意力都在 S5-4，沒有守衛擋。規則沒有機械守衛就會在下一次
+# 編輯再漏一次。
 # host-local review agent（~/.claude/agents/*.md、~/.codex/agents/*.toml）的同名注入由各
 # host repo 的自檢負責，跨 repo 不可斷言。
 # 比對兩條「全文」含 `→` 之後的動作句：只比對前半（「手刻標準庫或平台已提供的功能」）時，
@@ -291,10 +292,29 @@ has "code-review Standards brief carries the performance clause" 'performance re
 # 設計註記 MUST 留在 prompt 區塊外：在區塊內時 Codex／Copilot 會把「不含 efficiency 維」
 # 一起複製進 reviewer prompt，對 reviewer 讀起來就是「這一維不用看」。用標題 grep 證明不了
 # 位置（整段搬到區塊之前也會 PASS），所以直接掃區塊內容。
-if sed -n '/reviewer prompt 開始/,/reviewer prompt 結束/p' \
-  "$ROOT/skills/dev-workflow/references/reviewer-template.md" | grep -q '設計註記'; then
+#
+# 兩個 marker 先各自釘住：sed range 靠它們定界，marker 被改名或刪掉時 range 產出 0 行、
+# grep 找不到、直接落進 ok 分支回綠——守衛在自己的定界消失時 fail-open，而全庫唯一寫著
+# 這兩個字串的地方就是下面這段檢查本身。range 非空也一併斷言，兩道都過才驗內容。
+# stack 的 merge-commit 例外與 [INT-10] 的 squash 五步路徑（tests/pr-path-gate.sh 釘著）
+# 直接對立，兩邊各自綠燈時矛盾無人察覺。釘住「例外指名 [INT-10] 為排除範圍」這件事本身。
+has "ledgers stack exemption is scoped outside INT-10" '\[INT-10\] 範圍外.*MUST 用 merge commit 合併，不用 squash' "$ledgers_ref"
+has "ledgers keeps INT-10 scope on the squash path" '\[INT-10\] 範圍內.*不適用上一條' "$ledgers_ref"
+# apply pass 沒有守衛時，被靜默刪掉的症狀只是「S5 之後沒人動手改」，不會有人發現。
+has "Claude adapter binds simplify as the S5 apply pass" 'MUST 跑 .simplify.*當 apply pass' "$host_adapters_ref"
+# 錨定整行：同檔「怎麼用」第 1 步的說明文字裡就引用了這兩個 marker 字串，不錨行首行尾的
+# 話 has 會命中那句描述、sed range 也會從那行起算——marker 本身被改名依然全綠。
+has "reviewer prompt block has an opening marker" '^── reviewer prompt 開始 ──$' skills/dev-workflow/references/reviewer-template.md
+has "reviewer prompt block has a closing marker" '^── reviewer prompt 結束 ──$' skills/dev-workflow/references/reviewer-template.md
+prompt_block="$(sed -n '/^── reviewer prompt 開始 ──$/,/^── reviewer prompt 結束 ──$/p' \
+  "$ROOT/skills/dev-workflow/references/reviewer-template.md")"
+if [ -z "$prompt_block" ]; then
+  ng "reviewer prompt block is non-empty"
+elif printf '%s' "$prompt_block" | grep -q '設計註記'; then
+  ok "reviewer prompt block is non-empty"
   ng "baseline design notes live outside the reviewer prompt"
 else
+  ok "reviewer prompt block is non-empty"
   ok "baseline design notes live outside the reviewer prompt"
 fi
 # B 層（2026-08-03）：兩條「放寬」型修正，各自要有守衛——放寬比收緊更需要，因為退回舊

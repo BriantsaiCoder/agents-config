@@ -4,11 +4,11 @@
 
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。
-> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent，不需要下方的 prompt 區塊；但「五條 baseline 的設計註記」與「審查者 MUST 記錄」兩節對它們一樣有約束力——[S5-3] 的等價性判準就寫在前者。
+> 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent，不需要下方的 prompt 區塊；但「五條 baseline 的設計註記」與「審查者 MUST 記錄」兩節對它們一樣有約束力——[S5-3] 的等價性判準就寫在「五條 baseline 的設計註記」裡。
 
 ## 怎麼用
 
-1. 把「── reviewer prompt 開始 ──」到「── reviewer prompt 結束 ──」之間整塊複製給審查者，連同本次 diff / PR 一起送。
+1. 把「── reviewer prompt 開始 ──」到「── reviewer prompt 結束 ──」之間整塊複製給審查者，連同本次 diff / PR 一起送。這個 prompt 是一次合併審查，同時承擔 Standards 與 Spec 兩軸的 outcome——[S5-3] 綁的是「Standards 軸 prompt」，本區塊涵蓋該軸，所以五條 baseline 對它成立，不因為沒有軸分割而豁免。
 2. 審查者回來後，依「回饋處理」逐條做技術評估，再回 SKILL.md S5 判 EXIT。
 3. 無審查者可用時走「UNAVAILABLE 規則」——先 probe、留失敗證據，才可標 UNAVAILABLE；禁默默降級成自審。
 

@@ -28,12 +28,12 @@
 
 ## Stacked PR 的 diff scoping
 
-一次交付拆成多個相依 PR 時（P2 建在 P1 之上），上節的 base↔baseline 一致性有兩個 stack 特有的破法。
+一次交付拆成多個相依 PR 時（P2 建在 P1 之上），「Closeout 後的新 commit」的 base↔baseline 一致性有兩個 stack 特有的破法。
 
 - merge 順序由 stack 底部往上，P2 的 `--base` 指 P1 的分支。
-- **stack 上的 PR MUST 用 merge commit 合併，不用 squash**——這是對 Postflight「squash merge 預設」的具名例外，只在 stack 成立。squash 會使 P1 的原始 commit 從未進入 main，`merge-base(main, P2)` 退回 P1 之前，GitHub 把 P2 retarget 到 main 後呈現的 diff 就把 P1 的變更整份帶回來，正是上節要防的事改由 retarget 造成；補救要每次 merge 後 rebase 加重記 baseline，stack 有多深就付幾次。merge commit 讓 P1 的 commit 真的落在 main 的祖先鏈上，retarget 後 `merge-base` 自動仍等於原 baseline，上節的檢查照常成立，零補救。
-- **例外的例外**：[INT-10] 範圍（全域／security config）把 squash merge 釘進五步路徑，不得以本節豁免。那種 stack 每次 merge 後 MUST rebase 到 main、重記 baseline SHA 再重驗；不想付這個成本就別把全域 config 拆成 stack。
-- retarget 後 MUST 實查一次 `gh pr view <n> --json baseRefOid --jq .baseRefOid`，確認 `merge-base(base, HEAD)` 仍等於記錄的 baseline——retarget 不動 HEAD，上節的 `git merge-base --is-ancestor` 在 base 被換掉時仍為真，單靠它會回假 PASS。這是人工驗證項：`bin/pr-review-gate` 目前不取 base，stack 若成為常態，應把 `baseRefOid` 併進該 gate 既有的 `--json` 清單，而不是讓這條停留在散文。
+- **[INT-10] 範圍外（一般 product code）的 stack MUST 用 merge commit 合併，不用 squash**——這是對 Postflight「squash merge 預設」的具名例外。squash 會使 P1 的原始 commit 從未進入 main，`merge-base(main, P2)` 退回 P1 之前，GitHub 把 P2 retarget 到 main 後呈現的 diff 就把 P1 的變更整份帶回來，正是「Closeout 後的新 commit」要防的事改由 retarget 造成；補救要每次 merge 後 rebase 加重記 baseline，stack 有多深就付幾次。merge commit 讓 P1 的 commit 真的落在 main 的祖先鏈上，retarget 後 `merge-base` 自動仍等於原 baseline，零補救。
+- **[INT-10] 範圍內（全域／security config，含本 repo 的 kernel 與 references）不適用上一條**：該條把 squash merge 釘進五步路徑，不得以本節豁免。那種 stack 每次 merge 後 MUST rebase 到 main、重記 baseline SHA 再重驗。rebase 若內容中性（無 conflict resolution、無新 commit），S5 findings 沿用前次並註明原 baseline SHA；但 HEAD SHA 已變，CI 與 bot review 依「Closeout 後的新 commit」一律失效，MUST 於新 head 重查——每層 stack 因此多一輪 CI。不想付這個成本就別把全域 config 拆成 stack。
+- retarget 後 MUST 實查一次 `gh pr view <n> --json baseRefOid --jq .baseRefOid`，確認 `merge-base(base, HEAD)` 仍等於記錄的 baseline——retarget 不動 HEAD，「Closeout 後的新 commit」的 `git merge-base --is-ancestor` 在 base 被換掉時仍為真，單靠它會回假 PASS。這是人工驗證項：`bin/pr-review-gate` 目前不取 base，stack 若成為常態，應把 `baseRefOid` 併進該 gate 既有的 `--json` 清單，而不是讓這條停留在散文。
 
 ---
 
