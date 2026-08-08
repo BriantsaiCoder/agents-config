@@ -90,7 +90,8 @@
 修 findings 會產生新 diff，新 diff 又要重審——沒有出口的迴圈與沒有迴圈一樣糟。判準三條，**在回饋處理完成之後**才判：
 
 - 兩軸的 finding 經 caller 技術評估後沒有 `issue:` 即 EXIT；仍有 `issue:` 且其處置改了 code，MUST 再審一輪。**級別以 caller 的評估為準，reviewer 自標僅為初值**——出口若是自標 prefix 的函數，等於把 gate 交給單一 agent 自行決定，而「多一輪」的成本全落在 caller 身上，誘因一律指向低標。
-- 各軸的終局狀態仍依 [S5-1] 的四態，本判準不改變它：`PASS`、`SKIPPED`（附理由）、`UNAVAILABLE`（附 probe）都可續行，`FAIL` 不可。
+- 各軸的終局狀態仍依 kernel S5 節的四態，本判準不改變它：`PASS`、`SKIPPED`（附理由）、`UNAVAILABLE`（附 probe）都可續行，`FAIL` 不可。
+- host 有 apply pass（如 Claude 的 `simplify`）時，其 diff 依該 host adapter 一併納入本輪，不另起一輪。
 - 未採納或未解答的 finding（含被 caller 駁回的 `issue:`）MUST 逐條列進 PR body 的 Preflight row 6 並附理由；級別經 caller 改動者一併寫出 reviewer 初值，否則降級後與原生的 `suggestion:` 同形，事後無從分辨。
 
 依據是實測而非推論：`issue:` 級的修復確實會引入新的 `issue:`（2026-08-08，`beebb6b`——補 fail-open 守衛的第一版自己是假綠）。

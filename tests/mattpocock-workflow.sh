@@ -321,7 +321,7 @@ has "S5 EXIT level is the caller's final call" 'reviewer 自標僅為初值' ski
 # 判準的三條各釘一次義務句而非描述句：只釘標題與第一句時，其餘 bullet 可整段刪除仍全綠
 # （2026-08-08 實測）。第二條特別重要——第一版判準寫「EXIT 時各軸標 PASS」「UNAVAILABLE
 # 不得 EXIT」，等於關掉 kernel 明許的 SKIPPED／UNAVAILABLE 續行路徑，是條文自己造的 bug。
-has "S5 EXIT keeps the four terminal states" '仍依 \[S5-1\] 的四態' skills/dev-workflow/references/reviewer-template.md
+has "S5 EXIT keeps the four terminal states" '仍依 kernel S5 節的四態' skills/dev-workflow/references/reviewer-template.md
 has "S5 EXIT requires disclosing unadopted findings" 'MUST 逐條列進 PR body 的 Preflight row 6' skills/dev-workflow/references/reviewer-template.md
 # 錨定整行：同檔「怎麼用」第 1 步的說明文字裡就引用了這兩個 marker 字串，不錨行首行尾的
 # 話 has 會命中那句描述、sed range 也會從那行起算——marker 本身被改名依然全綠。
