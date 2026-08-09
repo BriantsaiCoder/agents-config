@@ -43,6 +43,15 @@
 
 每 row 斷言一件事 + 明列什麼算證據。任一 row 缺席或標 PASS 卻無證據 → 阻擋 push / 開 PR（[T0-2] 無 evidence 不得宣稱完成）。
 
+八列之外，PR body MUST 另含 [S5-1] 兩軸的結論各一行，且**狀態值與軸名同一行**：
+
+```
+S5 Standards: <PASS|FAIL|SKIPPED（理由）|UNAVAILABLE（probe）>
+S5 Spec: <同上>
+```
+
+寫在哪一節不拘（下方範例放在摘要），但這兩行是 row 6 的前提——沒有它們，「已審查」根本還沒宣告。host 可能對此有機械檢查，屆時缺這兩行會在開 PR 當下被擋而不是事後才發現。
+
 | # | Row | 斷言什麼 | 什麼算證據 |
 |---|-----|---------|-----------|
 | 1 | **Scope** | 每行 diff 都可對應到本次需求 / task；無順手改的不相關格式 / 命名 | 引用 `sdd/<slug>/tasks.md`（或 plans doc）+ 一句自審：每個變更檔對得上哪條 task；無法追溯的順手改已移除或另開 task |
@@ -66,6 +75,11 @@
 ### 範例（已填）
 
 ```
+## 摘要
+
+S5 Standards: PASS
+S5 Spec: SKIPPED（無 spec 檔）
+
 ## Preflight Ledger
 
 1. Scope — PASS：3 個變更檔皆對應 sdd/batch-insert-chunk/tasks.md 的 T1–T3；無不相關格式改動。

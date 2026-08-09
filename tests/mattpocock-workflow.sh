@@ -428,6 +428,11 @@ has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` �
 #
 # 錨 `^| 6 |`：不錨的話把 row 6 的要求整段刪掉、另在檔尾留一句含同樣詞的散文，斷言仍全綠
 # （S5 實測）。兩項拆成兩條而非 `A.*B` 串接，否則日後把證據項重排就無故轉紅。
+# 範例是「照抄來源」，缺什麼就會被整批複製到每個 PR body。這兩行原本只存在於 host 的
+# hook 裡，ledgers.md 從頭到尾沒出現過（`grep -c 'S5 Standards:'` = 0），於是照抄範例
+# 產出的 body 會被機械檢查擋下，而 deny 訊息連不回它剛照抄的那份文件。
+has "Preflight example carries the Standards axis line" '^S5 Standards: PASS$' "$ledgers_ref"
+has "Preflight example carries the Spec axis line" '^S5 Spec: SKIPPED' "$ledgers_ref"
 has "Preflight row 6 requires the review range" '^\| 6 \|.*審查對象 range' "$ledgers_ref"
 has "Preflight row 6 requires quoting two baseline titles" \
   '^\| 6 \|.*baseline 五條中至少兩條的標題' "$ledgers_ref"
