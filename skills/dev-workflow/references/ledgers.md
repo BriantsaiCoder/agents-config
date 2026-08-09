@@ -1,4 +1,4 @@
-<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | referenced-from: dev-workflow/SKILL.md S6 CLOSEOUT | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md + .codex/AGENTS.override.md（Mandatory Closeout Ledger 收割）| last-verified: 2026-08-04 -->
+<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | referenced-from: dev-workflow/SKILL.md S6 CLOSEOUT | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md + .codex/AGENTS.override.md（Mandatory Closeout Ledger 收割）| last-verified: 2026-08-09 -->
 
 # ledgers.md — S6 CLOSEOUT 的 ledger 定義
 
@@ -46,11 +46,11 @@
 | # | Row | 斷言什麼 | 什麼算證據 |
 |---|-----|---------|-----------|
 | 1 | **Scope** | 每行 diff 都可對應到本次需求 / task；無順手改的不相關格式 / 命名 | 引用 `sdd/<slug>/tasks.md`（或 plans doc）+ 一句自審：每個變更檔對得上哪條 task；無法追溯的順手改已移除或另開 task |
-| 2 | **Git state** | 從乾淨 baseline 出發，工作在 `feat/` / `fix/` 分支（非 master）| 分支名 + 動手前 `git status` 為 clean 的紀錄；確認非 main / master（[T0-3]）|
+| 2 | **Git state** | 從乾淨 baseline 出發，工作在 `feat/` / `fix/` 分支（非 master）| 分支名 + 動手前 `git status` 為 clean 的紀錄；確認非 main / master（[T0-3]）；**immutable baseline SHA**（＝ target merge-base，「Closeout 後的新 commit」那節要求記錄的那顆，row 6 的 range 起點也取它）|
 | 3 | **Diff self-review** | 每行變更已逐行看過；無自己殘留的 debug / TODO / dead code（unused import / var / func）| `git diff` 走查摘要；自造 dead code 已清（pre-existing 只標不刪）|
 | 4 | **Self-simplification** | S4 四檢核與 S5 simplification apply outcome 通過：無 unrequested abstraction、無新依賴、無單一使用點抽象層、無 speculative config | 四項逐一標記 + apply outcome `changed`／`no-op`；有新依賴時附選型理由（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）|
 | 5 | **Tests evidence** | 適用的 risk-tier verification 已跑綠；BUGFIX 依 [INT-2] 證 RED→GREEN 或同一 repro before／after | 確切測試／repro 指令 + exit code + 通過數；applicable E2E 附 repo-defined isolation boundary／cleanup evidence，無 E2E 或 isolation mechanism 則 `SKIPPED` 附理由且不得只為 gate 新造測試基礎設施；stable／valuable seam 附 RED→GREEN 順序，否則附同一 repro before／after 與不採 RED 的理由 |
-| 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要；0 條未處理 actionable（「處理」的定義見 `reviewer-template.md` 的「回饋處理」）|
+| 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要 + 審查對象 range `<baseline SHA>..<head SHA>`（baseline 同 row 2；head 取 findings 全數處理後的 HEAD——修 findings 那幾顆 commit 未再經審查時 MUST 明述，否則 range 看起來比實際被審過的範圍大）+ **逐字引用 `reviewer-template.md` 的 over-engineering baseline 五條中至少兩條的標題**（引得出＝真的讀到那一節；驗的是 contract 本身而非旁邊的識別碼，所以不隨季度輪替，也不怕被轉述——標題外流等於 contract 外流，那正是要的結果。弱訊號不是證明）；0 條未處理 actionable（「處理」的定義見 `reviewer-template.md` 的「回饋處理」）|
 | 7 | **Security-release gates** | 會部署的變更已跑 `*-release-verification` + `dependency-security-scan`（正交必跑，非三選一）| 列出跑了哪些 gate + 結果；不部署則標 SKIPPED 附「本次不部署」理由 |
 | 8 | **Residual risks** | 已知但接受的殘留風險已列舉；中高風險附 rollback | 風險清單（「無」是明述斷言不是留白）；中高風險變更附 rollback 註記（[T0-6]）|
 
@@ -69,11 +69,11 @@
 ## Preflight Ledger
 
 1. Scope — PASS：3 個變更檔皆對應 sdd/batch-insert-chunk/tasks.md 的 T1–T3；無不相關格式改動。
-2. Git state — PASS：分支 fix/batch-insert-byte-chunk（非 master）；動手前 git status clean。
+2. Git state — PASS：分支 fix/batch-insert-byte-chunk（非 master）；動手前 git status clean；immutable baseline SHA 0d9c8b7（= 開分支時的 origin/main）。
 3. Diff self-review — PASS：git diff 逐行走查；移除臨時 Console.WriteLine 一處；無殘留 dead code。
 4. Self-simplification — PASS：無新抽象／無新依賴／分塊邏輯僅 FileProcess 單處但為既有 caller 路徑非新增抽象層／無 speculative config。
 5. Tests evidence — PASS：DOTNET_SYSTEM_NET_DISABLEIPV6=1 dotnet test ...Tests.csproj → exit 0，Passed! 398 個；BUGFIX 紅測 BatchInsert_ExceedsByteLimit_Splits 於修復前 commit（a1b2c3d）先紅。
-6. Review gate — PASS：reviewer=dotnet-code-reviewer（agent id dcr-07）；2 findings 皆採納並修；0 未處理。
+6. Review gate — PASS：reviewer=dotnet-code-reviewer（agent id dcr-07）；審查對象 range 0d9c8b7..e4f5a6b（head 是修完 2 條 findings 後的 HEAD，非 row 5 那顆 pre-fix commit；修 findings 的 e4f5a6b 已回頭再審一輪）；送出的 prompt 含 baseline 五條，其中 Reinvented Stdlib 與 Wrong Altitude 兩條逐字引用於此；2 findings 皆採納並修；0 未處理。
 7. Security-release gates — PASS：backend-release-verification 綠；dependency-security-scan 無高危 CVE（NuGetAudit exit 0）。
 8. Residual risks — 大 payload 分塊邊界仰賴 UTF-8 byte 量測，非字元；風險低。rollback：revert 單一 commit 即回原批次 INSERT 行為。
 ```
@@ -89,7 +89,7 @@
 | **Self-simplification** | PASS / FAIL / SKIPPED，附證據（四檢核結果）|
 | **Diff self-review** | PASS / FAIL / SKIPPED，附證據（逐行走查摘要）|
 | **Relevant verification** | 依 S4 risk tier 列 task-specific probe／targeted test／affected build／full suite 的確切指令與 exit code |
-| **Review gate** | reviewer 型別、agent id 或不可用理由、最終 finding 摘要 |
+| **Review gate** | reviewer 型別、agent id 或不可用理由、最終 finding 摘要、審查對象 range 與 baseline 五條中兩條的逐字標題——證據項與 Preflight row 6 同一套，不因不走 PR 而降級。呈現粒度依下方粒度節，不在此重述其觸發條件 |
 | **PR / CI / review status** | 適用時：PR 連結、CI 綠燈狀態、bot review 處理狀態 |
 | **Residual risks** | 殘留風險（中高風險附 rollback）|
 

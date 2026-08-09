@@ -1,4 +1,4 @@
-<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-08 -->
+<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-09 -->
 
 # S5 泛用 reviewer prompt（host 中立）
 
@@ -62,6 +62,12 @@
 ── reviewer prompt 結束 ──
 
 ## 五條 baseline 的設計註記（寫給 config 作者，MUST NOT 混進上方 prompt）
+
+- **五條的標題同時是 S5 ledger 的載入證據**：`ledgers.md` 的 Preflight row 6 要求逐字引用其中至少兩條。
+  這是為了解決一個實際發生過的失效——PR body 寫「全數套用本檔的 canonical over-engineering contract」，而本檔從未被載入（2026-08-09，[T0-1]）。
+  用五條標題而不是在檔頭放一個識別碼：**驗的是 contract 本身，不是旁邊的 token**。引得出標題代表真的讀到這一節；標題被轉述出去等於 contract 被轉述出去，而那正是本檔想要的結果，所以它沒有「洩漏面」這個概念，也不需要隨季度輪替。
+  它是**弱訊號不是證明**——決心造假的人照樣抄得到兩個詞。要防的是「宣稱套用了本節卻沒讀過」，不是刻意造假；刻意造假由 review 本身承擔。
+  舉證責任在 executor（填 ledger 的人）而非 reviewer：失效模式是 executor 的宣稱，不是 reviewer 的產出。因此這條要求寫在 `ledgers.md` 的 row 6，不進上方 prompt，也不進「審查者 MUST 記錄」三欄。
 
 - **不含 efficiency 維**：冗餘計算與複雜度惡化由 prompt 內優先序第 3 級（performance regression）承擔，另立一條只會讓同一 finding 在兩處打架。**前提是該 reviewer 真的收到那份優先序**——沒有優先序清單的專屬 reviewer 不適用此推論，必須另行確認 efficiency 有落點。
 - **專屬 reviewer 的等價性**（[S5-3] 要求的「等價完整 contract」怎麼算數）：有自己 smell 清單的 host reviewer 若某條已被既有條目承擔，MUST 在該清單就地寫出對應關係，並確認被指派的條目**真的涵蓋原條目的每個 clause**——只寫「由 X 承擔」而 X 的判準漏掉某個子類，等於無聲少給。不必重複同一段文字：reviewer 讀到同一個概念兩次會把它加權兩次。
