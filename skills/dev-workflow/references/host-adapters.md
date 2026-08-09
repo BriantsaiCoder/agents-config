@@ -32,6 +32,7 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 m
 - S5 Standards／Spec outcomes 仍須覆蓋；是否平行與 subagent 數量依 [INT-4] 自主決定，review agent 保持 read-only；`uiux-reviewer` 是 Claude-only。
 - 用專屬 review agent 不豁免 `references/reviewer-template.md`：豁免的是 prompt 區塊本身與「怎麼用」中以該區塊為前提的步驟，其餘各節對 Claude 一樣有約束力，MUST 在維護 `code-review` 的 baseline 或判 S5 EXIT 時讀。不在此列舉是哪幾節——列舉會漏，新增的節就掉在外面。這條與 `simplify` 綁定都不因專屬 agent 而豁免。
 - 兩軸 findings 處理完後 MUST 跑 `simplify`（Claude-only）當 apply pass；`changed`／`no-op` 與重驗依共用 S5 simplification outcome。
+- `ledgers.md` Preflight 要求的兩軸狀態行與 row 6 三欄／baseline 標題，在 Claude 側由 `~/.claude/hooks/guard-s5-ledger.sh`（PreToolUse，攔 `gh pr create`）機械檢查——缺項在開 PR 當下就被擋，不是事後才發現。兩軸皆 `SKIPPED` 走豁免路徑（沒跑審查就沒有記錄可填）。已知不修的破口：inline `--body` 時 `--title`／`--label` 的值也算進 body、`gh pr edit` 不在射程內；細節與理由寫在該檔註解。
 
 ## Codex
 

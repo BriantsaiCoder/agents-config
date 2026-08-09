@@ -428,6 +428,25 @@ has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` �
 #
 # 錨 `^| 6 |`：不錨的話把 row 6 的要求整段刪掉、另在檔尾留一句含同樣詞的散文，斷言仍全綠
 # （S5 實測）。兩項拆成兩條而非 `A.*B` 串接，否則日後把證據項重排就無故轉紅。
+# 範例是「照抄來源」，缺什麼就會被整批複製到每個 PR body。這兩行原本只存在於 host 的
+# hook 裡，ledgers.md 從頭到尾沒出現過（`grep -c 'S5 Standards:'` = 0），於是照抄範例
+# 產出的 body 會被機械檢查擋下，而 deny 訊息連不回它剛照抄的那份文件。
+#
+# 必須 range-scope 到 Preflight 那一節：file-global 的 grep 在「把兩行搬進 Closeout 範例」
+# 這種合理的整理改動下仍全綠（S5 實測），而真正會變成 PR body 的區塊已經沒有它們。
+# 不用既有的 section_has——ledgers.md 的 fenced 範例裡本來就有 `## Preflight Ledger`，
+# 那支 helper 掃到 `^## ` 就停，範例永遠落在 scope 外。
+#
+# 狀態值收成四態 alternation 而非釘死某一個：釘死的話，範例改用別的狀態（完全合法）
+# 就無故轉紅。本文的 placeholder `S5 Standards: <PASS|FAIL|…>` 不會誤命中——`<` 卡在中間。
+preflight_section="$(sed -n '/^## 1\. Preflight Ledger/,/^## 2\. Closeout Ledger/p' "$ledgers_ref")"
+for _axis in Standards Spec; do
+  if printf '%s\n' "$preflight_section" | grep -qE "^S5 ${_axis}: (PASS|FAIL|SKIPPED|UNAVAILABLE)"; then
+    ok "Preflight example carries the ${_axis} axis line"
+  else
+    ng "Preflight example carries the ${_axis} axis line"
+  fi
+done
 has "Preflight row 6 requires the review range" '^\| 6 \|.*審查對象 range' "$ledgers_ref"
 has "Preflight row 6 requires quoting two baseline titles" \
   '^\| 6 \|.*baseline 五條中至少兩條的標題' "$ledgers_ref"

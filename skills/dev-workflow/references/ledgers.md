@@ -41,7 +41,16 @@
 
 ## 1. Preflight Ledger（8 rows，寫進 PR body）
 
-每 row 斷言一件事 + 明列什麼算證據。任一 row 缺席或標 PASS 卻無證據 → 阻擋 push / 開 PR（[T0-2] 無 evidence 不得宣稱完成）。
+每 row 斷言一件事 + 明列什麼算證據。任一 row 缺席或標 PASS 卻無證據、**或缺下方兩軸狀態行** → 阻擋 push / 開 PR（[T0-2] 無 evidence 不得宣稱完成）。
+
+八列之外，PR body MUST 另含 [S5-1] 兩軸的結論各一行，且**狀態值與軸名同一行**：
+
+```
+S5 Standards: <PASS|FAIL|SKIPPED（理由）|UNAVAILABLE（probe）>
+S5 Spec: <同上>
+```
+
+寫在哪一節不拘（下方範例放在開頭），但這兩行是 row 6 的前提——沒有它們，「已審查」根本還沒宣告。host 側的機械檢查見 `host-adapters.md`。
 
 | # | Row | 斷言什麼 | 什麼算證據 |
 |---|-----|---------|-----------|
@@ -66,6 +75,11 @@
 ### 範例（已填）
 
 ```
+## S5 兩軸
+
+S5 Standards: PASS
+S5 Spec: PASS：對照 sdd/batch-insert-chunk/proposal.md 逐條確認，無偏離
+
 ## Preflight Ledger
 
 1. Scope — PASS：3 個變更檔皆對應 sdd/batch-insert-chunk/tasks.md 的 T1–T3；無不相關格式改動。
