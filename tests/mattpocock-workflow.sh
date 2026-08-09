@@ -68,6 +68,21 @@ routing_continuations_ref=skills/dev-workflow/references/routing-continuations.m
 authorization_matrix_ref=skills/dev-workflow/references/authorization-matrix.md
 ledgers_ref=skills/dev-workflow/references/ledgers.md
 host_ownership_test=tests/three-host-global-config-ownership.sh
+delivery_int6_pattern='預計納入 VCS.*新增／修改.*首次寫入前.*MUST.*branch／worktree.*非 main／master'
+delivery_s2_pattern='寫入前.*MUST.*記.*Delivery Scope: Local-only／PR-closeout.*後者須核准.*否則.*Local-only'
+delivery_s6_pattern='PR-closeout.*MUST.*commit.*push.*Ready PR.*current-head CI／bot gate PASS.*ledgers.*merge strategy.*branch cleanup.*才 final.*Local-only.*禁 external write'
+
+delivery_contract_valid() {
+  local file="$1" int6 s2 s6 rc
+  [ -r "$file" ] || return 2
+  int6="$(grep -E '^\- \[INT-6\]' "$file")"; rc=$?
+  case "$rc" in 0) ;; 1) return 1 ;; *) return 2 ;; esac
+  s2="$(awk '/^## S2 AUTHORIZE$/{on=1;next} on && /^## /{exit} on{print}' "$file")" || return 2
+  s6="$(awk '/^## S6 CLOSEOUT$/{on=1;next} on && /^## /{exit} on{print}' "$file")" || return 2
+  [[ "$int6" =~ $delivery_int6_pattern ]] &&
+    [[ "$s2" =~ $delivery_s2_pattern ]] &&
+    [[ "$s6" =~ $delivery_s6_pattern ]]
+}
 
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
 refs=$(grep -ho '\[INT-4\]' \
@@ -80,6 +95,7 @@ refs=$(grep -ho '\[INT-4\]' \
 # 擁有的檔案（ownership 邊界）。拆成兩條：isolation 要求由 [INT-6] 承接，工具指向由
 # Codex adapter 承接。只驗 'bin/agents-branch' 是不夠的——那條在 [INT-6] 被刪掉後仍會綠。
 has "[INT-6] requires isolated worktree" '^\- \[INT-6\].*(isolated worktree|worktree)' skills/dev-workflow/SKILL.md
+rule_has "[INT-6] covers new and modified VCS files before write" INT-6 "$delivery_int6_pattern"
 has "[T1-10] tooling points to agents-branch" '~/\.agents/bin/agents-branch' "$host_adapters_ref"
 
 has "house skill standards exists" '^# Skill standards' skills/auditing-skill-folder/references/skill-standards.md
@@ -201,6 +217,8 @@ lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|impr
 has "external issue or PR routes to triage" '外部.*issue.*PR.*`triage`' skills/dev-workflow/SKILL.md
 has "grill-with-docs stays explicit" '明示.*`grill-with-docs`' skills/dev-workflow/SKILL.md
 has "S2 routes mutations through the authorization matrix" 'mutation.*side effect.*authorization.*matrix|變更.*side effect.*authorization.*matrix' skills/dev-workflow/SKILL.md
+section_has "S2 requires an explicit authorized delivery scope" "S2 AUTHORIZE" "$delivery_s2_pattern" skills/dev-workflow/SKILL.md
+has "read-only requests stay outside implementation" 'Read-only.*不得擴成 implementation' "$authorization_matrix_ref"
 has "clear change build fix directly authorizes local implementation" '明確.*change／build／fix.*in-scope local implementation.*non-destructive verification' "$authorization_matrix_ref"
 lacks "clear work does not wait for implement invocation" '需求已清楚.*推薦.*`implement`|單一 session.*等待.*`implement`' skills/dev-workflow/SKILL.md "$routing_continuations_ref"
 rule_has "Medium risk alone does not reopen authorization" INT-3 'Medium-risk.*MUST NOT.*第二次確認|MUST NOT.*Medium-risk.*第二次確認'
@@ -243,8 +261,53 @@ has "canonical artifact suppresses duplicate handoff" '已有 canonical artifact
 has "compaction and completion do not trigger handoff" 'context compaction.*任務已完成.*內容很長.*MUST NOT.*`handoff`' "$routing_continuations_ref"
 
 has "closeout is action-triggered" 'push.*open PR.*merge.*final closeout' skills/dev-workflow/SKILL.md
+section_has "PR closeout requires the full terminal delivery path" "S6 CLOSEOUT" "$delivery_s6_pattern" skills/dev-workflow/SKILL.md
 has "implement adapter enters branch" '`implement`.*(branch|worktree)' skills/dev-workflow/SKILL.md
 has "implement adapter requires S4-S6" '`implement`.*S4.*S6' skills/dev-workflow/SKILL.md
+
+delivery_fixture="$(mktemp -d "${TMPDIR:-/tmp}/delivery-contract.XXXXXX")" ||
+  { ng 'delivery contract fixture: 無法建立暫存目錄'; exit 1; }
+cp "$ROOT/skills/dev-workflow/SKILL.md" "$delivery_fixture/baseline.md" ||
+  { ng 'delivery contract fixture: 無法複製 baseline'; exit 1; }
+if delivery_contract_valid "$delivery_fixture/baseline.md"; then
+  ok "delivery guard accepts its baseline fixture"
+else
+  ng "delivery guard accepts its baseline fixture"
+fi
+delivery_missing_rc=0
+delivery_contract_valid "$delivery_fixture/missing.md" || delivery_missing_rc=$?
+[ "$delivery_missing_rc" -gt 1 ] &&
+  ok "delivery guard reports a missing fixture as validator error" ||
+  ng "delivery guard reports a missing fixture as validator error"
+delivery_case=0
+delivery_mutation_rejected() {
+  local label="$1" from="$2" to="$3" fixture rc=0
+  delivery_case=$((delivery_case + 1))
+  fixture="$delivery_fixture/$delivery_case.md"
+  sed "s|$from|$to|" "$delivery_fixture/baseline.md" > "$fixture" ||
+    { ng "$label (fixture mutation failed)"; return; }
+  delivery_contract_valid "$fixture" || rc=$?
+  case "$rc" in
+    0) ng "$label" ;;
+    1) ok "$label" ;;
+    *) ng "$label (validator error rc=$rc)" ;;
+  esac
+}
+delivery_mutation_rejected "delivery guard rejects existing-files-only scope" \
+  '預計納入 VCS 的檔案新增／修改' '既有 tracked source 修改'
+delivery_mutation_rejected "delivery guard rejects main/master writes" \
+  'task branch／worktree（非 main／master）' 'main／master'
+delivery_mutation_rejected "delivery guard rejects optional scope records" \
+  '寫入前 MUST 記' '寫入前可不記'
+delivery_mutation_rejected "delivery guard rejects unapproved PR closeout" \
+  '後者須核准' '後者不須核准'
+delivery_mutation_rejected "delivery guard rejects skipped current-head gate" \
+  'current-head CI／bot gate PASS' 'current-head gate 可略過'
+delivery_mutation_rejected "delivery guard preserves ledgers merge strategy" \
+  '依 ledgers 選 merge strategy' '固定 squash merge'
+delivery_mutation_rejected "delivery guard rejects early final" \
+  'branch cleanup 才 final' 'merge 前即可 final，branch cleanup 可略過'
+rm -r -- "$delivery_fixture"
 has "S5 has Standards and Spec axes" 'Standards.*Spec' skills/dev-workflow/SKILL.md
 has "S5 axes have four states" 'PASS.*FAIL.*SKIPPED.*UNAVAILABLE' skills/dev-workflow/SKILL.md
 has "S5 dirty review includes staged and unstaged changes" 'staged.*`git diff --cached --`.*unstaged.*`git diff --`' "$dirty_review"

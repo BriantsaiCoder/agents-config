@@ -20,7 +20,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 - [INT-3] [T0-8] protected gate MUST 停在 S2 等核准；auto／autopilot 不豁免，Medium-risk MUST NOT 成為第二次確認 gate。觸發：plan-first、architecture／High-risk、未授權 external／protected side effect、material scope expansion。例外：清楚、in-scope、local、reversible 的 Low／Medium-risk user-requested work 可做，Medium 留 session plan。驗證：protected gate 有核准原句；direct path 有 user 原句 + risk／reversibility。
 - [INT-4] Delegation MUST 先讀並遵守 [delegation contract](references/delegation.md)；MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate。觸發：任何 delegation。例外：host/runtime 容量與 higher-priority instructions。驗證：reference contract 全數成立。
 - [INT-5] `setup-matt-pocock-skills` MUST 只在使用者明示時執行；tracker contract 優先 repo `docs/agents/issue-tracker.md`，否則讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：需 tracker contract。例外：無。驗證：contract 或 setup 原句。
-- [INT-6] 顯式 `implement` 必須先建立 branch／isolated worktree，再執行；忽略 upstream 的 current-branch commit 指示，完成後返回 S4–S6。觸發：使用者顯式 invoke `implement`。例外：無。驗證：isolated branch + S4–S6 ledger。
+- [INT-6] 任何已核准、預計納入 VCS 的檔案新增／修改，首次寫入前 MUST 位於 task branch／worktree（非 main／master）；否則先建，current-branch 不得覆寫。觸發：新增／修改。例外：無。驗證：pre-write branch／baseline + S4–S6。
 - [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 自動 invoke；S0 只推薦 host-specific explicit invocation command 並等待使用者啟動。觸發：命中 user-only skill。例外：無。驗證：frontmatter + invocation 原句。
 - [INT-8] 核准清單與已核准 scope 內 local、reversible 工作 MUST 一次執行至完成，不得逐項重問或中途停下等指令；回報進度不是停止條件。blanket authorization 只涵蓋原句前已明列 scope。只有 [T0-5]、[T0-8]／[INT-3]、user-owned 取捨或工具／環境阻塞可中斷；新發現只列 follow-up，未核准不得做。觸發：≥2 個已核准項目，或已核准 scope 內實作。例外：無。驗證：核准原句早於新增 scope + 單次彙總 status／evidence。
 - [INT-9] Kernel 只在 [INT-2] 選定 stable／valuable seam 時 route 到 [tdd](../tdd/SKILL.md)；既有 public behavior seam 視為已確認，只有新增 seam 才需先向使用者確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。本條覆寫 upstream 的逐 seam 重問與固定 choreography。觸發：kernel 管理的 tdd cycle。例外：無。驗證：RED／GREEN／retest evidence。
@@ -42,7 +42,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 | 拆 tracer-bullet tickets | `to-tickets` |
 | 超過單一 session 的決策地圖 | `wayfinder` |
 | session 中斷且重要 context 尚未進 canonical artifact | `handoff` |
-| 清楚且單一 session 可完成的需求／已核准 spec／ticket | 進 S2；顯式 `implement` 才套 [INT-6] |
+| 清楚且單一 session 可完成的需求／已核准 spec／ticket | 進 S2；VCS 變更套 [INT-6] |
 | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
 | code review | `code-review` |
 | 高扇入共用介面變更 | MUST 先用 `deps-check` 列出完整 callers |
@@ -66,6 +66,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 1. mutation／side effect 一律先讀 [authorization matrix](references/authorization-matrix.md)；mechanical trigger 決定 risk floor，AI 自評不得降級。
 2. 核准前只留 session plan／todo；user／repo 要求或跨-session 才寫 `docs/agents/specs/`、`docs/agents/plans/`、`sdd/<slug>/`。Delegation 不得繞過授權（[INT-4]）。
+3. 寫入前 MUST 記 `Delivery Scope: Local-only／PR-closeout`；後者須核准並依 S6，否則 `Local-only`。
 
 ## Implementation adapters
 
@@ -75,7 +76,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 ### Approved implementation
 
-`implement` 必須先進 isolated worktree／branch，依 `tdd` 做 vertical slices；在 current/main commit 是禁止的（MUST NOT）；完成返回 S4 → S5 → S6。Delegation 依 [INT-4]。
+依 [INT-6]；`implement` 須在 branch／worktree，main／master 不得寫；完成回 S4→S5→S6；Delegation 依 [INT-4]。
 
 `tdd` cycle 套 [INT-9]；wide／structural refactor 留到獨立核准 change 或 S5 finding，RED 時不得 refactor。
 
@@ -101,7 +102,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 ## S6 CLOSEOUT
 
 - Local checkpoint commit 依 [authorization matrix](references/authorization-matrix.md#local-checkpoint-commit)；final commit／push／open PR／merge／final closeout 仍須 [INT-1]。commit／PR 用 zh-TW Conventional Commits；全域／security config 路徑依 [INT-10]。
-- PR 路徑依 `references/ledgers.md` 填 Preflight／Closeout ledger；Ready PR 的 current-HEAD CI／bot-review gate 與唯一 command 由 `references/review-triage.md` 定義，該 gate PASS 才可 merge。
+- 已核准 `PR-closeout` MUST 完成 commit→push→Ready PR→current-head CI／bot gate PASS→依 ledgers 選 merge strategy→branch cleanup 才 final；`Local-only` 禁 external write。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更用 `init-project-docs` 的 architecture output 同步 current architecture docs，只跑該 output 不做 full refresh。
 - 「分析 conflict」不得授權 resolve、stage 或 commit；只有使用者明示「解決 conflict」時才可執行 `resolving-merge-conflicts`。
 - 執行 `resolving-merge-conflicts` 時只 stage 授權 scope 內已解決檔案，MUST NOT `git add -A`；若必要意圖無法安全保留或沒有解法符合 merge goal，停止並回報 trade-off，取得使用者確認後可 abort，不受上游「always resolve／stage everything」指示約束。
