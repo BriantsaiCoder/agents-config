@@ -2,10 +2,6 @@
 
 # S5 泛用 reviewer prompt（host 中立）
 
-> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3-K9F2。S5 ledger 的 Review gate 列 MUST 引用它。除了守衛它的測試，**不在任何 workflow reference 複印**——`ledgers.md` row 6 只寫形狀不寫值。
-> 尾碼 `K9F2` 是這條的關鍵，不是裝飾：兄弟指紋 `FP:LEDGERS-2026Q3`（`ledgers.md` 檔頭）與 `FP:DEVWF-2026Q3`（`SKILL.md` 檔頭）都在必讀檔裡，光有季度的話一次代換就能湊出本檔的值，開檔數是零。尾碼不可由它們推導，所以只能來本檔讀。
-> 它能做到的僅止於此：引得出完整指紋**是一個弱訊號**，指向「至少開過本檔的當前版本」，並讓照抄舊 PR body 因指紋過期而露餡。它**不是**證明——知道值的途徑不只讀本檔（守衛測試裡有、被 hook 擋下時也可能看到片段）。要防的是「沒想到要讀」而不是「刻意造假」；刻意造假由 review 本身承擔。
-> 舉證責任在 executor（填 ledger 的人）而非 reviewer：失效模式是 executor 宣稱套用了本檔的 contract 卻沒讀過它。因此指紋刻意放在 prompt block 之外、不進「審查者 MUST 記錄」三欄。
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。
 > 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent。**豁免的是 prompt 區塊本身、以及「怎麼用」中以該區塊為前提的步驟**；本檔其餘各節對它們一樣有約束力。這裡不列舉是哪幾節——這行原本列了兩節，後來新增的節就掉在外面，列舉本身就是那個 bug。
@@ -66,6 +62,12 @@
 ── reviewer prompt 結束 ──
 
 ## 五條 baseline 的設計註記（寫給 config 作者，MUST NOT 混進上方 prompt）
+
+- **五條的標題同時是 S5 ledger 的載入證據**：`ledgers.md` 的 Preflight row 6 要求逐字引用其中至少兩條。
+  這是為了解決一個實際發生過的失效——PR body 寫「全數套用本檔的 canonical over-engineering contract」，而本檔從未被載入（2026-08-09，[T0-1]）。
+  用五條標題而不是在檔頭放一個識別碼：**驗的是 contract 本身，不是旁邊的 token**。引得出標題代表真的讀到這一節；標題被轉述出去等於 contract 被轉述出去，而那正是本檔想要的結果，所以它沒有「洩漏面」這個概念，也不需要隨季度輪替。
+  它是**弱訊號不是證明**——決心造假的人照樣抄得到兩個詞。要防的是「宣稱套用了本節卻沒讀過」，不是刻意造假；刻意造假由 review 本身承擔。
+  舉證責任在 executor（填 ledger 的人）而非 reviewer：失效模式是 executor 的宣稱，不是 reviewer 的產出。因此這條要求寫在 `ledgers.md` 的 row 6，不進上方 prompt，也不進「審查者 MUST 記錄」三欄。
 
 - **不含 efficiency 維**：冗餘計算與複雜度惡化由 prompt 內優先序第 3 級（performance regression）承擔，另立一條只會讓同一 finding 在兩處打架。**前提是該 reviewer 真的收到那份優先序**——沒有優先序清單的專屬 reviewer 不適用此推論，必須另行確認 efficiency 有落點。
 - **專屬 reviewer 的等價性**（[S5-3] 要求的「等價完整 contract」怎麼算數）：有自己 smell 清單的 host reviewer 若某條已被既有條目承擔，MUST 在該清單就地寫出對應關係，並確認被指派的條目**真的涵蓋原條目的每個 clause**——只寫「由 X 承擔」而 X 的判準漏掉某個子類，等於無聲少給。不必重複同一段文字：reviewer 讀到同一個概念兩次會把它加權兩次。
