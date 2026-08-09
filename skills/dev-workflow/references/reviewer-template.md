@@ -2,6 +2,7 @@
 
 # S5 泛用 reviewer prompt（host 中立）
 
+> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3。S5 ledger 的 Review gate 列 MUST 引用它——沒載入本檔就引不出這串，於是「已依本檔的 contract 執行」從散文宣稱變成機械可查。
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。
 > 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent。**豁免的是 prompt 區塊本身、以及「怎麼用」中以該區塊為前提的步驟**；本檔其餘各節對它們一樣有約束力。這裡不列舉是哪幾節——這行原本列了兩節，後來新增的節就掉在外面，列舉本身就是那個 bug。

@@ -50,7 +50,7 @@
 | 3 | **Diff self-review** | 每行變更已逐行看過；無自己殘留的 debug / TODO / dead code（unused import / var / func）| `git diff` 走查摘要；自造 dead code 已清（pre-existing 只標不刪）|
 | 4 | **Self-simplification** | S4 四檢核與 S5 simplification apply outcome 通過：無 unrequested abstraction、無新依賴、無單一使用點抽象層、無 speculative config | 四項逐一標記 + apply outcome `changed`／`no-op`；有新依賴時附選型理由（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）|
 | 5 | **Tests evidence** | 適用的 risk-tier verification 已跑綠；BUGFIX 依 [INT-2] 證 RED→GREEN 或同一 repro before／after | 確切測試／repro 指令 + exit code + 通過數；applicable E2E 附 repo-defined isolation boundary／cleanup evidence，無 E2E 或 isolation mechanism 則 `SKIPPED` 附理由且不得只為 gate 新造測試基礎設施；stable／valuable seam 附 RED→GREEN 順序，否則附同一 repro before／after 與不採 RED 的理由 |
-| 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要；0 條未處理 actionable（「處理」的定義見 `reviewer-template.md` 的「回饋處理」）|
+| 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要 + 審查對象的 head SHA + `reviewer-template.md` 的指紋 `FP:REVTMPL-2026Q3`（引不出＝沒載入，該檔的 contract 就不算套過）；0 條未處理 actionable（「處理」的定義見 `reviewer-template.md` 的「回饋處理」）|
 | 7 | **Security-release gates** | 會部署的變更已跑 `*-release-verification` + `dependency-security-scan`（正交必跑，非三選一）| 列出跑了哪些 gate + 結果；不部署則標 SKIPPED 附「本次不部署」理由 |
 | 8 | **Residual risks** | 已知但接受的殘留風險已列舉；中高風險附 rollback | 風險清單（「無」是明述斷言不是留白）；中高風險變更附 rollback 註記（[T0-6]）|
 
@@ -73,7 +73,7 @@
 3. Diff self-review — PASS：git diff 逐行走查；移除臨時 Console.WriteLine 一處；無殘留 dead code。
 4. Self-simplification — PASS：無新抽象／無新依賴／分塊邏輯僅 FileProcess 單處但為既有 caller 路徑非新增抽象層／無 speculative config。
 5. Tests evidence — PASS：DOTNET_SYSTEM_NET_DISABLEIPV6=1 dotnet test ...Tests.csproj → exit 0，Passed! 398 個；BUGFIX 紅測 BatchInsert_ExceedsByteLimit_Splits 於修復前 commit（a1b2c3d）先紅。
-6. Review gate — PASS：reviewer=dotnet-code-reviewer（agent id dcr-07）；2 findings 皆採納並修；0 未處理。
+6. Review gate — PASS：reviewer=dotnet-code-reviewer（agent id dcr-07）；審查對象 head a1b2c3d；FP:REVTMPL-2026Q3；2 findings 皆採納並修；0 未處理。
 7. Security-release gates — PASS：backend-release-verification 綠；dependency-security-scan 無高危 CVE（NuGetAudit exit 0）。
 8. Residual risks — 大 payload 分塊邊界仰賴 UTF-8 byte 量測，非字元；風險低。rollback：revert 單一 commit 即回原批次 INSERT 行為。
 ```

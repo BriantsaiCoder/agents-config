@@ -351,6 +351,11 @@ has "reviewer-template exempts only the prompt block" '豁免的是 prompt 區�
 has "reviewer-template load-when covers all S5 review" 'references/reviewer-template.md` \| 非 SKIPPED S5 review \|' skills/dev-workflow/SKILL.md
 has "Claude adapter binds the whole reviewer-template" '不豁免 `references/reviewer-template.md`.*其餘各節對 Claude 一樣有約束力' "$host_adapters_ref"
 has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` 的「回饋處理」' "$ledgers_ref"
+# 指紋的存在本身要有守衛，否則它只是另一句散文：刪掉 reviewer-template 的指紋行，
+# ledger 那頭仍要求引用一串已不存在的字，錯誤會表現成「引不出來」而非「指紋沒了」。
+# 兩條分開釘來源與消費端——只釘一邊時另一邊被改仍全綠（FP:LEDGERS-2026Q3 至今就是這個狀態）。
+has "reviewer-template carries its load-verification fingerprint" 'FP:REVTMPL-2026Q3' skills/dev-workflow/references/reviewer-template.md
+has "Preflight row 6 requires head SHA and the fingerprint" 'head SHA.*FP:REVTMPL-2026Q3' "$ledgers_ref"
 # cascade 子句掛在只釘句首的斷言後面，整段刪掉仍全綠（實測）——同一支檔上面才寫過這個教訓。
 has "ledgers explains the cascade cost" '三層以上的 stack 不能逐層各判各的' "$ledgers_ref"
 # review-triage 引用的是這個標題的逐字形式，改名會靜默斷鏈。
