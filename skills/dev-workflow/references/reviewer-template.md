@@ -2,8 +2,9 @@
 
 # S5 泛用 reviewer prompt（host 中立）
 
-> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3。S5 ledger 的 Review gate 列 MUST 引用它，且**值只存在於本行**——`ledgers.md` row 6 只寫格式不複印值，複印一次就等於把答案發給不必讀本檔的人。
-> 它能做到的僅止於此：引得出當季指紋＝至少開過本檔的當前版本，於是「已依本檔的 contract 執行」多了一個可查的落點，且照抄舊 PR body 會因季度過期而露餡。它**不是**證明——格式公開、季度可猜，決心規避的人猜得到。要防的是「沒想到要讀」而不是「刻意造假」；刻意造假由 review 本身承擔。
+> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3-K9F2。S5 ledger 的 Review gate 列 MUST 引用它。除了守衛它的測試，**不在任何 workflow reference 複印**——`ledgers.md` row 6 只寫形狀不寫值。
+> 尾碼 `K9F2` 是這條的關鍵，不是裝飾：兄弟指紋 `FP:LEDGERS-2026Q3`（`ledgers.md` 檔頭）與 `FP:DEVWF-2026Q3`（`SKILL.md` 檔頭）都在必讀檔裡，光有季度的話一次代換就能湊出本檔的值，開檔數是零。尾碼不可由它們推導，所以只能來本檔讀。
+> 它能做到的僅止於此：引得出完整指紋**是一個弱訊號**，指向「至少開過本檔的當前版本」，並讓照抄舊 PR body 因指紋過期而露餡。它**不是**證明——知道值的途徑不只讀本檔（守衛測試裡有、被 hook 擋下時也可能看到片段）。要防的是「沒想到要讀」而不是「刻意造假」；刻意造假由 review 本身承擔。
 > 舉證責任在 executor（填 ledger 的人）而非 reviewer：失效模式是 executor 宣稱套用了本檔的 contract 卻沒讀過它。因此指紋刻意放在 prompt block 之外、不進「審查者 MUST 記錄」三欄。
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。

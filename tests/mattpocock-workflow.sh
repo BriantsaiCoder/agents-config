@@ -355,20 +355,28 @@ has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` �
 # ledger 那頭仍要求引用一串已不存在的字，錯誤會表現成「引不出來」而非「指紋沒了」。
 # 分開釘來源與消費端——只釘一邊時另一邊被改仍全綠。
 #
-# 錨整行的理由與下方 prompt marker 那兩條同一條：本檔與 ledgers.md 的散文都會提到指紋，
-# 不錨 `^…$` 的話「刪掉指紋行、另處留一句提到它的說明」仍全綠（S5 實測過這個形狀）。
+# 錨行首前綴（不錨 `$`——指紋後面接的是散文，錨行尾會把那段一起釘死）。理由與下方 prompt
+# marker 那兩條同一條：本檔與 ledgers.md 的散文都會提到指紋，完全不錨的話「刪掉指紋行、
+# 另處留一句提到它的說明」仍全綠（S5 實測過這個形狀）。
 has "reviewer-template carries its load-verification fingerprint" \
-  '^> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3。' \
+  '^> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3-K9F2。' \
   skills/dev-workflow/references/reviewer-template.md
 # 兄弟指紋補同形狀的守衛。本 PR 的論點就是「指紋的存在本身要有守衛」，把 ledgers 自己那顆
 # 留在無守衛狀態，下一次有人刪掉它一樣零 FAIL。
+# 附帶後果要講清楚：這條把 FP:LEDGERS-2026Q3 釘死在必讀檔裡，於是「季度」對填 ledger 的人
+# 永遠是現成的。REVTMPL 的尾碼 `K9F2` 正是為此存在——只有季度的話，一次代換就能湊出
+# REVTMPL 的值而不必開那個檔（S5 實測指出這條路徑）。尾碼不可由兄弟指紋推導，代換即失效。
 has "ledgers carries its own load-verification fingerprint" \
   '^> 指紋（context 載入驗證用，勿刪）：FP:LEDGERS-2026Q3。' \
   "$ledgers_ref"
 # 錨 `^| 6 |`：不錨的話把 row 6 的要求整段刪掉、另在檔尾留一句含同樣詞的散文，斷言仍全綠
 # （S5 實測）。兩項拆成兩條而非 `A.*B` 串接，否則日後把證據項重排就無故轉紅。
 has "Preflight row 6 requires the review range" '^\| 6 \|.*審查對象 range' "$ledgers_ref"
-has "Preflight row 6 requires the reviewer-template fingerprint" '^\| 6 \|.*FP:REVTMPL-<年季>' "$ledgers_ref"
+has "Preflight row 6 requires the reviewer-template fingerprint" '^\| 6 \|.*FP:REVTMPL-<年季>-<token>' "$ledgers_ref"
+# Closeout 的 Review gate 列帶著同一套證據項，同樣要有守衛——否則那兩項在非 PR 路徑上
+# 被整段刪掉，上面兩條錨 `^| 6 |` 的斷言不可能命中（S5 實測：整段刪掉仍 324 PASS）。
+has "Closeout Review gate carries the same evidence items" \
+  '^\| \*\*Review gate\*\* \|.*審查對象 range.*檔頭指紋' "$ledgers_ref"
 # 這條是整個機制的關鍵，不是補強：指紋一旦在消費端被逐字複印，「引得出＝開過那個檔」就自證
 # 為假——任何要填 ledger 的 agent 都得讀 ledgers.md，照抄那格即可，從沒開過 reviewer-template
 # 也一樣。第一版正是這樣寫的（row 6 與範例各印一次），S5 抓到。對照組：FP:DEVWF-2026Q3 與
