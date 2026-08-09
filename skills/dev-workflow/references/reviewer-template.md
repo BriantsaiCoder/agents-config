@@ -1,8 +1,10 @@
-<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-08 -->
+<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | parent: SKILL.md (S5 REVIEW) | last-verified: 2026-08-09 -->
 
 # S5 泛用 reviewer prompt（host 中立）
 
-> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3。S5 ledger 的 Review gate 列 MUST 引用它——沒載入本檔就引不出這串，於是「已依本檔的 contract 執行」從散文宣稱變成機械可查。
+> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3。S5 ledger 的 Review gate 列 MUST 引用它，且**值只存在於本行**——`ledgers.md` row 6 只寫格式不複印值，複印一次就等於把答案發給不必讀本檔的人。
+> 它能做到的僅止於此：引得出當季指紋＝至少開過本檔的當前版本，於是「已依本檔的 contract 執行」多了一個可查的落點，且照抄舊 PR body 會因季度過期而露餡。它**不是**證明——格式公開、季度可猜，決心規避的人猜得到。要防的是「沒想到要讀」而不是「刻意造假」；刻意造假由 review 本身承擔。
+> 舉證責任在 executor（填 ledger 的人）而非 reviewer：失效模式是 executor 宣稱套用了本檔的 contract 卻沒讀過它。因此指紋刻意放在 prompt block 之外、不進「審查者 MUST 記錄」三欄。
 > 用途：沒有專屬 review agent 的 host（Codex、Copilot 等）在 S5 直接把下方「reviewer prompt」整塊餵給一次審查。
 > prompt 本體保持 host 中立、不寫任何專屬 agent 名；host 差異只寫在本檔外圍說明，不混進 prompt。
 > 有專屬 review agent 的 host（如 Claude 的 stack 專精 reviewer）改用該 agent。**豁免的是 prompt 區塊本身、以及「怎麼用」中以該區塊為前提的步驟**；本檔其餘各節對它們一樣有約束力。這裡不列舉是哪幾節——這行原本列了兩節，後來新增的節就掉在外面，列舉本身就是那個 bug。

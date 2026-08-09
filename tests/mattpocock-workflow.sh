@@ -353,9 +353,28 @@ has "Claude adapter binds the whole reviewer-template" '不豁免 `references/re
 has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` 的「回饋處理」' "$ledgers_ref"
 # 指紋的存在本身要有守衛，否則它只是另一句散文：刪掉 reviewer-template 的指紋行，
 # ledger 那頭仍要求引用一串已不存在的字，錯誤會表現成「引不出來」而非「指紋沒了」。
-# 兩條分開釘來源與消費端——只釘一邊時另一邊被改仍全綠（FP:LEDGERS-2026Q3 至今就是這個狀態）。
-has "reviewer-template carries its load-verification fingerprint" 'FP:REVTMPL-2026Q3' skills/dev-workflow/references/reviewer-template.md
-has "Preflight row 6 requires head SHA and the fingerprint" 'head SHA.*FP:REVTMPL-2026Q3' "$ledgers_ref"
+# 分開釘來源與消費端——只釘一邊時另一邊被改仍全綠。
+#
+# 錨整行的理由與下方 prompt marker 那兩條同一條：本檔與 ledgers.md 的散文都會提到指紋，
+# 不錨 `^…$` 的話「刪掉指紋行、另處留一句提到它的說明」仍全綠（S5 實測過這個形狀）。
+has "reviewer-template carries its load-verification fingerprint" \
+  '^> 指紋（context 載入驗證用，勿刪）：FP:REVTMPL-2026Q3。' \
+  skills/dev-workflow/references/reviewer-template.md
+# 兄弟指紋補同形狀的守衛。本 PR 的論點就是「指紋的存在本身要有守衛」，把 ledgers 自己那顆
+# 留在無守衛狀態，下一次有人刪掉它一樣零 FAIL。
+has "ledgers carries its own load-verification fingerprint" \
+  '^> 指紋（context 載入驗證用，勿刪）：FP:LEDGERS-2026Q3。' \
+  "$ledgers_ref"
+# 錨 `^| 6 |`：不錨的話把 row 6 的要求整段刪掉、另在檔尾留一句含同樣詞的散文，斷言仍全綠
+# （S5 實測）。兩項拆成兩條而非 `A.*B` 串接，否則日後把證據項重排就無故轉紅。
+has "Preflight row 6 requires the review range" '^\| 6 \|.*審查對象 range' "$ledgers_ref"
+has "Preflight row 6 requires the reviewer-template fingerprint" '^\| 6 \|.*FP:REVTMPL-<年季>' "$ledgers_ref"
+# 這條是整個機制的關鍵，不是補強：指紋一旦在消費端被逐字複印，「引得出＝開過那個檔」就自證
+# 為假——任何要填 ledger 的 agent 都得讀 ledgers.md，照抄那格即可，從沒開過 reviewer-template
+# 也一樣。第一版正是這樣寫的（row 6 與範例各印一次），S5 抓到。對照組：FP:DEVWF-2026Q3 與
+# FP:LEDGERS-2026Q3 都只存在於自己那一檔。pattern 釘「值」的形狀而非前綴，好讓 row 6 寫得出
+# `FP:REVTMPL-<年季>` 這個不洩漏的格式指稱。
+lacks "ledgers never reprints the fingerprint value" 'FP:REVTMPL-[0-9][0-9][0-9][0-9]Q[0-9]' "$ledgers_ref"
 # cascade 子句掛在只釘句首的斷言後面，整段刪掉仍全綠（實測）——同一支檔上面才寫過這個教訓。
 has "ledgers explains the cascade cost" '三層以上的 stack 不能逐層各判各的' "$ledgers_ref"
 # review-triage 引用的是這個標題的逐字形式，改名會靜默斷鏈。
