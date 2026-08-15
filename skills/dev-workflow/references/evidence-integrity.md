@@ -22,7 +22,7 @@
 - 新增或修改的 custom gate／hook／lint／grep／script MUST fail closed：unreadable input、crash 或 unexpected exit 都不得被解讀為成功。
 - 同一 gate MUST 以 known-bad negative control 證明會失敗，並以 clean positive control 證明會通過；輸入與 exit contract 要可重播且 deterministic。
 - Gate 或 control MUST 在其 S4 ledger row 或 script 檔頭記一行「失效時偏差朝哪個方向」。只朝「更綠」偏的失效不會表現成紅燈，因此無法由 gate 自己的結果發現，MUST 另設可觀察的中止條件（偵測到前提失效即 hard fail，不得靜默降級）。
-- High-risk change，或新增／修改 custom gate 時，若新增測試第一次執行就通過，MUST 判定它是 vacuous 還是行為早已存在：依 [test-gap-analysis](../../test-gap-analysis/SKILL.md) 的 mutation 程序（isolated copy、不得改動使用者的 active checkout、還原以 hash 比對證明）破壞它守護的實作一次。測試轉紅記為 pre-existing behavior 的 regression armor；未轉紅即 vacuous，MUST 修正或刪除。未做此判定者不得標 `PASS`，依四態標 `SKIPPED`（理由）或 `UNAVAILABLE`（probe）。本條受上節「不作 blanket requirement」限定，不擴及一般 change。
+- High-risk change，或新增／修改 custom gate 時，若新增測試第一次執行就通過，MUST 判定它是 vacuous 還是行為早已存在：依 [test-gap-analysis](../../test-gap-analysis/SKILL.md) 的 mutation 程序（isolated copy、不得改動使用者的 active checkout、還原以 hash 比對證明）破壞它守護的實作一次。所選 mutant MUST 是**非等價**且合理預期會使該測試轉紅者。測試轉紅記為 pre-existing behavior 的 regression armor；未轉紅且 mutant 經確認非等價才判 vacuous，MUST 修正或刪除；無法確認 mutant 非等價時判 inconclusive，走 `SKIPPED`／`UNAVAILABLE`，MUST NOT 據此刪測試。未做此判定者不得標 `PASS`。本條受上節「不作 blanket requirement」限定，不擴及一般 change。
 - Gate 只可宣稱實際檢查到的保護範圍。
 
 ## Test integrity
