@@ -20,11 +20,12 @@
 
 ## Reviewer input hygiene（送出審查前）
 
-本節對**所有** host 有約束力，包含有專屬 review agent 者——檔頭豁免的只有 prompt 區塊本身。獨立性由輸入決定，不由 reviewer 的能力決定；輸入一旦污染，這一軸的成本照付而結論不算數。
+獨立性由輸入決定，不由 reviewer 的能力決定；輸入一旦污染，這一軸的成本照付而結論不算數。
 
-- MUST NOT 餵 builder 的對話、辯解、設計理由或 draft evidence。需要 builder 的說明才站得住的結論，就是未經證明的結論。
-- MUST 餵完整 repo 的精確 source state。MUST NOT 餵子目錄，MUST NOT 餵含 build／install 產物的樹（editable install、殘留的 `bin`／`obj`、快取）——一個過期的安裝可能讓審查跑在它宣稱之外的原始碼上，之後每個結果都失去意義。
-- 依據：`AmazingAng/old-coder` 的 verifier case study 中，兩次 false positive 全部來自上述兩種輸入缺陷（餵了子目錄、餵了被 editable install 污染的樹），n=2，與 reviewer 能力無關。
+- MUST 餵 approved task contract：原始請求，加上此後每一項人類核准的 scope change 與 spec 修訂。少了核准過的變更，一次合法的 scope 修訂會被讀成 spec gap，回報成 false positive。
+- MUST NOT 餵 builder 對本次 diff 的辯護、未 persist 的 draft evidence，或既往 findings／缺陷 case study——被 prime 過的審查者只會去看已被點名的類別。已 persist 的 spec／ticket artifact 不在此限，Spec 軸本來就要拿它。
+- MUST 標明審查對象的精確 source state（clean tree 記 HEAD；dirty tree 記 HEAD + 已過 gitleaks 的 package content hash，定義沿用 `evidence-integrity.md` 的 Fresh final evidence），且 MUST NOT 送出與該 source state 不一致的內容。約束的是一致性不是體積；送出範圍與體積上限依 [S5-2] 的 `dirty-review-package.md`。
+- MUST 確認 reviewer 讀的是 source 而非 installed／built copy。一份過期的 editable install 或建置產物會讓審查跑在它宣稱之外的原始碼上，之後每個結果都失去意義。gitignored 的產物目錄（`bin`／`obj`／快取）MUST 排除在送出內容之外。
 
 ── reviewer prompt 開始 ──
 

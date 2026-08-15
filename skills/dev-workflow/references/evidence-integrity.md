@@ -17,10 +17,10 @@
 
 ## Custom gate and new-test integrity
 
-本節主詞是「新增或修改的 custom gate」與「新增的測試」——兩者的失效模式相同：一個永遠不會紅的檢查，跟沒有檢查等價，但看起來像有。
+主詞是「新增或修改的 custom gate」與「新增的測試」；兩者失效模式相同——一個永遠不會紅的檢查跟沒有檢查等價，但看起來像有。
 
 - 新增或修改的 custom gate／hook／lint／grep／script MUST fail closed：unreadable input、crash 或 unexpected exit 都不得被解讀為成功。
 - 同一 gate MUST 以 known-bad negative control 證明會失敗，並以 clean positive control 證明會通過；輸入與 exit contract 要可重播且 deterministic。
-- 新增測試若第一次執行就通過，MUST 先以一次性 throwaway mutant 破壞它守護的實作、觀察該測試轉紅、再還原，才可計入 evidence；未經此證明者標 `unverified`，不得標 `PASS`。手刻 assert harness（無 test framework 的「新測試從未紅過」提示）尤其適用。
-- Gate 或 control 的設計 MUST 說明它自己壞掉時偏差朝哪個方向。只會朝「更綠」偏的失效永遠不會表現成紅燈，因此不能靠 gate 本身的結果發現，必須另設可觀察的中止條件（偵測到前提失效即 hard fail，而非靜靜降級）。
+- Gate 或 control MUST 在其 S4 ledger row 或 script 檔頭記一行「失效時偏差朝哪個方向」。只朝「更綠」偏的失效不會表現成紅燈，因此無法由 gate 自己的結果發現，MUST 另設可觀察的中止條件（偵測到前提失效即 hard fail，不得靜默降級）。
+- High-risk change，或新增／修改 custom gate 時，若新增測試第一次執行就通過，MUST 判定它是 vacuous 還是行為早已存在：依 [test-gap-analysis](../../test-gap-analysis/SKILL.md) 的 mutation 程序（isolated copy、不得改動使用者的 active checkout、還原以 hash 比對證明）破壞它守護的實作一次。測試轉紅記為 pre-existing behavior 的 regression armor；未轉紅即 vacuous，MUST 修正或刪除。未做此判定者不得標 `PASS`，依四態標 `SKIPPED`（理由）或 `UNAVAILABLE`（probe）。本條受上節「不作 blanket requirement」限定，不擴及一般 change。
 - Gate 只可宣稱實際檢查到的保護範圍。
