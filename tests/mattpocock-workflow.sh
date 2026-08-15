@@ -67,6 +67,7 @@ host_adapters_ref=skills/dev-workflow/references/host-adapters.md
 routing_continuations_ref=skills/dev-workflow/references/routing-continuations.md
 authorization_matrix_ref=skills/dev-workflow/references/authorization-matrix.md
 ledgers_ref=skills/dev-workflow/references/ledgers.md
+evidence_integrity_ref=skills/dev-workflow/references/evidence-integrity.md
 host_ownership_test=tests/three-host-global-config-ownership.sh
 delivery_int6_pattern='預計納入 VCS.*新增／修改.*首次寫入前.*MUST.*branch／worktree.*非 main／master'
 delivery_s2_pattern='寫入前.*MUST.*記.*Delivery Scope: Local-only／PR-closeout.*後者須核准.*否則.*Local-only'
@@ -82,6 +83,14 @@ delivery_contract_valid() {
   [[ "$int6" =~ $delivery_int6_pattern ]] &&
     [[ "$s2" =~ $delivery_s2_pattern ]] &&
     [[ "$s6" =~ $delivery_s6_pattern ]]
+}
+
+evidence_integrity_contract_valid() {
+  local file="$1"
+  [ -r "$file" ] || return 2
+  grep -qE '^- 完成證據 MUST .*最後一次影響行為的 edit 之後.*final verification pass；後續 behavior-affecting edit 使舊結果失效。$' "$file" &&
+    grep -qE '^- 新增或修改的 custom gate.* MUST fail closed：unreadable input、crash 或 unexpected exit 都不得被解讀為成功。$' "$file" &&
+    grep -qE '^- 同一 gate MUST .*known-bad negative control.*失敗.*clean positive control.*通過；.*可重播.*deterministic。$' "$file"
 }
 
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
@@ -491,6 +500,44 @@ fi
 has "S4 defines low medium high risk tiers" 'Low.*Medium.*High' skills/dev-workflow/SKILL.md
 has "S4 expands targeted affected full by risk" 'targeted.*affected.*full CI|targeted.*affected.*full suite' skills/dev-workflow/SKILL.md
 lacks "S4 no longer always reruns everything" 'S4 MUST 全跑|Build／test／lint 與 task-specific probes 全跑' skills/dev-workflow/SKILL.md
+has "S4 routes all evidence-integrity triggers" 'Behavior-affecting edit.*正式 spec artifact／明列 acceptance criteria.*Medium／High／PR.*新增／修改 custom gate.*evidence-integrity\.md' skills/dev-workflow/SKILL.md
+has "medium high and PR evidence binds source and replay" 'Medium／High 或 PR.*source state.*replay command' "$evidence_integrity_ref"
+has "dirty and clean source states are exact" 'clean tree.*current HEAD.*dirty tree.*immutable HEAD.*dirty review package.*hash' "$evidence_integrity_ref"
+has "formal acceptance mapping covers negative invariants" '正式 spec artifact.*明列 acceptance criteria.*behavior change.*acceptance criterion.*negative invariant.*test／probe／gate' "$evidence_integrity_ref"
+has "high risk failure models map to catching layers" 'High-risk.*failure model.*catching layer' "$evidence_integrity_ref"
+has "ledger records fresh source-bound replay evidence" 'Tests evidence.*final verification pass.*source state.*replay command' "$ledgers_ref"
+has "Preflight verification records high-risk failure coverage" 'Tests evidence.*High-risk.*failure model.*catching layer' "$ledgers_ref"
+has "Closeout verification records high-risk failure coverage" 'Relevant verification.*High-risk.*failure model.*catching layer' "$ledgers_ref"
+residual_failure_pattern='^\| (8 \| )?\*\*Residual risks\*\*.*failure model'
+lacks "Residual risks does not own failure coverage" "$residual_failure_pattern" "$ledgers_ref"
+printf '| 8 | **Residual risks** | bad failure model owner |\n' | grep -qE "$residual_failure_pattern" &&
+  ok "Residual risks guard catches its Preflight negative control" ||
+  ng "Residual risks guard catches its Preflight negative control"
+
+evidence_fixture="$(mktemp -d "${TMPDIR:-/tmp}/evidence-integrity.XXXXXX")" ||
+  { ng 'evidence integrity fixture: 無法建立暫存目錄'; exit 1; }
+cp "$ROOT/$evidence_integrity_ref" "$evidence_fixture/good.md" ||
+  { ng 'evidence integrity fixture: 無法複製 baseline'; exit 1; }
+if evidence_integrity_contract_valid "$evidence_fixture/good.md"; then
+  ok "evidence integrity accepts the clean positive control"
+else
+  ng "evidence integrity accepts the clean positive control"
+fi
+sed 's/MUST fail closed/MUST NOT fail closed/' "$evidence_fixture/good.md" > "$evidence_fixture/known-bad.md" ||
+  { ng 'evidence integrity fixture: 無法產生 known-bad control'; exit 1; }
+evidence_bad_rc=0
+evidence_integrity_contract_valid "$evidence_fixture/known-bad.md" || evidence_bad_rc=$?
+case "$evidence_bad_rc" in
+  0) ng "evidence integrity rejects the known-bad negative control" ;;
+  1) ok "evidence integrity rejects the known-bad negative control" ;;
+  *) ng "evidence integrity rejects the known-bad negative control (validator error rc=$evidence_bad_rc)" ;;
+esac
+evidence_missing_rc=0
+evidence_integrity_contract_valid "$evidence_fixture/missing.md" || evidence_missing_rc=$?
+[ "$evidence_missing_rc" -gt 1 ] &&
+  ok "evidence integrity reports unreadable input as validator error" ||
+  ng "evidence integrity reports unreadable input as validator error"
+rm -r -- "$evidence_fixture"
 has "applicable E2E records a repo-defined isolation boundary" 'Tests evidence.*E2E.*repo-defined isolation boundary.*cleanup' "$ledgers_ref"
 has "missing E2E or isolation mechanism is explicit SKIPPED" '無 E2E.*isolation mechanism.*SKIPPED.*理由' "$ledgers_ref"
 has "Preflight records isolated E2E or a reasoned skip" 'Tests evidence.*isolation boundary.*SKIPPED' "$ledgers_ref"
