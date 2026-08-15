@@ -58,7 +58,7 @@ S5 Spec: <同上>
 | 2 | **Git state** | 從乾淨 baseline 出發，工作在 `feat/` / `fix/` 分支（非 master）| 分支名 + 動手前 `git status` 為 clean 的紀錄；確認非 main / master（[T0-3]）；**immutable baseline SHA**（＝ target merge-base，「Closeout 後的新 commit」那節要求記錄的那顆，row 6 的 range 起點也取它）|
 | 3 | **Diff self-review** | 每行變更已逐行看過；無自己殘留的 debug / TODO / dead code（unused import / var / func）| `git diff` 走查摘要；自造 dead code 已清（pre-existing 只標不刪）|
 | 4 | **Self-simplification** | S4 四檢核與 S5 simplification apply outcome 通過：無 unrequested abstraction、無新依賴、無單一使用點抽象層、無 speculative config | 四項逐一標記 + apply outcome `changed`／`no-op`；有新依賴時附選型理由（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）|
-| 5 | **Tests evidence** | 適用的 risk-tier verification 已跑綠；BUGFIX 依 [INT-2] 證 RED→GREEN 或同一 repro before／after | 確切測試／repro 指令 + exit code + 通過數；applicable E2E 附 repo-defined isolation boundary／cleanup evidence，無 E2E 或 isolation mechanism 則 `SKIPPED` 附理由且不得只為 gate 新造測試基礎設施；stable／valuable seam 附 RED→GREEN 順序，否則附同一 repro before／after 與不採 RED 的理由 |
+| 5 | **Tests evidence** | 適用的 risk-tier verification 已跑綠；BUGFIX 依 [INT-2] 證 RED→GREEN 或同一 repro before／after | 確切測試／repro 指令 + exit code + 通過數；Medium／High 或 PR 的 final verification pass 另綁 exact source state 與 replay command；High-risk 附 failure model 與 catching layer mapping；applicable E2E 附 repo-defined isolation boundary／cleanup evidence，無 E2E 或 isolation mechanism 則 `SKIPPED` 附理由且不得只為 gate 新造測試基礎設施；stable／valuable seam 附 RED→GREEN 順序，否則附同一 repro before／after 與不採 RED 的理由 |
 | 6 | **Review gate** | 已審查、記錄 reviewer 型別、actionable findings 全數處理 | reviewer 型別 + agent id（或 UNAVAILABLE 附 probe 失敗證據）+ finding 摘要 + 審查對象 range `<baseline SHA>..<head SHA>`（baseline 同 row 2；head 取 findings 全數處理後的 HEAD——修 findings 那幾顆 commit 未再經審查時 MUST 明述，否則 range 看起來比實際被審過的範圍大）+ **逐字引用 `reviewer-template.md` 的 over-engineering baseline 五條中至少兩條的標題**（引得出＝真的讀到那一節；驗的是 contract 本身而非旁邊的識別碼，所以不隨季度輪替，也不怕被轉述——標題外流等於 contract 外流，那正是要的結果。弱訊號不是證明）；0 條未處理 actionable（「處理」的定義見 `reviewer-template.md` 的「回饋處理」）|
 | 7 | **Security-release gates** | 會部署的變更已跑 `*-release-verification` + `dependency-security-scan`（正交必跑，非三選一）| 列出跑了哪些 gate + 結果；不部署則標 SKIPPED 附「本次不部署」理由 |
 | 8 | **Residual risks** | 已知但接受的殘留風險已列舉；中高風險附 rollback | 風險清單（「無」是明述斷言不是留白）；中高風險變更附 rollback 註記（[T0-6]）|
@@ -102,7 +102,7 @@ S5 Spec: PASS：對照 sdd/batch-insert-chunk/proposal.md 逐條確認，無偏�
 |-----|------|
 | **Self-simplification** | PASS / FAIL / SKIPPED，附證據（四檢核結果）|
 | **Diff self-review** | PASS / FAIL / SKIPPED，附證據（逐行走查摘要）|
-| **Relevant verification** | 依 S4 risk tier 列 task-specific probe／targeted test／affected build／full suite 的確切指令與 exit code |
+| **Relevant verification** | 依 S4 risk tier 列 task-specific probe／targeted test／affected build／full suite 的確切指令與 exit code；Medium／High 或 PR 另列 final verification pass 的 source state 與 replay command；High-risk 另列 failure model 與 catching layer mapping |
 | **Review gate** | reviewer 型別、agent id 或不可用理由、最終 finding 摘要、審查對象 range 與 baseline 五條中兩條的逐字標題——證據項與 Preflight row 6 同一套，不因不走 PR 而降級。呈現粒度依下方粒度節，不在此重述其觸發條件 |
 | **PR / CI / review status** | 適用時：PR 連結、CI 綠燈狀態、bot review 處理狀態 |
 | **Residual risks** | 殘留風險（中高風險附 rollback）|
