@@ -18,6 +18,15 @@
 - 禁止：沒 probe 就宣稱無審查者、或以自審默默取代獨立審查而不標記。
 - 標 `UNAVAILABLE` 時 MUST 一併記錄 probe 指令與失敗理由，讓 S5 gate 可機械複核。
 
+## Reviewer input hygiene（送出審查前）
+
+獨立性由輸入決定，不由 reviewer 的能力決定；輸入一旦污染，這一軸的成本照付而結論不算數。
+
+- MUST 餵原始請求，加上此後每一項人類核准的 scope change 與 spec 修訂。少了核准過的變更，一次合法的 scope 修訂會被讀成 spec gap，回報成 false positive。
+- MUST NOT 餵 builder 對本次 diff 的辯護、未 persist 的 draft evidence，或既往 findings／缺陷 case study——被 prime 過的審查者只會去看已被點名的類別。已 persist 的 spec／ticket artifact 不在此限，Spec 軸本來就要拿它。
+- MUST 標明審查對象的精確 source state（clean tree 記 current HEAD；dirty tree 記 immutable HEAD 加上已過 gitleaks 的完整 dirty review package content hash，定義逐字沿用 `evidence-integrity.md` 的 Fresh final evidence），且 MUST NOT 送出與該 source state 不一致的內容。約束的是一致性不是體積；送出範圍與體積上限依 [S5-2] 的 `dirty-review-package.md`。
+- MUST 確認 reviewer 讀的是 source，MUST NOT 以 installed／built copy 取代它。一份過期的 editable install 或建置產物會讓審查跑在它宣稱之外的原始碼上，之後每個結果都失去意義。產物（`bin`／`obj`／快取／editable install）本身不必排除——[S5-2] 的 `dirty-review-package.md` 若把它們列為 candidate，依該檔的大小／binary 規則以 path／size／hash 形式納入即可；本條約束的是它們不得被當成受審的原始碼。
+
 ── reviewer prompt 開始 ──
 
 你是本次變更的獨立 code reviewer。只審下方 diff / PR，不重寫程式碼。
