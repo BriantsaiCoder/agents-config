@@ -514,16 +514,16 @@ printf '| 8 | **Residual risks** | bad failure model owner |\n' | grep -qE "$res
   ok "Residual risks guard catches its Preflight negative control" ||
   ng "Residual risks guard catches its Preflight negative control"
 
-evidence_fixture="$(mktemp -d "${TMPDIR:-/tmp}/evidence-integrity.XXXXXX")" ||
+evidence_fixture="$(mktemp -d -- "${TMPDIR:-/tmp}/evidence-integrity.XXXXXX")" ||
   { ng 'evidence integrity fixture: 無法建立暫存目錄'; exit 1; }
-cp "$ROOT/$evidence_integrity_ref" "$evidence_fixture/good.md" ||
+cp -- "$ROOT/$evidence_integrity_ref" "$evidence_fixture/good.md" ||
   { ng 'evidence integrity fixture: 無法複製 baseline'; exit 1; }
 if evidence_integrity_contract_valid "$evidence_fixture/good.md"; then
   ok "evidence integrity accepts the clean positive control"
 else
   ng "evidence integrity accepts the clean positive control"
 fi
-sed 's/MUST fail closed/MUST NOT fail closed/' "$evidence_fixture/good.md" > "$evidence_fixture/known-bad.md" ||
+sed -- 's/MUST fail closed/MUST NOT fail closed/' "$evidence_fixture/good.md" > "$evidence_fixture/known-bad.md" ||
   { ng 'evidence integrity fixture: 無法產生 known-bad control'; exit 1; }
 evidence_bad_rc=0
 evidence_integrity_contract_valid "$evidence_fixture/known-bad.md" || evidence_bad_rc=$?
