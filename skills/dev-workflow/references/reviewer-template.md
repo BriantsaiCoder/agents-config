@@ -18,6 +18,14 @@
 - 禁止：沒 probe 就宣稱無審查者、或以自審默默取代獨立審查而不標記。
 - 標 `UNAVAILABLE` 時 MUST 一併記錄 probe 指令與失敗理由，讓 S5 gate 可機械複核。
 
+## Reviewer input hygiene（送出審查前）
+
+本節對**所有** host 有約束力，包含有專屬 review agent 者——檔頭豁免的只有 prompt 區塊本身。獨立性由輸入決定，不由 reviewer 的能力決定；輸入一旦污染，這一軸的成本照付而結論不算數。
+
+- MUST NOT 餵 builder 的對話、辯解、設計理由或 draft evidence。需要 builder 的說明才站得住的結論，就是未經證明的結論。
+- MUST 餵完整 repo 的精確 source state。MUST NOT 餵子目錄，MUST NOT 餵含 build／install 產物的樹（editable install、殘留的 `bin`／`obj`、快取）——一個過期的安裝可能讓審查跑在它宣稱之外的原始碼上，之後每個結果都失去意義。
+- 依據：`AmazingAng/old-coder` 的 verifier case study 中，兩次 false positive 全部來自上述兩種輸入缺陷（餵了子目錄、餵了被 editable install 污染的樹），n=2，與 reviewer 能力無關。
+
 ── reviewer prompt 開始 ──
 
 你是本次變更的獨立 code reviewer。只審下方 diff / PR，不重寫程式碼。
