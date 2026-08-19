@@ -296,8 +296,13 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 - The nine recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
-Fresh-clone evidence at `8b36d4f`: the lock/local/upstream `vendored_tree_sha256` replay returned
-`14 PASS / 0 FAIL`. The four upstream-identical trees visibly changed by this rebase were
+2026-08-06 rebase 的歷史 evidence 同時釘住 local commit
+`d2e78888787e1bd0534cff363442e336e5c609d9` 與 upstream commit
+`8b36d4fb2635b3c21998dcd8144439c9e5ba7302`。在該 local commit 的 clean checkout 執行
+`bash tests/matt-thin-workflow.sh`，預期末行為 `PASS: Matt thin workflow contract`；執行
+`git show d2e78888787e1bd0534cff363442e336e5c609d9:mattpocock-skills.lock | grep -c '^upstream_tree_sha256='`，預期為 `14`。
+當次 lock/local/upstream `vendored_tree_sha256` replay 為 `14 PASS / 0 FAIL`。該次 rebase 中
+四個 visibly changed 的 upstream-identical trees 為
 `setup-matt-pocock-skills=20fabc63…`, `tdd=807b29b3…`, `to-spec=7fe9db6b…`, and
 `wayfinder=8c91f90c…`; their complete hashes are the lock entries above. House tripwires cover
 selected upstream behavior in setup, TDD, spec terminology, wayfinder, and caller cadence; if a
