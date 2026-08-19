@@ -4,9 +4,8 @@ assessed_commit=8b36d4fb2635b3c21998dcd8144439c9e5ba7302
 manifest_sha256=85a5f2ad87b1070c13a97a9379887fc43e5e786a0ab7a3c0f0281d2b30f523b2
 # SHA-256 of sorted `skill=mode` lines derived from the selected skill metadata.
 invocation_manifest_sha256=6e30f32c601ef6473c6895e1e536f87f4ec9a3e179dea19587b5f578d248643a
-# Exact local trees for the 14 selected skills that remain byte-for-byte upstream.
+# Exact local trees for the 13 selected skills that remain byte-for-byte upstream.
 upstream_tree_sha256=grill-with-docs:2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b
-upstream_tree_sha256=improve-codebase-architecture:1b1d6bbba32133028914026a6992ff06f0a323b9bfc253a74d7a43ee9897059d
 upstream_tree_sha256=setup-matt-pocock-skills:20fabc63fdb530037748eaf9b1a62a53ea91ac5a18cecc0fb001c3002b2673fc
 upstream_tree_sha256=tdd:807b29b3f7d1ae9c14d8970ad981b697ad908af932b8aa74cf095f671038f346
 upstream_tree_sha256=to-spec:7fe9db6b276a87383996b138efa07e7e20fb5fbec8bd6027e084733b48efba60

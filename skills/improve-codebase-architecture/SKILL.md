@@ -13,6 +13,13 @@ This command is _informed_ by the project's domain model and built on a shared d
 - Run the `/codebase-design` skill for the architecture vocabulary (**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**, **locality**) and its principles (the deletion test, "the interface is the test surface", "one adapter = hypothetical seam, two = real"). Use these terms exactly in every suggestion — don't drift into "component," "service," "API," or "boundary."
 - The domain language in `CONTEXT.md` gives names to good seams; ADRs in `docs/adr/` record decisions this command should not re-litigate.
 
+## Language
+
+- 所有使用者可見的回覆與 generated HTML report prose 預設使用繁體中文（`zh-TW`）；使用者明示其他語言時依其要求。
+- technical terms（包含 `/codebase-design` architecture vocabulary）、code identifiers、file paths 與 `CONTEXT.md` domain terms 一律保留 English 或原文。
+- 其餘使用者可見的 headings、labels、badges 與 explanatory prose 翻譯為 zh-TW。
+- 本 workflow invoke 其他 skill 時，延續相同 language contract。
+
 ## Process
 
 ### 1. Explore
@@ -42,22 +49,22 @@ The report uses **Tailwind via CDN** for layout and styling, and **Mermaid via C
 
 For each candidate, render a card with:
 
-- **Files** — which files/modules are involved
-- **Problem** — why the current architecture is causing friction
-- **Solution** — plain English description of what would change
-- **Benefits** — explained in terms of locality and leverage, and how tests would improve
-- **Before / After diagram** — side-by-side, custom-drawn, illustrating the shallowness and the deepening
-- **Recommendation strength** — one of `Strong`, `Worth exploring`, `Speculative`, rendered as a badge
+- **檔案** — 涉及哪些 files/modules
+- **問題** — current architecture 為何造成 friction
+- **方案** — 簡潔說明會改變什麼
+- **效益** — 用 locality、leverage 與 tests 的改善來說明
+- **修改前 / 修改後圖** — 並排呈現的 custom diagram，說明 shallow 到 deep 的變化
+- **建議強度** — 以 badge 呈現 `強烈建議`、`值得探索` 或 `推測性`
 
-End the report with a **Top recommendation** section: which candidate you'd tackle first and why.
+報告最後加上 **首要建議** section，說明最先處理哪個 candidate 以及原因。
 
 **Use CONTEXT.md vocabulary for the domain, and the `/codebase-design` vocabulary for the architecture.** If `CONTEXT.md` defines "Order," talk about "the Order intake module" — not "the FooBarHandler," and not "the Order service."
 
-**ADR conflicts**: if a candidate contradicts an existing ADR, only surface it when the friction is real enough to warrant revisiting the ADR. Mark it clearly in the card (e.g. a warning callout: _"contradicts ADR-0007 — but worth reopening because…"_). Don't list every theoretical refactor an ADR forbids.
+**ADR conflicts**：candidate 若與既有 ADR 衝突，只在 friction 大到值得重啟討論時提出，並在 card 中清楚標示，例如：_「與 ADR-0007 衝突，但值得重新討論，因為……」_。不要列出 ADR 禁止的所有理論性 refactor。
 
 See [HTML-REPORT.md](HTML-REPORT.md) for the full HTML scaffold, diagram patterns, and styling guidance.
 
-Do NOT propose interfaces yet. After the file is written, ask the user: "Which of these would you like to explore?"
+此階段不要提出 interfaces。寫完檔案後，詢問使用者：「這些候選項目中，你想先深入探索哪一個？」
 
 ### 3. Grilling loop
 
@@ -67,5 +74,5 @@ Side effects happen inline as decisions crystallize — run the `/domain-modelin
 
 - **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md`. Create the file lazily if it doesn't exist.
 - **Sharpening a fuzzy term during the conversation?** Update `CONTEXT.md` right there.
-- **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones.
+- **使用者因關鍵理由否決 candidate？** 提議記錄 ADR：_「要我把這項理由記錄成 ADR，避免未來的架構審查再次提出相同建議嗎？」_。只有未來 explorer 確實需要這項理由才能避免重提時才詢問；略過暫時性理由（「目前不值得做」）與顯而易見的理由。
 - **Want to explore alternative interfaces for the deepened module?** Run the `/codebase-design` skill and use its design-it-twice parallel sub-agent pattern.

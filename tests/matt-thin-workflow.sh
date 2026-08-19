@@ -28,6 +28,7 @@ AUDIT_STYLE_CHECKS="$AGENTS/skills/auditing-skill-folder/step7-style-checks.md"
 AUDIT_LINTER="$AGENTS/skills/auditing-skill-folder/scripts/lint-descriptions.sh"
 VENDORED_LIB="$AGENTS/skills/auditing-skill-folder/scripts/lib-vendored.sh"
 TEST_GAP="$AGENTS/skills/test-gap-analysis/SKILL.md"
+IMPROVE_ARCH="$AGENTS/skills/improve-codebase-architecture/SKILL.md"
 
 # shellcheck source=../skills/auditing-skill-folder/scripts/lib-vendored.sh
 . "$VENDORED_LIB"
@@ -163,6 +164,13 @@ while IFS='=' read -r key skill; do
   rg -q '^[[:space:]]*allow_implicit_invocation:[[:space:]]*false$' "$policy" ||
     fail "Codex user-only policy permits implicit invocation: $skill"
 done < "$AGENTS/mattpocock-skills.lock"
+
+rg -q '所有使用者可見的回覆.*generated HTML report prose.*預設使用繁體中文.*zh-TW' "$IMPROVE_ARCH" ||
+  fail 'improve-codebase-architecture lost its default zh-TW output contract'
+rg -q '使用者明示其他語言時依其要求' "$IMPROVE_ARCH" ||
+  fail 'improve-codebase-architecture lost its explicit language override'
+rg -q 'technical terms.*architecture vocabulary.*code identifiers.*file paths.*domain terms.*保留 English 或原文' "$IMPROVE_ARCH" ||
+  fail 'improve-codebase-architecture lost its English technical-term contract'
 
 ! rg -q '^disable-model-invocation:[[:space:]]*true$' "$WRITING_SKILLS" ||
   fail 'writing-for-agents is not model-invoked'
