@@ -300,7 +300,7 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 `d2e78888787e1bd0534cff363442e336e5c609d9` 與 upstream commit
 `8b36d4fb2635b3c21998dcd8144439c9e5ba7302`。在該 local commit 的 clean checkout 執行
 `bash tests/matt-thin-workflow.sh`，預期末行為 `PASS: Matt thin workflow contract`；執行
-`git show d2e7888:mattpocock-skills.lock | grep -c '^upstream_tree_sha256='`，預期為 `14`。
+`git show d2e78888787e1bd0534cff363442e336e5c609d9:mattpocock-skills.lock | grep -c '^upstream_tree_sha256='`，預期為 `14`。
 當次 lock/local/upstream `vendored_tree_sha256` replay 為 `14 PASS / 0 FAIL`。該次 rebase 中
 四個 visibly changed 的 upstream-identical trees 為
 `setup-matt-pocock-skills=20fabc63…`, `tdd=807b29b3…`, `to-spec=7fe9db6b…`, and
