@@ -1,15 +1,15 @@
 # HTML Report Format
 
-The architectural review is rendered as a single self-contained HTML file in the OS temp directory. Tailwind and Mermaid both come from CDNs. Mermaid handles graph-shaped diagrams reliably; hand-built divs and inline SVG handle the more editorial visuals (mass diagrams, cross-sections). Mix the two — don't lean on Mermaid for everything, it'll start to look generic.
+架構審查輸出為 OS temp directory 中的一個 self-contained HTML file，並遵循 [SKILL.md](SKILL.md) 的 language contract。Tailwind 與 Mermaid 都從 CDN 載入；Mermaid 負責 graph-shaped diagrams，hand-built divs 與 inline SVG 負責較具編輯感的 visuals（mass diagrams、cross-sections）。混合使用兩者，不要讓所有內容都依賴 Mermaid 而顯得制式。
 
 ## Scaffold
 
 ```html
 <!doctype html>
-<html lang="en">
+<html lang="zh-TW">
   <head>
     <meta charset="utf-8" />
-    <title>Architecture review — {{repo name}}</title>
+    <title>架構審查 — {{repo name}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
       import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
@@ -43,14 +43,14 @@ The diagrams carry the weight. Prose is sparse, plain, and uses the glossary ter
 
 Each candidate is one `<article>`:
 
-- **Title** — short, names the deepening (e.g. "Collapse the Order intake pipeline").
-- **Badge row** — recommendation strength (`Strong` = emerald, `Worth exploring` = amber, `Speculative` = slate), plus a tag for the dependency category (`in-process`, `local-substitutable`, `ports & adapters`, `mock`).
-- **Files** — monospaced list, `font-mono text-sm`.
-- **Before / After diagram** — the centrepiece. Two columns, side by side. See patterns below.
-- **Problem** — one sentence. What hurts.
-- **Solution** — one sentence. What changes.
-- **Wins** — bullets, ≤6 words each. e.g. "Tests hit one interface", "Pricing logic stops leaking", "Delete 4 shallow wrappers".
-- **ADR callout** (if applicable) — one line in an amber-tinted box.
+- **標題** — 簡短命名 deepening，例如「收攏 Order intake pipeline」。
+- **Badge row** — recommendation strength 使用 `強烈建議`（emerald）、`值得探索`（amber）或 `推測性`（slate），再加上 dependency category tag（`in-process`、`local-substitutable`、`ports & adapters`、`mock`）。
+- **檔案** — 使用 `font-mono text-sm` 的 monospaced list。
+- **修改前 / 修改後圖** — 核心視覺；兩欄並排，diagram patterns 見下文。
+- **問題** — 一句話說明阻力。
+- **方案** — 一句話說明變更。
+- **效益** — 每個 bullet ≤6 words，例如「tests 只打到一個 interface」、「Pricing logic 不再跨 seam 洩漏」、「刪除 4 個 shallow module」。
+- **ADR 提示**（如適用）— amber-tinted box 中的一行提示。
 
 No paragraphs of explanation. If the diagram needs a paragraph to be understood, redraw the diagram.
 
@@ -99,13 +99,13 @@ Before: a tree of function calls rendered as nested boxes. After: the same tree 
 - Use `text-xs uppercase tracking-wider` for module labels inside diagrams — they should read as schematic, not as UI.
 - The only scripts are the Tailwind CDN and the Mermaid ESM import. The report is otherwise static — no app code, no interactivity beyond Mermaid's own rendering.
 
-## Top recommendation section
+## 首要建議
 
-One larger card. Candidate name, one sentence on why, anchor link to its card. That's it.
+使用一張較大的 card：candidate name、一句理由，以及連回該 card 的 anchor link。僅此而已。
 
 ## Tone
 
-Plain English, concise — but the architectural nouns and verbs come straight from the `/codebase-design` skill. Concision is not an excuse to drift.
+遵循 [SKILL.md](SKILL.md) 的 `Language` section；本 scaffold 只定義 report tone。文字保持精簡直接，但不得偏離 `/codebase-design` vocabulary。
 
 **Use exactly:** module, interface, implementation, depth, deep, shallow, seam, adapter, leverage, locality.
 
@@ -113,11 +113,11 @@ Plain English, concise — but the architectural nouns and verbs come straight f
 
 **Phrasings that fit the style:**
 
-- "Order intake module is shallow — interface nearly matches the implementation."
-- "Pricing leaks across the seam."
-- "Deepen: one interface, one place to test."
-- "Two adapters justify the seam: HTTP in prod, in-memory in tests."
+- "Order intake module 過於 shallow：interface 幾乎和 implementation 一樣複雜。"
+- "Pricing 跨越 seam 洩漏。"
+- "Deepen：一個 interface，一個測試位置。"
+- "兩個 adapter 才足以支持 seam：production 使用 HTTP，tests 使用 in-memory。"
 
-**Wins bullets** name the gain in glossary terms: *"locality: bugs concentrate in one module"*, *"leverage: one interface, N call sites"*, *"interface shrinks; implementation absorbs the wrappers"*. Don't write *"easier to maintain"* or *"cleaner code"* — those terms aren't in the glossary and don't earn their place.
+**效益 bullets** 使用 glossary terms 指名 gain：*「locality：bug 集中在一個 module」*、*「leverage：一個 interface，N 個 call sites」*、*「interface 縮小；implementation 吸收 shallow module」*。不要寫 *「更容易維護」* 或 *「更乾淨的程式碼」*；這些詞不在 glossary 中。
 
 No hedging, no throat-clearing, no "it's worth noting that…". If a sentence could be a bullet, make it a bullet. If a bullet could be cut, cut it. If a term isn't in the `/codebase-design` glossary, reach for one that is before inventing a new one.

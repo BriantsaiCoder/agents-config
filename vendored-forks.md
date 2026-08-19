@@ -19,6 +19,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-08-02 — re-adjudicated thin fork: narrow Clean Code triggers, retain a 360-word judgment checklist, keep only self-consistent illustrative SOLID snippets, and remove duplicated async/editorconfig payload; tree SHA-256 `3f1cb3c62da34813c63d3d041feb0287044a5df5047f1cf824d95a25ba8f89b0` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `diagnosing-bugs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
+| `improve-codebase-architecture` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-19 — report 與 reply prose 預設使用 zh-TW；technical terms、code identifiers、paths 與 domain terms 保持 English 或原文；tree SHA-256 `5e331195ca420e2ea8258ed32fb054043f6ac521fdce99f520822cc8e254b8fc` | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Retired to `attic/` 2026-08-02** |
 | `vueuse-functions` | github.com/serkodev (MIT, Copyright (c) 2026 SerKo) | LICENSE.md only; no upstream revision was ever recorded | 2026-08-02 — **user-authorized override**: the 11-row requirement map and the 6-entry high-frequency index both merged into `vue-best-practices/references/vueuse/INDEX.md`; the use-vs-hand-roll judgment and the SSR/PII guardrails merged into the same file; MIT notice carried with the payload and retained in the archive. Archived tree SHA-256 `95db99f6a5082d25b311154bf6410cf9e7cd3be306417005caf730fc986f8913`（`vendored_tree_sha256 attic/vueuse-functions`，與其他列同公式） | **Retired to `attic/` 2026-08-02** |
@@ -283,7 +284,7 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 
 ---
 
-## Pinned Matt set — 14 unmodified + 8 recorded forks
+## Pinned Matt set — 13 unmodified + 9 recorded forks
 
 **`mattpocock/skills` selected 22 — active, rebased to v1.2.2 on 2026-08-06.**
 
@@ -291,8 +292,8 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 - Upstream manifest: `.claude-plugin/plugin.json` SHA-256 `85a5f2ad87b1070c13a97a9379887fc43e5e786a0ab7a3c0f0281d2b30f523b2` (25 published skills).
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
 - Excluded from the 25 published skills: `wizard` (credential/migration side-effect generator overlaps protected house gates), `wait-what` (personal communication modifier, not engineering workflow), and `to-questionnaire` (unneeded outward async-document flow overlapping existing clarification routes). Re-entry requires a new decision record and canary.
-- The 14 entries other than `ask-matt`, `code-review`, `diagnosing-bugs`, `grilling`, `handoff`, `prototype`, `triage`, and `writing-for-agents` are byte-for-byte upstream and immutable.
-- The eight recorded forks have exact payload fingerprints and re-merge procedures below.
+- The 13 entries other than `ask-matt`, `code-review`, `diagnosing-bugs`, `grilling`, `handoff`, `improve-codebase-architecture`, `prototype`, `triage`, and `writing-for-agents` are byte-for-byte upstream and immutable.
+- The nine recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
 Fresh-clone evidence at `8b36d4f`: the lock/local/upstream `vendored_tree_sha256` replay returned
@@ -303,6 +304,24 @@ selected upstream behavior in setup, TDD, spec terminology, wayfinder, and calle
 later upstream revision changes one, re-run the upstream comparison and make a fork decision
 instead of merely weakening the test. The follow-up grilling PR advanced `WORKFLOW_BASE` to the
 landed rebase and removed the temporary assessed-commit and writing-skill rename exceptions.
+
+### improve-codebase-architecture
+
+**決策（2026-08-19）：記錄 zh-TW output fork。**
+
+此 fork 新增一份 user-facing replies 與 generated HTML reports 共用的 language contract，並將
+report scaffold、labels、examples 與固定 follow-up prompts 在地化。technical terms（包含
+`/codebase-design` architecture vocabulary）、code identifiers、paths 與 domain terms 保持 English 或原文。
+Invocation 維持 explicit-only；frontmatter 與 `agents/openai.yaml` 不變。
+
+#### Re-merge procedure（upstream 更新時）
+
+1. 將完整 upstream skill 與 `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` 及此 fork 進行 diff。
+2. 若 upstream 尚未採用等效的 zh-TW default，只重套 language contract 與 report localization；
+   architecture vocabulary 仍由 `/codebase-design` 維護。
+3. 保留 explicit-only invocation metadata，並確認所有 relative references 仍可解析。
+4. 重新計算 tree fingerprint，並執行 `tests/vendored-detection.sh`、
+   `tests/matt-thin-workflow.sh`（包含 language canary）及 `tests/conformance.sh`。
 
 ## Hybrid — house wrapper over vendored payload
 
