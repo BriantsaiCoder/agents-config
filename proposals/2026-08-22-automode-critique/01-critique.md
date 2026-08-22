@@ -407,11 +407,11 @@ sed -n '369329,369550p' cc-strings.txt
 
 ## E. 執行狀態（2026-08-22 19:38 更新）
 
-審查完成當下 **0/7 項落地**。本回合處理如下：
+審查完成當下 **0/8 項落地**（原 #0 已拆成 0a／0b）。本回合處理如下：
 
 | # | 狀態 | 證據 |
 |---|---|---|
-| 0a | ✅ 已做 | 三個 repo 的 `.gitignore` 各加一行 `.automode_decisions.jsonl`（`~/.claude` 那次沙箱擋下，以 unsandboxed retry 完成） |
+| 0a | ◑ 部分 | `~/.agents/.gitignore` 那行隨本分支落檔，**merge 後才會回到 main 的工作樹**。`~/.claude` 與工作專案兩處也加過（`~/.claude` 那次沙箱擋下，以 unsandboxed retry 完成），但**已還原**——兩個 repo 在本 session 開始時都是乾淨的，而 0b 未核准前這行保護不到任何東西，留著只會被下一次 commit 掃進去。0b 核准時再一併補上。 |
 | 2 | ✅ 採用 | 本回合所有 git 探查改 `git -C <dir>`／`python3` 讀檔，未寫 `cd X && git` |
 | 4 | ⛔ 被擋 | 本回合以 Edit 工具送出修正，**當場被 classifier 擋下**（見下方現場證據），未重試 |
 | 5 | ✅ 維持 | `classifyAllShell` 未設（預設 false） |
@@ -437,8 +437,14 @@ Reason: Blocked by classifier.
 驗收指令：
 
 ```bash
-grep -c automode_decisions ~/.claude/.gitignore ~/.agents/.gitignore \
-  ~/Downloads/coding_agent_project/DCT_data_import_data_stream_codex/.gitignore   # 各應為 1
-grep -c "protected-path check gates it instead" ~/.claude/settings.json
-python3 -c "import json;print(json.load(open('$HOME/.claude/settings.json'))['env'])"  # 是否含 AUTOMODE_DECISION_LOG
+# 0a：只有 ~/.agents 有，且只在本分支上；另兩處刻意為 0（見上表）
+git -C ~/.agents show docs/automode-critique-2026-08-22:.gitignore | grep -c automode_decisions   # 1
+grep -c automode_decisions ~/.claude/.gitignore                                                   # 0
+grep -c automode_decisions ~/Downloads/coding_agent_project/DCT_data_import_data_stream_codex/.gitignore  # 0
+
+# 4：仍未落地（該句還在）
+grep -c "protected-path check gates it instead" ~/.claude/settings.json                           # 1
+
+# 0b：仍未開啟
+python3 -c "import json;print('AUTOMODE_DECISION_LOG' in json.load(open('$HOME/.claude/settings.json'))['env'])"  # False
 ```
