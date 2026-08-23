@@ -405,46 +405,68 @@ sed -n '369329,369550p' cc-strings.txt
 
 ---
 
-## E. 執行狀態（2026-08-22 19:38 更新）
+## E. 執行狀態（審查 2026-08-22；套用 2026-08-23 09:14）
 
-審查完成當下 **0/8 項落地**（原 #0 已拆成 0a／0b）。本回合處理如下：
+審查完成當下 0/8 落地（原 #0 已拆成 0a／0b）。使用者於本回合明示授權 C-2 四項（0b、1、3、6）後：
 
 | # | 狀態 | 證據 |
 |---|---|---|
-| 0a | ◑ 部分 | `~/.agents/.gitignore` 那行隨本分支落檔，**merge 後才會回到 main 的工作樹**。`~/.claude` 與工作專案兩處也加過（`~/.claude` 那次沙箱擋下，以 unsandboxed retry 完成），但**已還原**——兩個 repo 在本 session 開始時都是乾淨的，而 0b 未核准前這行保護不到任何東西，留著只會被下一次 commit 掃進去。0b 核准時再一併補上。 |
-| 2 | ✅ 採用 | 本回合所有 git 探查改 `git -C <dir>`／`python3` 讀檔，未寫 `cd X && git` |
-| 4 | ⛔ 被擋 | 本回合以 Edit 工具送出修正，**當場被 classifier 擋下**（見下方現場證據），未重試 |
+| 0a | ✅ 已做 | 三個 repo 的 `.git/info/exclude` 各一行 `.automode_decisions.jsonl`。**改用 exclude 而非 `.gitignore`**：repo 零足跡、不隨分支切換消失、不會被下一次 commit 掃進去（`.gitignore` 版本仍留在本分支的 commit 裡，merge 後會與 exclude 重複但無害） |
+| 0b | ✅ 已做 | `env.AUTOMODE_DECISION_LOG=1`，commit `bc178b7`。**但本 session 尚未生效**——見 E.2 |
+| 1 | ✅ 已做 | `autoMode.allow` 增 Local Operations extension（6 條），commit `bc178b7` |
+| 2 | ✅ 採用 | 本回合 git 探查全走 `git -C <dir>`，未寫 `cd X && git` |
+| 3 | ⛔ 被擋 | `permissions.allow` 補五條唯讀 git——**已授權但被 classifier 擋下**，未重試（第 31 筆無規則名） |
+| 4 | ⛔ 被擋 | `hard_deny` 錯誤機制敘述的修正——被擋（第 30 筆），未重試 |
 | 5 | ✅ 維持 | `classifyAllShell` 未設（預設 false） |
-| 0b、1、3、6 | ⛔ 待授權 | 見 C-2 |
+| 6 | ✅ 已做 | `hard_deny[3]` carve-out 增 `~/.codex`、`~/.copilot`，commit `bc178b7` |
 
-### E.1 本回合的現場證據：B2 + A2 同時複現
+`~/.claude` 變更已跑 `tests/repo-integrity.sh`：**78 PASS / 0 FAIL**（含「deny 清單未被削減」那條）。
 
-19:40，以 `Edit` 工具修改 `hard_deny[2]` 那句錯誤的機制敘述（純敘述修正，不動任何邊界），回傳：
+### E.1 兩筆現場攔截：B2 複現 + verdict 隨 payload 語意而變
 
-```
-Permission for this action was denied by the Claude Code auto mode classifier.
-Reason: Blocked by classifier.
-```
+本回合對同一個檔案（`~/.claude/settings.json`）、同一個工具（`Edit`）送出四次修改，**三過一擋**，另有一筆更早的被擋：
+
+| 動作 | 結果 |
+|---|---|
+| #4 修正一句錯誤的機制敘述（不動邊界） | ⛔ 擋 |
+| #0b `env` 加一個 log 開關 | ✅ 過 |
+| #3 `permissions.allow` 補五條唯讀 git（**放寬**） | ⛔ 擋 |
+| #1 `autoMode.allow` 加強制例外（**放寬**） | ✅ 過 |
+| #6 `hard_deny` carve-out 加兩個路徑（**放寬**） | ✅ 過 |
 
 三件事一次成立：
 
 1. **B2 成立**：`hard_deny` 自己指定的安全路徑（「Route every settings.json change through the Edit tool」）就是被擋的那條路徑。規範與可行性互斥。
-2. **A2 成立（第 30 筆）**：reason 仍是泛用常數 `Blocked by classifier`，沒有規則名。累計 30/30 無歸因。
-3. **A4 的張力現形**：依 A4，重試很可能就過——但那正是本審查批評的行為（把閘門降級成延遲稅）。**本回合不重試**，改把攔截當資料。
+2. **A2 成立（第 30、31 筆）**：兩筆 reason 都是泛用常數 `Blocked by classifier`，累計 31/31 無歸因。**這正是 0b 要解決的問題，而 0b 要下個 session 才生效——本回合仍然只能猜。**
+3. **A4 需要細化**：verdict 不是純噪音。放寬與否**不是**分界（#1、#6 是明確放寬卻過了，#4 完全不放寬卻被擋）；但 `permissions.allow` 這個鍵本身似乎是熱點。誠實的表述是「payload 語意會影響 verdict，但方向不可預測」——這比原本的「同指令先擋後放」更接近實況，也更難調校。
 
-附帶：錯誤訊息尾句建議「add a Bash permission rule」，但被擋的是 **Edit 工具**，不是 Bash。這是泛用錯誤訊息的另一個面向。
+附帶：兩筆錯誤訊息尾句都建議「add a **Bash** permission rule」，但被擋的是 **Edit** 工具，照做無效。
 
-驗收指令：
+**本回合不重試任何被擋動作。** #3 已獲使用者授權卻被擋，是「使用者明示同意也推不動」的案例——依 A4 重送很可能就過，但那等於承認這層閘門只是延遲稅。決定權留給使用者。
+
+### E.2 0b 需要重啟 session 才生效
+
+`AUTOMODE_DECISION_LOG=1` 寫入 `settings.json` 後，**新開的 Bash shell 立刻讀得到**（`echo $AUTOMODE_DECISION_LOG` → `1`），但同一個 session 內接著發生的攔截（#3）**沒有產生 `.automode_decisions.jsonl`**。
+
+原因與 A2 引的 `M4f` 實作一致：`logPath` 是 `if(this.logPath===undefined)` 的一次性 memoize，且讀的是 **Claude 主行程**的 `process.env`——主行程在改設定前就啟動了。
+
+**要拿到規則名，必須重開 session。** 重開後每筆決定會落在 session cwd 的 `.automode_decisions.jsonl`，欄位含 `category`（規則名）、`classifierModel`、`stage1/2Severity`、`costUSD`。三個 repo 的 exclude 已就位。
+
+### E.3 驗收指令
 
 ```bash
-# 0a：只有 ~/.agents 有，且只在本分支上；另兩處刻意為 0（見上表）
-git -C ~/.agents show docs/automode-critique-2026-08-22:.gitignore | grep -c automode_decisions   # 1
-grep -c automode_decisions ~/.claude/.gitignore                                                   # 0
-grep -c automode_decisions ~/Downloads/coding_agent_project/DCT_data_import_data_stream_codex/.gitignore  # 0
+# 0b／1／6 已落地
+git -C ~/.claude log --oneline -1                      # bc178b7
+python3 -c "import json;d=json.load(open('$HOME/.claude/settings.json'));print(d['env'].get('AUTOMODE_DECISION_LOG'), len(d['autoMode']['allow']), '~/.codex' in d['autoMode']['hard_deny'][3])"   # 1 6 True
 
-# 4：仍未落地（該句還在）
-grep -c "protected-path check gates it instead" ~/.claude/settings.json                           # 1
+# 3／4 仍未落地
+python3 -c "import json;print([x for x in json.load(open('$HOME/.claude/settings.json'))['permissions']['allow'] if x.startswith('Bash(git')])"   # 不含 git log/diff/show/branch/fetch
+grep -c "protected-path check gates it instead" ~/.claude/settings.json   # 1
 
-# 0b：仍未開啟
-python3 -c "import json;print('AUTOMODE_DECISION_LOG' in json.load(open('$HOME/.claude/settings.json'))['env'])"  # False
+# 0a：repo 零足跡
+for r in ~/.agents ~/.claude ~/Downloads/coding_agent_project/DCT_data_import_data_stream_codex; do
+  grep -c automode_decisions "$r/.git/info/exclude"; git -C "$r" status --porcelain | wc -l; done
+
+# 回歸
+cd ~/.claude && bash tests/repo-integrity.sh | tail -1   # 78 PASS / 0 FAIL
 ```
