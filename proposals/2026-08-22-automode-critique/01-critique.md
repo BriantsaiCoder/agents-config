@@ -412,11 +412,11 @@ sed -n '369329,369550p' cc-strings.txt
 | # | 狀態 | 證據 |
 |---|---|---|
 | 0a | ✅ 已做 | 三個 repo 的 `.git/info/exclude` 各一行 `.automode_decisions.jsonl`。**改用 exclude 而非 `.gitignore`**：repo 零足跡、不隨分支切換消失、不會被下一次 commit 掃進去（`.gitignore` 版本仍留在本分支的 commit 裡，merge 後會與 exclude 重複但無害） |
-| 0b | ✅ 已做 | `env.AUTOMODE_DECISION_LOG=1`，commit `bc178b7`。**但本 session 尚未生效**——見 E.2 |
+| 0b | ◑ 已設定，待驗證 | `env.AUTOMODE_DECISION_LOG=1`，commit `bc178b7`。**本 session 未生效，且「log 會帶 `category`」尚未親眼證實**——見 E.2 |
 | 1 | ✅ 已做 | `autoMode.allow` 增 Local Operations extension（6 條），commit `bc178b7` |
 | 2 | ✅ 採用 | 本回合 git 探查全走 `git -C <dir>`，未寫 `cd X && git` |
-| 3 | ⛔ 被擋 | `permissions.allow` 補五條唯讀 git——**已授權但被 classifier 擋下**，未重試（第 31 筆無規則名） |
-| 4 | ⛔ 被擋 | `hard_deny` 錯誤機制敘述的修正——被擋（第 30 筆），未重試 |
+| 3 | ⛔ 已授權卻被擋 | `permissions.allow` 補五條唯讀 git。使用者**明示授權之後**仍被 classifier 擋下（第 31 筆無規則名），未重試——決定權見 E.1 末 |
+| 4 | ⛔ 未授權且被擋 | `hard_deny` 錯誤機制敘述的修正（第 30 筆）。未取得明示授權，且已承諾不自行重送 |
 | 5 | ✅ 維持 | `classifyAllShell` 未設（預設 false） |
 | 6 | ✅ 已做 | `hard_deny[3]` carve-out 增 `~/.codex`、`~/.copilot`，commit `bc178b7` |
 
@@ -442,7 +442,12 @@ sed -n '369329,369550p' cc-strings.txt
 
 附帶：兩筆錯誤訊息尾句都建議「add a **Bash** permission rule」，但被擋的是 **Edit** 工具，照做無效。
 
-**本回合不重試任何被擋動作。** #3 已獲使用者授權卻被擋，是「使用者明示同意也推不動」的案例——依 A4 重送很可能就過，但那等於承認這層閘門只是延遲稅。決定權留給使用者。
+**本回合不重試任何被擋動作，但 #3 與 #4 的處境不同，不該混為一談：**
+
+- **#3 是已授權卻被擋**——使用者明示同意在後、攔截在後，非確定性閘門仍然否決了一個獲授權的變更。兩條路：說一句我重送（依 A4 很可能就過），或使用者自己加那五條。`hard_deny` 規定 settings.json 只能走 Edit，所以**沒有第三條路**（不能用 shell 重導向繞過）。
+- **#4 從未取得授權**，且我已承諾不自行重送。要做的話同樣是「說一句」或自己改。
+
+兩者都把重試的決定權留在使用者手上——這正是這層閘門值得保留的部分：它擋不住有恆心的路徑，但擋得住無人過問的路徑。
 
 ### E.2 0b 需要重啟 session 才生效
 
@@ -452,7 +457,19 @@ sed -n '369329,369550p' cc-strings.txt
 
 **要拿到規則名，必須重開 session。** 重開後每筆決定會落在 session cwd 的 `.automode_decisions.jsonl`，欄位含 `category`（規則名）、`classifierModel`、`stage1/2Severity`、`costUSD`。三個 repo 的 exclude 已就位。
 
-### E.3 驗收指令
+### E.3 必辦跟進：global gitignore
+
+0b 已全域開啟，log 落在**任何** session 的 cwd。目前只有三個 repo 有 `.git/info/exclude` 覆蓋；使用者在其他 repo 開 session 就會累積未追蹤的 `.automode_decisions.jsonl`，遲早被某次 commit 掃進去。
+
+`~/.gitignore_global` 在 home 底下、不在 `hard_deny[3]` 的 carve-out 內，**這行必須由使用者自己加**：
+
+```bash
+echo '.automode_decisions.jsonl' >> ~/.gitignore_global
+```
+
+這是本清單裡唯一「拖越久越糟」的項目。
+
+### E.4 驗收指令
 
 ```bash
 # 0b／1／6 已落地
@@ -470,3 +487,11 @@ for r in ~/.agents ~/.claude ~/Downloads/coding_agent_project/DCT_data_import_da
 # 回歸
 cd ~/.claude && bash tests/repo-integrity.sh | tail -1   # 78 PASS / 0 FAIL
 ```
+
+**下個 session 第一件事**（驗 0b 的實際產出，也順帶關掉 §D 那條 `severityByModel` 未定）：
+
+```bash
+ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
+```
+
+`category` 若帶回規則名，A2 從此可調校，且證實 opus-5 下 reason 是被索取的；若 `category` 空或缺欄，則 severity 模式在 opus-5 成立，規則名根本沒被要求——兩種結果都是結論。
