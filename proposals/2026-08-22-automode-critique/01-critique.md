@@ -500,84 +500,43 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 
 ## F. 合併時的狀態更新（2026-08-24）
 
-正文 §0–§E 維持 2026-08-22／08-23 的原始判讀不動；本節只記合併當下與原文不符之處，以及
-§E.4「下個 session 第一件事」的實際結果。
+正文 §0–§E 維持 2026-08-22／08-23 的原始判讀不動；本節只記合併當下與原文不符的**事實**，
+不就地改寫原文，也不在此下新結論。
 
-### F.1 0b 已產出決定 log —— A2 從此可歸因（原文最大的開放問題，關掉）
+### F.1 §E.4 留的「下個 session 第一件事」有結果了
 
-`AUTOMODE_DECISION_LOG=1` 生效。實測樣本：`~/.agents` 與工作專案兩處 `.automode_decisions.jsonl`
-合計 **749 筆決定**，窗 2026-08-23 13:10 → 2026-08-24 15:33。
+`AUTOMODE_DECISION_LOG=1` 確實產出 `.automode_decisions.jsonl`。實測樣本（`~/.agents` 與
+工作專案兩處合計，窗 2026-08-23 13:10 → 2026-08-24 15:33，749 筆決定）：
 
-| 量測 | 值 |
-|---|---|
-| 決定總數 | 749（allowed 746／blocked 3） |
-| blocked 的工具 | **全部是 `Edit`**，全部走 `stage: thinking` |
-| 帶 `category` 的 blocked | **2／3**，值皆為 `self_modification` |
-| classifier 模型 | `claude-sonnet-5[1m]`（17 筆 `allowlisted` 的 Read 無此欄） |
+- 3 筆 `blocked`，全部是 `Edit`、全部走 `stage: thinking`。
+- 其中 2 筆帶 `category`，值皆為 `self_modification`；第三筆無 `category`
+  （`stage1Severity` 65 → `stage2Severity` 38，仍 blocked）。
+- `classifierModel` 全為 `claude-sonnet-5[1m]`。
+- **log 沒有 file path 欄位。** 它證明得了「被擋的是 Edit」，證明不了目標檔案是哪一個。
+  §E.1 那兩筆現場攔截屬 09:14 那一輪，與這三筆不是同一組（該輪未產出 log，見 §E.2）。
 
-三件事一次成立：
+§A2 要的「規則名出得來」這件事成立。要不要據此宣告 A2 結案，留給下一份文件，本節不裁決。
 
-1. **A2 的核心訴求成立且已解決。** 規則名確實只透過這個 opt-in log 出得來；transcript 與
-   agent 端仍然只有 `Blocked by classifier`。開了就能調校，這是原文的判斷，實測支持。
-2. **§D 那條「severity 模式下 reason 從未被索取」的未定，可以收斂成更精確的說法**：
-   classifier 實際跑的是 `claude-sonnet-5[1m]`（在 binary 的 `severityByModel` 預設清單內），
-   三筆 blocked 都帶 `stage1Severity`／`stage2Severity`——severity 模式確實在用——但 `category`
-   仍然出現在其中兩筆。所以正確表述是「severity 模式不必然壓掉 category」，而不是原文推測的
-   「從未被索取」。第三筆無 `category`（severity 65→38 仍 blocked）尚無解釋。
-3. **擋 `settings.json` 的是內建 SOFT 規則 `self_modification`，不是使用者自訂規則。**
-   其 `[named+specifics]` 門檻要求使用者指名該次具體變更，這與 §E.1 觀察到的「payload 語意
-   會影響 verdict」一致，但給出了原文拿不到的機制名。
+### F.2 §B6 的建議已被反向落地，但論證未經重驗
 
-### F.2 A5 的「allowlist 被自己的書寫習慣作廢」——實測是 100%，不是傾向
+原文建議「維持 `classifyAllShell: false`」；實況是**已設為 `true`**（dotclaude `fa012a0`），
+且 `tests/repo-integrity.sh` 加了斷言釘住它。
 
-同一份 log 逐筆看 `allowlisted` 欄：
+**原 §B6 的成本與收益兩項論證都標記 open。** 本輪曾試圖用上述決定 log 重建成本項，
+被審查判定不成立：該 log 不記錄走 `permissions.allow` 快速路徑的呼叫，分母有選擇偏誤，
+`allowlisted` 欄指的也是內建 safe allowlist 而非 `permissions.allow`。要重新論證得換探針
+（debug log 的 `Skipping auto mode classifier for Bash` 那行），不在本次範圍。
 
-| 工具 | `allowlisted=true` | `allowlisted=false` |
-|---|---|---|
-| Bash | **0** | **627** |
-| Read | 17 | 0 |
-| Edit／Agent／Write／WebFetch／WebSearch | 0 | 108 |
+同一份 log 可確定的是代價數字：窗內累計 38.08 USD、1,771 秒判定延遲、中位數 1,667 ms／次。
 
-**627 次 Bash 呼叫沒有任何一次走過 `permissions.allow` 快速路徑**，其中 614 次發生在
-`classifyAllShell` 啟用**之前**——也就是說快速路徑在被停用前就已經是 0 命中。A5 原文寫的是
-機制推導（複合指令 + `cd-git-compound`），這裡補上量測。
+### F.3 §E.3「必辦跟進：global gitignore」已完成
 
-代價側的數字（同窗）：累計 **38.08 USD**、**1,771 秒**（約 29.5 分鐘）判定延遲、中位數
-1,667 ms／次。
+`~/.gitignore_global` 已含 `.automode_decisions.jsonl`，`core.excludesfile` 指向該檔。
 
-### F.3 §B6 的建議已被推翻並反向落地
+### F.4 §E 表格其餘各項複驗
 
-原文：「以本機現況（allowlist 已被複合指令普遍作廢，A5）而言，開啟 `classifyAllShell` 的
-邊際安全收益低、成本高。**建議維持 false。**」
-
-實況：**已設為 `true`**（dotclaude `fa012a0`），且 `tests/repo-integrity.sh` 加了斷言釘住它，
-翻回 false 會 CI 紅。
-
-原建議錯在成本項，而 F.2 正好給出反證：Bash 的快速路徑命中率是 **0/627**，所以「停用
-allow 規則」這項成本**不存在**——本來就沒有東西被 allow 規則放行。原文把 A5（allowlist 已
-失效）當成「不必開」的理由，但同一個事實其實是「開了不多付」的理由。收益側則是把兩條
-判定路徑收斂成一條，不再維持一份實際上不生效卻看起來像防線的 allowlist。
-
-延遲與費用是真的（F.2 的數字），那是這個決定實際付的代價。
-
-### F.4 §E.3「必辦跟進：global gitignore」已完成
-
-`~/.gitignore_global` 已含 `.automode_decisions.jsonl`，且 `git config --global core.excludesfile`
-指向該檔。原文標為「本清單裡唯一拖越久越糟的項目」，可以結案。
-
-### F.5 §E 表格其餘各項複驗結果
-
-- **#3（`permissions.allow` 補五條唯讀 git）仍未落地。** 實測 `permissions.allow` 的
-  `Bash(git…)` 只有 status／add／commit／restore --staged／push --force-with-lease。
-  F.2 之後這一項的價值另需重估：`classifyAllShell: true` 會停用所有 Bash allow 規則，
-  補進去也不會生效。
-- **#4（修正 `hard_deny` 對 settings.json gating 機制的錯誤敘述）仍未落地。**
-  `hard_deny[3]` 仍寫著 `the built-in .claude protected-path check gates it instead`，
-  而 F.1 已指出實際擋下它的是 classifier 的 `self_modification`。B2 的批評依然成立，
-  現在還多了規則名可引。
-- 0a／1／2／5／6 維持已落地。
-
-### F.6 本 commit 保留 `.gitignore` 那三行的理由
-
-`.git/info/exclude`（§E 的 0a）與 `~/.gitignore_global`（F.4）都是機器本地狀態，不隨 clone
-走。repo 內的 `.gitignore` 是三者中唯一會跟著 repo 移動的，重複但不冗餘。
+- **#3（`permissions.allow` 補五條唯讀 git）仍未落地**：實測 `Bash(git…)` 只有
+  status／add／commit／restore --staged／push --force-with-lease。
+- **#4（修正 `hard_deny` 對 settings.json gating 機制的敘述）仍未落地**：`hard_deny[3]`
+  仍含 `the built-in .claude protected-path check gates it instead`。
+- **#5 已反轉**，見 F.2。0a／1／2／6 維持已落地。
