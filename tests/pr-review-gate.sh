@@ -571,8 +571,12 @@ done
 # 綠燈，但 job tsv 多一欄 → PASS_NO_CI 的 fail-open 真的復發。總數相等是比宣告弱一階
 # 的不變式。改成從兩側各抽出**變數名**再逐一對照，站點錯配就轉紅。
 #
-# 第三個檢查（producer 數 == 解析點數）守的是另一個形狀：某處 tsv 解析若改成只切第 2、
-# 3 欄而不切第 1 欄，前兩個集合仍相等而它會漏報。jq 的 tsv producer 與解析點是 1:1。
+# 解析點那側抽的是 `printf … "$X" | cut -f`，**不限第幾欄**——某處改成只切第 2、3 欄
+# 一樣會被抽進來，所以那個形狀由前兩個檢查涵蓋。
+#
+# 第三個檢查（producer 數 == 解析點數）守的是另一個形狀：jq 產出了 tsv，卻**完全沒有
+# 走 cut 這條路徑**去解析它（改用 read、awk，或整段被別的寫法取代）。那時前兩個集合
+# 各自仍自洽，只有 producer 與解析點的數目對不上。兩者是 1:1，對不上就是有東西漂移了。
 #
 # **零 magic number。** 沒有任何一邊跟字面值比——那正是本區塊在消滅的東西。工具失敗
 # 靠「剝掉註解後整檔為空」判別，沿用同檔上方 here-doc 掃描區塊已驗證過的機制：本機
@@ -586,9 +590,11 @@ _src="$(grep -vE '^[[:space:]]*#' -- "$GATE")" || _s_rc=$?
 if [ "$_s_rc" -ge 2 ] || [ -z "$_src" ]; then
   ((fail += 1)); printf 'FAIL arity 不變式：掃描讀不到內容（grep rc=%s，工具失敗而非程式碼變更）\n' "$_s_rc"
 else
-  _parsed="$(printf '%s\n' "$_src" | grep -oE 'printf .%s. "[$][a-z_]+" [|] cut -f' | grep -oE '[$][a-z_]+' | sort -u)"
-  _guarded="$(printf '%s\n' "$_src" | grep -oE 'tab_count "[$][a-z_]+"' | grep -oE '[$][a-z_]+' | sort -u)"
-  _prod_n="$(printf '%s\n' "$_src" | grep -cF -- '| @tsv')"
+  # 空白一律寫成 [[:space:]]*：這個斷言問的是「解析點有沒有對應 guard」，不該因為有人
+  # 調整排版就整套假紅。producer 那側同理，用 [|][[:space:]]*@tsv 而非 fixed-string。
+  _parsed="$(printf '%s\n' "$_src" | grep -oE 'printf[[:space:]]+.%s.[[:space:]]+"[$][a-z_]+"[[:space:]]*[|][[:space:]]*cut[[:space:]]+-f' | grep -oE '[$][a-z_]+' | sort -u)"
+  _guarded="$(printf '%s\n' "$_src" | grep -oE 'tab_count[[:space:]]+"[$][a-z_]+"' | grep -oE '[$][a-z_]+' | sort -u)"
+  _prod_n="$(printf '%s\n' "$_src" | grep -cE -- '[|][[:space:]]*@tsv')"
   _parsed_n="$(printf '%s\n' "$_parsed" | grep -c . )"
   if [ -z "$_parsed" ]; then
     ((fail += 1)); printf 'FAIL arity 不變式：抽不出任何 tsv 解析點（pattern 已與實作脫節）\n'
@@ -597,7 +603,7 @@ else
     printf '       解析：%s\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"
     printf '       守護：%s\n' "$(printf '%s' "$_guarded" | tr '\n' ' ')"
   elif [ "$_prod_n" -ne "$_parsed_n" ]; then
-    ((fail += 1)); printf 'FAIL tsv producer 與解析點不對應（有 producer 沒被 cut -f1 解析）：producer=%s 解析點=%s\n' "$_prod_n" "$_parsed_n"
+    ((fail += 1)); printf 'FAIL tsv producer 數與解析點數不符（producer 未被 cut 解析，或抽取 pattern 已漂移）：producer=%s 解析點=%s\n' "$_prod_n" "$_parsed_n"
   else
     ((pass += 1)); printf 'PASS 每處 tsv 解析都有 arity 檢查（%s）\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"
   fi
