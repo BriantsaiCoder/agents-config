@@ -30,7 +30,7 @@ elif [[ "$1" == api && "$*" == *"/check-runs/"*"/annotations"* ]]; then
   jq -nc --arg message "${FAKE_FAILURE_ANNOTATION:-}" \
     '[{message:$message}]' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"/actions/jobs/"* ]]; then
-  # GH_FAKE_JOB_TSV：同其餘三個 hook，用於第四處 tsv 解析的欄位形狀。
+  # GH_FAKE_JOB_TSV：同其餘的 tsv hook，用於 job 端的欄位形狀。
   if [[ -n "${GH_FAKE_JOB_TSV+x}" ]]; then printf '%s\n' "$GH_FAKE_JOB_TSV"; exit 0; fi
   [[ -z "${FAKE_JOB_FAIL:-}" ]] || exit 1
   filter=${!#}

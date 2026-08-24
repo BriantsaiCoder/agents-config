@@ -22,8 +22,14 @@ unavailable() {
 }
 
 # tsv 的分隔符數。@tsv 會把值內的 tab 逸出成字面 \t，所以真正的 tab 只可能是分隔符，
-# 數量恆為「欄數 − 1」。四處 tsv 解析共用這一條——第四處出現時才抽（Rule of Three）。
-tabs() { printf '%s' "$1" | tr -cd '\t' | wc -c; }
+# 數量恆為「欄數 − 1」。
+#
+# **不變式：本檔每一處 tsv 解析都要用它做 arity 檢查，一處都不能少。** 少了它，多一欄的
+# 輸入每一欄都切得對、逐欄檢查全過，壞掉的形狀就直落成可合併狀態——現存的解析點裡有兩處
+# 就是這樣被找出來的。這個「每一處」由 tests/pr-review-gate.sh 的靜態斷言釘住，**不由註解裡的
+# 數字承擔**：本分支已經把散文計數打歪兩次（先是「三處 tsv」，再是「三處數值 guard」），
+# CONVENTIONS 規則 9 要求這種檢查下沉為機械守護並從 prose 移除。
+tab_count() { printf '%s' "$1" | tr -cd '\t' | wc -c; }
 
 repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
   unavailable repo_probe_failed
@@ -83,7 +89,7 @@ url=$(printf '%s' "$pr_state" | cut -f7)
 # tab 只可能是分隔符，數量恆為 6；而 tr 不需要多一個 awk 依賴。
 [[ -n "$state" && -n "$head" && -n "$mergeable" && -n "$url" \
    && ( "$draft" == true || "$draft" == false ) \
-   && "$(tabs "$pr_state")" -eq 6 ]] ||
+   && "$(tab_count "$pr_state")" -eq 6 ]] ||
   unavailable pr_fields_unparsable
 
 [[ "$state" == OPEN ]] || unavailable pr_not_open
@@ -123,15 +129,15 @@ past_threshold() {
   # 或 cancelled 時才會被讀到，驗在定義處會讓一個打錯的環境變數擋掉**每一個** PR，包含
   # CI 全綠、這個值根本不會被讀取的那些，而且會落在 repo= 有、pr= 與 url= 皆無的那種
   # 最難判讀的輸出形狀上（理由見本檔開頭）。unavailable 走 exit，在 function 內一樣會
-  # 結束整支，所以收斂位置不會削弱防護。進算術脈絡的純量數值 guard 共三處——本條、
-  # requested、thread 的 unresolved（suppressed 只被 printf 消費，e 是本 function 的 local，
-  # 兩者都不在這個集合裡）。三處裡只有這一條是使用者自己就能觸發的（export 一個打錯的
-  # 值），其餘兩處的來源都是 gh API。
+  # 結束整支，所以收斂位置不會削弱防護。本檔進算術脈絡的外部純量是 CI_ABSENT_AFTER、
+  # e、requested、unresolved，四個都用同一條嚴格 regex（suppressed 只被 printf 消費，
+  # 共用該 regex 純為一致）。**這幾個裡只有 CI_ABSENT_AFTER 來自環境變數**，其餘都來自
+  # gh API——所以只有它是使用者自己就能踩到的。不列數字的理由同 tab_count() 的不變式。
   #
   # 用 ^(0|[1-9][0-9]*)$ 而非 ^[0-9]+$：後者只驗「長得像數字」，不驗「進 bash 算術後
   # 還是同一個數」。CI_ABSENT_AFTER=0600 通過 ^[0-9]+$，而 (( )) 把前導零讀成八進位 384
   # ——門檻由 600 秒腰斬成 384 秒，PASS_NO_CI 提早成立，而 hard_deny[1] 認這個狀態。
-  # 這是上述三處裡唯一使用者 export 一個打錯的值就能踩到的，不需要任何外部漂移。
+  # 承上：這是唯一一個 export 一個打錯的值就能踩到的，不需要任何外部漂移。
   [[ "$CI_ABSENT_AFTER" =~ ^(0|[1-9][0-9]*)$ ]] || unavailable ci_absent_after_not_numeric
   d=$(gh api "repos/$repo/commits/$head" --jq '.commit.committer.date' 2>/dev/null) || return 1
   [[ -n "$d" ]] || return 1
@@ -198,12 +204,12 @@ billing_failure_never_ran() {
     steps=$(printf '%s' "$job" | cut -f2)
     job_head=$(printf '%s' "$job" | cut -f3)
     job_run_id=$(printf '%s' "$job" | cut -f4)
-    # arity conjunct 與另外三處同型。少了它，多一欄的 job tsv 每一欄都切得對、四項
-    # 檢查全過 → return 0 → BILLING_QUOTA → PASS_NO_CI，而那是 hard_deny[1] 認可的
-    # 可合併狀態。這是本檔第四處 tsv 解析，先前的註解誤稱「三處」。
+    # arity conjunct 同 tab_count() 的不變式。少了它，多一欄的 job tsv 每一欄都切得對、
+    # 四項檢查全過 → return 0 → BILLING_QUOTA → PASS_NO_CI，而那是 hard_deny[1] 認可的
+    # 可合併狀態。這處是後來才被找出來的，先前的註解把它漏數了。
     [[ "$conclusion" == failure && "$steps" == 0 &&
        "$job_head" == "$head" && "$job_run_id" == "$run_id" &&
-       "$(tabs "$job")" -eq 3 ]] || return 1
+       "$(tab_count "$job")" -eq 3 ]] || return 1
     gh api "repos/$repo/check-runs/$job_id/annotations" --jq '
       any(.[];
         ((.message // "") | ascii_downcase | contains("job was not started")) and
@@ -293,7 +299,7 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
 latest_review=$(printf '%s' "$latest_review_state" | cut -f1)
 suppressed=$(printf '%s' "$latest_review_state" | cut -f2)
 billing_review=$(printf '%s' "$latest_review_state" | cut -f3)
-# 本檔四處 tsv 解析裡，這處原本是唯一沒有 *_fields_unparsable guard 的，形狀比照 pr_state：
+# 這處原本沒有 *_fields_unparsable guard（同 tab_count() 的不變式），形狀比照 pr_state：
 #   最嚴重的輸入是「整行無分隔符」——cut -fN 每個 N 都回整行，於是 latest_review 拿到
 #   整行，只要它不等於 head 就走 review=STALE，而該分支會對 GitHub 送出一次
 #   requested_reviewers POST。垃圾輸入產生外部寫入，與 pr_state 那條同型（實測：
@@ -310,7 +316,7 @@ billing_review=$(printf '%s' "$latest_review_state" | cut -f3)
 # 時就是空字串，那是合法輸入，驗非空會把最常見的新 PR 誤擋成欄位壞掉。
 [[ ( "$billing_review" == true || "$billing_review" == false ) \
    && "$suppressed" =~ ^(0|[1-9][0-9]*)$ \
-   && "$(tabs "$latest_review_state")" -eq 2 ]] ||
+   && "$(tab_count "$latest_review_state")" -eq 2 ]] ||
   unavailable review_fields_unparsable
 requested=$(gh api "repos/$repo/pulls/$pr/requested_reviewers" \
   --jq '[.users[] | select(.login | ascii_downcase | contains("copilot"))] | length') ||
@@ -349,17 +355,20 @@ has_next=$(printf '%s' "$thread_state" | cut -f2)
 # 那是這支工具最不能有的形狀：呼叫端比對 STATE= 字串會拿到空字串，只看 exit code 的會
 # 當成通過。比照 suppressed 的既有數值 guard。
 # 三個 conjunct 合成一條（先前拆成兩條、發同一個 reason，診斷力被稀釋而無收益）。
-# 順序 load-bearing：數值檢查必須在 has_next 之前短路，理由如上。
+# **合成後 conjunct 之間的順序不再 load-bearing**：三者都是字串比較，沒有一個會對敵意
+# 輸入 abort，實測任意調換順序 75 PASS / 0 FAIL。真正 load-bearing 的是整條 guard 必須
+# 在下方 [[ "$unresolved" -gt 0 ]] 之前——拆成兩條 statement 的時代那句話指的是這個，
+# 合併後留著會讓讀者以為有個順序被測試釘住。
 #   unresolved  嚴格數值。^[0-9]+$ 會放行 "08"，而 [[ "08" -gt 0 ]] 報
 #               value too great for base → rc=0 STATE=PASS，8 條未解 finding 被判通過。
 #   has_next    驗正值而非非空，同 draft。純數字 tsv（"5"）與第二欄為空兩個形狀都會
 #               通過數值檢查而讓 has_next 拿到 "5" 或 ""，於是報 review_thread_limit_exceeded
 #               這個假原因；這條補的是「報得出真因」。
-#   arity       四處 tsv 解析中這處原本是唯一沒有它的：實測 "0\tfalse\tEXTRA" 每一欄
+#   arity       這處原本沒有它（同 tab_count() 的不變式）：實測 "0\tfalse\tEXTRA" 每一欄
 #               檢查都通過而直落 rc=0 STATE=PASS，與 review 那處是同一個形狀。
 [[ "$unresolved" =~ ^(0|[1-9][0-9]*)$ \
    && ( "$has_next" == true || "$has_next" == false ) \
-   && "$(tabs "$thread_state")" -eq 1 ]] ||
+   && "$(tab_count "$thread_state")" -eq 1 ]] ||
   unavailable thread_fields_unparsable
 # 走到這裡只剩字面 true 或 false；true 代表還有下一頁沒讀，fail-closed。
 [[ "$has_next" == false ]] || unavailable review_thread_limit_exceeded
