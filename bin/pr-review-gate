@@ -100,6 +100,11 @@ fi
 # 人手動 merge。用「head commit 推上來多久了」區分這兩種：本 repo 的 CI 全程 21-31 秒
 # 跑完，建立 run 是秒級，10 分鐘是給排程延遲的寬裕上限。
 CI_ABSENT_AFTER=${CI_ABSENT_AFTER:-600}
+# 這個值來自環境，且唯一的用途是進 past_threshold() 的 (( )) 算術脈絡。非數字值在那裡
+# 會被當成變數名，set -u 讓整支中止——而 bash 3.2 由算術脈絡觸發的中止 **exit status
+# 是 0**、stdout 全空，正是下面 thread 那組 guard 已經寫明「這支工具最不能有的形狀」。
+# 三處數值 guard 裡只有這一條是使用者自己就能觸發的（export 一個打錯的值）。
+[[ "$CI_ABSENT_AFTER" =~ ^[0-9]+$ ]] || unavailable ci_absent_after_invalid
 
 # ISO8601 轉 epoch。BSD date（macOS）與 GNU date（Linux/CI）語法不同，兩種都試。
 epoch_of() {
@@ -262,10 +267,30 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
 latest_review=$(printf '%s' "$latest_review_state" | cut -f1)
 suppressed=$(printf '%s' "$latest_review_state" | cut -f2)
 billing_review=$(printf '%s' "$latest_review_state" | cut -f3)
-[[ "$suppressed" =~ ^[0-9]+$ ]] || suppressed=0
+# 三處 tsv 解析裡這處原本是唯一沒有 *_fields_unparsable guard 的，形狀比照上面 pr_state：
+#   數 tab 一次涵蓋三種 arity drift。最重要的是「整行無分隔符」——cut -fN 每個 N 都回
+#   整行，於是 latest_review 拿到整行，只要它不等於 head 就走 review=STALE，而該分支會
+#   對 GitHub 送出一次 requested_reviewers POST。垃圾輸入產生外部寫入，與 pr_state 那條
+#   同型（實測：STATE=REQUESTED、requests=1）。
+#   billing_review 驗正值而非非空，理由同 draft：它是布林語意的欄位，任何非 true/false
+#   的值都靜默讀成「不是 billing」，於是 review=UNAVAILABLE 這條出口整個消失。
+#   suppressed 從「靜默改判為 0」升級為擋下來：jq 那段在無命中時已經自己回字面 "0"，
+#   所以走到這裡還不是數字就只可能是 shape drift。靜默歸零會讓 2026-08-08 那類
+#   「finding 全在 Suppressed 摺疊區而 gate 回 PASS」的 fail-open 無聲復發（實測：
+#   多一欄／billing 非布林／suppressed 非數字三種形狀都直落 STATE=PASS suppressed=0）。
+# latest_review 刻意不驗非空：`.commit_id // ""` 在「這個 PR 還沒有任何 Copilot review」
+# 時就是空字串，那是合法輸入，驗非空會把最常見的新 PR 誤擋成欄位壞掉。
+[[ ( "$billing_review" == true || "$billing_review" == false ) \
+   && "$suppressed" =~ ^[0-9]+$ \
+   && "$(printf '%s' "$latest_review_state" | tr -cd '\t' | wc -c)" -eq 2 ]] ||
+  unavailable review_fields_unparsable
 requested=$(gh api "repos/$repo/pulls/$pr/requested_reviewers" \
   --jq '[.users[] | select(.login | ascii_downcase | contains("copilot"))] | length') ||
   unavailable requested_reviewer_probe_failed
+# jq 的 length 恆為數字，所以這條的可達性低——留著是因為它守的是同一個「rc=0、stdout
+# 全空」形狀，而 requested 有兩個算術脈絡消費端（review=STALE 分支與末尾的 WAIT_REVIEW
+# 判定）。一行的成本，不必為可達性辯論。
+[[ "$requested" =~ ^[0-9]+$ ]] || unavailable requested_fields_unparsable
 thread_state=$(gh api graphql -F owner="$owner" -F name="$name" -F number="$pr" -f query='
   query($owner: String!, $name: String!, $number: Int!) {
     repository(owner: $owner, name: $name) {

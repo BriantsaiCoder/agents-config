@@ -61,6 +61,8 @@ elif [[ "$1" == api && "$*" == *"/commits/"* ]]; then
   filter=${!#}
   jq -nc --arg d "$FAKE_HEAD_DATE" '{commit:{committer:{date:$d}}}' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"/reviews"* ]]; then
+  # GH_FAKE_REVIEW_TSV：同 GH_FAKE_PR_TSV，用於 latest_review_state 那組欄位。
+  if [[ -n "${GH_FAKE_REVIEW_TSV+x}" ]]; then printf '%s\n' "$GH_FAKE_REVIEW_TSV"; exit 0; fi
   filter=${!#}
   jq -nc --arg latest "$FAKE_REVIEW" --arg body "${FAKE_REVIEW_BODY:-}" '
     [
@@ -69,6 +71,8 @@ elif [[ "$1" == api && "$*" == *"/reviews"* ]]; then
       {user:{login:"human"},commit_id:"human-head",submitted_at:"2026-01-04T00:00:00Z"}
     ]' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"/requested_reviewers"* && "$*" != *"--method POST"* ]]; then
+  # GH_FAKE_REQUESTED_RAW：讓這支 API 直接吐指定字串，驗 requested 的數值 guard。
+  if [[ -n "${GH_FAKE_REQUESTED_RAW+x}" ]]; then printf '%s\n' "$GH_FAKE_REQUESTED_RAW"; exit 0; fi
   filter=${!#}
   jq -nc --argjson requested "$FAKE_REQUESTED" '
     {users:([{login:"human"}] +
