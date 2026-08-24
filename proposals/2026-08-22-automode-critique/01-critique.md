@@ -506,7 +506,7 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 ### F.1 §E.4 留的「下個 session 第一件事」有結果了
 
 `AUTOMODE_DECISION_LOG=1` 確實產出 `.automode_decisions.jsonl`。實測樣本（`~/.agents` 與
-工作專案兩處合計，窗 2026-08-23 13:10 → 2026-08-24 15:33，749 筆決定）：
+工作專案兩處合計，窗 2026-08-23 13:10 → 2026-08-24 15:33 **UTC+8**，749 筆決定）：
 
 - 3 筆 `blocked`，全部是 `Edit`、全部走 `stage: thinking`。
 - 其中 2 筆帶 `category`，值皆為 `self_modification`；第三筆無 `category`
@@ -529,9 +529,10 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 （debug log 的 `Skipping auto mode classifier for Bash` 那行），不在本次範圍。
 
 同一份 log 可確定的是代價數字：累計 38.08 USD、1,771 秒判定延遲、中位數 1,667 ms／次。
-三個數字取自 750 筆快照，上面的 749 筆取自另一切點（2026-08-24 15:33:37）；USD 合計實際
+三個數字取自 750 筆快照，上面的 749 筆取自另一切點（2026-08-24 15:33:37 **UTC+8**）；USD 合計實際
 只涵蓋 733 筆（17 筆無 `costUSD` 欄；732 是 749 筆那個切點的值，誤帶過來）。本節語料**包含產生本節那個 session 自己的呼叫**，
 且該檔在審查期間仍在增長——所有數字以上述切點為準。
+時區以 UTC+8 標示：log 的 `ts` 欄是 epoch millis，最早一筆 `1787555303998` 換算為 UTC 2026-08-23 05:10:28／UTC+8 2026-08-23 13:10:28，與上面的窗起點吻合的是後者。本節先前未標時區，而 §G.3 正是在講兩種日界慣例混用造成的矛盾——同一份文件不該自己漏標。
 
 ### F.3 §E.3「必辦跟進：global gitignore」已完成
 
