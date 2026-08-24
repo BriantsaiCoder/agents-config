@@ -679,7 +679,11 @@ done
 # slug 是硬編碼常數，而 review_request_rejected 的整個語意建立在「slug 是對的、所以 422
 # 只可能來自對側」。slug 一旦被改壞，每支 PR 都會拿到 rejected 而誤判成 bot 不可用——
 # 這條把它釘住，取代 PR #86 那個沒有 artifact 存計數的「連續三次 422」上限。
-if grep -qF "reviewers[]=copilot-pull-request-reviewer[bot]" "$GATE"; then
+_slug=0
+rg -qF -- "reviewers[]=copilot-pull-request-reviewer[bot]" "$GATE" || _slug=$?
+if [ "$_slug" -ge 2 ]; then
+  ((fail += 1)); printf 'FAIL reviewer slug 掃描失敗（rg rc=%s，工具失敗而非程式碼變更）\n' "$_slug"
+elif [ "$_slug" = 0 ]; then
   ((pass += 1)); printf 'PASS reviewer slug 仍是 copilot-pull-request-reviewer[bot]\n'
 else
   ((fail += 1)); printf 'FAIL reviewer slug 被改動——review_request_rejected 的語意依賴它是對的\n'

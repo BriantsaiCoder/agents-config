@@ -95,7 +95,8 @@ elif [[ "$1 $2" == "api graphql" ]]; then
 elif [[ "$1" == api && "$*" == *"--method POST"* ]]; then
   printf '%s\n' "$*" >> "$REQUEST_LOG"
   # GH_FAKE_POST_FAIL="<status>|<message>"：重現 gh 失敗時的形狀——訊息與 (HTTP NNN)
-  # 都在 stderr，stdout 空，rc 非零。用 ${VAR+x} 而非 -n，同其餘 hook。
+  # 都在 stderr，stdout 空，rc 非零。判斷的是「這個 hook 有沒有被設定」（${VAR+x}，
+  # 空值一樣觸發），不是「值是否非空」（-n "$VAR"）——同其餘 hook。
   if [[ -n "${GH_FAKE_POST_FAIL+x}" ]]; then
     printf 'gh: %s (HTTP %s)\n' "${GH_FAKE_POST_FAIL#*|}" "${GH_FAKE_POST_FAIL%%|*}" >&2
     exit 1
