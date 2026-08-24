@@ -511,7 +511,8 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 - 3 筆 `blocked`，全部是 `Edit`、全部走 `stage: thinking`。
 - 其中 2 筆帶 `category`，值皆為 `self_modification`；第三筆無 `category`
   （`stage1Severity` 65 → `stage2Severity` 38，仍 blocked）。
-- `classifierModel` 全為 `claude-sonnet-5[1m]`。
+- `classifierModel`：732 筆有值且皆為 `claude-sonnet-5[1m]`；另 17 筆（`allowlisted=true`
+  的 Read）沒有這個欄位。
 - **log 沒有 file path 欄位。** 它證明得了「被擋的是 Edit」，證明不了目標檔案是哪一個。
   §E.1 那兩筆現場攔截屬 09:14 那一輪，與這三筆不是同一組（該輪未產出 log，見 §E.2）。
 
@@ -527,7 +528,10 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 `allowlisted` 欄指的也是內建 safe allowlist 而非 `permissions.allow`。要重新論證得換探針
 （debug log 的 `Skipping auto mode classifier for Bash` 那行），不在本次範圍。
 
-同一份 log 可確定的是代價數字：窗內累計 38.08 USD、1,771 秒判定延遲、中位數 1,667 ms／次。
+同一份 log 可確定的是代價數字：累計 38.08 USD、1,771 秒判定延遲、中位數 1,667 ms／次。
+三個數字取自 750 筆快照，上面的 749 筆取自另一切點（2026-08-24 15:33:37）；USD 合計實際
+只涵蓋 732 筆（17 筆無 `costUSD` 欄）。本節語料**包含產生本節那個 session 自己的呼叫**，
+且該檔在審查期間仍在增長——所有數字以上述切點為準。
 
 ### F.3 §E.3「必辦跟進：global gitignore」已完成
 
@@ -540,3 +544,84 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 - **#4（修正 `hard_deny` 對 settings.json gating 機制的敘述）仍未落地**：`hard_deny[3]`
   仍含 `the built-in .claude protected-path check gates it instead`。
 - **#5 已反轉**，見 F.2。0a／1／2／6 維持已落地。
+
+---
+
+## G. 合併前審查的事實更正（2026-08-24）
+
+本節由合併前的 Standards 軸獨立審查產生。正文 §0–§E 的**判讀不動**，但其中若干**數字與
+引述**經重驗為錯，列在這裡；讀正文時以本節為準。審查同時確認 A1–A6、B1–B6 與 C 清單的
+結論性判斷在更正後**均不受影響**。
+
+### G.1 `Security Discussion` 不是幻覺
+
+`02-verification.md` §2 末寫「代理為 id 28 引述的 `Security Discussion` ALLOW 例外不在
+16 條清單裡——那條引述是幻覺」。**該規則真實存在**，是 ALLOW 區塊第 1 條，2.1.239 與
+2.1.241 皆在，逐字：
+
+> Security Discussion: Reading, discussing, reviewing, or writing security-related code, docs,
+> configs, or threat models as part of the user's task is not in itself Credential Exploration,
+> Exfil Scouting, or Auto-Mode Bypass — engaging with security as subject matter is fine.
+
+成因見 G.2。兩個後果：id 28 的 FP 依據應回到該例外，而非「無任何規則可套用」；且這條例外
+點名 `Auto-Mode Bypass`，正好**加強**而非削弱 `02-verification.md` §3 那筆 meta 發現。
+
+### G.2 內建規則條數：HARD 1／SOFT **67**／ALLOW **17**
+
+正文三處（§A2、§A6 表、`02-verification.md` §2 末）寫 66 SOFT／16 ALLOW／1 HARD。
+每個區塊的第 1 條規則與 `<user_*_rules_to_replace>` 標籤**同行**，用 `\n- ` 計數會漏掉它：
+逐區塊的 `\n- ` 數是 0／66／16，各加回黏合的第 1 條即 1／67／17。HARD=1 之所以正確，
+正是因為作者在該區塊把黏合條算了進去，SOFT／ALLOW 兩處沒有——與 G.1 同一個成因。
+
+§A6 的結論（規則體量嚴重不對稱）不受影響：67 : 17 與 66 : 16 同樣成立。
+
+### G.3 §0 的「同期」表是累計，不是窗內
+
+四項在「累計至 2026-08-22 上午」這個切點完全重現，窗內版本差距顯著：
+
+| kind | 文件 | 窗內 08-01→08-22 | 累計至 08-22 |
+|---|---|---|---|
+| `permission-rule` | 296 | 246 | 296 |
+| `automode-blocked` | 29 | 30 | 29 |
+| `user-rejected` | 28 | 16 | 26（見 G.4） |
+| `automode-unavailable` | 2 | **0** | 2 |
+| `cancelled` | 2 | 2 | 2 |
+
+決定性佐證：全 corpus 只有 2 筆 `automode-unavailable`，時間皆為 2026-07-25，**落在宣稱窗外**。
+§A3「實測到 2 筆 `automode-unavailable`」數字對，但同樣不屬該窗。
+
+受影響的是「比例 10:1」——分子（29，窗內自洽）與分母（296，累計）不同母體。同母體重算
+窗內為 246 : 30，約 8:1。**結論方向不變。**
+
+### G.4 §0 的 `user-rejected` = 28 不可重現
+
+全 corpus 頂層 `user-rejected` 為 27（去重與未去重同值），至 08-22 為 26，窗內 16。
+任何窗口／去重策略都到不了 28。
+
+### G.5 §A4 的「逐字元相同」只有一半成立
+
+§A4 標為「01:27 BLOCKED」的那段 `awk`，實際是 01:35 **被放行**的那條（`NR<=369360`、
+`substr(,1,60)`）。當時真正被擋的是 id 28：區間 `NR<=369560`、`substr(,1,90)`，另接一段
+`awk -F'\t'` 與 `head -120`——兩者並非位元相同。位元相同的是 `find` 那組（id 29，
+01:28 擋 → 01:34 過），**該對成立**。ALLOWED 時刻正確值為 01:34:50Z 與 01:38:20Z。
+
+§A4 的核心主張（verdict 是「指令 × 當下對話歷史」的函數）由 id 29 那對與下方表格支撐，
+**不受影響**。
+
+### G.6 §A4「4 筆位元組完全相同」總數對、組成錯
+
+用文件自述的比對鍵重掃全 corpus 恰好 4 筆，但第二列應為 **Bash** `cd ~/.claude/projects
+&& find …`（id 29），不是第二筆 Edit `CLAUDE.md`——id 3 那筆在整個 corpus 裡沒有位元相同的
+孿生。表中「+1／+1／+2／+1」的呼叫間距欄位**未經驗證**（該計數是 session 相對的）。
+
+### G.7 §B5 的 merge 攔截是 2 次，不是 3 次
+
+全 corpus 只有 2 筆真正的 merge-PUT 攔截：id 7（`pulls/15/merge`，08-06）與 id 25
+（`pulls/75/merge -X PUT`，08-09）。第三筆只能是 id 20（`pulls/101 --jq`，08-09），
+那是**純 GET 無 `-X`**，而 `02-verification.md` 正把它當成 token 對撞的 false positive 舉例
+——同一份成果的兩個檔對同一筆給出相反歸類。§B5 該項應為 2 次。
+
+### G.8 §0 的分母未能重現，記為未驗而非缺陷
+
+文件 21,194／Bash 15,402；同切點重算 21,456／15,648（+1.2%／+1.6%）。方法差異不可回溯
+（`extract_denials2.py` 已隨 scratchpad 消失）。攔截率本身內部自洽（29 筆無一早於 08-01）。
