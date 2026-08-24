@@ -123,13 +123,15 @@ past_threshold() {
   # 或 cancelled 時才會被讀到，驗在定義處會讓一個打錯的環境變數擋掉**每一個** PR，包含
   # CI 全綠、這個值根本不會被讀取的那些，而且會落在 repo= 有、pr= 與 url= 皆無的那種
   # 最難判讀的輸出形狀上（理由見本檔開頭）。unavailable 走 exit，在 function 內一樣會
-  # 結束整支，所以收斂位置不會削弱防護。三處數值 guard 裡只有這一條是使用者自己就能
-  # 觸發的（export 一個打錯的值），其餘兩處的來源都是 gh API。
+  # 結束整支，所以收斂位置不會削弱防護。進算術脈絡的純量數值 guard 共三處——本條、
+  # requested、thread 的 unresolved（suppressed 只被 printf 消費，e 是本 function 的 local，
+  # 兩者都不在這個集合裡）。三處裡只有這一條是使用者自己就能觸發的（export 一個打錯的
+  # 值），其餘兩處的來源都是 gh API。
   #
   # 用 ^(0|[1-9][0-9]*)$ 而非 ^[0-9]+$：後者只驗「長得像數字」，不驗「進 bash 算術後
   # 還是同一個數」。CI_ABSENT_AFTER=0600 通過 ^[0-9]+$，而 (( )) 把前導零讀成八進位 384
   # ——門檻由 600 秒腰斬成 384 秒，PASS_NO_CI 提早成立，而 hard_deny[1] 認這個狀態。
-  # 這是三處裡唯一使用者 export 一個打錯的值就能踩到的，不需要任何外部漂移。
+  # 這是上述三處裡唯一使用者 export 一個打錯的值就能踩到的，不需要任何外部漂移。
   [[ "$CI_ABSENT_AFTER" =~ ^(0|[1-9][0-9]*)$ ]] || unavailable ci_absent_after_not_numeric
   d=$(gh api "repos/$repo/commits/$head" --jq '.commit.committer.date' 2>/dev/null) || return 1
   [[ -n "$d" ]] || return 1
