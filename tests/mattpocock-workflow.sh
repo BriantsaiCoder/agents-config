@@ -39,28 +39,38 @@ fi
 # 同 has()，但把「掃描器失敗」與「真的沒命中」分開。has() 是 `grep -qE … && ok || ng`：
 # 單一 bit，掃描器只要回非 0 就等同「沒命中」，而一支壞掉卻 exit 0 的掃描器直接變成 PASS。
 # issue #87 的 comment 逐字點名過「排除側正是 fail-open 會漏出去的地方」，PR #92 Spec R3
-# 在排除側實測到後者：真違規全綠。給 merge gate 授權面的斷言用。
+# 在排除側實測到後者：真違規之下那兩條斷言判 PASS。給不能容忍掃描器靜默失敗的斷言用。
+# rc 語意是「掃描可不可信」，不是「斷言過不過」：掃描器可信時一律 return 0（不論 ok/ng），
+# 不可信時 ng 並 return 1。與同檔 lacks() 一致。
 has_rg() {
   local label="$1" pattern="$2" path="$3" rc=0 n
-  [ -e "$ROOT/$path" ] || { ng "$label"; return 1; }
   # 用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，一支壞掉但 exit 0 的 rg 同樣回 0，
   # 真違規會被判 PASS。改成同時要求計數是正整數，rc 與輸出兩邊都得對得上。
-  n=$(rg -c -e "$pattern" "$ROOT/$path") || rc=$?
+  # 檔案不存在不另外先驗：rg 對它回 rc=2，與下面的「掃描不可信」同一格。
+  n=$(rg -c -e "$pattern" "$ROOT/$path" 2>/dev/null) || rc=$?
   case "$rc" in
+    # rc=0 卻交不出正整數計數 = 掃描器自相矛盾，歸「不可信」而非「沒命中」。
     0) case "$n" in
-         ''|*[!0-9]*) ng "$label"; return 1 ;;
-         0)           ng "$label" ;;
-         *)           ok "$label" ;;
+         ''|*[!0-9]*|0) ng "$label"; return 1 ;;
+         *)             ok "$label" ;;
        esac ;;
     1) ng "$label" ;;
     *) ng "$label"; return 1 ;;
   esac
 }
 
-if (rg() { return 2; }; has_rg "has_rg helper scan error fixture" 'Rule of Three' CONVENTIONS.md) >/dev/null; then
-  ng "has_rg helper fails closed on scan errors"
+# 兩條 negative control。第一條（rc=2）舊的 has() 其實也守得住；has_rg 相對 has 的**全部**
+# 增量是第二條——掃描器說成功卻交不出行。沒有第二條，這個 helper 的存在理由就沒有東西在驗。
+# 探測路徑用 tests/ 自己而不是 CONVENTIONS.md：後者改名時會走到別的分支，fixture 照樣綠。
+if (rg() { return 2; }; has_rg "fixture" 'has_rg' tests/mattpocock-workflow.sh) >/dev/null; then
+  ng "has_rg fails closed when the scanner errors"
 else
-  ok "has_rg helper fails closed on scan errors"
+  ok "has_rg fails closed when the scanner errors"
+fi
+if (rg() { return 0; }; has_rg "fixture" 'has_rg' tests/mattpocock-workflow.sh) >/dev/null; then
+  ng "has_rg fails closed when the scanner exits 0 with no output"
+else
+  ok "has_rg fails closed when the scanner exits 0 with no output"
 fi
 
 rule_has_in() {
@@ -624,11 +634,12 @@ elif [ "$allow_rc" -ne 0 ]; then
   ng "fallback allow side is a closed set (找不到允許側錨點——被改寫過？)"
 # rc=0 卻無輸出＝掃描器自相矛盾（說有命中卻交不出行），不是「檔案裡沒有」。沒有這一格，
 # 空字串會穿過下面的多行檢查、落到集合比對而報成「集合是 []」——掃描器故障被說成內容
-# 違規，看的人會去改文件而不是修工具。
-elif [ "$names_rc" -eq 0 ] && [ -z "$allow_names" ]; then
-  ng "fallback allow side is a closed set (rg -o 回 rc=0 卻無輸出——掃描器異常，非程式碼變更)"
-elif [ -z "$allow_line" ]; then
-  ng "fallback allow side is a closed set (rg 回 rc=0 卻無輸出——掃描工具異常，非程式碼變更)"
+# 違規，看的人會去改文件而不是修工具。兩次呼叫併成一格：同一支 rg 壞掉時兩者同時為真，
+# 分開寫的話先觸發的那格會把成因歸給下游那次呼叫（PR #92 Standards R4 實測）。names 那半
+# 必須帶 names_rc -eq 0——rc=1 是「這一行真的沒有反引號 reason 名」，那是真違規，要走下面
+# 的集合比對報「集合是 []」。
+elif [ -z "$allow_line" ] || { [ "$names_rc" -eq 0 ] && [ -z "$allow_names" ]; }; then
+  ng "fallback allow side is a closed set (rg 回 rc=0 卻交不出行——掃描器異常，非程式碼變更)"
 elif [ "$allow_line" != "${allow_line%%$'\n'*}" ]; then
   ng "fallback allow side is a closed set (允許側錨點命中多行，應為 1)"
 elif [ "$allow_names" != "review_actions_billing_or_quota" ]; then
