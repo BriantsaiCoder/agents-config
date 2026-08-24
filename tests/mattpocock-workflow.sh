@@ -573,6 +573,16 @@ has "bot fallback requires current-head CI" 'fallback.*current.*CI.*PASS' skills
 has "push invalidates bot fallback" '每次 push.*fallback.*失效' skills/dev-workflow/references/review-triage.md
 has "bot fallback rejects incomplete PR and thread probes" 'repo_probe_failed.*pr_probe_failed.*head.*thread probe' skills/dev-workflow/references/review-triage.md
 has "bot fallback rejects incomplete reviewer probes" 'review_probe_failed.*requested_reviewer_probe_failed.*不得 fallback' skills/dev-workflow/references/review-triage.md
+# 允許側同樣要釘：它在 PR #85 的開發過程中被靜默收窄過一次（3f524fe 把類別判準換成
+# 單一 reason 名，使 review_request_failed 失去出口），而當時沒有任何斷言會轉紅。
+# 四條各釘一件事，都寫成無序的獨立 grep 而非有序 regex——排除側那條就因為禁令從名單
+# 後方移到前方而斷過一次，而那是合法改寫。
+has "bot fallback allow side stays categorical" '判準是類別（bot capability' skills/dev-workflow/references/review-triage.md
+has "bot fallback allow side names both known shapes" 'review_actions_billing_or_quota' skills/dev-workflow/references/review-triage.md
+has "bot fallback allow side gates request failures on exact status" '只有 404 與 422 成立' skills/dev-workflow/references/review-triage.md
+# 消歧句（讀不到 vs 送不出去）同樣要釘：ablation 顯示整句刪掉時套件全綠，而它正是
+# 「換一個 reason 名就再犯」那個結構缺陷的修正。
+has "bot fallback disambiguates read vs send failures" '我們這一側讀不到' skills/dev-workflow/references/review-triage.md
 has "bot fallback requires open ready mergeable PR" 'fallback 前.*open.*ready.*mergeable PR' skills/dev-workflow/references/review-triage.md
 has "bot fallback cannot use author self-review" 'independent read-only reviewer.*不得由 PR 作者自審' skills/dev-workflow/references/review-triage.md
 has "bot helper cannot manufacture fallback PASS" 'manual evidence branch.*pr-review-gate.*UNAVAILABLE.*不得.*PASS' skills/dev-workflow/references/review-triage.md
