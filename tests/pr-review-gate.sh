@@ -9,9 +9,12 @@ FAKEBIN=$(mktemp -d "${TMPDIR:-/tmp}/pr-review-gate.XXXXXX") ||
 REQUEST_LOG="$FAKEBIN/requests.log"
 trap 'rm -rf "$FAKEBIN"' EXIT
 
-# fake gh 以 fixture 檔複製而非 here-doc：here-doc 在 bash 3.2 一樣要建暫存檔，
-# /tmp 與 cwd 皆不可寫時會靜默降級成 0-byte 的 gh（可執行、exit 0、無輸出），
-# 於是整套測試變成假 PASS——而那正是本檔要驗的 sandbox 條件。cp 沒有這個相依。
+# fake gh 以 fixture 檔複製而非 here-doc：here-doc 在 bash 3.2 一樣要建暫存檔（放 /tmp，
+# 忽略 TMPDIR，理由見 tests/git-push-guard.sh 的切詞斷言區塊），/tmp 與 cwd 皆不可寫時
+# redirect 失敗——而那正是本檔要驗的 sandbox 條件，測試搭建本身不該依賴它。
+# （實測 0-byte gh 會讓套件大聲失敗而非假 PASS —— 不寫條數，那個數字每加一條案例就過期；cp 換掉的是
+# 「在該條件下根本建不出 fake gh」這個相依，不是假綠風險。）
+# 註：本套件的 mktemp 仍需要一個可寫的 TMPDIR；在 RED 條件下跑要自行指定。
 cp "$ROOT/tests/fixtures/fake-gh" "$FAKEBIN/gh" ||
   { printf 'FAIL: 無法複製 fake gh fixture，測試未執行\n' >&2; exit 1; }
 chmod +x "$FAKEBIN/gh"
@@ -180,7 +183,7 @@ fi
 
 # 逐欄隔離。上面兩條讓多個欄位同時為空，紅的原因未必是被測的那一欄；下面三條各只
 # 挖掉一欄，才釘得住 guard 真的驗了它。mergeable 那條是 round 2 補的核心：它把關
-# :69 的 CONFLICTING 與 :305 的 UNKNOWN 兩個決策，空字串兩條都不命中而直落 STATE=PASS
+# `mergeable == CONFLICTING` 與 `mergeable == UNKNOWN` 兩個決策，空字串兩條都不命中而直落 STATE=PASS
 # —— 合併衝突檢查沒跑，輸出行卻外觀正常。
 out=$(PATH="$FAKEBIN:$PATH" \
   GH_FAKE_PR_TSV="OPEN	false		head-new	SUCCESS	NONE	https://example.invalid/pull/42" \
@@ -209,6 +212,64 @@ else
   ((fail += 1)); printf 'FAIL 僅 head 為空報 pr_fields_unparsable: output=%s\n' "$out"
 fi
 
+out=$(PATH="$FAKEBIN:$PATH" \
+  GH_FAKE_PR_TSV="	false	MERGEABLE	head-new	SUCCESS	NONE	https://example.invalid/pull/42" \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS 僅 state 為空報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL 僅 state 為空報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
+# draft 必須驗正值：`.isDraft | tostring` 讓 null 變字面 "null"，非空檢查放行，而
+# "null" 不等於 true → draft PR 被當成非 draft 走到 STATE=PASS。fail-open，hard_deny[1]
+# 只認 PASS／PASS_NO_CI，所以這是唯一一條能真的突破 merge gate 的欄位退化。
+out=$(PATH="$FAKEBIN:$PATH" \
+  GH_FAKE_PR_TSV="OPEN	null	MERGEABLE	head-new	SUCCESS	NONE	https://example.invalid/pull/42" \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS draft 非 true/false 報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL draft 非 true/false 報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
+# pr tsv 整行無分隔符：cut -fN 每個 N 都回整行，七個欄位全部非空，逐欄檢查全數通過。
+# 額外斷言 0 次外部請求——這個形狀曾經走到 STATE=WAIT_CI 並送出 requested_reviewers POST，
+# 垃圾輸入不該產生外部寫入。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+  GH_FAKE_PR_TSV="OPEN" "$GATE" 42 2>&1)
+req=$(wc -l < "$REQUEST_LOG" | tr -d ' ')
+if [[ "$out" == *"reason=pr_fields_unparsable"* && "$req" -eq 0 ]]; then
+  ((pass += 1)); printf 'PASS pr tsv 無分隔符報 pr_fields_unparsable 且零外部請求\n'
+else
+  ((fail += 1)); printf 'FAIL pr tsv 無分隔符報 pr_fields_unparsable 且零外部請求: output=%s requests=%s\n' "$out" "$req"
+fi
+
+# 整行是字面 false／true 時 draft 的正值檢查會通過（每欄都拿到 "false"），要靠 tab 數
+# 檢查才報得出真原因；沒有它會落到 pr_not_open——仍 fail-closed，但那正是本分支要修掉
+# 的「報假原因」形狀。這條與下一條是該 conjunct 的鑑別點。
+out=$(PATH="$FAKEBIN:$PATH" GH_FAKE_PR_TSV="false" "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS pr tsv 整行為字面 false 報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL pr tsv 整行為字面 false 報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
+# 欄位插入：八欄時每個 -n 都拿得到非空值、draft 仍是 false，逐欄檢查全數通過。
+# S5 實測部分插入位置會走到 STATE=PASS（head 與 ci 仍是真值，污染落在 url），
+# 另一些位置走到 WAIT_CI 並送出一次 POST。tab 數檢查一次涵蓋。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+  GH_FAKE_PR_TSV="OPEN	false	EXTRA	MERGEABLE	head-new	SUCCESS	NONE	https://example.invalid/pull/42" \
+  "$GATE" 42 2>&1)
+req=$(wc -l < "$REQUEST_LOG" | tr -d ' ')
+if [[ "$out" == *"reason=pr_fields_unparsable"* && "$req" -eq 0 ]]; then
+  ((pass += 1)); printf 'PASS pr tsv 多一欄報 pr_fields_unparsable 且零外部請求\n'
+else
+  ((fail += 1)); printf 'FAIL pr tsv 多一欄報 pr_fields_unparsable 且零外部請求: output=%s requests=%s\n' "$out" "$req"
+fi
+
 # thread tsv 無分隔符：cut -fN 對整行無分隔符的輸入每個 N 都回整行，於是 unresolved
 # 與 has_next 同時變成 "false"，has_next 檢查放行，接著 [[ "$unresolved" -gt 0 ]] 在
 # 算術脈絡把 false 當變數名 → set -u 中止，而 bash 3.2 從 [[ ]] 算術脈絡觸發的中止
@@ -223,6 +284,24 @@ if [[ "$out" == *"reason=thread_fields_unparsable"* ]]; then
 else
   ((fail += 1)); printf 'FAIL thread tsv 無分隔符報 thread_fields_unparsable: output=%s\n' "$out"
 fi
+
+# 上面那條數值 guard 擋不住的兩個形狀：純數字（unresolved 通過數值檢查、has_next 也是
+# 該數字）與第二欄為空。兩者原本都報 review_thread_limit_exceeded 這個假原因。
+thread_shape_probe() { # $1=名稱 $2=tsv
+  local name="$1" tsv="$2" out
+  out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    GH_FAKE_THREAD_TSV="$tsv" "$GATE" 42 2>&1)
+  if [[ "$out" == *"reason=thread_fields_unparsable"* ]]; then
+    ((pass += 1)); printf 'PASS %s\n' "$name"
+  else
+    ((fail += 1)); printf 'FAIL %s: output=%s\n' "$name" "$out"
+  fi
+}
+thread_shape_probe 'thread tsv 純數字報 thread_fields_unparsable' '5'
+thread_shape_probe 'thread tsv has_next 為空報 thread_fields_unparsable' '0	'
 
 # ── suppressed comments 必須出現在 PASS 那行 ────────────────────────────────
 #
@@ -258,6 +337,48 @@ suppressed_probe "有 suppressed 區塊時報實際數量" \
 **a.sh:1**
 * something
 </details>' 2
+
+# ── 切詞路徑不得依賴暫存檔 redirect ────────────────────────────────────────
+#
+# 本分支的整個前提是「bash 3.2 的 <<< 要建暫存檔，/tmp 與 cwd 皆不可寫時建不出來」。
+# 上面所有行為案例在 /tmp 可寫的環境（Linux CI、一般 macOS shell）對修正前的版本
+# **全部仍然 PASS** —— 實測把 cut 那段還原成 here-string，行為案例全數維持綠，只有下面
+# 這條靜態斷言轉紅。所以行為案例擋
+# 不住復發，需要一條到哪都成立的靜態斷言。
+#
+# 作法沿用 tests/git-push-guard.sh 的切詞斷言區塊（2026-08-08 為 guard-git-push.sh
+# 解過同一個問題），連同它記載過的三個坑：pattern 不對 delimiter 字元集合做假設
+# （`<<1`、`<<=EOF`、`<< =` 都是合法 here-doc）；檔名前的 `--` 不可省；兩個 grep 拆開
+# 跑並分辨 rc>=2，否則「掃不到就當乾淨」的假綠會回來。
+# 只掃非註解行，否則本區塊自己的說明會讓它恆紅。而掃描名單含本檔自己（測試側的
+# here-doc 正是這次要修掉的那個），所以 pattern 用兩個單字元拼出來——直接寫字面
+# 的話，這一行本身就會被自己命中。
+_hd=$(printf '<')
+_pat="${_hd}${_hd}-?[[:space:]]*[^[:space:]]"
+for _f in "$GATE" "$ROOT/tests/pr-review-gate.sh" "$ROOT/tests/fixtures/fake-gh"; do
+  _src=""; _hits=""; _rc=0; _hits_rc=0
+  _src="$(grep -vE '^[[:space:]]*#' -- "$_f")" || _rc=$?
+  if [ "$_rc" -ge 2 ]; then
+    ((fail += 1)); printf 'FAIL 靜態掃描讀不到內容（grep rc=%s）：%s\n' "$_rc" "$_f"
+    continue
+  fi
+  # rc 三態不夠：本機 grep 是 ugrep，撞 sandbox 權限時會**靜默回零命中且 exit 0**。
+  # S5 實測用一支「exit 0 無輸出」的 grep 替身，三條斷言全數假 PASS。這三個檔都是
+  # 數百行的 shell，不可能整檔皆註解，空輸出必為工具失敗。
+  if [ -z "$_src" ]; then
+    ((fail += 1)); printf 'FAIL 靜態掃描回空輸出（grep 工具失敗，非檔案乾淨）：%s\n' "$_f"
+    continue
+  fi
+  _hits="$(printf '%s\n' "$_src" | grep -E -- "$_pat")" || _hits_rc=$?
+  if [ "$_hits_rc" -ge 2 ]; then
+    ((fail += 1)); printf 'FAIL 靜態掃描自身失敗（grep rc=%s）：%s\n' "$_hits_rc" "$_f"
+  elif [ -z "$_hits" ]; then
+    ((pass += 1)); printf 'PASS 不依賴暫存檔 redirect：%s\n' "${_f#"$ROOT"/}"
+  else
+    ((fail += 1)); printf 'FAIL 仍有 here-doc／here-string（/tmp 與 cwd 皆不可寫時會失效）：%s\n' "${_f#"$ROOT"/}"
+    printf '%s\n' "$_hits" | head -3 | sed 's/^/       /'
+  fi
+done
 
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，
