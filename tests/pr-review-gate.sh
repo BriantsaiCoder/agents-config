@@ -335,6 +335,9 @@ review_shape_probe 'review tsv 無分隔符報 review_fields_unparsable 且零�
 review_shape_probe 'review tsv 多一欄報 review_fields_unparsable' 'head-new	0	false	EXTRA'
 review_shape_probe 'review tsv billing 非 true/false 報 review_fields_unparsable' 'head-new	0	null'
 review_shape_probe 'review tsv suppressed 非數字報 review_fields_unparsable' 'head-new	abc	false'
+# suppressed 只被 printf 消費、不進算術，所以前導零沒有 fail-open 後果——但 guard 與
+# 同檔另外三處共用同一條嚴格 regex，這條 canary 讓「為什麼這裡也要嚴格」有東西釘住。
+review_shape_probe 'review tsv suppressed 前導零報 review_fields_unparsable' 'head-new	08	false'
 # latest_review 為空是合法輸入（jq 的 `.commit_id // ""`，代表這個 PR 還沒有任何
 # Copilot review），不得誤擋——這條是上面四條的極性反例。
 : > "$REQUEST_LOG"
@@ -352,17 +355,21 @@ fi
 # requested 沒有數值 guard。非數字值進 [[ ]] 算術脈絡撞 set -u，而 bash 3.2 由該脈絡
 # 觸發的中止 **exit status 是 0**、stdout 全空——呼叫端比對 STATE= 拿到空字串，只看
 # exit code 的當成通過。可達性低（jq 的 length 恆為數字），但形狀與 thread 那條相同。
-: > "$REQUEST_LOG"
-out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
-  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
-  FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
-  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
-  GH_FAKE_REQUESTED_RAW=abc "$GATE" 42 2>&1)
-if [[ "$out" == *"reason=requested_not_numeric"* ]]; then
-  ((pass += 1)); printf 'PASS requested 非數字報 requested_not_numeric\n'
-else
-  ((fail += 1)); printf 'FAIL requested 非數字報 requested_not_numeric: output=%s\n' "$out"
-fi
+requested_raw_probe() { # $1=名稱 $2=raw 值
+  local name="$1" raw="$2" out
+  : > "$REQUEST_LOG"
+  out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    GH_FAKE_REQUESTED_RAW="$raw" "$GATE" 42 2>&1)
+  if [[ "$out" == *"reason=requested_not_numeric"* ]]; then
+    ((pass += 1)); printf 'PASS %s\n' "$name"
+  else
+    ((fail += 1)); printf 'FAIL %s: output=%s\n' "$name" "$out"
+  fi
+}
+requested_raw_probe 'requested 非數字報 requested_not_numeric' 'abc' 
 
 # CI_ABSENT_AFTER 由環境進入 (( )) 算術脈絡，同樣沒有數值 guard，同樣是 rc=0 stdout 全空
 # 那個形狀。這一條是三者中唯一使用者自己就能觸發的（export 一個打錯的值）。
@@ -372,10 +379,10 @@ out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" CI_ABSENT_AFTER=abc \
   FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
   FAKE_HEAD_DATE=2026-01-01T00:00:00Z FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
   "$GATE" 42 2>&1)
-if [[ "$out" == *"reason=ci_absent_after_invalid"* ]]; then
-  ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 非數字報 ci_absent_after_invalid\n'
+if [[ "$out" == *"reason=ci_absent_after_not_numeric"* ]]; then
+  ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 非數字報 ci_absent_after_not_numeric\n'
 else
-  ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 非數字報 ci_absent_after_invalid: output=%s\n' "$out"
+  ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 非數字報 ci_absent_after_not_numeric: output=%s\n' "$out"
 fi
 
 # 極性反例，釘住 guard 的位置而不只是它的存在：CI 全綠時 past_threshold() 根本不會被
@@ -391,6 +398,80 @@ if [[ "$out" == STATE=PASS* ]]; then
 else
   ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 用不到時不得擋: output=%s\n' "$out"
 fi
+
+# ── 第二輪審查：前導零、第四處 tsv、pre-1970 epoch ─────────────────────────
+#
+# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。三個消費端全中，
+# 且三者在 main 上行為相同——本分支新增的 guard 原本也沒關掉它們。
+
+# 使用者今天 export 一個打錯的值就能踩到：(( )) 把 0600 讀成八進位 384，門檻由 600 秒
+# 腰斬成 384 秒，PASS_NO_CI 提早成立，而 hard_deny[1] 認這個狀態。
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" CI_ABSENT_AFTER=0600 \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=NONE FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  FAKE_HEAD_DATE=2026-01-01T00:00:00Z FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=ci_absent_after_not_numeric"* ]]; then
+  ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 前導零報 ci_absent_after_not_numeric\n'
+else
+  ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 前導零報 ci_absent_after_not_numeric: output=%s\n' "$out"
+fi
+
+# 08／09 在 [[ ]] 算術是**錯誤**不是 false，而 [[ ]] 回非零與「條件不成立」無法區分——
+# 這裡「不成立」正好是 fail-open 那一側：8 條未解 finding 直落 STATE=PASS。
+thread_shape_probe 'thread tsv 前導零報 thread_fields_unparsable' '08	false'
+requested_raw_probe 'requested 前導零報 requested_not_numeric' '08'
+
+# 第四處 tsv 解析（billing_failure_never_ran 的 job 端）。多一欄時四項檢查全過 →
+# return 0 → BILLING_QUOTA → PASS_NO_CI，與 review／thread 修掉的是同一個形狀。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=FAILURE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    FAKE_HEAD_DATE="$NOW" FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+    FAKE_FAILURE_STEPS=0 FAKE_FAILURE_ANNOTATION="$BILLING" \
+    FAKE_FAILED_URLS="https://github.com/owner/repo/actions/runs/900002/job/900002" \
+  GH_FAKE_JOB_TSV="failure	0	head-new	900002	EXTRA" "$GATE" 42 2>&1)
+if [[ "$out" == STATE=FAIL_CI* ]]; then
+  ((pass += 1)); printf 'PASS job tsv 多一欄不得降級成 PASS_NO_CI\n'
+else
+  ((fail += 1)); printf 'FAIL job tsv 多一欄不得降級成 PASS_NO_CI: output=%s\n' "$out"
+fi
+
+# 極性反例：欄數正確時仍須降級，否則上一條會被一個恆真的 guard 假裝通過。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=FAILURE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    FAKE_HEAD_DATE="$NOW" FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+    FAKE_FAILURE_STEPS=0 FAKE_FAILURE_ANNOTATION="$BILLING" \
+    FAKE_FAILED_URLS="https://github.com/owner/repo/actions/runs/900002/job/900002" \
+  GH_FAKE_JOB_TSV="failure	0	head-new	900002" "$GATE" 42 2>&1)
+if [[ "$out" == STATE=PASS_NO_CI* ]]; then
+  ((pass += 1)); printf 'PASS job tsv 欄數正確時仍降級成 PASS_NO_CI\n'
+else
+  ((fail += 1)); printf 'FAIL job tsv 欄數正確時仍降級成 PASS_NO_CI: output=%s\n' "$out"
+fi
+
+# past_threshold 內 e 的數值檢查有可鑑別的 canary：epoch_of 對 pre-1970 的 committer
+# date 會成功並回負數（1960-01-01 → -315619200，rc=0）。舊的 -n 檢查放行，年齡被算成
+# 超過三十億秒 → past_threshold 為真 → 零 check 的 PR 直接降級成 PASS_NO_CI。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=NONE FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  FAKE_HEAD_DATE=1960-01-01T00:00:00Z FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+  "$GATE" 42 2>&1)
+if [[ "$out" == STATE=WAIT_CI* ]]; then
+  ((pass += 1)); printf 'PASS pre-1970 committer date 不得降級成 PASS_NO_CI\n'
+else
+  ((fail += 1)); printf 'FAIL pre-1970 committer date 不得降級成 PASS_NO_CI: output=%s\n' "$out"
+fi
+
 
 # ── suppressed comments 必須出現在 PASS 那行 ────────────────────────────────
 #
