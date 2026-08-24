@@ -55,11 +55,19 @@ url=$(printf '%s' "$pr_state" | cut -f7)
 
 # gh 回了但欄位切不出來（jq 改格式、gh 改輸出）時，要報得出是哪裡壞，不能讓下游
 # 用空字串繼續判斷後印出一個看似正常的 STATE 行。
-# 三欄都要驗，不能只驗 state：最可能的變體是「jq 改欄位數、第一欄仍在」，那時 state
-# 有值而 head 是空的，於是印出 `STATE=PASS pr=99 head=` —— 而 hard_deny[1] 整條規則
-# 綁在 "at the current head SHA"，空 head 讓那個綁定失效。url 同理，UNAVAILABLE 以外
-# 每個 STATE 行都靠它讓人看得出查的是哪個 PR。
-[[ -n "$state" && -n "$head" && -n "$url" ]] || unavailable pr_fields_unparsable
+# 驗哪些欄位，判準是「空了會不會讓某個決策靜默跳過或某行 STATE 失去意義」：
+#   state      決定 pr_not_open
+#   head       hard_deny[1] 整條規則綁在 "at the current head SHA"，空 head 讓綁定失效
+#   mergeable  把關兩個決策 —— :69 的 CONFLICTING → FAIL_MERGE、:305 的 UNKNOWN →
+#              WAIT_CI。空字串兩條都不命中，直落 STATE=PASS，於是**合併衝突檢查根本
+#              沒跑**而輸出行外觀完全正常。這是本檔最需要驗的一欄。
+#   url        只影響輸出可讀性，但 UNAVAILABLE 以外每行都靠它看得出查的是哪個 PR
+#
+# 前一版只驗了 state／head／url —— 把只影響顯示的 url 納入、把真正把關決策的
+# mergeable 排除，對自己提出的問題給了錯答案，還寫成註解裡的斷言。
+# draft 刻意不驗：`.isDraft | tostring` 讓 null 變字面 "null" 而非空字串，空值只可能
+# 來自欄位錯位，而那時 state 或 head 會先命中。
+[[ -n "$state" && -n "$head" && -n "$mergeable" && -n "$url" ]] || unavailable pr_fields_unparsable
 
 [[ "$state" == OPEN ]] || unavailable pr_not_open
 if [[ "$draft" == true ]]; then
@@ -273,9 +281,12 @@ has_next=$(printf '%s' "$thread_state" | cut -f2)
 # 那是這支工具最不能有的形狀：呼叫端比對 STATE= 字串會拿到空字串，只看 exit code 的會
 # 當成通過。比照 suppressed 的既有數值 guard。
 [[ "$unresolved" =~ ^[0-9]+$ ]] || unavailable thread_fields_unparsable
-# 欄位切不出來時報「thread 超過分頁上限」是假原因，與本次要消滅的 state: unbound
-# variable 同一類，所以先由上面那條數值 guard 攔下。到這裡 has_next 必為真實欄位值，
-# 非字面 false 一律當成「還有下一頁沒讀」。
+# 非字面 false 一律當成「還有下一頁沒讀」，fail-closed。
+# 上面那條數值 guard 只擋掉「整行無分隔符」那個形狀（unresolved 與 has_next 拿到同一
+# 個非數值字串）。它擋不住的仍有：tsv 是純數字（例如 "5"）時 unresolved 通過數值
+# 檢查、has_next 也是 "5"，於是報 review_thread_limit_exceeded —— 那是假原因。
+# 方向仍 fail-closed（不會把該擋的放行），但訊息會指錯地方。要真的分辨得先確認欄位
+# 數，成本高於收益，列為已知上限而非修法。
 [[ "$has_next" == false ]] || unavailable review_thread_limit_exceeded
 
 review=CURRENT

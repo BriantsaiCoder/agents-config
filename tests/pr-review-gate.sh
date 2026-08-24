@@ -178,6 +178,37 @@ else
   ((fail += 1)); printf 'FAIL 欄位數不足（head 缺）報 pr_fields_unparsable: output=%s\n' "$out"
 fi
 
+# 逐欄隔離。上面兩條讓多個欄位同時為空，紅的原因未必是被測的那一欄；下面三條各只
+# 挖掉一欄，才釘得住 guard 真的驗了它。mergeable 那條是 round 2 補的核心：它把關
+# :69 的 CONFLICTING 與 :305 的 UNKNOWN 兩個決策，空字串兩條都不命中而直落 STATE=PASS
+# —— 合併衝突檢查沒跑，輸出行卻外觀正常。
+out=$(PATH="$FAKEBIN:$PATH" \
+  GH_FAKE_PR_TSV="OPEN	false		head-new	SUCCESS	NONE	https://example.invalid/pull/42" \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS 僅 mergeable 為空報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL 僅 mergeable 為空報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
+out=$(PATH="$FAKEBIN:$PATH" \
+  GH_FAKE_PR_TSV="OPEN	false	MERGEABLE	head-new	SUCCESS	NONE	" \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS 僅 url 為空報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL 僅 url 為空報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
+out=$(PATH="$FAKEBIN:$PATH" \
+  GH_FAKE_PR_TSV="OPEN	false	MERGEABLE		SUCCESS	NONE	https://example.invalid/pull/42" \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS 僅 head 為空報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL 僅 head 為空報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
 # thread tsv 無分隔符：cut -fN 對整行無分隔符的輸入每個 N 都回整行，於是 unresolved
 # 與 has_next 同時變成 "false"，has_next 檢查放行，接著 [[ "$unresolved" -gt 0 ]] 在
 # 算術脈絡把 false 當變數名 → set -u 中止，而 bash 3.2 從 [[ ]] 算術脈絡觸發的中止
