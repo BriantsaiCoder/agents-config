@@ -404,10 +404,11 @@ fi
 
 # ── 第二輪審查：前導零、job tsv 的 arity、pre-1970 epoch ─────────────────────
 #
-# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。由外部資料驅動且
-# **進算術脈絡**的三個消費端（CI_ABSENT_AFTER、requested、unresolved）會中，且在 main 上行為相同
-# ——本分支新增的 guard 原本也沒關掉它們。past_threshold 內的 e 同樣進算術脈絡但打不
-# 中：它是 date 產生的 epoch，形式上不會有前導零，所以沒有對應 canary。
+# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。CI_ABSENT_AFTER、
+# requested、unresolved 三個會中，且在 main 上行為相同——這個分支新增的 guard 原本也沒
+# 關掉它們。past_threshold 內的 e 打不中，但**理由不是分類**：它同樣進算術脈絡、同樣由
+# 外部資料驅動（epoch_of 用 date 從 gh 回的字串算出來），任何分類標籤都會把它一起圈進來。
+# 打不中的理由是形式——date 產出的 epoch 不會有前導零，所以它沒有對應 canary。
 
 # 使用者今天 export 一個打錯的值就能踩到：(( )) 把 0600 讀成八進位 384，門檻由 600 秒
 # 腰斬成 384 秒，PASS_NO_CI 提早成立，而 hard_deny[1] 認這個狀態。
