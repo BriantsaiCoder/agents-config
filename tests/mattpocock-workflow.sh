@@ -626,7 +626,7 @@ allow_line=$(rg -e '^[[:space:]]*- \*\*允許 fallback 的 reason 窮舉為一�
 names_rc=0
 allow_names=$(printf '%s' "$allow_line" | rg -o -r '$1' -e '`([a-z][a-z_]*)`' | sort -u) || names_rc=$?
 # 行數用 shell 參數展開判，不外呼 grep -c：少一個外部工具就少一種「工具缺席」失效面。
-# 前一版用 `grep -c` 且沒做三態，grep 缺席時空字串進 [ -ne ] 會報 integer expression
+# `980d2c2` 那一版用 `grep -c` 且沒做三態，grep 缺席時空字串進 [ -ne ] 會報 integer expression
 # expected 並回 2，elif 鏈跳過這一格、真違規被判 PASS（PR #92 Standards S7 實測）。
 if [ "$allow_rc" -ge 2 ] || [ "$names_rc" -ge 2 ]; then
   ng "fallback allow side is a closed set (rg 掃描失敗 rc=${allow_rc}/${names_rc}，工具問題非程式碼變更)"
@@ -643,7 +643,9 @@ elif [ -z "$allow_line" ] || { [ "$names_rc" -eq 0 ] && [ -z "$allow_names" ]; }
 elif [ "$allow_line" != "${allow_line%%$'\n'*}" ]; then
   ng "fallback allow side is a closed set (允許側錨點命中多行，應為 1)"
 elif [ "$allow_names" != "review_actions_billing_or_quota" ]; then
-  ng "fallback allow side is a closed set (允許側出現的 reason 集合是 [${allow_names}])"
+  # 集合可能多行，壓成單行再進 label——否則 FAIL 那一行會被換行截斷，看不到第二個名字。
+  allow_names_1line=$(printf '%s' "$allow_names" | tr '\n' '/')
+  ng "fallback allow side is a closed set (允許側出現的 reason 集合是 [${allow_names_1line}])"
 else
   ok "fallback allow side is a closed set"
 fi
