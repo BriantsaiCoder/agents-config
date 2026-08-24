@@ -24,7 +24,7 @@ Current `head.sha` 的 CI 與 review 都是 whole-head gate；舊 head 的結果
 
 1. **等待異步 review**
    - 優先以 reviewer slug `copilot-pull-request-reviewer` 判定 Copilot review 是否已提交。
-   - 開 Ready PR 後保持 task active；每次 push 都使前次結果失效，跑 `~/.agents/bin/pr-review-gate <n>` 對 current HEAD 重查。repo ruleset 無法啟用 Review new pushes 時，helper 會用 REST 自動 request / re-request。
+   - 開 Ready PR 後保持 task active；每次 push 都使前次結果失效，跑 `~/.agents/bin/pr-review-gate <n> 2>&1` 對 current HEAD 重查。repo ruleset 無法啟用 Review new pushes 時，helper 會用 REST 自動 request / re-request。
    - 首查為空 → **等 2–3 分鐘重查**，勿立即斷言「無 review」。重查仍空且已逾合理視窗才記為真無。
    - slug／API 不可用時 MUST 標 UNAVAILABLE 並附 probe 證據；不得把「無 review」或人工目視降級成 bot PASS。
 
@@ -37,8 +37,10 @@ Current `head.sha` 的 CI 與 review 都是 whole-head gate；舊 head 的結果
 3. **Bot unavailable 的 independent fallback**
    - 這是 manual evidence branch；`pr-review-gate` 保持 `UNAVAILABLE` 且不得替 fallback 回 PASS。
    - `STATE=REQUESTED`／`WAIT_REVIEW` 是 transient state，MUST NOT fallback；`FINDINGS`、`WAIT_CI`、`FAIL_CI`、`WAIT_READY` 也不得 fallback。只有前節精確限定的 `PASS_NO_CI ci=BILLING_QUOTA` 可用 local evidence 繼續。
-   - **允許側**：fallback 只適用於 bot 這一側交不出 review、經合理等待與 retry 後仍為 `UNAVAILABLE`。helper 端能精確識別的只有 `reason=review_actions_billing_or_quota`（Copilot review body 逐字是 billing 訊息）。`reason=review_request_failed` 同屬本類別，但 helper **不分流成因**——app 未安裝、reviewer slug 無效、權限不足、憑證失效、rate limit、5xx、網路中斷全部發同一個 reason，而其中只有前兩者表示 bot 這一側裝不起來。要用它 fallback，MUST 在 fallback 記錄中附上該次 POST 的 HTTP status，**且只有 404 與 422 成立**（前者 app 未安裝／reviewer 不存在，後者 slug 無效或不是 collaborator）。**判準不寫成「4xx」**：rate limit 回 403／429、憑證壞回 401、權限不足回 403，全都是 4xx 但沒有一個表示 bot 這一側裝不起來——其中 403 在「權限不足」與「secondary rate limit」之間本質歧義，一律歸 transient。transient 一律 retry，不得 fallback：「連 request 都發不出去」比 `STATE=REQUESTED` 更 transient，而 `REQUESTED` 已明定 MUST NOT fallback。status 的取證路徑：helper 目前不分流，該值只出現在 `gh` 的 stderr（格式 `(HTTP NNN)`），不在 `STATE=` 那行；取不到就不成立，不得以「大概是 422」推定。判準是類別（bot capability／request 本身不可用）而不是這兩個名字。**消歧**：本類別指的是「request 送不出去」（POST `/requested_reviewers` 失敗）；**任何「我們這一側讀不到」的 probe 失敗**（`requested_reviewer_probe_failed`、`review_probe_failed`、`repo_probe_failed`、`pr_probe_failed`、`thread_probe_failed` 等，不限於已命名的）都是 probe 失敗，屬排除側。（2026-08-24）
-   - **排除側**：**不屬前述允許側類別的任何 `UNAVAILABLE` 一律不得 fallback**——probe 失敗（`repo_probe_failed`、`pr_probe_failed`、`review_probe_failed`、`requested_reviewer_probe_failed`）、欄位或值的形狀檢查失敗（`*_fields_unparsable`、`*_not_numeric`）、head 無法確認、thread probe／pagination 不完整，以及 helper 日後新增而不屬該類別的任何 reason，一律不得 fallback。名字只是例子：前一版是逐條列名，而 `*_fields_unparsable` 整族從未被列入——形狀檢查擋下來的東西會從這個缺口走出去。（2026-08-24, PR #85）
+   - **允許側**：fallback 只適用於 bot 這一側交不出 review、經合理等待與 retry 後仍為 `UNAVAILABLE`。目前 helper 端屬本類別的 review-side reason 是 `reason=review_actions_billing_or_quota`（Copilot review body 逐字是 billing 訊息）與 `reason=review_request_failed`（`requested_reviewers` POST 失敗）。判準是類別（bot capability／request 本身不可用）而不是這兩個名字。
+   - **凡以「request 送不出去」為由 fallback 者**（不限現有 reason 名），MUST 在 fallback 記錄中附上該次 POST 的 HTTP status，**且只有 422 成立**。helper 不分流成因：slug 無效、app 未安裝、權限不足、憑證失效、rate limit、5xx、網路中斷共用同一個 reason。只認 422 的理由是它有實測支撐（2026-08-24：reviewer slug 漏 `[bot]` 後綴 → `422 Reviews may only be requested from collaborators`）；**404 不算**——GitHub 對 token 看不到的資源回 404 而非 403 以避免洩漏存在性，所以 404 分不出「reviewer 不存在」與「我們這一側沒有 pull_requests:write」，歸 transient。判準也不寫成「4xx」：rate limit 回 403／429、憑證壞回 401、權限不足回 403 都是 4xx。transient 一律 retry：「連 request 都發不出去」比 `STATE=REQUESTED` 更 transient，而 `REQUESTED` 已明定 MUST NOT fallback。status 取自 `gh` 的 stderr（`gh api … 2>&1 1>/dev/null` → `gh: … (HTTP NNN)`；實測 gh 2.98.0），不在 `STATE=` 那行，取不到就不成立。**同一 repo 連續三次 422 視為 helper 缺陷**（slug 或參數壞了，bot 其實可用），MUST 先修 helper，不得續用本出口。未列入的 status 一律歸 transient，MUST retry。helper 端依 status 分流成兩個 reason 後本條可下沉，見 #87。**方向註記**：本條相對前一版是**收窄**——前一版的允許側逐字含「request」而 catch-all 只限「日後新增的 reason」，於是上述那個 POST 失敗的 reason 早就在允許側，且沒有任何 status 閘。revert 本節會回到那個更寬鬆的狀態，不是回到「只有 billing 一種」。
+   - **消歧**：本類別指「request 送不出去」（POST `/requested_reviewers` 失敗）；任何「我們這一側讀不到」的 probe 失敗都屬排除側，名單見下。
+   - **排除側**：**除上述允許側的兩種形狀外，helper 回的任何 `UNAVAILABLE` 一律不得 fallback**——probe 失敗（`repo_probe_failed`、`pr_probe_failed`、`review_probe_failed`、`requested_reviewer_probe_failed`）、欄位或值的形狀檢查失敗（`*_fields_unparsable`、`*_not_numeric`）、head 無法確認、thread probe／pagination 不完整（`thread_probe_failed`、`review_thread_limit_exceeded`）、`pr_not_open`，以及 helper 日後新增而不屬允許側類別的任何 reason，一律不得 fallback。名字只是例子：前一版是逐條列名，而 `*_fields_unparsable` 整族從未被列入——形狀檢查擋下來的東西會從這個缺口走出去。（2026-08-24, PR #85／#86）
    - fallback 前 MUST 獨立確認 open／ready／mergeable PR、current head 與 CI PASS（第 2 節 quota branch 則為該節全部 local gates PASS），再由 independent read-only reviewer 審 current `head.sha` 的完整 diff；記錄 reviewer identity、SHA、findings 與處理結果，不得由 PR 作者自審頂替。
    - 每次 push 都使 bot 與 fallback review 失效；新 head 必須重跑 current-head CI 與獨立 review。
    - bot 狀態仍記 `UNAVAILABLE`，不得偽裝成 PASS；只有 fallback 的 current-head CI／quota-local gates、independent review PASS 且 0 未處理 actionable findings，整體 Review gate 才可 PASS。
@@ -57,7 +59,7 @@ Current `head.sha` 的 CI 與 review 都是 whole-head gate；舊 head 的結果
 
 ### EXIT
 - Primary path：`pr-review-gate` 對 current PR head 回 PASS；latest Copilot review `commit_id == head.sha`、requested Copilot reviewer 已清除、unresolved Copilot review threads 為 0、CI 全綠。
-- Fallback path：bot capability 的 `UNAVAILABLE` probe、current `head.sha` 的 CI PASS（或第 2 節 quota local fallback 全部 evidence）與 independent read-only review PASS 均有 evidence，且 push 後已全部重跑。
+- Fallback path：bot capability／request 的 `UNAVAILABLE` evidence（失敗的 POST 是 write 不是 probe）、current `head.sha` 的 CI PASS（或第 2 節 quota local fallback 全部 evidence）與 independent read-only review PASS 均有 evidence，且 push 後已全部重跑。
 - 兩條 path 都要求 PR 為 open／ready／mergeable。
 - 0 條未處理 actionable findings：actionable 者全 resolved，pushback 者全附技術理由回覆並 resolve。
 - `pr-review-gate` 輸出的 `suppressed=N` 若非 0，該 N 條均已讀過並各有處置（修正或附技術理由的 pushback），處置記錄在 PR comment。gate 不阻擋此項——suppressed 無 resolve 機制，拿它當 blocking 條件會永久死鎖——所以這條的驗證是人工的。

@@ -573,17 +573,71 @@ has "bot fallback requires current-head CI" 'fallback.*current.*CI.*PASS' skills
 has "push invalidates bot fallback" '每次 push.*fallback.*失效' skills/dev-workflow/references/review-triage.md
 has "bot fallback rejects incomplete PR and thread probes" 'repo_probe_failed.*pr_probe_failed.*head.*thread probe' skills/dev-workflow/references/review-triage.md
 has "bot fallback rejects incomplete reviewer probes" 'review_probe_failed.*requested_reviewer_probe_failed.*不得 fallback' skills/dev-workflow/references/review-triage.md
-# 允許側同樣要釘：它在 PR #85 的開發過程中被靜默收窄過一次（3f524fe 把類別判準換成
-# 單一 reason 名，使 review_request_failed 失去出口），而當時沒有任何斷言會轉紅。
-# 五條各釘一件事，都寫成無序的獨立 grep 而非有序 regex——排除側那條就因為禁令從名單
-# 後方移到前方而斷過一次，而那是合法改寫。
-has "bot fallback allow side stays categorical" '判準是類別（bot capability' skills/dev-workflow/references/review-triage.md
-has "bot fallback allow side names the billing shape" 'review_actions_billing_or_quota' skills/dev-workflow/references/review-triage.md
-has "bot fallback allow side names the request-failed shape" 'review_request_failed' skills/dev-workflow/references/review-triage.md
-has "bot fallback allow side gates request failures on exact status" '只有 404 與 422 成立' skills/dev-workflow/references/review-triage.md
-# 消歧句（讀不到 vs 送不出去）同樣要釘：ablation 顯示整句刪掉時套件全綠，而它正是
-# 「換一個 reason 名就再犯」那個結構缺陷的修正。
-has "bot fallback disambiguates read vs send failures" '我們這一側讀不到' skills/dev-workflow/references/review-triage.md
+# 允許側的斷言全部走 bullet scoping，不用整檔 grep。理由是實測：原本五條寫成整檔
+# grep 時，對「允許側整段逐字搬進排除側 bullet」「且只有 404 與 422 成立 → 且**不**只有」
+# 「MUST → SHOULD」三種改寫**全部維持 GREEN**——它們釘的是「檔案裡有這些字」，不是
+# 「這些字在哪一側、是不是禁令」。scoping 才是釘住實質的手段，字面精確不是。
+#
+# 允許側在 PR #85 的開發過程中被靜默收窄過一次（3f524fe），當時零覆蓋。
+#
+# 三態 rc 分派同 lacks()：本機 grep 是 ugrep，撞 sandbox 權限會空結果 + exit 0，
+# 對 -q 等同「有命中」而假 GREEN（見 repo memory grep-is-ugrep-silent-failure）。
+allow_block() {
+  awk '/^   - \*\*允許側\*\*/{f=1;print;next} /^   - \*\*排除側\*\*/{f=0} f{print}' \
+    "$ROOT/skills/dev-workflow/references/review-triage.md"
+}
+
+allow_has() {
+  local label="$1" pattern="$2" block rc
+  block=$(allow_block)
+  [ -n "$block" ] || { ng "${label}（抽不到允許側區塊）"; return 1; }
+  printf '%s\n' "$block" | rg -q "$pattern"
+  rc=$?
+  case "$rc" in
+    0) ok "$label" ;;
+    1) ng "$label" ;;
+    *) ng "${label}（掃描失敗 rc=${rc}）"; return 1 ;;
+  esac
+}
+
+allow_lacks() {
+  local label="$1" pattern="$2" block rc
+  block=$(allow_block)
+  [ -n "$block" ] || { ng "${label}（抽不到允許側區塊）"; return 1; }
+  printf '%s\n' "$block" | rg -q "$pattern"
+  rc=$?
+  case "$rc" in
+    0) ng "$label" ;;
+    1) ok "$label" ;;
+    *) ng "${label}（掃描失敗 rc=${rc}）"; return 1 ;;
+  esac
+}
+
+if (rg() { return 2; }; allow_has "allow_has scan error fixture" '判準是類別') >/dev/null; then
+  ng "allow_has fails closed on scan errors"
+else
+  ok "allow_has fails closed on scan errors"
+fi
+
+allow_has "bot fallback allow side stays categorical" '判準是類別（bot capability'
+allow_has "bot fallback allow side names the billing shape" 'review_actions_billing_or_quota[^a-z_]'
+allow_has "bot fallback allow side names the request-failed shape" 'review_request_failed[^a-z_]'
+allow_has "bot fallback allow side gates request failures on exact status" 'MUST.*HTTP status.*只有 422 成立'
+allow_has "bot fallback allow side binds the status gate to the category" '凡以「request 送不出去」為由 fallback 者'
+allow_has "bot fallback allow side caps repeated 422 as a helper defect" '連續三次 422'
+allow_has "bot fallback disambiguates read vs send failures" '我們這一側讀不到'
+# 反向：三種最危險的改寫，正向斷言全部擋不住（實測），各補一條。
+allow_lacks "bot fallback status gate stays positive" '(不|並非|未必|不限於)只有 422'
+allow_lacks "bot fallback status gate stays mandatory" 'SHOULD 在 fallback 記錄'
+allow_lacks "bot fallback allow side does not readmit transient failures" '(5xx|rate limit|429|401|403|404)[^。]{0,24}(成立|可 fallback|也可以)'
+# Spec 軸實測打穿的第二種形狀：段落一字不動，句尾追加「但在 X 之前，review_request_failed
+# 一律不得用於 fallback」——允許側實質失去出口而所有正向斷言照樣綠。pattern 錨在 reason
+# 名附近的撤銷語，避開同區塊既有的「REQUESTED 已明定 MUST NOT fallback」那句。
+allow_lacks "bot fallback allow side is not revoked in place" 'review_request_failed[^。]{0,30}(不得|禁止|MUST NOT|尚未|暫不)'
+# 取證路徑與 MUST 句是讓 status 閘可執行的兩句，刪掉任一句套件都全綠（實測）。
+allow_has "bot fallback documents where to read the status" 'gh. 的 stderr'
+# 排除側的 catch-all 若改回「helper 日後新增的任何 reason」，兩側矛盾原封不動回來（實測全綠）。
+has "bot fallback exclude side scopes its catch-all to the allow category" '日後新增而不屬允許側類別的任何 reason' skills/dev-workflow/references/review-triage.md
 has "bot fallback requires open ready mergeable PR" 'fallback 前.*open.*ready.*mergeable PR' skills/dev-workflow/references/review-triage.md
 has "bot fallback cannot use author self-review" 'independent read-only reviewer.*不得由 PR 作者自審' skills/dev-workflow/references/review-triage.md
 has "bot helper cannot manufacture fallback PASS" 'manual evidence branch.*pr-review-gate.*UNAVAILABLE.*不得.*PASS' skills/dev-workflow/references/review-triage.md
