@@ -530,7 +530,7 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 
 同一份 log 可確定的是代價數字：累計 38.08 USD、1,771 秒判定延遲、中位數 1,667 ms／次。
 三個數字取自 750 筆快照，上面的 749 筆取自另一切點（2026-08-24 15:33:37）；USD 合計實際
-只涵蓋 732 筆（17 筆無 `costUSD` 欄）。本節語料**包含產生本節那個 session 自己的呼叫**，
+只涵蓋 733 筆（17 筆無 `costUSD` 欄；732 是 749 筆那個切點的值，誤帶過來）。本節語料**包含產生本節那個 session 自己的呼叫**，
 且該檔在審查期間仍在增長——所有數字以上述切點為準。
 
 ### F.3 §E.3「必辦跟進：global gitignore」已完成
@@ -551,7 +551,10 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 
 本節由合併前的 Standards 軸獨立審查產生。正文 §0–§E 的**判讀不動**，但其中若干**數字與
 引述**經重驗為錯，列在這裡；讀正文時以本節為準。審查同時確認 A1–A6、B1–B6 與 C 清單的
-結論性判斷在更正後**均不受影響**。
+**軸級結論**在更正後不受影響。但 `02-verification.md` 的 **29 筆逐案裁決未逐筆重跑**：
+G.1 已示範 id 28 的裁決依據因漏規則而改變，而漏掉的正是每個區塊的第 1 條（SOFT 第 1 條
+`Git Destructive`、ALLOW 第 1 條 `Security Discussion`）。id 14 當時的判斷明確涉及
+force-push 字面，可能踩到前者。**逐案重裁記為未做**，不宣稱不受影響。
 
 ### G.1 `Security Discussion` 不是幻覺
 
@@ -562,13 +565,24 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 > Security Discussion: Reading, discussing, reviewing, or writing security-related code, docs,
 > configs, or threat models as part of the user's task is not in itself Credential Exploration,
 > Exfil Scouting, or Auto-Mode Bypass — engaging with security as subject matter is fine.
+> This exception covers the discussion and authoring; actually running an exploit, scanning
+> credentials, or probing endpoints is still evaluated on its own terms.
+
+第二句決定這條例外的適用邊界，一併引全。id 28 當時做的是讀 binary 字串反解 prompt，
+不屬 exploit／credential scan／endpoint probing 任一項，所以下面的結論仍成立——但這是
+讀者該拿得到的判斷材料，不該由 errata 代為省略。
 
 成因見 G.2。兩個後果：id 28 的 FP 依據應回到該例外，而非「無任何規則可套用」；且這條例外
 點名 `Auto-Mode Bypass`，正好**加強**而非削弱 `02-verification.md` §3 那筆 meta 發現。
 
 ### G.2 內建規則條數：HARD 1／SOFT **67**／ALLOW **17**
 
-正文三處（§A2、§A6 表、`02-verification.md` §2 末）寫 66 SOFT／16 ALLOW／1 HARD。
+正文有**四個段落、六行**寫 66 SOFT／16 ALLOW／1 HARD：§A2 一行、§A6 表與其下的
+「66 : 16」兩行、`02-verification.md` §1 開頭的三軸定義一行、同檔 §2 末兩行。其中
+`02-verification.md` §1 那處最載重——它不是敘述，是 29 筆攔截「classifier 自身威脅模型」
+那一軸的**輸入清單**，逐字寫「只認 binary 裡 66 條 SOFT／1 條 HARD／16 條 ALLOW」。
+（另記一筆：`02-verification.md` §2 末寫「代理寫 66／17」——驗證代理當時的 ALLOW=17
+是對的，被作者覆寫成 16。正確答案曾經在桌上被駁回。）
 每個區塊的第 1 條規則與 `<user_*_rules_to_replace>` 標籤**同行**，用 `\n- ` 計數會漏掉它：
 逐區塊的 `\n- ` 數是 0／66／16，各加回黏合的第 1 條即 1／67／17。HARD=1 之所以正確，
 正是因為作者在該區塊把黏合條算了進去，SOFT／ALLOW 兩處沒有——與 G.1 同一個成因。
@@ -590,8 +604,13 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 決定性佐證：全 corpus 只有 2 筆 `automode-unavailable`，時間皆為 2026-07-25，**落在宣稱窗外**。
 §A3「實測到 2 筆 `automode-unavailable`」數字對，但同樣不屬該窗。
 
-受影響的是「比例 10:1」——分子（29，窗內自洽）與分母（296，累計）不同母體。同母體重算
-窗內為 246 : 30，約 8:1。**結論方向不變。**
+受影響的有兩處：「比例 10:1」（分子 29 窗內自洽、分母 296 累計，不同母體；同母體重算
+窗內為 246 : 30，約 8:1）與 §0 末的「classifier 只佔全部拒絕的 8%」（同一混合母體；
+窗內同母體重算為 30/294 ≈ **10.2%**）。**兩者結論方向都不變。**
+
+⚠️ 本表兩欄用的是**不同的日界慣例**，這點原文與本節都未揭露：「窗內」欄只在 UTC 日界下
+逐格成立，「累計」欄只在 UTC+8 下逐格成立。這也是為什麼會出現「窗內 30 > 累計 29」這種
+看起來自相矛盾的並列——它不是任一欄算錯，是兩欄不可直接相減。
 
 ### G.4 §0 的 `user-rejected` = 28 不可重現
 
@@ -603,7 +622,9 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 §A4 標為「01:27 BLOCKED」的那段 `awk`，實際是 01:35 **被放行**的那條（`NR<=369360`、
 `substr(,1,60)`）。當時真正被擋的是 id 28：區間 `NR<=369560`、`substr(,1,90)`，另接一段
 `awk -F'\t'` 與 `head -120`——兩者並非位元相同。位元相同的是 `find` 那組（id 29，
-01:28 擋 → 01:34 過），**該對成立**。ALLOWED 時刻正確值為 01:34:50Z 與 01:38:20Z。
+01:28 擋 → 01:34 過），**該對成立**。`find` 那組的 ALLOWED 時刻正確值為 01:34:50Z；被誤引的那條 `awk` 本身未被擋，
+它出現在 01:35:12Z 且直接放行，因此沒有「更正後的 ALLOWED 時刻」可言——原文那組
+「01:38／01:39」兩個時刻都不對應 §A4 的任何一條指令。
 
 §A4 的核心主張（verdict 是「指令 × 當下對話歷史」的函數）由 id 29 那對與下方表格支撐，
 **不受影響**。
@@ -621,7 +642,33 @@ ls -la ./.automode_decisions.jsonl && head -1 ./.automode_decisions.jsonl
 那是**純 GET 無 `-X`**，而 `02-verification.md` 正把它當成 token 對撞的 false positive 舉例
 ——同一份成果的兩個檔對同一筆給出相反歸類。§B5 該項應為 2 次。
 
+### G.9 `02-verification.md` 的 `hard_deny[0]` 索引錯誤
+
+該檔 §1 的 id 7 與 id 25 兩列都寫「`hard_deny[0]` pr-review-gate」。實測
+`~/.claude/settings.json`：`hard_deny[0]` 是 `"$defaults"`，pr-review-gate 條款在
+`hard_deny[1]`；逐 commit 回查 settings.json 的歷史，它從來不在 `[0]`。
+（同一份文件對 `hard_deny[3]` 的引用則正確。）裁決結論不受影響——命中的規則是對的，
+錯的是索引。
+
+### G.10 §0 表格的兩列用了不同分子，未揭露
+
+§0 寫「攔截率（全工具）0.137%（1/730）」與「攔截率（僅 Bash）0.149%（1/669）」。
+後者隱含分子 23 而非 29——29 筆去重攔截 join 回工具名是 Bash 23／Edit 4／Write 2，
+所以 Bash-only 分子配 Bash-only 分母，**方法上是對的**，且與 `02-verification.md`
+的「17 筆 Bash FP + 6 筆 justified Bash」自洽。缺陷在表達：同一張表兩列換了分子而不說，
+讀者拿 29/15,402 重算會得 0.188% 並誤判成算錯。
+
+### G.11 §E.4 另有兩條驗收期望已失效
+
+§F 只記了與原文不符的結論，漏了 §E.4 驗收指令區塊裡的兩個期望值：
+`git -C ~/.claude log --oneline -1` 的期望 `bc178b7` 現為 `fa012a0`（§F.2 自己就引了
+後者）；`bash tests/repo-integrity.sh | tail -1` 的期望「78 PASS / 0 FAIL」現為
+**82 PASS / 0 FAIL**（`fa012a0` 新增斷言所致，非退步）。§E.4 其餘四條探針複驗後仍成立。
+
 ### G.8 §0 的分母未能重現，記為未驗而非缺陷
 
-文件 21,194／Bash 15,402；同切點重算 21,456／15,648（+1.2%／+1.6%）。方法差異不可回溯
-（`extract_denials2.py` 已隨 scratchpad 消失）。攔截率本身內部自洽（29 筆無一早於 08-01）。
+文件 21,194／Bash 15,402；重算得 21,456／15,648（+1.2%／+1.6%）。**但本節的重算同樣
+未附方法**（時區、切點、是否含 sidechain 都會改變結果，實測不同組合可得 21,136／15,365
+到 22,491／16,344，排除 sidechain 則腰斬），所以它不是一個可比對的量測，只能說明
+「原值無法以顯而易見的方法重現」。原始方法不可回溯（`extract_denials2.py` 已隨
+scratchpad 消失）。攔截率本身內部自洽（29 筆無一早於 08-01）。
