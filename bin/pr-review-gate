@@ -40,7 +40,47 @@ pr_state=$(gh pr view "$pr" --repo "$repo" \
          else .detailsUrl end]
       | if length == 0 then "NONE" else join(",") end),
      .url] | @tsv') || unavailable pr_probe_failed
-IFS=$'\t' read -r state draft mergeable head ci_states failed_urls url <<< "$pr_state"
+# 用 cut 而非 here-string，理由同下面 latest_review_state 那處——bash 3.2 的 <<< 要建暫存
+# 檔，/tmp 與 cwd 皆不可寫時建不出來（sandbox 內 cwd=~/.claude 即命中），read 不執行、
+# 變數維持 unset，set -u 讓整支中止在「state: unbound variable」而非可讀的錯誤。
+# cut 另有一個 here-string 沒有的好處：@tsv 會產生空欄位，而 tab 屬 IFS whitespace，
+# IFS 詞彙切分會把連續 tab 併成一個、讓後面所有欄位錯位。
+state=$(printf '%s' "$pr_state" | cut -f1)
+draft=$(printf '%s' "$pr_state" | cut -f2)
+mergeable=$(printf '%s' "$pr_state" | cut -f3)
+head=$(printf '%s' "$pr_state" | cut -f4)
+ci_states=$(printf '%s' "$pr_state" | cut -f5)
+failed_urls=$(printf '%s' "$pr_state" | cut -f6)
+url=$(printf '%s' "$pr_state" | cut -f7)
+
+# gh 回了但欄位切不出來（jq 改格式、gh 改輸出）時，要報得出是哪裡壞，不能讓下游
+# 用空字串繼續判斷後印出一個看似正常的 STATE 行。
+# 驗哪些欄位，判準是「空了會不會讓某個決策靜默跳過或某行 STATE 失去意義」：
+#   state      決定 pr_not_open
+#   head       hard_deny[1] 整條規則綁在 "at the current head SHA"，空 head 讓綁定失效
+#   mergeable  把關兩個決策 —— `mergeable == CONFLICTING → FAIL_MERGE` 那條，以及
+#              `ci == WAIT || mergeable == UNKNOWN → WAIT_CI` 那條。空字串兩條都不命中，
+#              直落 STATE=PASS，於是**合併衝突檢查根本沒跑**而輸出行外觀完全正常。
+#              這是本檔最需要驗的一欄。（引符號不引行號：本分支已經把行號引用打歪
+#              過兩次，行號會隨每次改動漂移。）
+#   url        只影響輸出可讀性，但 UNAVAILABLE 以外每行都靠它看得出查的是哪個 PR
+#   draft      決定 WAIT_READY。這一欄必須驗**正值**而非非空：`.isDraft | tostring`
+#              讓 null 變字面 "null"（非空），emptiness 檢查永遠放行，而 "null" 不等於
+#              true 於是 draft PR 被當成非 draft 一路走到 STATE=PASS —— 那是 fail-open，
+#              hard_deny[1] 只認 PASS／PASS_NO_CI。S5 實測 draft=null → rc=0 STATE=PASS。
+#
+# 最後一條數 tab 而不是逐欄比對，一次涵蓋三種 arity drift：
+#   * 整行無分隔符（cut 的 `-fN` 每個 N 都回整行，七欄全部非空、逐欄檢查全數通過）。
+#     S5 實測該形狀走到 STATE=WAIT_CI 並對 GitHub 送出一次 requested_reviewers POST
+#     —— 垃圾輸入不該產生外部寫入。
+#   * 欄位插入（八欄以上）。S5 實測部分插入位置會走到 STATE=PASS，污染 url 欄。
+#   * 欄位刪除（六欄以下）——這種多半也會被上面的 -n 接住，但不必依賴那個巧合。
+# 數 tab 而非 `awk -F'\t' NF==7`：@tsv 會把值內的 tab 逸出成字面 \t，所以真正的
+# tab 只可能是分隔符，數量恆為 6；而 tr 不需要多一個 awk 依賴。
+[[ -n "$state" && -n "$head" && -n "$mergeable" && -n "$url" \
+   && ( "$draft" == true || "$draft" == false ) \
+   && "$(printf '%s' "$pr_state" | tr -cd '\t' | wc -c)" -eq 6 ]] ||
+  unavailable pr_fields_unparsable
 
 [[ "$state" == OPEN ]] || unavailable pr_not_open
 if [[ "$draft" == true ]]; then
@@ -152,8 +192,16 @@ else
   hard_fail=0
   in_progress=0
   cancelled=0
-  IFS=',' read -r -a checks <<< "$ci_states"
-  for check in "${checks[@]}"; do
+  # process substitution 而非 here-string（理由同 pr_state 那處），也不用 `| while`——
+  # 後者會把迴圈丟進 subshell，hard_fail／in_progress／cancelled 三個計數全部丟失。
+  # process substitution 沒有這個問題，迴圈留在當前 shell，所以不需要先收進陣列再跑
+  # 第二輪；case 直接寫在 while body 裡，順帶避開 set -u 對空陣列展開的那個坑。
+  # printf 的結尾換行不可省：沒有它，最後一行（單一 check 時就是唯一一行）會讓 read
+  # 回非零而不進迴圈體，整個迴圈一次都不跑。
+  # 不走 IFS 詞彙切分的理由不是「內部空欄位」——逗號是 non-whitespace IFS，`A,,B` 本來
+  # 就切成三欄。真正的差別是尾端空欄位（`SUCCESS,` 只切出一欄，下面的 "" case 就不會
+  # 命中）與空輸入（set -u 下展開空陣列直接中止）。tr + read 兩者都保留。
+  while IFS= read -r check; do
     case "$check" in
       SUCCESS|NEUTRAL|SKIPPED) ;;
       CANCELLED) cancelled=1 ;;
@@ -162,7 +210,7 @@ else
       # 沒見過的狀態當「還在跑」，不當通過也不當取消。
       *) in_progress=1 ;;
     esac
-  done
+  done < <(printf '%s\n' "$ci_states" | tr ',' '\n')
   if [[ "$hard_fail" -eq 1 ]]; then
     if [[ "$in_progress" -eq 0 && "$cancelled" -eq 0 ]] && billing_failure_never_ran; then
       ci=BILLING_QUOTA
@@ -239,7 +287,21 @@ thread_state=$(gh api graphql -F owner="$owner" -F name="$name" -F number="$pr" 
       | length),
     .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage
   ] | @tsv') || unavailable thread_probe_failed
-IFS=$'\t' read -r unresolved has_next <<< "$thread_state"
+unresolved=$(printf '%s' "$thread_state" | cut -f1)   # cut 而非 here-string，理由同 pr_state 那處
+has_next=$(printf '%s' "$thread_state" | cut -f2)
+# 數值 guard 必須在 has_next 判斷之前，而且不能省。cut -fN 對「整行無分隔符」的輸入
+# **每個 N 都回整行**，所以 thread_state="false" 會讓 unresolved 與 has_next 同時變成
+# "false"：has_next 檢查放行，接著 [[ "$unresolved" -gt 0 ]] 在算術脈絡把 false 當變數名，
+# set -u 中止——而 bash 3.2 由 [[ ]] 算術脈絡觸發的中止 **exit status 是 0**、stdout 全空。
+# 那是這支工具最不能有的形狀：呼叫端比對 STATE= 字串會拿到空字串，只看 exit code 的會
+# 當成通過。比照 suppressed 的既有數值 guard。
+[[ "$unresolved" =~ ^[0-9]+$ ]] || unavailable thread_fields_unparsable
+# has_next 與 draft 同型：驗正值而非非空。上面那條數值 guard 擋不住「tsv 是純數字」
+# （例如 "5"）與「第二欄為空」兩個形狀 —— 兩者 unresolved 都通過數值檢查，而 has_next
+# 拿到 "5" 或 ""，於是報 review_thread_limit_exceeded 這個假原因。方向本來就 fail-closed，
+# 這條補的是「報得出真因」。
+[[ "$has_next" == true || "$has_next" == false ]] || unavailable thread_fields_unparsable
+# 走到這裡只剩字面 true 或 false；true 代表還有下一頁沒讀，fail-closed。
 [[ "$has_next" == false ]] || unavailable review_thread_limit_exceeded
 
 review=CURRENT
