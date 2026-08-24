@@ -40,7 +40,21 @@ pr_state=$(gh pr view "$pr" --repo "$repo" \
          else .detailsUrl end]
       | if length == 0 then "NONE" else join(",") end),
      .url] | @tsv') || unavailable pr_probe_failed
-IFS=$'\t' read -r state draft mergeable head ci_states failed_urls url <<< "$pr_state"
+# 用 cut 而非 here-string，理由同 :211——bash 3.2 的 <<< 要建暫存檔，/tmp 與 cwd 皆不可寫
+# 時建不出來（sandbox 內 cwd=~/.claude 即命中），read 不執行、變數維持 unset，set -u 讓整支
+# 中止在「state: unbound variable」而非可讀的錯誤。cut 另有一個 here-string 沒有的好處：
+# @tsv 會產生空欄位，而 IFS 詞彙切分會把連續分隔符併成一個、讓後面所有欄位錯位。
+state=$(printf '%s' "$pr_state" | cut -f1)
+draft=$(printf '%s' "$pr_state" | cut -f2)
+mergeable=$(printf '%s' "$pr_state" | cut -f3)
+head=$(printf '%s' "$pr_state" | cut -f4)
+ci_states=$(printf '%s' "$pr_state" | cut -f5)
+failed_urls=$(printf '%s' "$pr_state" | cut -f6)
+url=$(printf '%s' "$pr_state" | cut -f7)
+
+# gh 回了但欄位切不出來（jq 改格式、gh 改輸出）時，要報得出是哪裡壞，不能讓下游
+# 用空字串繼續判斷後印出一個看似正常的 STATE 行。
+[ -n "$state" ] || unavailable pr_fields_unparsable
 
 [[ "$state" == OPEN ]] || unavailable pr_not_open
 if [[ "$draft" == true ]]; then
@@ -152,8 +166,19 @@ else
   hard_fail=0
   in_progress=0
   cancelled=0
-  IFS=',' read -r -a checks <<< "$ci_states"
-  for check in "${checks[@]}"; do
+  # process substitution 而非 here-string：同 :43 的理由。這裡不能用 `| while`，
+  # 那會把迴圈丟進 subshell，hard_fail／in_progress／cancelled 三個計數全部丟失。
+  # 空欄位要保留（下面的 "" case 靠它把空狀態當「還在跑」），所以不走 IFS 詞彙切分。
+  # printf 的結尾換行不可省：沒有它，最後一行（單一 check 時就是唯一一行）會讓 read
+  # 回非零而不進迴圈體，陣列變空。bash 3.2 另有一個坑——set -u 下展開空陣列
+  # "${arr[@]}" 報 unbound variable，所以用 ${checks[@]:-} 兜底。兩者實測皆會炸。
+  checks=()
+  while IFS= read -r check_line; do
+    checks+=("$check_line")
+  done < <(printf '%s\n' "$ci_states" | tr ',' '\n')
+  # 引號不可省，否則重新引入詞彙切分與 glob。空陣列時 :-  展開成單一空字串，落到下面
+  # 的 "" case 設 in_progress=1 → ci=WAIT，方向 fail-safe（等待而非放行）。
+  for check in "${checks[@]:-}"; do
     case "$check" in
       SUCCESS|NEUTRAL|SKIPPED) ;;
       CANCELLED) cancelled=1 ;;
@@ -239,7 +264,10 @@ thread_state=$(gh api graphql -F owner="$owner" -F name="$name" -F number="$pr" 
       | length),
     .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage
   ] | @tsv') || unavailable thread_probe_failed
-IFS=$'\t' read -r unresolved has_next <<< "$thread_state"
+unresolved=$(printf '%s' "$thread_state" | cut -f1)   # cut 而非 here-string，同 :43
+has_next=$(printf '%s' "$thread_state" | cut -f2)
+# has_next 只認字面 false 放行，空字串（欄位切不出來）落到 unavailable —— 對一個
+# 「還有沒有下一頁未讀 thread」的旗標，不確定必須當成有。
 [[ "$has_next" == false ]] || unavailable review_thread_limit_exceeded
 
 review=CURRENT
