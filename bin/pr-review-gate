@@ -40,7 +40,8 @@ pr_state=$(gh pr view "$pr" --repo "$repo" \
          else .detailsUrl end]
       | if length == 0 then "NONE" else join(",") end),
      .url] | @tsv') || unavailable pr_probe_failed
-# 用 cut 而非 here-string，理由同 :211——bash 3.2 的 <<< 要建暫存檔，/tmp 與 cwd 皆不可寫
+# 用 cut 而非 here-string，理由同下面 latest_review_state 那處——bash 3.2 的 <<< 要建
+# 暫存檔，/tmp 與 cwd 皆不可寫
 # 時建不出來（sandbox 內 cwd=~/.claude 即命中），read 不執行、變數維持 unset，set -u 讓整支
 # 中止在「state: unbound variable」而非可讀的錯誤。cut 另有一個 here-string 沒有的好處：
 # @tsv 會產生空欄位，而 IFS 詞彙切分會把連續分隔符併成一個、讓後面所有欄位錯位。
@@ -54,7 +55,11 @@ url=$(printf '%s' "$pr_state" | cut -f7)
 
 # gh 回了但欄位切不出來（jq 改格式、gh 改輸出）時，要報得出是哪裡壞，不能讓下游
 # 用空字串繼續判斷後印出一個看似正常的 STATE 行。
-[ -n "$state" ] || unavailable pr_fields_unparsable
+# 三欄都要驗，不能只驗 state：最可能的變體是「jq 改欄位數、第一欄仍在」，那時 state
+# 有值而 head 是空的，於是印出 `STATE=PASS pr=99 head=` —— 而 hard_deny[1] 整條規則
+# 綁在 "at the current head SHA"，空 head 讓那個綁定失效。url 同理，UNAVAILABLE 以外
+# 每個 STATE 行都靠它讓人看得出查的是哪個 PR。
+[[ -n "$state" && -n "$head" && -n "$url" ]] || unavailable pr_fields_unparsable
 
 [[ "$state" == OPEN ]] || unavailable pr_not_open
 if [[ "$draft" == true ]]; then
@@ -166,19 +171,14 @@ else
   hard_fail=0
   in_progress=0
   cancelled=0
-  # process substitution 而非 here-string：同 :43 的理由。這裡不能用 `| while`，
-  # 那會把迴圈丟進 subshell，hard_fail／in_progress／cancelled 三個計數全部丟失。
-  # 空欄位要保留（下面的 "" case 靠它把空狀態當「還在跑」），所以不走 IFS 詞彙切分。
+  # process substitution 而非 here-string（理由同 pr_state 那處），也不用 `| while`——
+  # 後者會把迴圈丟進 subshell，hard_fail／in_progress／cancelled 三個計數全部丟失。
+  # process substitution 沒有這個問題，迴圈留在當前 shell，所以不需要先收進陣列再跑
+  # 第二輪；case 直接寫在 while body 裡，順帶避開 set -u 對空陣列展開的那個坑。
   # printf 的結尾換行不可省：沒有它，最後一行（單一 check 時就是唯一一行）會讓 read
-  # 回非零而不進迴圈體，陣列變空。bash 3.2 另有一個坑——set -u 下展開空陣列
-  # "${arr[@]}" 報 unbound variable，所以用 ${checks[@]:-} 兜底。兩者實測皆會炸。
-  checks=()
-  while IFS= read -r check_line; do
-    checks+=("$check_line")
-  done < <(printf '%s\n' "$ci_states" | tr ',' '\n')
-  # 引號不可省，否則重新引入詞彙切分與 glob。空陣列時 :-  展開成單一空字串，落到下面
-  # 的 "" case 設 in_progress=1 → ci=WAIT，方向 fail-safe（等待而非放行）。
-  for check in "${checks[@]:-}"; do
+  # 回非零而不進迴圈體，整個迴圈一次都不跑。
+  # 空欄位要保留（下面的 "" case 靠它把空狀態當「還在跑」），所以不走 IFS 詞彙切分。
+  while IFS= read -r check; do
     case "$check" in
       SUCCESS|NEUTRAL|SKIPPED) ;;
       CANCELLED) cancelled=1 ;;
@@ -187,7 +187,7 @@ else
       # 沒見過的狀態當「還在跑」，不當通過也不當取消。
       *) in_progress=1 ;;
     esac
-  done
+  done < <(printf '%s\n' "$ci_states" | tr ',' '\n')
   if [[ "$hard_fail" -eq 1 ]]; then
     if [[ "$in_progress" -eq 0 && "$cancelled" -eq 0 ]] && billing_failure_never_ran; then
       ci=BILLING_QUOTA
@@ -264,10 +264,18 @@ thread_state=$(gh api graphql -F owner="$owner" -F name="$name" -F number="$pr" 
       | length),
     .data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage
   ] | @tsv') || unavailable thread_probe_failed
-unresolved=$(printf '%s' "$thread_state" | cut -f1)   # cut 而非 here-string，同 :43
+unresolved=$(printf '%s' "$thread_state" | cut -f1)   # cut 而非 here-string，理由同 pr_state 那處
 has_next=$(printf '%s' "$thread_state" | cut -f2)
-# has_next 只認字面 false 放行，空字串（欄位切不出來）落到 unavailable —— 對一個
-# 「還有沒有下一頁未讀 thread」的旗標，不確定必須當成有。
+# 數值 guard 必須在 has_next 判斷之前，而且不能省。cut -fN 對「整行無分隔符」的輸入
+# **每個 N 都回整行**，所以 thread_state="false" 會讓 unresolved 與 has_next 同時變成
+# "false"：has_next 檢查放行，接著 [[ "$unresolved" -gt 0 ]] 在算術脈絡把 false 當變數名，
+# set -u 中止——而 bash 3.2 由 [[ ]] 算術脈絡觸發的中止 **exit status 是 0**、stdout 全空。
+# 那是這支工具最不能有的形狀：呼叫端比對 STATE= 字串會拿到空字串，只看 exit code 的會
+# 當成通過。比照 suppressed 的既有數值 guard。
+[[ "$unresolved" =~ ^[0-9]+$ ]] || unavailable thread_fields_unparsable
+# 欄位切不出來時報「thread 超過分頁上限」是假原因，與本次要消滅的 state: unbound
+# variable 同一類，所以先由上面那條數值 guard 攔下。到這裡 has_next 必為真實欄位值，
+# 非字面 false 一律當成「還有下一頁沒讀」。
 [[ "$has_next" == false ]] || unavailable review_thread_limit_exceeded
 
 review=CURRENT

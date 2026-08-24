@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+if [[ "$1 $2" == "repo view" ]]; then
+  # GH_FAKE_REPO_FAIL：模擬 repo 解析失敗，驗 unavailable() 在 repo 尚未賦值時的輸出。
+  [[ -n "${GH_FAKE_REPO_FAIL:-}" ]] && exit 1
+  printf 'owner/repo\n'
+elif [[ "$1 $2" == "pr view" ]]; then
+  # GH_FAKE_PR_TSV 直接吐指定字串，繞過下面的 @tsv 組裝——用來驗「gh／jq 輸出 shape
+  # 變了」那一類。用 +x 而非 -n 判定，因為空字串也是要測的輸入之一。
+  if [[ -n "${GH_FAKE_PR_TSV+x}" ]]; then printf '%s\n' "$GH_FAKE_PR_TSV"; exit 0; fi
+  filter=${!#}
+  jq -nc --arg state "$FAKE_STATE" --arg draft "$FAKE_DRAFT" \
+    --arg mergeable "$FAKE_MERGEABLE" --arg head "$FAKE_HEAD" \
+    --arg ci "$FAKE_CI" --arg urls "${FAKE_FAILED_URLS:-NONE}" '
+    ($ci | if . == "NONE" then [] else split(",") end) as $states |
+    ($urls | if . == "NONE" then [] else split(",") end) as $check_urls |
+    {state:$state, isDraft:($draft == "true"), mergeable:$mergeable, headRefOid:$head,
+     statusCheckRollup:[range(0; $states | length) as $i |
+       ($check_urls[$i] // "") as $details |
+       {__typename:"CheckRun", conclusion:$states[$i],
+        workflowName:(if ($details | startswith("EXTERNAL:")) or
+                           (($details | length) > 0 and ($details | startswith("https://github.com/owner/repo/actions/runs/") | not))
+                      then null else "CI" end),
+        detailsUrl:(if ($details | startswith("EXTERNAL:")) then ($details | ltrimstr("EXTERNAL:")) else $details end)}],
+     url:"https://github.com/owner/repo/pull/42"}' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/check-runs/"*"/annotations"* ]]; then
+  [[ -z "${FAKE_ANNOTATION_FAIL:-}" ]] || exit 1
+  filter=${!#}
+  jq -nc --arg message "${FAKE_FAILURE_ANNOTATION:-}" \
+    '[{message:$message}]' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/actions/jobs/"* ]]; then
+  [[ -z "${FAKE_JOB_FAIL:-}" ]] || exit 1
+  filter=${!#}
+  jq -nc --arg conclusion "${FAKE_FAILURE_CONCLUSION:-failure}" \
+    --argjson n "${FAKE_FAILURE_STEPS:-0}" --arg shape "${FAKE_JOB_SHAPE:-valid}" '
+    {id:900002,run_id:900002,head_sha:"head-new",conclusion:$conclusion,
+     steps:[range(0; $n) | {name:"step"}]}
+    | if $shape == "missing_steps" then del(.steps)
+      elif $shape == "null_steps" then .steps = null
+      elif $shape == "missing_conclusion" then del(.conclusion)
+      elif $shape == "stale_head" then .head_sha = "head-old"
+      elif $shape == "mismatched_run" then .run_id = 900003
+      else . end' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/jobs"* ]]; then
+  # 被取消的 job 跑過幾個 step。0 代表 runner 拿到 job 卻從未開始執行。
+  filter=${!#}
+  jq -nc --argjson n "$FAKE_CANCELLED_STEPS" \
+    '{jobs:[{id:900002,steps:[range(0; $n) | {name:"step"}]}]}' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"head_sha="* ]]; then
+  # head 上 conclusion=cancelled 的 run。留空模擬查不到——那時 gate 不得降級。
+  filter=${!#}
+  jq -nc --arg ids "$FAKE_CANCELLED_RUN_IDS" '
+    {workflow_runs:
+      ($ids | if . == "" then [] else split(",") end
+        | map({id: (. | tonumber), conclusion: "cancelled"}))}' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/commits/"* ]]; then
+  # head commit 的時間，用來區分「CI 還在排程」與「run 根本沒被建立」。
+  # FAKE_HEAD_DATE 留空模擬取不到時間——那時 gate 必須維持 WAIT（fail-closed）。
+  [[ -z "$FAKE_HEAD_DATE" ]] && exit 1
+  filter=${!#}
+  jq -nc --arg d "$FAKE_HEAD_DATE" '{commit:{committer:{date:$d}}}' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/reviews"* ]]; then
+  filter=${!#}
+  jq -nc --arg latest "$FAKE_REVIEW" --arg body "${FAKE_REVIEW_BODY:-}" '
+    [
+      {user:{login:"copilot-pull-request-reviewer[bot]"},commit_id:$latest,body:$body,submitted_at:"2026-01-03T00:00:00Z"},
+      {user:{login:"Copilot"},commit_id:"review-old",submitted_at:"2026-01-01T00:00:00Z"},
+      {user:{login:"human"},commit_id:"human-head",submitted_at:"2026-01-04T00:00:00Z"}
+    ]' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"/requested_reviewers"* && "$*" != *"--method POST"* ]]; then
+  filter=${!#}
+  jq -nc --argjson requested "$FAKE_REQUESTED" '
+    {users:([{login:"human"}] +
+      if $requested > 0 then [{login:"Copilot"}] else [] end),teams:[]}' |
+    jq -r "$filter"
+elif [[ "$1 $2" == "api graphql" ]]; then
+  # GH_FAKE_THREAD_TSV：同上，用於 thread 那組欄位。
+  if [[ -n "${GH_FAKE_THREAD_TSV+x}" ]]; then printf '%s\n' "$GH_FAKE_THREAD_TSV"; exit 0; fi
+  filter=${!#}
+  jq -nc --argjson count "$FAKE_UNRESOLVED" --argjson has_next "$FAKE_HAS_NEXT" '
+    {data:{repository:{pullRequest:{reviewThreads:{
+      nodes:[range(0; $count) | {
+        isResolved:false,
+        comments:{nodes:[{author:{login:"copilot-pull-request-reviewer[bot]"}}]}
+      }],
+      pageInfo:{hasNextPage:$has_next}
+    }}}}}' | jq -r "$filter"
+elif [[ "$1" == api && "$*" == *"--method POST"* ]]; then
+  printf '%s\n' "$*" >> "$REQUEST_LOG"
+  printf '{}\n'
+else
+  printf 'unexpected gh call: %s\n' "$*" >&2
+  exit 99
+fi

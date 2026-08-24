@@ -9,98 +9,11 @@ FAKEBIN=$(mktemp -d "${TMPDIR:-/tmp}/pr-review-gate.XXXXXX") ||
 REQUEST_LOG="$FAKEBIN/requests.log"
 trap 'rm -rf "$FAKEBIN"' EXIT
 
-cat > "$FAKEBIN/gh" <<'EOF'
-#!/usr/bin/env bash
-set -uo pipefail
-
-if [[ "$1 $2" == "repo view" ]]; then
-  # GH_FAKE_REPO_FAIL：模擬 repo 解析失敗，驗 unavailable() 在 repo 尚未賦值時的輸出。
-  [[ -n "${GH_FAKE_REPO_FAIL:-}" ]] && exit 1
-  printf 'owner/repo\n'
-elif [[ "$1 $2" == "pr view" ]]; then
-  filter=${!#}
-  jq -nc --arg state "$FAKE_STATE" --arg draft "$FAKE_DRAFT" \
-    --arg mergeable "$FAKE_MERGEABLE" --arg head "$FAKE_HEAD" \
-    --arg ci "$FAKE_CI" --arg urls "${FAKE_FAILED_URLS:-NONE}" '
-    ($ci | if . == "NONE" then [] else split(",") end) as $states |
-    ($urls | if . == "NONE" then [] else split(",") end) as $check_urls |
-    {state:$state, isDraft:($draft == "true"), mergeable:$mergeable, headRefOid:$head,
-     statusCheckRollup:[range(0; $states | length) as $i |
-       ($check_urls[$i] // "") as $details |
-       {__typename:"CheckRun", conclusion:$states[$i],
-        workflowName:(if ($details | startswith("EXTERNAL:")) or
-                           (($details | length) > 0 and ($details | startswith("https://github.com/owner/repo/actions/runs/") | not))
-                      then null else "CI" end),
-        detailsUrl:(if ($details | startswith("EXTERNAL:")) then ($details | ltrimstr("EXTERNAL:")) else $details end)}],
-     url:"https://github.com/owner/repo/pull/42"}' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"/check-runs/"*"/annotations"* ]]; then
-  [[ -z "${FAKE_ANNOTATION_FAIL:-}" ]] || exit 1
-  filter=${!#}
-  jq -nc --arg message "${FAKE_FAILURE_ANNOTATION:-}" \
-    '[{message:$message}]' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"/actions/jobs/"* ]]; then
-  [[ -z "${FAKE_JOB_FAIL:-}" ]] || exit 1
-  filter=${!#}
-  jq -nc --arg conclusion "${FAKE_FAILURE_CONCLUSION:-failure}" \
-    --argjson n "${FAKE_FAILURE_STEPS:-0}" --arg shape "${FAKE_JOB_SHAPE:-valid}" '
-    {id:900002,run_id:900002,head_sha:"head-new",conclusion:$conclusion,
-     steps:[range(0; $n) | {name:"step"}]}
-    | if $shape == "missing_steps" then del(.steps)
-      elif $shape == "null_steps" then .steps = null
-      elif $shape == "missing_conclusion" then del(.conclusion)
-      elif $shape == "stale_head" then .head_sha = "head-old"
-      elif $shape == "mismatched_run" then .run_id = 900003
-      else . end' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"/jobs"* ]]; then
-  # 被取消的 job 跑過幾個 step。0 代表 runner 拿到 job 卻從未開始執行。
-  filter=${!#}
-  jq -nc --argjson n "$FAKE_CANCELLED_STEPS" \
-    '{jobs:[{id:900002,steps:[range(0; $n) | {name:"step"}]}]}' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"head_sha="* ]]; then
-  # head 上 conclusion=cancelled 的 run。留空模擬查不到——那時 gate 不得降級。
-  filter=${!#}
-  jq -nc --arg ids "$FAKE_CANCELLED_RUN_IDS" '
-    {workflow_runs:
-      ($ids | if . == "" then [] else split(",") end
-        | map({id: (. | tonumber), conclusion: "cancelled"}))}' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"/commits/"* ]]; then
-  # head commit 的時間，用來區分「CI 還在排程」與「run 根本沒被建立」。
-  # FAKE_HEAD_DATE 留空模擬取不到時間——那時 gate 必須維持 WAIT（fail-closed）。
-  [[ -z "$FAKE_HEAD_DATE" ]] && exit 1
-  filter=${!#}
-  jq -nc --arg d "$FAKE_HEAD_DATE" '{commit:{committer:{date:$d}}}' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"/reviews"* ]]; then
-  filter=${!#}
-  jq -nc --arg latest "$FAKE_REVIEW" --arg body "${FAKE_REVIEW_BODY:-}" '
-    [
-      {user:{login:"copilot-pull-request-reviewer[bot]"},commit_id:$latest,body:$body,submitted_at:"2026-01-03T00:00:00Z"},
-      {user:{login:"Copilot"},commit_id:"review-old",submitted_at:"2026-01-01T00:00:00Z"},
-      {user:{login:"human"},commit_id:"human-head",submitted_at:"2026-01-04T00:00:00Z"}
-    ]' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"/requested_reviewers"* && "$*" != *"--method POST"* ]]; then
-  filter=${!#}
-  jq -nc --argjson requested "$FAKE_REQUESTED" '
-    {users:([{login:"human"}] +
-      if $requested > 0 then [{login:"Copilot"}] else [] end),teams:[]}' |
-    jq -r "$filter"
-elif [[ "$1 $2" == "api graphql" ]]; then
-  filter=${!#}
-  jq -nc --argjson count "$FAKE_UNRESOLVED" --argjson has_next "$FAKE_HAS_NEXT" '
-    {data:{repository:{pullRequest:{reviewThreads:{
-      nodes:[range(0; $count) | {
-        isResolved:false,
-        comments:{nodes:[{author:{login:"copilot-pull-request-reviewer[bot]"}}]}
-      }],
-      pageInfo:{hasNextPage:$has_next}
-    }}}}}' | jq -r "$filter"
-elif [[ "$1" == api && "$*" == *"--method POST"* ]]; then
-  printf '%s\n' "$*" >> "$REQUEST_LOG"
-  printf '{}\n'
-else
-  printf 'unexpected gh call: %s\n' "$*" >&2
-  exit 99
-fi
-EOF
+# fake gh 以 fixture 檔複製而非 here-doc：here-doc 在 bash 3.2 一樣要建暫存檔，
+# /tmp 與 cwd 皆不可寫時會靜默降級成 0-byte 的 gh（可執行、exit 0、無輸出），
+# 於是整套測試變成假 PASS——而那正是本檔要驗的 sandbox 條件。cp 沒有這個相依。
+cp "$ROOT/tests/fixtures/fake-gh" "$FAKEBIN/gh" ||
+  { printf 'FAIL: 無法複製 fake gh fixture，測試未執行\n' >&2; exit 1; }
 chmod +x "$FAKEBIN/gh"
 
 pass=0
@@ -240,6 +153,44 @@ if [[ "$out" == *"repo=unresolved"* ]]; then
   ((pass += 1)); printf 'PASS repo probe failure says unresolved, not empty\n'
 else
   ((fail += 1)); printf 'FAIL repo probe failure says unresolved, not empty: output=%s\n' "$out"
+fi
+
+# ── 欄位切不出來時要指名真因，不能落到假原因或印出半空的 STATE 行 ──────────
+#
+# 這三條釘住的失效形狀，改用 cut 取欄位之後才有辦法區分：從前 here-string 的 read
+# 整組不執行、變數維持 unset，set -u 讓整支中止在「state: unbound variable」，
+# 看不出是 gh／jq 的輸出變了。
+#
+# GH_FAKE_PR_TSV 讓 pr view 直接吐指定字串，繞過正常的 @tsv 組裝。
+out=$(PATH="$FAKEBIN:$PATH" GH_FAKE_PR_TSV="" "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS 空 tsv 報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL 空 tsv 報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
+# 最可能的變體：jq 改欄位數而第一欄仍在。舊 guard 只驗 state，於是 head 為空仍印
+# STATE=PASS——而 hard_deny[1] 整條規則綁在 "at the current head SHA"。
+out=$(PATH="$FAKEBIN:$PATH" GH_FAKE_PR_TSV="OPEN	false	MERGEABLE" "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=pr_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS 欄位數不足（head 缺）報 pr_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL 欄位數不足（head 缺）報 pr_fields_unparsable: output=%s\n' "$out"
+fi
+
+# thread tsv 無分隔符：cut -fN 對整行無分隔符的輸入每個 N 都回整行，於是 unresolved
+# 與 has_next 同時變成 "false"，has_next 檢查放行，接著 [[ "$unresolved" -gt 0 ]] 在
+# 算術脈絡把 false 當變數名 → set -u 中止，而 bash 3.2 從 [[ ]] 算術脈絡觸發的中止
+# **exit status 是 0**、stdout 全空。這支工具最不能有的形狀。
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  GH_FAKE_THREAD_TSV="false" "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=thread_fields_unparsable"* ]]; then
+  ((pass += 1)); printf 'PASS thread tsv 無分隔符報 thread_fields_unparsable\n'
+else
+  ((fail += 1)); printf 'FAIL thread tsv 無分隔符報 thread_fields_unparsable: output=%s\n' "$out"
 fi
 
 # ── suppressed comments 必須出現在 PASS 那行 ────────────────────────────────
