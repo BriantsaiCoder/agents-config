@@ -563,22 +563,26 @@ done
 # 判準是兩個數相等，不是任一個等於某個字面值——新增第五處 tsv 解析並同時補上 arity
 # 檢查時本條仍綠，只有「解析了卻沒驗 arity」才轉紅。
 #
-# 下限只檢查 _cuts，不檢查 _arity：ugrep 撞 sandbox 權限會靜默回零命中且 exit 0，
-# 兩邊同時歸零會讓 -eq 假裝成立，所以需要一個下限——但下限若也套在 _arity 上，
-# 「漏了一處 arity 檢查」就會落進工具失敗那條訊息，把真缺陷報成環境問題。
-# _cuts 不會因為漏 arity 而變，用它當工具失敗的判別是準的。（實測：拿掉 job 端的
-# arity conjunct，本條轉紅並印出 cut=4 tab_count=3。）
-_cuts=0; _arity=0; _c_rc=0; _a_rc=0
-_cuts="$(grep -c -- 'cut -f1' "$GATE")" || _c_rc=$?
-_arity="$(grep -c -- 'tab_count "' "$GATE")" || _a_rc=$?
-if [ "$_c_rc" -ge 2 ] || [ "$_a_rc" -ge 2 ]; then
-  ((fail += 1)); printf 'FAIL arity 不變式掃描失敗（grep rc=%s/%s）\n' "$_c_rc" "$_a_rc"
-elif [ "$_cuts" -lt 4 ]; then
-  ((fail += 1)); printf 'FAIL arity 不變式掃描回異常低的 cut 計數（工具失敗，非程式碼變更）：cut=%s tab_count=%s\n' "$_cuts" "$_arity"
-elif [ "$_cuts" -eq "$_arity" ]; then
-  ((pass += 1)); printf 'PASS 每處 tsv 解析都有 arity 檢查（cut -f1 × %s = tab_count × %s）\n' "$_cuts" "$_arity"
+# 解析點那側數的是 jq 的 tsv producer，不是 cut -f1 的呼叫數。第一版用後者，Copilot
+# 指出那只是目前的實作細節：某處若改成只切第 2、3 欄而不切第 1 欄，斷言就會漏報，
+# 與它上面宣告的「每一處 tsv 解析」不符。producer 與解析點是 1:1，抓得住那個形狀。
+#
+# 下限只檢查 producer 那側，不檢查 _arity：ugrep 撞 sandbox 權限會靜默回零命中且
+# exit 0，兩邊同時歸零會讓 -eq 假裝成立，所以需要一個下限——但下限若也套在 _arity 上，
+# 「漏了一處 arity 檢查」就會落進工具失敗那條訊息，把真缺陷報成環境問題。producer 數
+# 不會因為漏 arity 而變，用它當工具失敗的判別是準的。（實測：拿掉 job 端的 arity
+# conjunct，本條轉紅並印出 producer=4 tab_count=3。）
+_prod=0; _arity=0; _p_rc=0; _a_rc=0
+_prod="$(grep -c -F -- '| @tsv' "$GATE")" || _p_rc=$?
+_arity="$(grep -c -F -- 'tab_count "' "$GATE")" || _a_rc=$?
+if [ "$_p_rc" -ge 2 ] || [ "$_a_rc" -ge 2 ]; then
+  ((fail += 1)); printf 'FAIL arity 不變式掃描失敗（grep rc=%s/%s）\n' "$_p_rc" "$_a_rc"
+elif [ "$_prod" -lt 4 ]; then
+  ((fail += 1)); printf 'FAIL arity 不變式掃描回異常低的 producer 計數（工具失敗，非程式碼變更）：@tsv=%s tab_count=%s\n' "$_prod" "$_arity"
+elif [ "$_prod" -eq "$_arity" ]; then
+  ((pass += 1)); printf 'PASS 每處 tsv 解析都有 arity 檢查（@tsv × %s = tab_count × %s）\n' "$_prod" "$_arity"
 else
-  ((fail += 1)); printf 'FAIL 有 tsv 解析沒有 arity 檢查：cut -f1 × %s 但 tab_count × %s\n' "$_cuts" "$_arity"
+  ((fail += 1)); printf 'FAIL 有 tsv 解析沒有 arity 檢查：@tsv × %s 但 tab_count × %s\n' "$_prod" "$_arity"
 fi
 
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"
