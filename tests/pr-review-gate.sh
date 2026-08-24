@@ -302,14 +302,19 @@ thread_shape_probe() { # $1=名稱 $2=tsv
 }
 thread_shape_probe 'thread tsv 純數字報 thread_fields_unparsable' '5'
 thread_shape_probe 'thread tsv has_next 為空報 thread_fields_unparsable' '0	'
+# 三處 tsv 解析中 thread 原本是唯一沒有 arity conjunct 的：同一個「多一欄」形狀在
+# review 擋得住、在這裡卻每一欄檢查都通過而直落 rc=0 STATE=PASS，而 hard_deny[1]
+# 只認 PASS／PASS_NO_CI。與 pr tsv／review tsv 兩處補的是同一個洞。
+thread_shape_probe 'thread tsv 多一欄報 thread_fields_unparsable' '0	false	EXTRA'
+thread_shape_probe 'thread tsv 多兩欄報 thread_fields_unparsable' '0	false	EXTRA	MORE'
 
 # ── review tsv 與 requested：三處 tsv 解析裡最後兩個沒有 guard 的 ──────────────
 #
 # review tsv 無分隔符時 cut -fN 每個 N 都回整行，於是 latest_review 拿到整行。整行只要
 # 不等於 head 就走 review=STALE，而該分支會對 GitHub 送出一次 requested_reviewers POST
 # ——垃圾輸入產生外部寫入，與上面 pr tsv 那條同型，只是載具換成 review 端。
-# 同一形狀下 suppressed 也拿到整行，舊版靜默改判為 0：2026-08-08 那類「finding 全在
-# Suppressed 摺疊區而 gate 回 PASS」的 fail-open 會再次無聲成立。
+# 同一形狀下 suppressed 也拿到整行，舊版靜默改判為 0：2026-08-08 那類「六條 finding 有
+# 四條在 Suppressed 摺疊區、gate 仍回 PASS」的 fail-open 會再次無聲成立。
 review_shape_probe() { # $1=名稱 $2=tsv
   local name="$1" tsv="$2" out req
   : > "$REQUEST_LOG"
@@ -353,10 +358,10 @@ out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
   FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
   FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
   GH_FAKE_REQUESTED_RAW=abc "$GATE" 42 2>&1)
-if [[ "$out" == *"reason=requested_fields_unparsable"* ]]; then
-  ((pass += 1)); printf 'PASS requested 非數字報 requested_fields_unparsable\n'
+if [[ "$out" == *"reason=requested_not_numeric"* ]]; then
+  ((pass += 1)); printf 'PASS requested 非數字報 requested_not_numeric\n'
 else
-  ((fail += 1)); printf 'FAIL requested 非數字報 requested_fields_unparsable: output=%s\n' "$out"
+  ((fail += 1)); printf 'FAIL requested 非數字報 requested_not_numeric: output=%s\n' "$out"
 fi
 
 # CI_ABSENT_AFTER 由環境進入 (( )) 算術脈絡，同樣沒有數值 guard，同樣是 rc=0 stdout 全空
@@ -371,6 +376,20 @@ if [[ "$out" == *"reason=ci_absent_after_invalid"* ]]; then
   ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 非數字報 ci_absent_after_invalid\n'
 else
   ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 非數字報 ci_absent_after_invalid: output=%s\n' "$out"
+fi
+
+# 極性反例，釘住 guard 的位置而不只是它的存在：CI 全綠時 past_threshold() 根本不會被
+# 呼叫，CI_ABSENT_AFTER 也就不會被讀取，此時一個打錯的值不得擋掉這個 PR。少了這條，
+# guard 會無聲飄回定義處，而那會讓一個 typo 擋掉每一個 PR（含 CI 全綠的）。
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" CI_ABSENT_AFTER=abc \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  "$GATE" 42 2>&1)
+if [[ "$out" == STATE=PASS* ]]; then
+  ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 用不到時不得擋（guard 收斂在使用點）\n'
+else
+  ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 用不到時不得擋: output=%s\n' "$out"
 fi
 
 # ── suppressed comments 必須出現在 PASS 那行 ────────────────────────────────

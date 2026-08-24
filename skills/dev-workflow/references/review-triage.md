@@ -37,7 +37,7 @@ Current `head.sha` 的 CI 與 review 都是 whole-head gate；舊 head 的結果
 3. **Bot unavailable 的 independent fallback**
    - 這是 manual evidence branch；`pr-review-gate` 保持 `UNAVAILABLE` 且不得替 fallback 回 PASS。
    - `STATE=REQUESTED`／`WAIT_REVIEW` 是 transient state，MUST NOT fallback；`FINDINGS`、`WAIT_CI`、`FAIL_CI`、`WAIT_READY` 也不得 fallback。只有前節精確限定的 `PASS_NO_CI ci=BILLING_QUOTA` 可用 local evidence 繼續。
-   - fallback 只適用於 bot reviewer capability／request 經合理等待與 retry 後仍為 `UNAVAILABLE`；`repo_probe_failed`、`pr_probe_failed`、`review_probe_failed`、`requested_reviewer_probe_failed`、head 無法確認、thread probe／pagination 不完整都不得 fallback。
+   - fallback 只適用於 bot reviewer capability／request 經合理等待與 retry 後仍為 `UNAVAILABLE`。**helper 回的任何其他 `UNAVAILABLE` 一律不得 fallback**——判準是類別而不是名單：probe 失敗（`repo_probe_failed`、`pr_probe_failed`、`review_probe_failed`、`requested_reviewer_probe_failed`）、欄位或值的形狀檢查失敗（`*_fields_unparsable`、`*_not_numeric`、`ci_absent_after_invalid`）、head 無法確認、thread probe／pagination 不完整，以及 helper 日後新增的任何 reason，一律不得 fallback。名字只是例子：前一版是逐條列名，而 `*_fields_unparsable` 整族從未被列入——形狀檢查擋下來的東西會從這個缺口走出去。
    - fallback 前 MUST 獨立確認 open／ready／mergeable PR、current head 與 CI PASS（第 2 節 quota branch 則為該節全部 local gates PASS），再由 independent read-only reviewer 審 current `head.sha` 的完整 diff；記錄 reviewer identity、SHA、findings 與處理結果，不得由 PR 作者自審頂替。
    - 每次 push 都使 bot 與 fallback review 失效；新 head 必須重跑 current-head CI 與獨立 review。
    - bot 狀態仍記 `UNAVAILABLE`，不得偽裝成 PASS；只有 fallback 的 current-head CI／quota-local gates、independent review PASS 且 0 未處理 actionable findings，整體 Review gate 才可 PASS。
