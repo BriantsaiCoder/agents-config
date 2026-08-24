@@ -574,7 +574,7 @@ has "push invalidates bot fallback" '每次 push.*fallback.*失效' skills/dev-w
 has "bot fallback rejects incomplete PR and thread probes" 'repo_probe_failed.*pr_probe_failed.*head.*thread probe' skills/dev-workflow/references/review-triage.md
 has "bot fallback rejects incomplete reviewer probes" 'review_probe_failed.*requested_reviewer_probe_failed.*不得 fallback' skills/dev-workflow/references/review-triage.md
 # 允許側的斷言全部走 bullet scoping，不用整檔 grep。理由是實測：原本五條寫成整檔
-# grep 時，對「允許側整段逐字搬進排除側 bullet」「且只有 404 與 422 成立 → 且**不**只有」
+# grep 時，對「允許側整段逐字搬進排除側 bullet」「且只有 422 成立 → 且**不**只有」
 # 「MUST → SHOULD」三種改寫**全部維持 GREEN**——它們釘的是「檔案裡有這些字」，不是
 # 「這些字在哪一側、是不是禁令」。scoping 才是釘住實質的手段，字面精確不是。
 #
@@ -635,7 +635,7 @@ allow_lacks "bot fallback allow side does not readmit transient failures" '(5xx|
 # 名附近的撤銷語，避開同區塊既有的「REQUESTED 已明定 MUST NOT fallback」那句。
 allow_lacks "bot fallback allow side is not revoked in place" 'review_request_failed[^。]{0,30}(不得|禁止|MUST NOT|尚未|暫不)'
 # 取證路徑與 MUST 句是讓 status 閘可執行的兩句，刪掉任一句套件都全綠（實測）。
-allow_has "bot fallback documents where to read the status" 'gh. 的 stderr'
+allow_has "bot fallback documents where to read the status" '`gh` 的 stderr'
 # 排除側的 catch-all 若改回「helper 日後新增的任何 reason」，兩側矛盾原封不動回來（實測全綠）。
 has "bot fallback exclude side scopes its catch-all to the allow category" '日後新增而不屬允許側類別的任何 reason' skills/dev-workflow/references/review-triage.md
 has "bot fallback requires open ready mergeable PR" 'fallback 前.*open.*ready.*mergeable PR' skills/dev-workflow/references/review-triage.md
