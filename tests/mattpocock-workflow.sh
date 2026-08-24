@@ -596,6 +596,10 @@ if [ "$allow_rc" -ge 2 ] || [ "$names_rc" -ge 2 ]; then
   ng "fallback allow side is a closed set (rg 掃描失敗 rc=${allow_rc}/${names_rc}，工具問題非程式碼變更)"
 elif [ "$allow_rc" -ne 0 ]; then
   ng "fallback allow side is a closed set (找不到允許側錨點——被改寫過？)"
+# rc=0 但無輸出＝掃描工具異常，不是「檔案裡沒有」。本機 grep 是 ugrep，撞 sandbox 權限
+# 時就是這個形狀（空輸出 + exit 0）；沒有這一格的話工具故障會被報成內容違規。
+elif [ -z "$allow_line" ]; then
+  ng "fallback allow side is a closed set (rg 回 rc=0 卻無輸出——掃描工具異常，非程式碼變更)"
 elif [ "$allow_line" != "${allow_line%%$'\n'*}" ]; then
   ng "fallback allow side is a closed set (允許側錨點命中多行，應為 1)"
 elif [ "$allow_names" != "review_actions_billing_or_quota" ]; then
