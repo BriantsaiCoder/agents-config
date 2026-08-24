@@ -23,3 +23,6 @@ proposals/*
 !proposals/*/
 proposals/*/*
 !proposals/*/*.md
+
+# auto mode classifier 決策 log（AUTOMODE_DECISION_LOG=1 時落在 session cwd）
+.automode_decisions.jsonl
