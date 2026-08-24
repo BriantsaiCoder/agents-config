@@ -621,6 +621,70 @@ else
   fi
 fi
 
+# ── requested_reviewers POST 失敗要依成因分流（#87） ──────────────────
+#
+# 一個 reason 蓋七種成因（app 非 collaborator、我們的 slug／參數錯、權限不足、憑證失效、
+# rate limit、5xx、網路），而只有第一種表示 bot 這一側裝不起來。PR #86 試過在
+# review-triage.md 側用 HTTP status 當代理判準，兩軸實測全部打穿：422 與 404 一樣兩義，
+# 而 doc 讀不到 GitHub 回的 message。判準要下沉到這裡。
+#
+# 分流後的三個 reason：
+#   review_request_rejected      422 + collaborator 類 message → bot 那一側，屬 fallback 允許側
+#   review_request_malformed     422 + 其他 message            → 我們這一側的參數錯，MUST 修 helper
+#   review_request_probe_failed  其餘（403／404／429／5xx／網路）→ transient 或不可分，MUST retry
+post_fail_probe() {
+  local name="$1" inject="$2" want_reason="$3" out
+  : > "$REQUEST_LOG"
+  out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" GH_FAKE_POST_FAIL="$inject" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-old \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    FAKE_HEAD_DATE=2026-01-01T00:00:00Z FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+    "$GATE" 42 2>&1)
+  if printf '%s' "$out" | grep -q "reason=$want_reason"; then
+    ((pass += 1)); printf 'PASS %s\n' "$name"
+  else
+    ((fail += 1)); printf 'FAIL %s: want reason=%s got=%s\n' "$name" "$want_reason" "$out"
+  fi
+}
+
+post_fail_probe 'POST 422 collaborator 訊息報 review_request_rejected' \
+  '422|Reviews may only be requested from collaborators' review_request_rejected
+post_fail_probe 'POST 422 其他訊息報 review_request_malformed' \
+  '422|Validation Failed' review_request_malformed
+post_fail_probe 'POST 503 報 review_request_probe_failed' \
+  '503|Service Unavailable' review_request_probe_failed
+post_fail_probe 'POST 404 報 review_request_probe_failed（404 兩義，不得歸允許側）' \
+  '404|Not Found' review_request_probe_failed
+post_fail_probe 'POST 403 報 review_request_probe_failed（可能是 secondary rate limit）' \
+  '403|API rate limit exceeded' review_request_probe_failed
+
+# doc 與 helper 的 reason 名必須同步：拼錯的話 review-triage.md 會指向一個永遠不會出現的
+# 狀態，而讀者拿 reason 名去 grep 只會查不到、落回自行判斷類別。用 rg 並分辨 rc——本機
+# grep 是 ugrep，撞 sandbox 權限會空結果 + exit 0（完整的雙向 lint 見 #89）。
+_triage="$ROOT/skills/dev-workflow/references/review-triage.md"
+for _r in review_request_rejected review_request_malformed review_request_probe_failed; do
+  _g=0; _d=0
+  rg -qF -- "$_r" "$GATE" || _g=$?
+  rg -qF -- "$_r" "$_triage" || _d=$?
+  if [ "$_g" -ge 2 ] || [ "$_d" -ge 2 ]; then
+    ((fail += 1)); printf 'FAIL reason %s 的同步掃描失敗（rg rc=%s/%s，工具失敗）\n' "$_r" "$_g" "$_d"
+  elif [ "$_g" = 0 ] && [ "$_d" = 0 ]; then
+    ((pass += 1)); printf 'PASS reason %s 同時存在於 helper 與 review-triage\n' "$_r"
+  else
+    ((fail += 1)); printf 'FAIL reason %s 缺席（helper rc=%s／review-triage rc=%s）\n' "$_r" "$_g" "$_d"
+  fi
+done
+
+# slug 是硬編碼常數，而 review_request_rejected 的整個語意建立在「slug 是對的、所以 422
+# 只可能來自對側」。slug 一旦被改壞，每支 PR 都會拿到 rejected 而誤判成 bot 不可用——
+# 這條把它釘住，取代 PR #86 那個沒有 artifact 存計數的「連續三次 422」上限。
+if grep -qF "reviewers[]=copilot-pull-request-reviewer[bot]" "$GATE"; then
+  ((pass += 1)); printf 'PASS reviewer slug 仍是 copilot-pull-request-reviewer[bot]\n'
+else
+  ((fail += 1)); printf 'FAIL reviewer slug 被改動——review_request_rejected 的語意依賴它是對的\n'
+fi
+
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，
 # 那是本測試自己的 fail-open（2026-08-02 稽核 Follow-up 3）。

@@ -94,6 +94,12 @@ elif [[ "$1 $2" == "api graphql" ]]; then
     }}}}}' | jq -r "$filter"
 elif [[ "$1" == api && "$*" == *"--method POST"* ]]; then
   printf '%s\n' "$*" >> "$REQUEST_LOG"
+  # GH_FAKE_POST_FAIL="<status>|<message>"：重現 gh 失敗時的形狀——訊息與 (HTTP NNN)
+  # 都在 stderr，stdout 空，rc 非零。用 ${VAR+x} 而非 -n，同其餘 hook。
+  if [[ -n "${GH_FAKE_POST_FAIL+x}" ]]; then
+    printf 'gh: %s (HTTP %s)\n' "${GH_FAKE_POST_FAIL#*|}" "${GH_FAKE_POST_FAIL%%|*}" >&2
+    exit 1
+  fi
   printf '{}\n'
 else
   printf 'unexpected gh call: %s\n' "$*" >&2

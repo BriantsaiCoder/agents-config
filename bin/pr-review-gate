@@ -387,9 +387,33 @@ if [[ "$billing_review" == true ]]; then
 elif [[ "$latest_review" != "$head" ]]; then
   review=STALE
   if [[ "$requested" -eq 0 ]]; then
-    gh api --method POST "repos/$repo/pulls/$pr/requested_reviewers" \
-      -f 'reviewers[]=copilot-pull-request-reviewer[bot]' >/dev/null ||
-      unavailable review_request_failed
+    # 一個 reason 曾經蓋七種成因——app 不是本 repo 的 collaborator、我們的參數錯、權限不足、
+    # 憑證失效、rate limit、5xx、網路中斷——而只有第一種表示 bot 這一側裝不起來，也只有它
+    # 該進 review-triage 的 fallback 允許側。
+    #
+    # 判準不能只看 HTTP status：422 與 404 一樣兩義（404 還被 GitHub 用來遮蔽權限失敗），
+    # 要看 GitHub 回的 message。PR #86 試過把這個分類寫進 review-triage.md，兩軸各兩輪把
+    # 每個 doc 側代理判準都實測打穿——doc 讀不到 message，這件事只有這裡做得到。
+    #
+    # `2>&1 >/dev/null` 的順序是刻意的：先把 stderr 接到當前 stdout（即 $( ) 的捕捉端），
+    # 再把 gh 自己的 stdout 丟掉，於是 $_post_err 拿到的正是 gh 的錯誤行。捕捉後仍原樣印回
+    # stderr，呼叫端看得到原始訊息。
+    #
+    # collaborator 那條的語意建立在「上面那個 slug 是對的」：它是硬編碼常數，且
+    # tests/pr-review-gate.sh 有一條靜態斷言釘住它。slug 若被改壞，那條測試會先紅，不會
+    # 讓每支 PR 都拿到 rejected 而誤判成 bot 不可用。
+    _post_err=$(gh api --method POST "repos/$repo/pulls/$pr/requested_reviewers" \
+      -f 'reviewers[]=copilot-pull-request-reviewer[bot]' 2>&1 >/dev/null) || {
+      printf '%s\n' "$_post_err" >&2
+      case "$_post_err" in
+        *collaborator*"(HTTP 422)"*|*"(HTTP 422)"*collaborator*)
+          unavailable review_request_rejected ;;
+        *"(HTTP 422)"*)
+          unavailable review_request_malformed ;;
+        *)
+          unavailable review_request_probe_failed ;;
+      esac
+    }
     requested_now=true
   fi
 fi
