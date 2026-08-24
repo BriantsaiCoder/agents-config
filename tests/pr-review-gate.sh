@@ -304,11 +304,12 @@ thread_shape_probe 'thread tsv 純數字報 thread_fields_unparsable' '5'
 thread_shape_probe 'thread tsv has_next 為空報 thread_fields_unparsable' '0	'
 # thread 原本沒有 arity conjunct（見 bin/pr-review-gate 的 tab_count() 不變式）：同一個
 # 「多一欄」形狀在 review 擋得住、在這裡卻每一欄檢查都通過而直落 rc=0 STATE=PASS，而
-# hard_deny[1] 只認 PASS／PASS_NO_CI。與 pr tsv／review tsv 兩處補的是同一個洞。
+# hard_deny[1] 只認 PASS／PASS_NO_CI。與 pr／review／job 三處補的是同一個洞——列名而不
+# 列數，是因為這裡要指出「同一個洞」的具體站點；總數由 tab_count() 的不變式斷言守。
 thread_shape_probe 'thread tsv 多一欄報 thread_fields_unparsable' '0	false	EXTRA'
 thread_shape_probe 'thread tsv 多兩欄報 thread_fields_unparsable' '0	false	EXTRA	MORE'
 
-# ── review tsv 與 requested：本輪補上 guard 的最後兩個 ────────────────────────
+# ── review tsv 與 requested：99eb2fc 與 2cac0b0 補上 guard 的兩個 ────────────
 #
 # review tsv 無分隔符時 cut -fN 每個 N 都回整行，於是 latest_review 拿到整行。整行只要
 # 不等於 head 就走 review=STALE，而該分支會對 GitHub 送出一次 requested_reviewers POST
@@ -337,7 +338,7 @@ review_shape_probe 'review tsv billing 非 true/false 報 review_fields_unparsab
 review_shape_probe 'review tsv suppressed 非數字報 review_fields_unparsable' 'head-new	abc	false'
 # suppressed 只被 printf 消費、不進算術，所以前導零沒有 fail-open 後果——但它與同檔
 # 每一個進算術脈絡的值共用同一條嚴格 regex，這條 canary 讓「為什麼這裡也要嚴格」有
-# 東西釘住。（不寫「另外 N 處」：那個數字在本分支已經被打歪兩次。）
+# 東西釘住。（不寫「另外 N 處」：那個數字在本分支已經被打歪三次。）
 review_shape_probe 'review tsv suppressed 前導零報 review_fields_unparsable' 'head-new	08	false'
 # latest_review 為空是合法輸入（jq 的 `.commit_id // ""`，代表這個 PR 還沒有任何
 # Copilot review），不得誤擋——這條是上面四條的極性反例。
@@ -403,8 +404,10 @@ fi
 
 # ── 第二輪審查：前導零、job tsv 的 arity、pre-1970 epoch ─────────────────────
 #
-# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。進算術脈絡的消費端
-# 全中，且在 main 上行為相同——本分支新增的 guard 原本也沒關掉它們。
+# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。由外部資料驅動的
+# 三個消費端（CI_ABSENT_AFTER、requested、unresolved）會中，且在 main 上行為相同
+# ——本分支新增的 guard 原本也沒關掉它們。past_threshold 內的 e 同樣進算術脈絡但打不
+# 中：它是 date 產生的 epoch，形式上不會有前導零，所以沒有對應 canary。
 
 # 使用者今天 export 一個打錯的值就能踩到：(( )) 把 0600 讀成八進位 384，門檻由 600 秒
 # 腰斬成 384 秒，PASS_NO_CI 提早成立，而 hard_deny[1] 認這個狀態。
@@ -444,8 +447,8 @@ fi
 
 # 極性反例：欄數正確時仍須降級——否則一個**恆假**的 guard（arity conjunct 永遠不成立，
 # 於是每個 job 都 return 1）會讓上一條「多一欄不得降級」假綠通過。
-# 實測把 conjunct 改成 -eq 99：74 PASS / 2 FAIL，本條與既有的「billing failure without
-# steps degrades」同時轉紅——本條不是唯一守護，它獨佔釘住的是 raw-TSV fixture 這條路徑。
+# 實測把 conjunct 改成 -eq 99：本條與既有的「billing failure without steps degrades」
+# 同時轉紅——本條不是唯一守護，它獨佔釘住的是 raw-TSV fixture 這條路徑。
 : > "$REQUEST_LOG"
 out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
     FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
@@ -557,32 +560,45 @@ done
 # ── tsv arity 不變式：每一處 tsv 解析都要有 tab_count 的 arity 檢查 ──────
 #
 # bin/pr-review-gate 的 tab_count() 宣告了這條不變式，而本分支的歷史就是它需要機械
-# 守護的證據：散文計數在同一支腳本上被打歪兩次（「三處 tsv」、「三處數值 guard」），
-# 兩次都是「以為盤點完了而停止尋找」。CONVENTIONS 規則 9：能寫成 test 的檢查必須下沉。
+# 守護的證據：散文計數在同一支腳本上被打歪三次（「三處 tsv」、「三處數值 guard」，
+# 以及修掉前者的那一批自己生出的「另外三處」），每次都是「以為盤點完了而停止尋找」。
+# CONVENTIONS 規則 9：能寫成 test 的檢查必須下沉為機械守護並從 prose 移除。
 #
-# 判準是兩個數相等，不是任一個等於某個字面值——新增第五處 tsv 解析並同時補上 arity
-# 檢查時本條仍綠，只有「解析了卻沒驗 arity」才轉紅。
+# **比的是集合，不是總數。** 第一版比兩個計數，R4 審查用 ablation 打穿了它：拿掉 job
+# 端的 arity conjunct、同時在 pr_state 上補一個多餘的 tab_count，兩邊總數仍相等而斷言
+# 綠燈，但 job tsv 多一欄 → PASS_NO_CI 的 fail-open 真的復發。總數相等是比宣告弱一階
+# 的不變式。改成從兩側各抽出**變數名**再逐一對照，站點錯配就轉紅。
 #
-# 解析點那側數的是 jq 的 tsv producer，不是 cut -f1 的呼叫數。第一版用後者，Copilot
-# 指出那只是目前的實作細節：某處若改成只切第 2、3 欄而不切第 1 欄，斷言就會漏報，
-# 與它上面宣告的「每一處 tsv 解析」不符。producer 與解析點是 1:1，抓得住那個形狀。
+# 第三個檢查（producer 數 == 解析點數）守的是另一個形狀：某處 tsv 解析若改成只切第 2、
+# 3 欄而不切第 1 欄，前兩個集合仍相等而它會漏報。jq 的 tsv producer 與解析點是 1:1。
 #
-# 下限只檢查 producer 那側，不檢查 _arity：ugrep 撞 sandbox 權限會靜默回零命中且
-# exit 0，兩邊同時歸零會讓 -eq 假裝成立，所以需要一個下限——但下限若也套在 _arity 上，
-# 「漏了一處 arity 檢查」就會落進工具失敗那條訊息，把真缺陷報成環境問題。producer 數
-# 不會因為漏 arity 而變，用它當工具失敗的判別是準的。（實測：拿掉 job 端的 arity
-# conjunct，本條轉紅並印出 producer=4 tab_count=3。）
-_prod=0; _arity=0; _p_rc=0; _a_rc=0
-_prod="$(grep -c -F -- '| @tsv' "$GATE")" || _p_rc=$?
-_arity="$(grep -c -F -- 'tab_count "' "$GATE")" || _a_rc=$?
-if [ "$_p_rc" -ge 2 ] || [ "$_a_rc" -ge 2 ]; then
-  ((fail += 1)); printf 'FAIL arity 不變式掃描失敗（grep rc=%s/%s）\n' "$_p_rc" "$_a_rc"
-elif [ "$_prod" -lt 4 ]; then
-  ((fail += 1)); printf 'FAIL arity 不變式掃描回異常低的 producer 計數（工具失敗，非程式碼變更）：@tsv=%s tab_count=%s\n' "$_prod" "$_arity"
-elif [ "$_prod" -eq "$_arity" ]; then
-  ((pass += 1)); printf 'PASS 每處 tsv 解析都有 arity 檢查（@tsv × %s = tab_count × %s）\n' "$_prod" "$_arity"
+# **零 magic number。** 沒有任何一邊跟字面值比——那正是本區塊在消滅的東西。工具失敗
+# 靠「剝掉註解後整檔為空」判別，沿用同檔上方 here-doc 掃描區塊已驗證過的機制：本機
+# grep 是 ugrep，撞 sandbox 權限時會靜默回零命中且 exit 0，而它回的是**空字串不是 0**，
+# 拿空字串去比大小會讓 [ ] 報 integer expression expected 並落進錯誤的分支。
+#
+# 先剝註解行同樣沿用該區塊的作法：bin/pr-review-gate 的註解本來就寫過 cut -fN、cut -f3，
+# 哪天寫到 cut -f1 就會灌爆解析點那側而假紅。
+_s_rc=0
+_src="$(grep -vE '^[[:space:]]*#' -- "$GATE")" || _s_rc=$?
+if [ "$_s_rc" -ge 2 ] || [ -z "$_src" ]; then
+  ((fail += 1)); printf 'FAIL arity 不變式：掃描讀不到內容（grep rc=%s，工具失敗而非程式碼變更）\n' "$_s_rc"
 else
-  ((fail += 1)); printf 'FAIL 有 tsv 解析沒有 arity 檢查：@tsv × %s 但 tab_count × %s\n' "$_prod" "$_arity"
+  _parsed="$(printf '%s\n' "$_src" | grep -oE 'printf .%s. "[$][a-z_]+" [|] cut -f' | grep -oE '[$][a-z_]+' | sort -u)"
+  _guarded="$(printf '%s\n' "$_src" | grep -oE 'tab_count "[$][a-z_]+"' | grep -oE '[$][a-z_]+' | sort -u)"
+  _prod_n="$(printf '%s\n' "$_src" | grep -cF -- '| @tsv')"
+  _parsed_n="$(printf '%s\n' "$_parsed" | grep -c . )"
+  if [ -z "$_parsed" ]; then
+    ((fail += 1)); printf 'FAIL arity 不變式：抽不出任何 tsv 解析點（pattern 已與實作脫節）\n'
+  elif [ "$_parsed" != "$_guarded" ]; then
+    ((fail += 1)); printf 'FAIL 有 tsv 解析沒有對應的 arity 檢查\n'
+    printf '       解析：%s\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"
+    printf '       守護：%s\n' "$(printf '%s' "$_guarded" | tr '\n' ' ')"
+  elif [ "$_prod_n" -ne "$_parsed_n" ]; then
+    ((fail += 1)); printf 'FAIL tsv producer 與解析點不對應（有 producer 沒被 cut -f1 解析）：producer=%s 解析點=%s\n' "$_prod_n" "$_parsed_n"
+  else
+    ((pass += 1)); printf 'PASS 每處 tsv 解析都有 arity 檢查（%s）\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"
+  fi
 fi
 
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"

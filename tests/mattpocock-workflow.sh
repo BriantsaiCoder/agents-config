@@ -573,6 +573,10 @@ has "bot fallback requires current-head CI" 'fallback.*current.*CI.*PASS' skills
 has "push invalidates bot fallback" '每次 push.*fallback.*失效' skills/dev-workflow/references/review-triage.md
 has "bot fallback rejects incomplete PR and thread probes" 'repo_probe_failed.*pr_probe_failed.*head.*thread probe' skills/dev-workflow/references/review-triage.md
 has "bot fallback rejects incomplete reviewer probes" 'review_probe_failed.*requested_reviewer_probe_failed.*不得 fallback' skills/dev-workflow/references/review-triage.md
+# 允許側同樣要釘：它被靜默收窄過一次（9385844 把類別判準換成單一 reason 名，使 review_request_failed 失去出口），而當時沒有任何斷言會轉紅。兩條分別釘「判準是類別」與「用 review_request_failed fallback 必須附 HTTP status 且只有 4xx 成立」——後者是本節
+# 唯一擋住 transient POST 失敗被當成 bot capability 不可用的判準。
+has "bot fallback allow side stays categorical" '允許側.*review_actions_billing_or_quota.*review_request_failed.*判準是類別' skills/dev-workflow/references/review-triage.md
+has "bot fallback allow side gates request failures on http status" 'review_request_failed.*HTTP status.*只有 4xx 成立.*transient 一律 retry' skills/dev-workflow/references/review-triage.md
 has "bot fallback requires open ready mergeable PR" 'fallback 前.*open.*ready.*mergeable PR' skills/dev-workflow/references/review-triage.md
 has "bot fallback cannot use author self-review" 'independent read-only reviewer.*不得由 PR 作者自審' skills/dev-workflow/references/review-triage.md
 has "bot helper cannot manufacture fallback PASS" 'manual evidence branch.*pr-review-gate.*UNAVAILABLE.*不得.*PASS' skills/dev-workflow/references/review-triage.md
