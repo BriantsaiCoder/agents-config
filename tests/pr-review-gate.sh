@@ -304,8 +304,8 @@ thread_shape_probe 'thread tsv 純數字報 thread_fields_unparsable' '5'
 thread_shape_probe 'thread tsv has_next 為空報 thread_fields_unparsable' '0	'
 # thread 原本沒有 arity conjunct（見 bin/pr-review-gate 的 tab_count() 不變式）：同一個
 # 「多一欄」形狀在 review 擋得住、在這裡卻每一欄檢查都通過而直落 rc=0 STATE=PASS，而
-# hard_deny[1] 只認 PASS／PASS_NO_CI。與 pr／review／job 三處補的是同一個洞——列名而不
-# 列數，是因為這裡要指出「同一個洞」的具體站點；總數由 tab_count() 的不變式斷言守。
+# hard_deny[1] 只認 PASS／PASS_NO_CI。與 pr、review、job 補的是同一個洞——列名而不列數，
+# 站點的完整性由 tab_count() 的不變式斷言守。
 thread_shape_probe 'thread tsv 多一欄報 thread_fields_unparsable' '0	false	EXTRA'
 thread_shape_probe 'thread tsv 多兩欄報 thread_fields_unparsable' '0	false	EXTRA	MORE'
 
@@ -338,7 +338,8 @@ review_shape_probe 'review tsv billing 非 true/false 報 review_fields_unparsab
 review_shape_probe 'review tsv suppressed 非數字報 review_fields_unparsable' 'head-new	abc	false'
 # suppressed 只被 printf 消費、不進算術，所以前導零沒有 fail-open 後果——但它與同檔
 # 每一個進算術脈絡的值共用同一條嚴格 regex，這條 canary 讓「為什麼這裡也要嚴格」有
-# 東西釘住。（不寫「另外 N 處」：那個數字在本分支已經被打歪三次。）
+# 東西釘住。（不寫「另外 N 處」：那個數字在本分支已經被打歪過不只一次，見 bin/pr-review-gate
+# 的 tab_count() 註解所列。）
 review_shape_probe 'review tsv suppressed 前導零報 review_fields_unparsable' 'head-new	08	false'
 # latest_review 為空是合法輸入（jq 的 `.commit_id // ""`，代表這個 PR 還沒有任何
 # Copilot review），不得誤擋——這條是上面四條的極性反例。
@@ -560,8 +561,9 @@ done
 # ── tsv arity 不變式：每一處 tsv 解析都要有 tab_count 的 arity 檢查 ──────
 #
 # bin/pr-review-gate 的 tab_count() 宣告了這條不變式，而本分支的歷史就是它需要機械
-# 守護的證據：散文計數在同一支腳本上被打歪三次（「三處 tsv」、「三處數值 guard」，
-# 以及修掉前者的那一批自己生出的「另外三處」），每次都是「以為盤點完了而停止尋找」。
+# 守護的證據：散文計數在同一支腳本上被打歪過不只一次（「三處 tsv」、「三處數值 guard」、
+# 以及修掉前者的那一批自己生出的「另外三處」，逐條見 bin/pr-review-gate 的 tab_count()
+# 註解），每次都是「以為盤點完了而停止尋找」。
 # CONVENTIONS 規則 9：能寫成 test 的檢查必須下沉為機械守護並從 prose 移除。
 #
 # **比的是集合，不是總數。** 第一版比兩個計數，R4 審查用 ablation 打穿了它：拿掉 job
