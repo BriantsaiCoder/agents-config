@@ -338,8 +338,7 @@ review_shape_probe 'review tsv billing 非 true/false 報 review_fields_unparsab
 review_shape_probe 'review tsv suppressed 非數字報 review_fields_unparsable' 'head-new	abc	false'
 # suppressed 只被 printf 消費、不進算術，所以前導零沒有 fail-open 後果——但它與同檔
 # 每一個進算術脈絡的值共用同一條嚴格 regex，這條 canary 讓「為什麼這裡也要嚴格」有
-# 東西釘住。（不寫「另外 N 處」：那個數字在本分支已經被打歪過不只一次，見 bin/pr-review-gate
-# 的 tab_count() 註解所列。）
+# 東西釘住。（不寫「另外 N 處」：站點的完整性由 tab_count() 的不變式斷言守，不由這裡的數字。）
 review_shape_probe 'review tsv suppressed 前導零報 review_fields_unparsable' 'head-new	08	false'
 # latest_review 為空是合法輸入（jq 的 `.commit_id // ""`，代表這個 PR 還沒有任何
 # Copilot review），不得誤擋——這條是上面四條的極性反例。
@@ -405,8 +404,8 @@ fi
 
 # ── 第二輪審查：前導零、job tsv 的 arity、pre-1970 epoch ─────────────────────
 #
-# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。由外部資料驅動的
-# 三個消費端（CI_ABSENT_AFTER、requested、unresolved）會中，且在 main 上行為相同
+# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。由外部資料驅動且
+# **進算術脈絡**的三個消費端（CI_ABSENT_AFTER、requested、unresolved）會中，且在 main 上行為相同
 # ——本分支新增的 guard 原本也沒關掉它們。past_threshold 內的 e 同樣進算術脈絡但打不
 # 中：它是 date 產生的 epoch，形式上不會有前導零，所以沒有對應 canary。
 
@@ -560,11 +559,9 @@ done
 
 # ── tsv arity 不變式：每一處 tsv 解析都要有 tab_count 的 arity 檢查 ──────
 #
-# bin/pr-review-gate 的 tab_count() 宣告了這條不變式，而本分支的歷史就是它需要機械
-# 守護的證據：散文計數在同一支腳本上被打歪過不只一次（「三處 tsv」、「三處數值 guard」、
-# 以及修掉前者的那一批自己生出的「另外三處」，逐條見 bin/pr-review-gate 的 tab_count()
-# 註解），每次都是「以為盤點完了而停止尋找」。
-# CONVENTIONS 規則 9：能寫成 test 的檢查必須下沉為機械守護並從 prose 移除。
+# bin/pr-review-gate 的 tab_count() 宣告了這條不變式。散文計數在這支腳本上反覆寫歪過
+# （歷史見 PR #85 的 commit 序列），每次都是「以為盤點完了而停止尋找」，所以判準下沉到
+# 這裡（規則 9）。
 #
 # **比的是集合，不是總數。** 第一版比兩個計數，R4 審查用 ablation 打穿了它：拿掉 job
 # 端的 arity conjunct、同時在 pr_state 上補一個多餘的 tab_count，兩邊總數仍相等而斷言
@@ -583,8 +580,9 @@ done
 # grep 是 ugrep，撞 sandbox 權限時會靜默回零命中且 exit 0，而它回的是**空字串不是 0**，
 # 拿空字串去比大小會讓 [ ] 報 integer expression expected 並落進錯誤的分支。
 #
-# 先剝註解行同樣沿用該區塊的作法：bin/pr-review-gate 的註解本來就寫過 cut -fN、cut -f3，
-# 哪天寫到 cut -f1 就會灌爆解析點那側而假紅。
+# 先剝**整行**註解，沿用該區塊的作法：bin/pr-review-gate 的整行註解本來就寫過 cut -fN、
+# cut -f3，哪天寫到 cut -f1 就會灌爆解析點那側而假紅。行尾註解不在剝除範圍內——真在
+# 程式碼後面寫一個 cut -f 的例子會假紅，方向是 fail-closed，實測確認過。
 _s_rc=0
 _src="$(grep -vE '^[[:space:]]*#' -- "$GATE")" || _s_rc=$?
 if [ "$_s_rc" -ge 2 ] || [ -z "$_src" ]; then
@@ -593,16 +591,29 @@ else
   # 空白一律寫成 [[:space:]]*：這個斷言問的是「解析點有沒有對應 guard」，不該因為有人
   # 調整排版就整套假紅。producer 那側同理，用 [|][[:space:]]*@tsv 而非 fixed-string。
   _parsed="$(printf '%s\n' "$_src" | grep -oE 'printf[[:space:]]+.%s.[[:space:]]+"[$][a-z_]+"[[:space:]]*[|][[:space:]]*cut[[:space:]]+-f' | grep -oE '[$][a-z_]+' | sort -u)"
-  _guarded="$(printf '%s\n' "$_src" | grep -oE 'tab_count[[:space:]]+"[$][a-z_]+"' | grep -oE '[$][a-z_]+' | sort -u)"
+  # guard 那側要求 tab_count 的結果後面接 -eq：只做「有沒有提到 tab_count」的文字比對時，
+  # 一行 debug printf 也會算成有 guard（實測：新增解析點 + 一行 printf 'dbg %s' 引用它，
+  # 斷言照樣綠）。接 -eq 才是真的拿它去比對欄數。
+  _guarded="$(printf '%s\n' "$_src" | grep -oE 'tab_count[[:space:]]+"[$][a-z_]+"\)"[[:space:]]*-eq' | grep -oE '[$][a-z_]+' | sort -u)"
   _prod_n="$(printf '%s\n' "$_src" | grep -cE -- '[|][[:space:]]*@tsv')"
   _parsed_n="$(printf '%s\n' "$_parsed" | grep -c . )"
-  if [ -z "$_parsed" ]; then
+  # 兩個計數在比較前先驗形狀。改成 != 只解掉「報 integer expression expected」那半，
+  # 兩個空字串仍然相等而落進 PASS——實測用一支只讓 grep -c 回空的替身，套件仍 76/0 全綠。
+  # 這是本區塊自己在守的那個形狀（工具失敗被印成通過），所以判別要在比較之前。
+  _counts_ok=yes
+  case "$_prod_n$_parsed_n" in ''|*[!0-9]*) _counts_ok=no ;; esac
+  if [ "$_counts_ok" = no ]; then
+    ((fail += 1)); printf 'FAIL arity 不變式：計數非數字（grep 工具失敗，非程式碼變更）：producer=%s 解析點=%s\n' "$_prod_n" "$_parsed_n"
+  elif [ -z "$_parsed" ]; then
     ((fail += 1)); printf 'FAIL arity 不變式：抽不出任何 tsv 解析點（pattern 已與實作脫節）\n'
   elif [ "$_parsed" != "$_guarded" ]; then
-    ((fail += 1)); printf 'FAIL 有 tsv 解析沒有對應的 arity 檢查\n'
+    ((fail += 1)); printf 'FAIL tsv 解析點與 arity 檢查的集合不一致\n'
     printf '       解析：%s\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"
     printf '       守護：%s\n' "$(printf '%s' "$_guarded" | tr '\n' ' ')"
-  elif [ "$_prod_n" -ne "$_parsed_n" ]; then
+  # 用 != 而非 -ne：兩邊都是 grep -c 產出的十進位字串，語意等價但不進算術脈絡。
+  # -ne 在 grep 被替身掉、回空字串時會報 integer expression expected 並落進 else，
+  # 於是工具失敗被印成 PASS（實測 76/0、exit 0）——正是本區塊上方註解警告的那個形狀。
+  elif [ "$_prod_n" != "$_parsed_n" ]; then
     ((fail += 1)); printf 'FAIL tsv producer 數與解析點數不符（producer 未被 cut 解析，或抽取 pattern 已漂移）：producer=%s 解析點=%s\n' "$_prod_n" "$_parsed_n"
   else
     ((pass += 1)); printf 'PASS 每處 tsv 解析都有 arity 檢查（%s）\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"

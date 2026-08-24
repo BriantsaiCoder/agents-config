@@ -25,12 +25,8 @@ unavailable() {
 # 數量恆為「欄數 − 1」。
 #
 # **不變式：本檔每一處 tsv 解析都要用它做 arity 檢查，一處都不能少。** 少了它，多一欄的
-# 輸入每一欄都切得對、逐欄檢查全過，壞掉的形狀就直落成可合併狀態——thread（2cac0b0）與
-# job（3f524fe）兩處就是這樣被找出來的。這個「每一處」由 tests/pr-review-gate.sh 的靜態斷言釘住，**不由註解裡的
-# 數字承擔**：本分支已經把散文計數打歪過——「三處 tsv」（3f524fe 修）、「三處數值 guard」
-# （9385844 修，換成一個自相矛盾的界定）、以及修掉前者的那一批自己生出的「另外三處」
-# （6968a32 修）。不寫總數：列舉本身就是證據，總數是會過期的第二份真相。
-# CONVENTIONS 規則 9 要求這種檢查下沉為機械守護並從 prose 移除。
+# 輸入每一欄都切得對、逐欄檢查全過，壞掉的形狀就直落成可合併狀態。這個「每一處」由
+# tests/pr-review-gate.sh 的靜態斷言釘住，不由註解裡的數字承擔（PR #85；規則 9）。
 tab_count() { printf '%s' "$1" | tr -cd '\t' | wc -c; }
 
 repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
@@ -316,7 +312,7 @@ billing_review=$(printf '%s' "$latest_review_state" | cut -f3)
 #   billing_review 驗正值而非非空，理由同 draft：它是布林語意的欄位，任何非 true/false
 #   的值都靜默讀成「不是 billing」，於是 review=UNAVAILABLE 這條出口整個消失。
 #   suppressed 從「靜默改判為 0」升級為擋下來（此項超出原 handoff 範圍，已於 2026-08-24
-#   經使用者明示追認保留 fail-closed，PR #85）：jq 那段在無命中時已經自己回字面 "0"，
+#   經使用者明示追認保留 fail-closed；追認記錄見 PR #85 的 S5 ledger 段「已追認」）：jq 那段在無命中時已經自己回字面 "0"，
 #   所以走到這裡還不是數字就只可能是 shape drift。靜默歸零會讓 2026-08-08 那類
 #   「六條 finding 有四條在 Suppressed 摺疊區、gate 仍回 PASS」的 fail-open 無聲復發（實測：
 #   多一欄／billing 非布林／suppressed 非數字三種形狀都直落 STATE=PASS suppressed=0）。
@@ -364,8 +360,8 @@ has_next=$(printf '%s' "$thread_state" | cut -f2)
 # 當成通過。比照 suppressed 的既有數值 guard。
 # 三個 conjunct 合成一條（先前拆成兩條、發同一個 reason，診斷力被稀釋而無收益）。
 # **合成後 conjunct 之間的順序不再 load-bearing**，實測任意調換三者順序，套件全綠、零案例
-# 轉紅。理由不是「三者都是字串比較」——第三個 conjunct 的 -eq 就是算術比較，本檔 :124 起
-# 整段講的正是算術脈絡會 abort。成立的理由是**運算元的來源**：tab_count 的輸出恆為 wc -c
+# 轉紅。理由不是「三者都是字串比較」——第三個 conjunct 的 -eq 就是算術比較，
+# past_threshold() 開頭那段講的正是算術脈絡會 abort。成立的理由是**運算元的來源**：tab_count 的輸出恆為 wc -c
 # 產生的數字，$thread_state 本身不進算術，所以這個 conjunct 不論排在哪都不會 abort。
 # 真正 load-bearing 的是整條 guard 必須
 # 在下方 [[ "$unresolved" -gt 0 ]] 之前——拆成兩條 statement 的時代那句話指的是這個，
