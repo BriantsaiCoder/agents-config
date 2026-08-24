@@ -578,6 +578,37 @@ has "bot fallback cannot use author self-review" 'independent read-only reviewer
 has "bot helper cannot manufacture fallback PASS" 'manual evidence branch.*pr-review-gate.*UNAVAILABLE.*不得.*PASS' skills/dev-workflow/references/review-triage.md
 has "bot UNAVAILABLE remains visible under fallback" 'bot 狀態仍記 `UNAVAILABLE`.*不得偽裝成 PASS' skills/dev-workflow/references/review-triage.md
 
+# fallback 允許側的極性。用「行」當單位而不是 sed 區塊：區塊要有結束錨點，而結束錨點
+# 失效是 fail-open——PR #85 實測改掉結束錨點的標題後，區塊從 3 行漲到 38 行、斷言照樣綠。
+# 行沒有這個失效面。允許側是窮舉的一個 reason，所以這裡比對的是**集合**而不是「有沒有
+# 提到某個名字」：後者擋不住加法式放寬（PR #91 兩軸各自實測打穿，見該 PR 的 S12／F3-A4）。
+triage_md="$ROOT/skills/dev-workflow/references/review-triage.md"
+allow_rc=0
+allow_line=$(rg -N -e '^[[:space:]]*- \*\*允許側窮舉為一個 reason\*\*' "$triage_md") || allow_rc=$?
+allow_hits=$(printf '%s' "$allow_line" | grep -c '' )
+# 反引號內整段是 [a-z_]+ 的才算 reason 名：`UNAVAILABLE` 是大寫、檔名含 / 與 .，都不會命中。
+allow_names=$(printf '%s' "$allow_line" | rg -o -e '`[a-z][a-z_]*`' | tr -d '`' | sort -u)
+if [ "$allow_rc" -ge 2 ]; then
+  ng "fallback allow side is a closed set (rg 掃描失敗 rc=${allow_rc}，工具問題非程式碼變更)"
+elif [ "$allow_rc" -ne 0 ]; then
+  ng "fallback allow side is a closed set (找不到允許側錨點——被改寫過？)"
+elif [ "$allow_hits" -ne 1 ]; then
+  ng "fallback allow side is a closed set (允許側錨點命中 $allow_hits 行，應為 1)"
+elif [ "$allow_names" != "review_actions_billing_or_quota" ]; then
+  ng "fallback allow side is a closed set (允許側出現的 reason 集合是 [$allow_names])"
+else
+  ok "fallback allow side is a closed set"
+fi
+
+# 排除側的開頭是逐字釘住的：把它改寫成帶第二個例外的形式（「除 A 與 B 外」）會先紅。
+# 沒有這一條，放寬可以繞過上面的集合檢查、改從排除側的例外句進來。
+has "fallback exclude side carves out exactly the billing reason" \
+  '^[[:space:]]*- \*\*除 `review_actions_billing_or_quota` 外，helper 回的任何 `UNAVAILABLE` 一律不得 fallback\*\*' \
+  skills/dev-workflow/references/review-triage.md
+has "request failures are named on the exclude side" \
+  'review_request_failed.*MUST 修 helper 或 retry' \
+  skills/dev-workflow/references/review-triage.md
+
 has "ledger records conditional RED or same-repro evidence" 'stable.*valuable.*RED.*否則.*repro.*before／after.*理由' skills/dev-workflow/references/ledgers.md
 has "reviewer bug findings preserve conditional RED" 'stable.*valuable.*RED.*否則.*同一 repro.*before／after.*理由' skills/dev-workflow/references/reviewer-template.md
 has "S5 bug findings preserve conditional RED" 'bug finding.*stable.*valuable.*RED.*否則.*repro.*before／after.*理由' skills/dev-workflow/SKILL.md
