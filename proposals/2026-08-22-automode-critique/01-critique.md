@@ -158,9 +158,13 @@ Binary offset ~369596，每一條錯誤路徑的回傳都是 `{shouldBlock: true
 
 今天在本 session 現場複現兩次，逐字元相同的指令，相隔約 10 分鐘，結果相反：
 
+（下方與 §B4 的逐字記錄中，本機使用者名以 `<user>` 代替。**路徑形式本身是實測資料**
+——絕對路徑與 `~` 是否被 classifier 一視同仁正是 §B4 在比的東西，所以只換使用者名，
+不把絕對路徑改寫成 `~`。）
+
 ```
 # 01:28 BLOCKED → 01:38 ALLOWED
-cd /Users/pochientsai/.claude/projects && find . -name '*.jsonl' -type f 2>/dev/null | wc -l; ...
+cd /Users/<user>/.claude/projects && find . -name '*.jsonl' -type f 2>/dev/null | wc -l; ...
 
 # 01:27 BLOCKED → 01:39 ALLOWED
 awk 'NR>=369300 && NR<=369360 {printf "%d\t%d\t%s\n", NR, length($0), substr($0,1,60)}' "$SP/cc-strings.txt" | head
@@ -283,7 +287,7 @@ and pushing to a feature branch in either is a Local Operation, not scope escala
 
 > Route every settings.json change through the **Edit tool, where the diff is visible** — never shell redirection, never a Write-tool whole-file overwrite.
 
-但 2026-08-15 05:25 的實測：`Edit(/Users/pochientsai/.claude/settings.json)` **被 classifier 擋下**。同型態的 `Edit(~/.claude/CLAUDE.md)` 在 2026-08-03 被擋 2 次（memory `read-stale-snapshot-and-claudemd-write-block` 已記錄）。
+但 2026-08-15 05:25 的實測：`Edit(/Users/<user>/.claude/settings.json)` **被 classifier 擋下**。同型態的 `Edit(~/.claude/CLAUDE.md)` 在 2026-08-03 被擋 2 次（memory `read-stale-snapshot-and-claudemd-write-block` 已記錄）。
 
 但這個「關閉」是機率性的，不是確定性的：同一筆 `Edit(settings.json)` 在 **+2 次呼叫後就成功**，兩筆 `Edit(CLAUDE.md)` 都在 **+1 次呼叫後成功**（見 A4 表）。
 
