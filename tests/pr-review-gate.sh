@@ -302,6 +302,184 @@ thread_shape_probe() { # $1=名稱 $2=tsv
 }
 thread_shape_probe 'thread tsv 純數字報 thread_fields_unparsable' '5'
 thread_shape_probe 'thread tsv has_next 為空報 thread_fields_unparsable' '0	'
+# thread 原本沒有 arity conjunct（見 bin/pr-review-gate 的 tab_count() 不變式）：同一個
+# 「多一欄」形狀在 review 擋得住、在這裡卻每一欄檢查都通過而直落 rc=0 STATE=PASS，而
+# hard_deny[1] 只認 PASS／PASS_NO_CI。與 pr、review、job 補的是同一個洞——列名而不列數，
+# 站點的完整性由 tab_count() 的不變式斷言守。
+thread_shape_probe 'thread tsv 多一欄報 thread_fields_unparsable' '0	false	EXTRA'
+thread_shape_probe 'thread tsv 多兩欄報 thread_fields_unparsable' '0	false	EXTRA	MORE'
+
+# ── review tsv 與 requested：99eb2fc 與 2cac0b0 補上 guard 的兩個 ────────────
+#
+# review tsv 無分隔符時 cut -fN 每個 N 都回整行，於是 latest_review 拿到整行。整行只要
+# 不等於 head 就走 review=STALE，而該分支會對 GitHub 送出一次 requested_reviewers POST
+# ——垃圾輸入產生外部寫入，與上面 pr tsv 那條同型，只是載具換成 review 端。
+# 同一形狀下 suppressed 也拿到整行，舊版靜默改判為 0：2026-08-08 那類「六條 finding 有
+# 四條在 Suppressed 摺疊區、gate 仍回 PASS」的 fail-open 會再次無聲成立。
+review_shape_probe() { # $1=名稱 $2=tsv
+  local name="$1" tsv="$2" out req
+  : > "$REQUEST_LOG"
+  out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    GH_FAKE_REVIEW_TSV="$tsv" "$GATE" 42 2>&1)
+  req=$(wc -l < "$REQUEST_LOG" | tr -d ' ')
+  if [[ "$out" == *"reason=review_fields_unparsable"* && "$req" -eq 0 ]]; then
+    ((pass += 1)); printf 'PASS %s\n' "$name"
+  else
+    ((fail += 1)); printf 'FAIL %s: output=%s requests=%s\n' "$name" "$out" "$req"
+  fi
+}
+# 整行不等於 head 是關鍵：等於 head 會走 review=CURRENT 而看不到 POST 那條路徑。
+review_shape_probe 'review tsv 無分隔符報 review_fields_unparsable 且零外部請求' 'review-old'
+review_shape_probe 'review tsv 多一欄報 review_fields_unparsable' 'head-new	0	false	EXTRA'
+review_shape_probe 'review tsv billing 非 true/false 報 review_fields_unparsable' 'head-new	0	null'
+review_shape_probe 'review tsv suppressed 非數字報 review_fields_unparsable' 'head-new	abc	false'
+# suppressed 只被 printf 消費、不進算術，所以前導零沒有 fail-open 後果——但它與同檔
+# 每一個進算術脈絡的值共用同一條嚴格 regex，這條 canary 讓「為什麼這裡也要嚴格」有
+# 東西釘住。（不寫「另外 N 處」：站點的完整性由 tab_count() 的不變式斷言守，不由這裡的數字。）
+review_shape_probe 'review tsv suppressed 前導零報 review_fields_unparsable' 'head-new	08	false'
+# latest_review 為空是合法輸入（jq 的 `.commit_id // ""`，代表這個 PR 還沒有任何
+# Copilot review），不得誤擋——這條是上面四條的極性反例。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  GH_FAKE_REVIEW_TSV="	0	false" "$GATE" 42 2>&1)
+if [[ "$out" == STATE=REQUESTED* ]]; then
+  ((pass += 1)); printf 'PASS 尚無 Copilot review（首欄為空）不被誤判為欄位壞掉\n'
+else
+  ((fail += 1)); printf 'FAIL 尚無 Copilot review（首欄為空）不被誤判為欄位壞掉: output=%s\n' "$out"
+fi
+
+# requested 沒有數值 guard。非數字值進 [[ ]] 算術脈絡撞 set -u，而 bash 3.2 由該脈絡
+# 觸發的中止 **exit status 是 0**、stdout 全空——呼叫端比對 STATE= 拿到空字串，只看
+# exit code 的當成通過。可達性低（jq 的 length 恆為數字），但形狀與 thread 那條相同。
+requested_raw_probe() { # $1=名稱 $2=raw 值
+  local name="$1" raw="$2" out
+  : > "$REQUEST_LOG"
+  out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    GH_FAKE_REQUESTED_RAW="$raw" "$GATE" 42 2>&1)
+  if [[ "$out" == *"reason=requested_not_numeric"* ]]; then
+    ((pass += 1)); printf 'PASS %s\n' "$name"
+  else
+    ((fail += 1)); printf 'FAIL %s: output=%s\n' "$name" "$out"
+  fi
+}
+requested_raw_probe 'requested 非數字報 requested_not_numeric' 'abc'
+
+# CI_ABSENT_AFTER 由環境進入 (( )) 算術脈絡，同樣沒有數值 guard，同樣是 rc=0 stdout 全空
+# 那個形狀。它是唯一來源為環境變數的一個，所以也是唯一使用者自己 export 一個打錯的值
+# 就能踩到的；其餘同型的值都來自 gh API。
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" CI_ABSENT_AFTER=abc \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=NONE FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  FAKE_HEAD_DATE=2026-01-01T00:00:00Z FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=ci_absent_after_not_numeric"* ]]; then
+  ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 非數字報 ci_absent_after_not_numeric\n'
+else
+  ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 非數字報 ci_absent_after_not_numeric: output=%s\n' "$out"
+fi
+
+# 極性反例，釘住 guard 的位置而不只是它的存在：CI 全綠時 past_threshold() 根本不會被
+# 呼叫，CI_ABSENT_AFTER 也就不會被讀取，此時一個打錯的值不得擋掉這個 PR。少了這條，
+# guard 會無聲飄回定義處，而那會讓一個 typo 擋掉每一個 PR（含 CI 全綠的）。
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" CI_ABSENT_AFTER=abc \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=SUCCESS FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  "$GATE" 42 2>&1)
+if [[ "$out" == STATE=PASS* ]]; then
+  ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 用不到時不得擋（guard 收斂在使用點）\n'
+else
+  ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 用不到時不得擋: output=%s\n' "$out"
+fi
+
+# ── 第二輪審查：前導零、job tsv 的 arity、pre-1970 epoch ─────────────────────
+#
+# ^[0-9]+$ 只驗「長得像數字」，不驗「進 bash 算術後還是同一個數」。CI_ABSENT_AFTER、
+# requested、unresolved 三個會中，且在 main 上行為相同——這個分支新增的 guard 原本也沒
+# 關掉它們。past_threshold 內的 e 打不中，但**理由不是分類**：它同樣進算術脈絡、同樣由
+# 外部資料驅動（epoch_of 用 date 從 gh 回的字串算出來），任何分類標籤都會把它一起圈進來。
+# 打不中的理由是形式——date 產出的 epoch 不會有前導零，所以它沒有對應 canary。
+
+# 使用者今天 export 一個打錯的值就能踩到：(( )) 把 0600 讀成八進位 384，門檻由 600 秒
+# 腰斬成 384 秒，PASS_NO_CI 提早成立，而 hard_deny[1] 認這個狀態。
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" CI_ABSENT_AFTER=0600 \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=NONE FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  FAKE_HEAD_DATE=2026-01-01T00:00:00Z FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+  "$GATE" 42 2>&1)
+if [[ "$out" == *"reason=ci_absent_after_not_numeric"* ]]; then
+  ((pass += 1)); printf 'PASS CI_ABSENT_AFTER 前導零報 ci_absent_after_not_numeric\n'
+else
+  ((fail += 1)); printf 'FAIL CI_ABSENT_AFTER 前導零報 ci_absent_after_not_numeric: output=%s\n' "$out"
+fi
+
+# 08／09 在 [[ ]] 算術是**錯誤**不是 false，而 [[ ]] 回非零與「條件不成立」無法區分——
+# 這裡「不成立」正好是 fail-open 那一側：8 條未解 finding 直落 STATE=PASS。
+thread_shape_probe 'thread tsv 前導零報 thread_fields_unparsable' '08	false'
+requested_raw_probe 'requested 前導零報 requested_not_numeric' '08'
+
+# job 端的 tsv 解析（billing_failure_never_ran）。多一欄時四項檢查全過 →
+# return 0 → BILLING_QUOTA → PASS_NO_CI，與 review／thread 修掉的是同一個形狀。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=FAILURE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    FAKE_HEAD_DATE="$NOW" FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+    FAKE_FAILURE_STEPS=0 FAKE_FAILURE_ANNOTATION="$BILLING" \
+    FAKE_FAILED_URLS="https://github.com/owner/repo/actions/runs/900002/job/900002" \
+  GH_FAKE_JOB_TSV="failure	0	head-new	900002	EXTRA" "$GATE" 42 2>&1)
+if [[ "$out" == STATE=FAIL_CI* ]]; then
+  ((pass += 1)); printf 'PASS job tsv 多一欄不得降級成 PASS_NO_CI\n'
+else
+  ((fail += 1)); printf 'FAIL job tsv 多一欄不得降級成 PASS_NO_CI: output=%s\n' "$out"
+fi
+
+# 極性反例：欄數正確時仍須降級——否則一個**恆假**的 guard（arity conjunct 永遠不成立，
+# 於是每個 job 都 return 1）會讓上一條「多一欄不得降級」假綠通過。
+# 實測把 conjunct 改成 -eq 99：本條與既有的「billing failure without steps degrades」
+# 同時轉紅——本條不是唯一守護，它獨佔釘住的是 raw-TSV fixture 這條路徑。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+    FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+    FAKE_HEAD=head-new FAKE_CI=FAILURE FAKE_REVIEW=head-new \
+    FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+    FAKE_HEAD_DATE="$NOW" FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+    FAKE_FAILURE_STEPS=0 FAKE_FAILURE_ANNOTATION="$BILLING" \
+    FAKE_FAILED_URLS="https://github.com/owner/repo/actions/runs/900002/job/900002" \
+  GH_FAKE_JOB_TSV="failure	0	head-new	900002" "$GATE" 42 2>&1)
+if [[ "$out" == STATE=PASS_NO_CI* ]]; then
+  ((pass += 1)); printf 'PASS job tsv 欄數正確時仍降級成 PASS_NO_CI\n'
+else
+  ((fail += 1)); printf 'FAIL job tsv 欄數正確時仍降級成 PASS_NO_CI: output=%s\n' "$out"
+fi
+
+# past_threshold 內 e 的數值檢查有可鑑別的 canary：epoch_of 對 pre-1970 的 committer
+# date 會成功並回負數（1960-01-01 → -315619200，rc=0）。舊的 -n 檢查放行，年齡被算成
+# 超過三十億秒 → past_threshold 為真 → 零 check 的 PR 直接降級成 PASS_NO_CI。
+: > "$REQUEST_LOG"
+out=$(PATH="$FAKEBIN:$PATH" REQUEST_LOG="$REQUEST_LOG" \
+  FAKE_STATE=OPEN FAKE_DRAFT=false FAKE_MERGEABLE=MERGEABLE \
+  FAKE_HEAD=head-new FAKE_CI=NONE FAKE_FAILED_URLS=NONE FAKE_REVIEW=head-new \
+  FAKE_REQUESTED=0 FAKE_UNRESOLVED=0 FAKE_HAS_NEXT=false \
+  FAKE_HEAD_DATE=1960-01-01T00:00:00Z FAKE_CANCELLED_RUN_IDS="" FAKE_CANCELLED_STEPS=0 \
+  "$GATE" 42 2>&1)
+if [[ "$out" == STATE=WAIT_CI* ]]; then
+  ((pass += 1)); printf 'PASS pre-1970 committer date 不得降級成 PASS_NO_CI\n'
+else
+  ((fail += 1)); printf 'FAIL pre-1970 committer date 不得降級成 PASS_NO_CI: output=%s\n' "$out"
+fi
 
 # ── suppressed comments 必須出現在 PASS 那行 ────────────────────────────────
 #
@@ -379,6 +557,69 @@ for _f in "$GATE" "$ROOT/tests/pr-review-gate.sh" "$ROOT/tests/fixtures/fake-gh"
     printf '%s\n' "$_hits" | head -3 | sed 's/^/       /'
   fi
 done
+
+# ── tsv arity 不變式：每一處 tsv 解析都要有 tab_count 的 arity 檢查 ──────
+#
+# bin/pr-review-gate 的 tab_count() 宣告了這條不變式。散文計數在這支腳本上反覆寫歪過
+# （歷史見 PR #85 的 commit 序列），每次都是「以為盤點完了而停止尋找」，所以判準下沉到
+# 這裡（規則 9）。
+#
+# **比的是集合，不是總數。** 第一版比兩個計數，R4 審查用 ablation 打穿了它：拿掉 job
+# 端的 arity conjunct、同時在 pr_state 上補一個多餘的 tab_count，兩邊總數仍相等而斷言
+# 綠燈，但 job tsv 多一欄 → PASS_NO_CI 的 fail-open 真的復發。總數相等是比宣告弱一階
+# 的不變式。改成從兩側各抽出**變數名**再逐一對照，站點錯配就轉紅。
+#
+# 解析點那側抽的是 `printf … "$X" | cut -f`，**不限第幾欄**——某處改成只切第 2、3 欄
+# 一樣會被抽進來，所以那個形狀由前兩個檢查涵蓋。
+#
+# 第三個檢查（producer 數 == 解析點數）守的是另一個形狀：jq 產出了 tsv，卻**完全沒有
+# 走 cut 這條路徑**去解析它（改用 read、awk，或整段被別的寫法取代）。那時前兩個集合
+# 各自仍自洽，只有 producer 與解析點的數目對不上。兩者是 1:1，對不上就是有東西漂移了。
+#
+# **零 magic number。** 沒有任何一邊跟字面值比——那正是本區塊在消滅的東西。工具失敗
+# 靠「剝掉註解後整檔為空」判別，沿用同檔上方 here-doc 掃描區塊已驗證過的機制：本機
+# grep 是 ugrep，撞 sandbox 權限時會靜默回零命中且 exit 0，而它回的是**空字串不是 0**，
+# 拿空字串去比大小會讓 [ ] 報 integer expression expected 並落進錯誤的分支。
+#
+# 先剝**整行**註解，沿用該區塊的作法：bin/pr-review-gate 的整行註解本來就寫過 cut -fN、
+# cut -f3，哪天寫到 cut -f1 就會灌爆解析點那側而假紅。行尾註解不在剝除範圍內——真在
+# 程式碼後面寫一個 cut -f 的例子會假紅，方向是 fail-closed，實測確認過。
+_s_rc=0
+_src="$(grep -vE '^[[:space:]]*#' -- "$GATE")" || _s_rc=$?
+if [ "$_s_rc" -ge 2 ] || [ -z "$_src" ]; then
+  ((fail += 1)); printf 'FAIL arity 不變式：掃描讀不到內容（grep rc=%s，工具失敗而非程式碼變更）\n' "$_s_rc"
+else
+  # 空白一律寫成 [[:space:]]*：這個斷言問的是「解析點有沒有對應 guard」，不該因為有人
+  # 調整排版就整套假紅。producer 那側同理，用 [|][[:space:]]*@tsv 而非 fixed-string。
+  _parsed="$(printf '%s\n' "$_src" | grep -oE 'printf[[:space:]]+.%s.[[:space:]]+"[$][a-z_]+"[[:space:]]*[|][[:space:]]*cut[[:space:]]+-f' | grep -oE '[$][a-z_]+' | sort -u)"
+  # guard 那側要求 tab_count 的結果後面接 -eq：只做「有沒有提到 tab_count」的文字比對時，
+  # 一行 debug printf 也會算成有 guard（實測：新增解析點 + 一行 printf 'dbg %s' 引用它，
+  # 斷言照樣綠）。接 -eq 才是真的拿它去比對欄數。
+  _guarded="$(printf '%s\n' "$_src" | grep -oE 'tab_count[[:space:]]+"[$][a-z_]+"\)"[[:space:]]*-eq' | grep -oE '[$][a-z_]+' | sort -u)"
+  _prod_n="$(printf '%s\n' "$_src" | grep -cE -- '[|][[:space:]]*@tsv')"
+  _parsed_n="$(printf '%s\n' "$_parsed" | grep -c . )"
+  # 兩個計數在比較前先驗形狀。改成 != 只解掉「報 integer expression expected」那半，
+  # 兩個空字串仍然相等而落進 PASS——實測用一支只讓 grep -c 回空的替身，套件仍 76/0 全綠。
+  # 這是本區塊自己在守的那個形狀（工具失敗被印成通過），所以判別要在比較之前。
+  _counts_ok=yes
+  case "$_prod_n$_parsed_n" in ''|*[!0-9]*) _counts_ok=no ;; esac
+  if [ "$_counts_ok" = no ]; then
+    ((fail += 1)); printf 'FAIL arity 不變式：計數非數字（grep 工具失敗，非程式碼變更）：producer=%s 解析點=%s\n' "$_prod_n" "$_parsed_n"
+  elif [ -z "$_parsed" ]; then
+    ((fail += 1)); printf 'FAIL arity 不變式：抽不出任何 tsv 解析點（pattern 已與實作脫節）\n'
+  elif [ "$_parsed" != "$_guarded" ]; then
+    ((fail += 1)); printf 'FAIL tsv 解析點與 arity 檢查的集合不一致\n'
+    printf '       解析：%s\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"
+    printf '       守護：%s\n' "$(printf '%s' "$_guarded" | tr '\n' ' ')"
+  # 用 != 而非 -ne：兩邊都是 grep -c 產出的十進位字串，語意等價但不進算術脈絡。
+  # -ne 在 grep 被替身掉、回空字串時會報 integer expression expected 並落進 else，
+  # 於是工具失敗被印成 PASS（實測 76/0、exit 0）——正是本區塊上方註解警告的那個形狀。
+  elif [ "$_prod_n" != "$_parsed_n" ]; then
+    ((fail += 1)); printf 'FAIL tsv producer 數與解析點數不符（producer 未被 cut 解析，或抽取 pattern 已漂移）：producer=%s 解析點=%s\n' "$_prod_n" "$_parsed_n"
+  else
+    ((pass += 1)); printf 'PASS 每處 tsv 解析都有 arity 檢查（%s）\n' "$(printf '%s' "$_parsed" | tr '\n' ' ')"
+  fi
+fi
 
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，

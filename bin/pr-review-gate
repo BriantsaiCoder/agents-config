@@ -21,6 +21,14 @@ unavailable() {
   exit 30
 }
 
+# tsv 的分隔符數。@tsv 會把值內的 tab 逸出成字面 \t，所以真正的 tab 只可能是分隔符，
+# 數量恆為「欄數 − 1」。
+#
+# **不變式：本檔每一處 tsv 解析都要用它做 arity 檢查，一處都不能少。** 少了它，多一欄的
+# 輸入每一欄都切得對、逐欄檢查全過，壞掉的形狀就直落成可合併狀態。這個「每一處」由
+# tests/pr-review-gate.sh 的靜態斷言釘住，不由註解裡的數字承擔（PR #85；規則 9）。
+tab_count() { printf '%s' "$1" | tr -cd '\t' | wc -c; }
+
 repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
   unavailable repo_probe_failed
 owner=${repo%%/*}
@@ -79,7 +87,7 @@ url=$(printf '%s' "$pr_state" | cut -f7)
 # tab 只可能是分隔符，數量恆為 6；而 tr 不需要多一個 awk 依賴。
 [[ -n "$state" && -n "$head" && -n "$mergeable" && -n "$url" \
    && ( "$draft" == true || "$draft" == false ) \
-   && "$(printf '%s' "$pr_state" | tr -cd '\t' | wc -c)" -eq 6 ]] ||
+   && "$(tab_count "$pr_state")" -eq 6 ]] ||
   unavailable pr_fields_unparsable
 
 [[ "$state" == OPEN ]] || unavailable pr_not_open
@@ -111,10 +119,37 @@ epoch_of() {
 # 失敗、時鐘偏移讓年齡變成負數，全部回 false——判不出年齡就不准降級，方向一律保守。
 past_threshold() {
   local d e
+  # 進 (( )) 的兩個運算元都驗形狀，不只驗非空。非數字值會被當成變數名，set -u 讓整支
+  # 中止，而 bash 3.2 由算術脈絡觸發的中止 **exit status 是 0**、stdout 全空——那正是
+  # 下面 thread 那組 guard 已經寫明「這支工具最不能有的形狀」。
+  #
+  # CI_ABSENT_AFTER 驗在這裡而不是在它的定義處，是刻意收斂範圍：這個值只在 CI 為 NONE
+  # 或 cancelled 時才會被讀到，驗在定義處會讓一個打錯的環境變數擋掉**每一個** PR，包含
+  # CI 全綠、這個值根本不會被讀取的那些，而且會落在 repo= 有、pr= 與 url= 皆無的那種
+  # 最難判讀的輸出形狀上（理由見本檔開頭）。unavailable 走 exit，在 function 內一樣會
+  # 結束整支，所以收斂位置不會削弱防護。本檔進算術脈絡的外部純量是 CI_ABSENT_AFTER、
+  # e、requested、unresolved，四個都用同一條嚴格 regex（suppressed 只被 printf 消費，
+  # 共用該 regex 純為一致）。**這幾個裡只有 CI_ABSENT_AFTER 來自環境變數**，其餘都來自
+  # gh API（e 是 epoch_of 用 date 從 gh 回的字串算出來的，危險值由 date 產生——pre-1970
+  # 那條 canary 正是為此）。所以只有 CI_ABSENT_AFTER 是使用者自己就能踩到的。
+  # 不列數字的理由同 tab_count() 的不變式。
+  #
+  # 用 ^(0|[1-9][0-9]*)$ 而非 ^[0-9]+$：後者只驗「長得像數字」，不驗「進 bash 算術後
+  # 還是同一個數」。CI_ABSENT_AFTER=0600 通過 ^[0-9]+$，而 (( )) 把前導零讀成八進位 384
+  # ——門檻由 600 秒腰斬成 384 秒，PASS_NO_CI 提早成立，而 hard_deny[1] 認這個狀態。
+  # 承上：這是唯一一個 export 一個打錯的值就能踩到的，不需要任何外部漂移。
+  [[ "$CI_ABSENT_AFTER" =~ ^(0|[1-9][0-9]*)$ ]] || unavailable ci_absent_after_not_numeric
   d=$(gh api "repos/$repo/commits/$head" --jq '.commit.committer.date' 2>/dev/null) || return 1
   [[ -n "$d" ]] || return 1
   e=$(epoch_of "$d") || return 1
-  [[ -n "$e" ]] || return 1
+  # e 是同一個 (( )) 的另一個運算元，驗數值而非非空。**這不是純 defence-in-depth**：
+  # epoch_of 對 pre-1970 的 committer date 會成功並回負數（實測 1960-01-01 → -315619200，
+  # rc=0），舊的 -n 檢查放行、本檢查擋下。放行的後果是年齡被算成超過三十億秒、
+  # past_threshold 回 true、零 check 的 PR 直接降級成 PASS_NO_CI。git commit --date
+  # 構造得出來，可達性低但不是零。對應的 RED canary 見 tests——但那條釘的是「-n → 驗數值」
+  # 這一步。從 ^[0-9]+$ 再收緊到本行的嚴格形式**沒有對應 canary**（實測退回 ^[0-9]+$ 後
+  # 套件全綠）：date 產生的 epoch 不會有前導零，本行的嚴格化純為與同檔其餘 guard 一致。
+  [[ "$e" =~ ^(0|[1-9][0-9]*)$ ]] || return 1
   (( $(date -u +%s) - e >= CI_ABSENT_AFTER ))
 }
 
@@ -171,8 +206,12 @@ billing_failure_never_ran() {
     steps=$(printf '%s' "$job" | cut -f2)
     job_head=$(printf '%s' "$job" | cut -f3)
     job_run_id=$(printf '%s' "$job" | cut -f4)
+    # arity conjunct 同 tab_count() 的不變式。少了它，多一欄的 job tsv 每一欄都切得對、
+    # 四項檢查全過 → return 0 → BILLING_QUOTA → PASS_NO_CI，而那是 hard_deny[1] 認可的
+    # 可合併狀態。這處是後來才被找出來的，先前的註解把它漏數了。
     [[ "$conclusion" == failure && "$steps" == 0 &&
-       "$job_head" == "$head" && "$job_run_id" == "$run_id" ]] || return 1
+       "$job_head" == "$head" && "$job_run_id" == "$run_id" &&
+       "$(tab_count "$job")" -eq 3 ]] || return 1
     gh api "repos/$repo/check-runs/$job_id/annotations" --jq '
       any(.[];
         ((.message // "") | ascii_downcase | contains("job was not started")) and
@@ -262,10 +301,34 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
 latest_review=$(printf '%s' "$latest_review_state" | cut -f1)
 suppressed=$(printf '%s' "$latest_review_state" | cut -f2)
 billing_review=$(printf '%s' "$latest_review_state" | cut -f3)
-[[ "$suppressed" =~ ^[0-9]+$ ]] || suppressed=0
+# 這處原本整條 *_fields_unparsable guard 都沒有（其中的 arity conjunct 屬 tab_count() 的
+# 不變式，billing 布林與 suppressed regex 兩項不屬），形狀比照 pr_state：
+#   最嚴重的輸入是「整行無分隔符」——cut -fN 每個 N 都回整行，於是 latest_review 拿到
+#   整行，只要它不等於 head 就走 review=STALE，而該分支會對 GitHub 送出一次
+#   requested_reviewers POST。垃圾輸入產生外部寫入，與 pr_state 那條同型（實測：
+#   STATE=REQUESTED、requests=1）。該形狀實際由 billing conjunct 先短路接住（cut -f3
+#   同樣回整行，非 true/false）；數 tab 那條獨佔釘住的是「多一欄」。兩者重複覆蓋是
+#   刻意的，但別把覆蓋意圖誤讀成「哪個 conjunct 在守哪個形狀」。
+#   billing_review 驗正值而非非空，理由同 draft：它是布林語意的欄位，任何非 true/false
+#   的值都靜默讀成「不是 billing」，於是 review=UNAVAILABLE 這條出口整個消失。
+#   suppressed 從「靜默改判為 0」升級為擋下來（此項超出原 handoff 範圍，已於 2026-08-24
+#   經使用者明示追認保留 fail-closed；追認記錄見 PR #85 的 S5 ledger 段「已追認」）：jq 那段在無命中時已經自己回字面 "0"，
+#   所以走到這裡還不是數字就只可能是 shape drift。靜默歸零會讓 2026-08-08 那類
+#   「六條 finding 有四條在 Suppressed 摺疊區、gate 仍回 PASS」的 fail-open 無聲復發（實測：
+#   多一欄／billing 非布林／suppressed 非數字三種形狀都直落 STATE=PASS suppressed=0）。
+# latest_review 刻意不驗非空：`.commit_id // ""` 在「這個 PR 還沒有任何 Copilot review」
+# 時就是空字串，那是合法輸入，驗非空會把最常見的新 PR 誤擋成欄位壞掉。
+[[ ( "$billing_review" == true || "$billing_review" == false ) \
+   && "$suppressed" =~ ^(0|[1-9][0-9]*)$ \
+   && "$(tab_count "$latest_review_state")" -eq 2 ]] ||
+  unavailable review_fields_unparsable
 requested=$(gh api "repos/$repo/pulls/$pr/requested_reviewers" \
   --jq '[.users[] | select(.login | ascii_downcase | contains("copilot"))] | length') ||
   unavailable requested_reviewer_probe_failed
+# jq 的 length 恆為數字，所以這條的可達性低——留著是因為它守的是同一個「rc=0、stdout
+# 全空」形狀，而 requested 有兩個算術脈絡消費端（review=STALE 分支與末尾的 WAIT_REVIEW
+# 判定）。一行的成本，不必為可達性辯論。
+[[ "$requested" =~ ^(0|[1-9][0-9]*)$ ]] || unavailable requested_not_numeric
 thread_state=$(gh api graphql -F owner="$owner" -F name="$name" -F number="$pr" -f query='
   query($owner: String!, $name: String!, $number: Int!) {
     repository(owner: $owner, name: $name) {
@@ -295,12 +358,25 @@ has_next=$(printf '%s' "$thread_state" | cut -f2)
 # set -u 中止——而 bash 3.2 由 [[ ]] 算術脈絡觸發的中止 **exit status 是 0**、stdout 全空。
 # 那是這支工具最不能有的形狀：呼叫端比對 STATE= 字串會拿到空字串，只看 exit code 的會
 # 當成通過。比照 suppressed 的既有數值 guard。
-[[ "$unresolved" =~ ^[0-9]+$ ]] || unavailable thread_fields_unparsable
-# has_next 與 draft 同型：驗正值而非非空。上面那條數值 guard 擋不住「tsv 是純數字」
-# （例如 "5"）與「第二欄為空」兩個形狀 —— 兩者 unresolved 都通過數值檢查，而 has_next
-# 拿到 "5" 或 ""，於是報 review_thread_limit_exceeded 這個假原因。方向本來就 fail-closed，
-# 這條補的是「報得出真因」。
-[[ "$has_next" == true || "$has_next" == false ]] || unavailable thread_fields_unparsable
+# 三個 conjunct 合成一條（先前拆成兩條、發同一個 reason，診斷力被稀釋而無收益）。
+# **合成後 conjunct 之間的順序不再 load-bearing**，實測任意調換三者順序，套件全綠、零案例
+# 轉紅。理由不是「三者都是字串比較」——第三個 conjunct 的 -eq 就是算術比較，
+# past_threshold() 開頭那段講的正是算術脈絡會 abort。成立的理由是**運算元的來源**：tab_count 的輸出恆為 wc -c
+# 產生的數字，$thread_state 本身不進算術，所以這個 conjunct 不論排在哪都不會 abort。
+# 真正 load-bearing 的是整條 guard 必須
+# 在下方 [[ "$unresolved" -gt 0 ]] 之前——拆成兩條 statement 的時代那句話指的是這個，
+# 合併後留著會讓讀者以為有個順序被測試釘住。
+#   unresolved  嚴格數值。^[0-9]+$ 會放行 "08"，而 [[ "08" -gt 0 ]] 報
+#               value too great for base → rc=0 STATE=PASS，8 條未解 finding 被判通過。
+#   has_next    驗正值而非非空，同 draft。純數字 tsv（"5"）與第二欄為空兩個形狀都會
+#               通過數值檢查而讓 has_next 拿到 "5" 或 ""，於是報 review_thread_limit_exceeded
+#               這個假原因；這條補的是「報得出真因」。
+#   arity       這處原本沒有它（同 tab_count() 的不變式）：實測 "0\tfalse\tEXTRA" 每一欄
+#               檢查都通過而直落 rc=0 STATE=PASS，與 review 那處是同一個形狀。
+[[ "$unresolved" =~ ^(0|[1-9][0-9]*)$ \
+   && ( "$has_next" == true || "$has_next" == false ) \
+   && "$(tab_count "$thread_state")" -eq 1 ]] ||
+  unavailable thread_fields_unparsable
 # 走到這裡只剩字面 true 或 false；true 代表還有下一頁沒讀，fail-closed。
 [[ "$has_next" == false ]] || unavailable review_thread_limit_exceeded
 
