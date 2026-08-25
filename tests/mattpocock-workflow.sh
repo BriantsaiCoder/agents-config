@@ -22,7 +22,8 @@ fi
 # 那處 `rg -o`（提取不是判別）、`rg --hidden` 那處（要 --hidden 與 --glob）、
 # delivery_contract_valid（POSIX ERE，見該處註解）。
 # shellcheck source=tests/lib/scan.sh
-. "$ROOT/tests/lib/scan.sh"
+. "$ROOT/tests/lib/scan.sh" ||
+  { printf '  FAIL  掃描判別 lib 缺席（tests/lib/scan.sh）\n'; exit 1; }
 
 # rc 語意：掃描可信時 return 0，不可信時 ng 並 return 1。注意這**不是**「不論 ok／ng
 # 都 return 0」——lacks() 在斷言失敗（pattern 真的命中）時也 return 1，所以 rc 單獨

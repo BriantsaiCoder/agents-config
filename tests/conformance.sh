@@ -16,39 +16,49 @@ skip_check() { printf '  SKIP  %s\n' "$1"; skipped=$((skipped + 1)); }
 # 用腳本自身的位置而非 ${AGENTS}：本檔的 host-facing 檢查刻意讀 ${AGENTS}（預設 ~/.agents），
 # 但**共用判別必須來自受審 tree**，否則在 worktree／複本上跑的是 main 的那一份。
 # shellcheck source=tests/lib/scan.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh"
+. "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh" ||
+  { printf '  FAIL  掃描判別 lib 缺席（tests/lib/scan.sh）\n'; exit 1; }
 
 # negative control 驗的是**印出來的判定**，不只是 rc：本 issue 的症狀就是「印出 PASS」，
 # 而 ok／ng 都 return 0，helper 的 rc 只承載「掃描可不可信」。純 rc 版連
 # `ok "$1"; return 1` 這種假 helper 都會放行（PR #96 的 S5 R2 實測）。
 # 探測組合一律選「真 rg 下會 PASS」的，否則 shim 沒生效時 fixture 也會綠、理由卻不對。
-scan_probe_file="$AGENTS/CONVENTIONS.md"
-assert_scan_fails_closed() {  # <label-prefix> <shim-rc> <helper> <args...>
-  local prefix="$1" shim_rc="$2" why out
-  shift 2
-  case "$shim_rc" in
-    2) why='the scanner errors' ;;
-    0) why='the scanner exits 0 with no output' ;;
-    *) why="the scanner returns rc=$shim_rc" ;;
-  esac
-  out=$( (rg() { return "$shim_rc"; }; "$@" && printf '  PASS  probe\n' || printf '  FAIL  probe\n') 2>&1 )
-  case "$out" in
-    *'  PASS  '*) ng "$prefix fails closed when $why" ;;
-    *'  FAIL  '*) ok "$prefix fails closed when $why" ;;
-    *)            ng "$prefix fails closed when $why" ;;
-  esac
-}
+# 掃描器不在就先出聲：沒有這條的話 rg 缺席時三十幾條斷言各印一行歸因錯誤的結果，
+# 沒有一行說得出「ripgrep 不在」。形狀沿用姊妹檔 mattpocock-workflow.sh。
+if command -v rg >/dev/null 2>&1; then
+  ok "ripgrep scanner is available"
+else
+  ng "ripgrep scanner is available"
+fi
+
+# control fixture 用受審 tree 裡的 lib 而不是 ${AGENTS}/CONVENTIONS.md：後者是 live
+# host 檔，positive control 的綠不該取決於它裡面有沒有某個字（同上方的原則）。
+# 不用本檔自己：sentinel 的字面就寫在下面的 control 裡，掃自己會命中，
+# 那個探針就不再是「保證不存在」。
+scan_probe_file="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh"
 for _scan_shim_rc in 2 0; do
-  assert_scan_fails_closed scan_hit    "$_scan_shim_rc" scan_hit    '規則' "$scan_probe_file"
-  assert_scan_fails_closed scan_hit_f  "$_scan_shim_rc" scan_hit_f  '規則' "$scan_probe_file"
+  assert_fails_closed scan_hit    "$_scan_shim_rc" scan_verdict scan_hit    'rg_hits' "$scan_probe_file"
+  assert_fails_closed scan_hit_f  "$_scan_shim_rc" scan_verdict scan_hit_f  'rg_hits' "$scan_probe_file"
   # 反向的兩支不能寫成 `! scan_hit`——掃描不可信時 scan_hit 回非 0，`!` 反轉成 true
   # 就把違規放行了。探測 pattern 用保證不存在的 sentinel。
-  assert_scan_fails_closed scan_miss   "$_scan_shim_rc" scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
-  assert_scan_fails_closed scan_miss_f "$_scan_shim_rc" scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+  assert_fails_closed scan_miss   "$_scan_shim_rc" scan_verdict scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+  assert_fails_closed scan_miss_f "$_scan_shim_rc" scan_verdict scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
 done
 # clean positive control（evidence-integrity.md 要求成對）
-scan_hit    '規則' "$scan_probe_file" && ok "scan_hit accepts its clean positive control" \
+scan_hit    'rg_hits' "$scan_probe_file" && ok "scan_hit accepts its clean positive control" \
   || ng "scan_hit accepts its clean positive control"
+scan_hit_f  'rg_hits' "$scan_probe_file" && ok "scan_hit_f accepts its clean positive control" \
+  || ng "scan_hit_f accepts its clean positive control"
+scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss accepts its clean positive control" \
+  || ng "scan_miss accepts its clean positive control"
+# known-bad control：helper 本身退化（例如拿掉計數判定）時必須有東西轉紅。
+# 只有 negative control 的話，把 scan_hit 改成「可信時恆真」十條控制項照樣全綠。
+scan_hit 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" &&
+  ng "scan_hit rejects its known-bad control" ||
+  ok "scan_hit rejects its known-bad control"
+scan_miss 'rg_hits' "$scan_probe_file" &&
+  ng "scan_miss rejects its known-bad control" ||
+  ok "scan_miss rejects its known-bad control"
 scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss_f accepts its clean positive control" \
   || ng "scan_miss_f accepts its clean positive control"
 
@@ -270,10 +280,12 @@ fi
 
 # 規則 12 標題不得再叫「常駐面」：四個檔裡 tier1／tier2 不進 context，
 # ~/.claude/tests/repo-integrity.sh 有斷言擋著它們被 @-import。
-if scan_hit '^## 12\..*常駐面' "$AGENTS/CONVENTIONS.md"; then
-  ng "CONVENTIONS 規則 12 標題退回「常駐面」（tier1／tier2 並不常駐）"
-else
+# 用 scan_miss 而不是 `if scan_hit; then ng; else ok`：後者在掃描不可信時走 else 印
+# PASS——與 `! scan_hit` 是同一個陷阱，只是倒過來寫。
+if scan_miss '^## 12\..*常駐面' "$AGENTS/CONVENTIONS.md"; then
   ok "CONVENTIONS 規則 12 標題未誤稱常駐面"
+else
+  ng "CONVENTIONS 規則 12 標題退回「常駐面」（tier1／tier2 並不常駐）"
 fi
 
 if git -C "$HOME/.agents" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -287,13 +299,14 @@ fi
 
 ci_workflow="$AGENTS/.github/workflows/ci.yml"
 if [ -f "$ci_workflow" ] &&
-  ! grep -Eq 'AGENTS_DEPLOY_ROOT|dist/(skill-index\.md|AGENTS\.md|copilot-instructions\.md)|bin/agents-sync[[:space:]]+(--deploy|--only)' "$ci_workflow"; then
+  scan_miss 'AGENTS_DEPLOY_ROOT|dist/(skill-index\.md|AGENTS\.md|copilot-instructions\.md)|bin/agents-sync[[:space:]]+(--deploy|--only)' "$ci_workflow"; then
   ok "CI uses shared-skills contract"
 else
   ng "CI still consumes retired agents-sync deployment"
 fi
 
-if bash -n "$AGENTS"/bin/* "$AGENTS"/hooks/*.sh "$AGENTS"/tests/*.sh; then
+# tests/lib/*.sh 要單獨列：單層 glob 不遞迴，被所有測試 source 的共用檔會落在閘外。
+if bash -n "$AGENTS"/bin/* "$AGENTS"/hooks/*.sh "$AGENTS"/tests/*.sh "$AGENTS"/tests/lib/*.sh; then
   ok "shared shell syntax"
 else
   ng "shared shell syntax"
@@ -399,24 +412,42 @@ fi
 #  字串裡的 |。寧可漏報也不要因誤判而擋住無關的變更。
 PIPE_USE='\| *(grep|awk|sed|sort|head|tail|tr|wc|jq|rg|cut|xargs|comm|uniq)'
 pipefail_missing=""
+pipefail_unscannable=""
 while IFS= read -r sh_file; do
-  head -1 "$sh_file" 2>/dev/null | scan_hit '^#!.*(bash)$' || continue     # 豁免 1
+  # 三格過濾器都要分開 rc=1（真的不符合，跳過）與 rc>=2／靜默成功（掃描不可信，
+  # 不得跳過）。寫成 `|| continue` 的話掃描器一壞就 continue，整個檔被略過——實測
+  # 545 個檔全部被跳過、守護只印一句 PASS。方向與「多檢查偏嚴」相反，是少檢查到 0。
+  head -1 "$sh_file" 2>/dev/null | scan_hit '^#!.*(bash)$'
+  case "$?" in
+    0) ;;                                                                   # 是 bash 腳本
+    1) continue ;;                                                          # 豁免 1：不是
+    *) pipefail_unscannable="$pipefail_unscannable $sh_file" ; continue ;;  # 掃描不可信
+  esac
   case "$sh_file" in
     */lib-vendored.sh) continue ;;                                          # 豁免 2
     */phase4-canary-harness.sh) continue ;;                                 # 豁免 3
   esac
-  scan_hit "$PIPE_USE" "$sh_file" || continue
+  scan_hit "$PIPE_USE" "$sh_file"
+  case "$?" in
+    0) ;;                                                                   # 有 pipeline
+    1) continue ;;                                                          # 沒有，不適用
+    *) pipefail_unscannable="$pipefail_unscannable $sh_file" ; continue ;;
+  esac
   # 只認真正的設定行，不認註解或字串裡的 pipefail。第一版用裸 grep -q 'pipefail'，
   # 於是把 `set -u` 加一行「# 這裡刻意不設 pipefail」就能讓守護 PASS——一支專門抓
   # 假綠的守護自己就是假綠（2026-08-02 實測，Copilot review 抓到）。
-  # 這一格是唯一方向會反過來的過濾器：掃描器靜默成功時 `&& continue` 會**跳過**
-  # 該檔的檢查（另外兩格壞掉只會多檢查，偏嚴）。走 scan_hit 之後不可信一律不跳過。
+  # `&& continue`：掃描不可信時 scan_hit 回非 0，不 continue，該檔落進 missing 清單
+  # ——方向正確（fail-closed），但成因會被說成「缺 pipefail」。上面兩格已經把
+  # 不可信的檔另外收進 pipefail_unscannable，這一格維持原樣即可。
   scan_hit '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" && continue
   pipefail_missing="$pipefail_missing $sh_file"
 done <<EOF
 $(find "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" -type f 2>/dev/null)
 EOF
-if [ -z "$pipefail_missing" ]; then
+if [ -n "$pipefail_unscannable" ]; then
+  # 掃不動的檔不能靜默不算：那正是這支守護要防的「假綠」。
+  ng "pipefail 守護有掃不動的檔（掃描器不可信）：$pipefail_unscannable"
+elif [ -z "$pipefail_missing" ]; then
   ok "有 pipeline 的 bash 腳本都有 pipefail"
 else
   ng "有 pipeline 但缺 pipefail：$(printf '%s' "$pipefail_missing" | tr ' ' '\n' | grep -c .) 支——$pipefail_missing"
