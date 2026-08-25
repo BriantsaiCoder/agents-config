@@ -624,17 +624,27 @@ fi
 # ── reason 名跨檔 lint（issue #89）────────────────────────────────────────────
 # review-triage.md 逐字列了一批 reason 名，helper 端改名時文件不會自己跟上——PR #85
 # 就示範過一次（`ci_absent_after_invalid` -> `ci_absent_after_not_numeric`，靠手動同步）。
-# glob 形式（`*_fields_unparsable`）抗腐，字面名不抗腐；CONVENTIONS 規則 7 要求名稱引用過 lint。
-# **只查存在性，不查在允許側還是排除側**——極性由 tests/mattpocock-workflow.sh 那三條
-# 集合比對斷言承擔（PR #92），這裡重複查會變成兩份會各自腐爛的判準。
+# glob 形式（`*_fields_unparsable`）抗腐，字面名不抗腐。
+# **只查存在性，不查在允許側還是排除側**——doc **內部**的極性由
+# tests/mattpocock-workflow.sh 那條允許側集合比對承擔（PR #92）；那三條全部只讀
+# review-triage.md，**沒有一條讀 bin/pr-review-gate**，所以 helper 與 doc 之間的
+# 存在性在本條之前完全無守衛。
+# CONVENTIONS 規則 9（可機械化的檢查必須下沉為機械守護）涵蓋本條；規則 7 的字面範圍是
+# skill／agent／MCP／hook 名，不含 helper 的 reason 名——#89 body 誤引了規則 7。
 triage_doc="$ROOT/skills/dev-workflow/references/review-triage.md"
 
-# rc 三態：掃描器說成功卻交不出正整數計數 = 不可信，不得當成「找到了」。
-# 用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，壞掉但 exit 0 的 rg 同樣回 0（issue #95）。
-# 共用判別的正本是 tests/lib/scan.sh（issue #97）；那支 merge 後這裡可以改成 source 它。
-reason_in_gate() {  # reason_in_gate <name> -> 0=helper 端有 1=沒有 2=掃描不可信
+# 錨到**發射點**而不是裸出現：`rg -cF "$name" "$GATE"` 測的是「這個字串在檔案任何地方
+# 出現過」，包含註解。helper 自己就有只出現在註解裡的 reason 名（`:16` 的診斷軼事），
+# 所以「改名時順手在註解留一句舊名」會讓 lint 靜默通過——實測過。
+# 兩個發射形狀都要認：多數走 `unavailable <name>`，而 review_actions_billing_or_quota
+# 是 `:418` 的字面 `printf … reason=<name> …`，只認前者會打死 clean positive control。
+# rc 三態：掃描器說成功卻交不出正整數計數 = 不可信，不得當成「找到了」（issue #95）。
+# 同 repo 已有一份 rc 三態判別（tests/mattpocock-workflow.sh 的 rg_hits），contract 不同
+# （它未命中回 stdout 0 + rc 0，這裡未命中回 rc 1），換用要重寫下方的 case 分派，
+# 不是 drop-in。本地 5 行是刻意的：source 一支測試套件會把整套跑起來。
+reason_in_gate() {  # reason_in_gate <name> -> 0=helper 端發射 1=沒有 2=掃描不可信
   local n rc=0
-  n=$(rg -cF -- "$1" "$GATE") || rc=$?
+  n=$(rg -c -e "^[^#]*(unavailable ${1}\$|reason=${1}\b)" -- "$GATE") || rc=$?
   case "$rc" in
     0) case "$n" in ''|*[!0-9]*|0) return 2 ;; *) return 0 ;; esac ;;
     1) return 1 ;;
@@ -642,40 +652,77 @@ reason_in_gate() {  # reason_in_gate <name> -> 0=helper 端有 1=沒有 2=掃描
   esac
 }
 
+# 抽取用**排除清單**而不是後綴 allowlist。前一版寫 `(failed|quota|numeric|unparsable)`，
+# 那是一份手寫名單：doc 端新增或改名成清單外的後綴時整條靜默跳過——實測把 doc 的
+# `review_probe_failed` 改成 `review_probe_invalid`（helper 根本沒有這個名字）仍全綠，
+# 而 `_invalid` 正是本註解引用的 PR #85 那個 motivating example 的後綴。
+# 方向要挑會吵的那個：排除清單漏一項是紅的（誤報，看得見），allowlist 漏一項是綠的。
+reason_not_a_name='^(reviews|unresolved|requested_reviewers|suppressed)$'
+
 reason_doc_rc=0
-doc_reasons=$(rg -o -r '$1' -e '`([a-z][a-z_]*_(failed|quota|numeric|unparsable))`' -- "$triage_doc") ||
-  reason_doc_rc=$?
+doc_reasons=$(rg -o -r '$1' -e '`([a-z][a-z_]*)`' -- "$triage_doc") || reason_doc_rc=$?
 if [ "$reason_doc_rc" -ne 0 ] || [ -z "$doc_reasons" ]; then
-  # 抽不出任何名字時不能靜默通過：那是「掃描器壞了」或「文件被改成不列名」，兩者都要出聲。
+  # 抽不出任何名字時不能靜默通過：那是「掃描器壞了」或「文件被改成不列名」，都要出聲。
   ((fail += 1))
   printf 'FAIL reason-name lint: 掃不出 doc 端的 reason 名（rc=%s）\n' "$reason_doc_rc"
 else
-  reason_missing=
-  reason_untrusted=
-  for reason_name in $(printf '%s\n' "$doc_reasons" | sort -u); do
-    reason_in_gate "$reason_name"
-    case "$?" in
-      1) reason_missing="$reason_missing $reason_name" ;;
-      2) reason_untrusted="$reason_untrusted $reason_name" ;;
-    esac
-  done
-  if [ -z "$reason_missing" ] && [ -z "$reason_untrusted" ]; then
-    ((pass += 1))
-    printf 'PASS reason names in review-triage.md all exist in the helper\n'
-  else
+  reason_sorted=$(printf '%s\n' "$doc_reasons" | sort -u) || reason_sorted=
+  if [ -z "$reason_sorted" ]; then
+    # sort 失敗時 for 迴圈會跑零圈、兩個清單都空、直接印 PASS。上一行才小心接住 rg 的
+    # rc，這裡放掉 sort 的就前功盡棄。
     ((fail += 1))
-    printf 'FAIL reason names missing from helper:%s / scan untrusted:%s\n' \
-      "${reason_missing:- none}" "${reason_untrusted:- none}"
+    printf 'FAIL reason-name lint: doc 端名單排序失敗\n'
+  else
+    reason_missing=
+    reason_untrusted=
+    reason_checked=0
+    for reason_name in $reason_sorted; do
+      case "$reason_name" in
+        reviews|unresolved|requested_reviewers|suppressed) continue ;;
+      esac
+      reason_checked=$((reason_checked + 1))
+      reason_in_gate "$reason_name"
+      case "$?" in
+        1) reason_missing="$reason_missing $reason_name" ;;
+        2) reason_untrusted="$reason_untrusted $reason_name" ;;
+      esac
+    done
+    if [ "$reason_checked" -lt 5 ]; then
+      # 覆蓋面下限：抽取或排除規則壞掉時會靜默縮到零個名字仍印 PASS。實測把整個 for
+      # body 換成 `:`、或把抽取正則縮成只剩一種後綴，前一版都是 81 PASS / 0 FAIL。
+      ((fail += 1))
+      printf 'FAIL reason-name lint 只檢查了 %s 個名字（doc 端至少該有 5 個字面 reason 名）\n' "$reason_checked"
+    elif [ -z "$reason_missing" ] && [ -z "$reason_untrusted" ]; then
+      ((pass += 1))
+      printf 'PASS reason names in review-triage.md all fire in the helper (%s checked)\n' "$reason_checked"
+    else
+      ((fail += 1))
+      printf 'FAIL reason names not fired by helper:%s / scan untrusted:%s\n' \
+        "${reason_missing:- none}" "${reason_untrusted:- none}"
+    fi
   fi
 fi
 
-# known-bad control：doc 端有而 helper 端沒有的名字必須判成 missing（rc=1）。
+# known-bad control：doc 端有而 helper 端沒發射的名字必須判成 missing（rc=1）。
 reason_in_gate 'definitely_not_a_reason_failed'
 if [ "$?" -eq 1 ]; then
   ((pass += 1)); printf 'PASS reason-name lint rejects its known-bad control\n'
 else
   ((fail += 1)); printf 'FAIL reason-name lint rejects its known-bad control\n'
 fi
+
+# known-bad control 之二：註解行不算發射。「改名時順手在註解留一句舊名」會讓裸
+# `rg -cF` 靜默通過（S5 Spec R1 實測過）。helper 檔目前沒有只出現在註解的 reason 名
+# （15 個名字全部真的發射，已枚舉），所以這條直接驗 pattern 本身。
+# rc=1（不命中）才算過：命中或掃描失敗都不算，control 自己不能 fail-open。
+reason_prose_probe='#   舊名 reason=formerly_a_reason_failed 已於 2026-01-01 改名'
+printf '%s\n' "$reason_prose_probe" |
+  rg -c -e '^[^#]*(unavailable formerly_a_reason_failed$|reason=formerly_a_reason_failed\b)' \
+  >/dev/null 2>&1
+case "$?" in
+  1) ((pass += 1)); printf 'PASS reason-name lint ignores names that only appear in prose\n' ;;
+  *) ((fail += 1)); printf 'FAIL reason-name lint ignores names that only appear in prose\n' ;;
+esac
 
 # negative control ×2：掃描器故障必須回 2（不可信），不得塌成「沒找到」或「找到了」。
 # 第二條（exit 0 卻無輸出）才是相對 `rg -qF` 的增量：rc=2 那格 `rg -q` 版本也守得住。
@@ -687,6 +734,22 @@ for reason_shim_rc in 2 0; do
   else
     ((fail += 1))
     printf 'FAIL reason-name lint fails closed when the scanner returns rc=%s\n' "$reason_shim_rc"
+  fi
+done
+
+# doc 端抽取那條分支的 control：前一版四條 control 全部只驗 reason_in_gate 的 rc，
+# extraction -> loop -> verdict 這條實際判定路徑零覆蓋——實測把整個 for body 換成 `:`
+# 仍 81 PASS / 0 FAIL。這兩條讓那條分支在掃描器故障時必須出聲。
+for reason_doc_shim_rc in 2 0; do
+  reason_doc_probe=$( (rg() { return "$reason_doc_shim_rc"; }
+    d=$(rg -o -r '$1' -e '`([a-z][a-z_]*)`' -- "$triage_doc") || d=
+    [ -n "$d" ] && printf 'EXTRACTED' || printf 'EMPTY') 2>&1 )
+  if [ "$reason_doc_probe" = EMPTY ]; then
+    ((pass += 1))
+    printf 'PASS reason-name lint extraction fails closed when the scanner returns rc=%s\n' "$reason_doc_shim_rc"
+  else
+    ((fail += 1))
+    printf 'FAIL reason-name lint extraction fails closed when the scanner returns rc=%s\n' "$reason_doc_shim_rc"
   fi
 done
 
