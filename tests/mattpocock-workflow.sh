@@ -8,77 +8,85 @@ fail=0
 ok() { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng() { printf '  FAIL  %s\n' "$1"; fail=$((fail + 1)); }
 
-has() {
-  local label="$1" pattern="$2" file="$3"
-  grep -qE "$pattern" "$ROOT/$file" 2>/dev/null && ok "$label" || ng "$label"
+# 全檔唯一的掃描器 rc 判別。用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，一支壞掉但
+# exit 0 的 rg 同樣回 0，真違規會被判 PASS（issue #95）。改成 rc 與計數兩邊都要對得上。
+# rc=0 卻交不出正整數計數 = 掃描器自相矛盾（rg 對單一輸入無命中時回 rc=1 且不印），
+# 歸「掃描不可信」而非「沒命中」。檔案不存在不另外先驗：rg 對它回 rc=2，同一格。
+# 省略 file 時讀 stdin，讓 sed／awk 抽出的區塊與 printf 產生的字串共用同一份判別。
+rg_hits() {  # rg_hits <pattern> [file] -> stdout=命中行數；rc 0=可信 2=掃描不可信
+  local n rc=0
+  if [ "$#" -ge 2 ]; then
+    n=$(rg -c -e "$1" "$2" 2>/dev/null) || rc=$?
+  else
+    n=$(rg -c -e "$1" 2>/dev/null) || rc=$?
+  fi
+  case "$rc" in
+    0) case "$n" in
+         ''|*[!0-9]*|0) return 2 ;;
+         *)             printf '%s\n' "$n" ;;
+       esac ;;
+    1) printf '0\n' ;;
+    *) return 2 ;;
+  esac
 }
 
+# rc 語意與同檔 lacks() 一致：掃描可信時 return 0（不論 ok／ng），不可信時 ng 並 return 1。
+has() {
+  local label="$1" pattern="$2" file="$3" n
+  n=$(rg_hits "$pattern" "$ROOT/$file") || { ng "$label"; return 1; }
+  if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
+}
+
+# 每支改用 rg_hits 的 helper 都留兩條 negative control 加一條 clean positive control
+# （evidence-integrity.md 要求成對）。第二條（掃描器說成功卻交不出行）才是相對舊
+# `grep -qE … && ok || ng` 的增量：第一條 rc=2 舊版也會 ng，只是歸因說成「沒命中」。
+# 探測路徑一律用 tests/ 自己 + 必定命中的 pattern：shim 沒生效時 fixture 不會因為
+# 別的理由變綠，理由完全不是以為的那個（7d824af 的教訓）。
+if (rg() { return 2; }; has "fixture" 'rg_hits' tests/mattpocock-workflow.sh) >/dev/null; then
+  ng "has fails closed when the scanner errors"
+else
+  ok "has fails closed when the scanner errors"
+fi
+if (rg() { return 0; }; has "fixture" 'rg_hits' tests/mattpocock-workflow.sh) >/dev/null; then
+  ng "has fails closed when the scanner exits 0 with no output"
+else
+  ok "has fails closed when the scanner exits 0 with no output"
+fi
+has "has accepts its clean positive control" 'rg_hits' tests/mattpocock-workflow.sh
+
+# 檔案不存在不另外先驗（原 `[ -e ]`）：rg_hits 對它回 rc=2，與「掃描不可信」逐字同果。
 lacks() {
-  local label="$1" pattern="$2" path rc
+  local label="$1" pattern="$2" path n
   shift 2
   [ "$#" -gt 0 ] || { ng "$label"; return 1; }
   for path in "$@"; do
-    [ -e "$ROOT/$path" ] || { ng "$label"; return 1; }
-    rg -q "$pattern" "$ROOT/$path"
-    rc=$?
-    case "$rc" in
-      0) ng "$label"; return 1 ;;
-      1) ;;
-      *) ng "$label"; return 1 ;;
-    esac
+    n=$(rg_hits "$pattern" "$ROOT/$path") || { ng "$label"; return 1; }
+    [ "$n" -eq 0 ] || { ng "$label"; return 1; }
   done
   ok "$label"
 }
 
-if (rg() { return 2; }; lacks "lacks helper scan error fixture" 'unused' skills/dev-workflow/SKILL.md) >/dev/null; then
-  ng "lacks helper fails closed on scan errors"
+if (rg() { return 2; }; lacks "fixture" 'unused' skills/dev-workflow/SKILL.md) >/dev/null; then
+  ng "lacks fails closed when the scanner errors"
 else
-  ok "lacks helper fails closed on scan errors"
+  ok "lacks fails closed when the scanner errors"
 fi
-
-# 同 has()，但把「掃描器失敗」與「真的沒命中」分開。has() 是 `grep -qE … && ok || ng`：
-# 單一 bit，掃描器只要回非 0 就等同「沒命中」，而一支壞掉卻 exit 0 的掃描器直接變成 PASS。
-# issue #87 的 comment 逐字點名過「排除側正是 fail-open 會漏出去的地方」，PR #92 Spec R3
-# 在排除側實測到後者：真違規之下那兩條斷言判 PASS。給不能容忍掃描器靜默失敗的斷言用。
-# rc 語意是「掃描可不可信」，不是「斷言過不過」：掃描器可信時一律 return 0（不論 ok/ng），
-# 不可信時 ng 並 return 1。與同檔 lacks() 一致。
-has_rg() {
-  local label="$1" pattern="$2" path="$3" rc=0 n
-  # 用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，一支壞掉但 exit 0 的 rg 同樣回 0，
-  # 真違規會被判 PASS。改成同時要求計數是正整數，rc 與輸出兩邊都得對得上。
-  # 檔案不存在不另外先驗：rg 對它回 rc=2，與下面的「掃描不可信」同一格。
-  n=$(rg -c -e "$pattern" "$ROOT/$path" 2>/dev/null) || rc=$?
-  case "$rc" in
-    # rc=0 卻交不出正整數計數 = 掃描器自相矛盾，歸「不可信」而非「沒命中」。
-    0) case "$n" in
-         ''|*[!0-9]*|0) ng "$label"; return 1 ;;
-         *)             ok "$label" ;;
-       esac ;;
-    1) ng "$label" ;;
-    *) ng "$label"; return 1 ;;
-  esac
-}
-
-# 兩條 negative control。第一條（rc=2）舊的 has() 其實也守得住；has_rg 相對 has 的**全部**
-# 增量是第二條——掃描器說成功卻交不出行。沒有第二條，這個 helper 的存在理由就沒有東西在驗。
-# 探測路徑用 tests/ 自己而不是 CONVENTIONS.md：後者改名時會走到別的分支，fixture 照樣綠。
-if (rg() { return 2; }; has_rg "fixture" 'has_rg' tests/mattpocock-workflow.sh) >/dev/null; then
-  ng "has_rg fails closed when the scanner errors"
+# lacks 的方向與 has 相反，silent success 對它更兇：rg 交不出行看起來就是「沒命中＝乾淨」。
+if (rg() { return 0; }; lacks "fixture" 'unused' skills/dev-workflow/SKILL.md) >/dev/null; then
+  ng "lacks fails closed when the scanner exits 0 with no output"
 else
-  ok "has_rg fails closed when the scanner errors"
+  ok "lacks fails closed when the scanner exits 0 with no output"
 fi
-if (rg() { return 0; }; has_rg "fixture" 'has_rg' tests/mattpocock-workflow.sh) >/dev/null; then
-  ng "has_rg fails closed when the scanner exits 0 with no output"
-else
-  ok "has_rg fails closed when the scanner exits 0 with no output"
-fi
+lacks "lacks accepts its clean positive control" 'THIS_STRING_MUST_NOT_EXIST_IN_THE_SKILL' skills/dev-workflow/SKILL.md
 
+# 區塊先落地成變數再判，pipe 兩端的 rc 才不會被吃掉。本 issue 的範圍是掃描器 rc，
+# 不含 sed／awk 的區塊定界 fail-open（標題被改寫時抽出空內容 → ng，方向對但歸因錯；
+# 區塊「漲大」那個方向記在 #93 的 E 類）。
 rule_has_in() {
-  local label="$1" id="$2" pattern="$3" file="$4"
-  sed -n "/^\\- \\[$id\\]/p" "$ROOT/$file" |
-    grep -qE "$pattern" &&
-    ok "$label" ||
-    ng "$label"
+  local label="$1" id="$2" pattern="$3" file="$4" block n
+  block=$(sed -n "/^\\- \\[$id\\]/p" "$ROOT/$file") || { ng "$label"; return 1; }
+  n=$(printf '%s\n' "$block" | rg_hits "$pattern") || { ng "$label"; return 1; }
+  if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
 }
 
 rule_has() {
@@ -86,17 +94,28 @@ rule_has() {
 }
 
 section_has() {
-  local label="$1" section="$2" pattern="$3" file="$4"
-  if awk -v heading="## $section" '
+  local label="$1" section="$2" pattern="$3" file="$4" block n
+  block=$(awk -v heading="## $section" '
     $0 == heading { active=1; next }
     active && /^## / { exit }
     active { print }
-  ' "$ROOT/$file" | grep -qE "$pattern"; then
-    ok "$label"
-  else
-    ng "$label"
-  fi
+  ' "$ROOT/$file") || { ng "$label"; return 1; }
+  n=$(printf '%s\n' "$block" | rg_hits "$pattern") || { ng "$label"; return 1; }
+  if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
 }
+
+for _shim_rc in 2 0; do
+  if (rg() { return "$_shim_rc"; }; rule_has "fixture" 'INT-4' 'delegation') >/dev/null; then
+    ng "rule_has_in fails closed when the scanner returns rc=$_shim_rc"
+  else
+    ok "rule_has_in fails closed when the scanner returns rc=$_shim_rc"
+  fi
+  if (rg() { return "$_shim_rc"; }; section_has "fixture" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md) >/dev/null; then
+    ng "section_has fails closed when the scanner returns rc=$_shim_rc"
+  else
+    ok "section_has fails closed when the scanner returns rc=$_shim_rc"
+  fi
+done
 
 dirty_review=skills/dev-workflow/references/dirty-review-package.md
 delegation_ref=skills/dev-workflow/references/delegation.md
@@ -122,12 +141,19 @@ delivery_contract_valid() {
     [[ "$s6" =~ $delivery_s6_pattern ]]
 }
 
+# 呼叫端逐字區分 rc 0／1／>1（見下方三條 fixture），所以掃描不可信 MUST 以 2 傳出去，
+# 不得塌成 1 —— 1 是「條文真的不在」。
 evidence_integrity_contract_valid() {
-  local file="$1"
+  local file="$1" pattern n
   [ -r "$file" ] || return 2
-  grep -qE '^- 完成證據 MUST .*最後一次影響行為的 edit 之後.*final verification pass；後續 behavior-affecting edit 使舊結果失效。$' "$file" &&
-    grep -qE '^- 新增或修改的 custom gate.* MUST fail closed：unreadable input、crash 或 unexpected exit 都不得被解讀為成功。$' "$file" &&
-    grep -qE '^- 同一 gate MUST .*known-bad negative control.*失敗.*clean positive control.*通過；.*可重播.*deterministic。$' "$file"
+  for pattern in \
+    '^- 完成證據 MUST .*最後一次影響行為的 edit 之後.*final verification pass；後續 behavior-affecting edit 使舊結果失效。$' \
+    '^- 新增或修改的 custom gate.* MUST fail closed：unreadable input、crash 或 unexpected exit 都不得被解讀為成功。$' \
+    '^- 同一 gate MUST .*known-bad negative control.*失敗.*clean positive control.*通過；.*可重播.*deterministic。$'
+  do
+    n=$(rg_hits "$pattern" "$file") || return 2
+    [ "$n" -gt 0 ] || return 1
+  done
 }
 
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
@@ -487,7 +513,8 @@ has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` �
 # 就無故轉紅。本文的 placeholder `S5 Standards: <PASS|FAIL|…>` 不會誤命中——`<` 卡在中間。
 preflight_section="$(sed -n '/^## 1\. Preflight Ledger/,/^## 2\. Closeout Ledger/p' "$ledgers_ref")"
 for _axis in Standards Spec; do
-  if printf '%s\n' "$preflight_section" | grep -qE "^S5 ${_axis}: (PASS|FAIL|SKIPPED|UNAVAILABLE)"; then
+  if _axis_hits=$(printf '%s\n' "$preflight_section" | rg_hits "^S5 ${_axis}: (PASS|FAIL|SKIPPED|UNAVAILABLE)") &&
+     [ "$_axis_hits" -gt 0 ]; then
     ok "Preflight example carries the ${_axis} axis line"
   else
     ng "Preflight example carries the ${_axis} axis line"
@@ -522,7 +549,11 @@ if [ "$prompt_lines" -le 2 ]; then
   # range 空或只剩 marker 時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓
   # 總條數隨檔案狀態浮動，看起來像「少跑了一條」而不是「守衛失去依據」。
   ng "baseline design notes live outside the reviewer prompt"
-elif printf '%s' "$prompt_block" | grep -q '設計註記'; then
+elif ! _notes_hits=$(printf '%s\n' "$prompt_block" | rg_hits '設計註記'); then
+  # 掃描不可信：兩條都無從判定，一律 ng（沿用上一分支的理由）。
+  ng "reviewer prompt block is non-empty"
+  ng "baseline design notes live outside the reviewer prompt"
+elif [ "$_notes_hits" -gt 0 ]; then
   ok "reviewer prompt block is non-empty"
   ng "baseline design notes live outside the reviewer prompt"
 else
@@ -547,9 +578,12 @@ has "Preflight verification records high-risk failure coverage" 'Tests evidence.
 has "Closeout verification records high-risk failure coverage" 'Relevant verification.*High-risk.*failure model.*catching layer' "$ledgers_ref"
 residual_failure_pattern='^\| (8 \| )?\*\*Residual risks\*\*.*failure model'
 lacks "Residual risks does not own failure coverage" "$residual_failure_pattern" "$ledgers_ref"
-printf '| 8 | **Residual risks** | bad failure model owner |\n' | grep -qE "$residual_failure_pattern" &&
-  ok "Residual risks guard catches its Preflight negative control" ||
+if _residual_hits=$(printf '| 8 | **Residual risks** | bad failure model owner |\n' | rg_hits "$residual_failure_pattern") &&
+   [ "$_residual_hits" -gt 0 ]; then
+  ok "Residual risks guard catches its Preflight negative control"
+else
   ng "Residual risks guard catches its Preflight negative control"
+fi
 
 evidence_fixture="$(mktemp -d -- "${TMPDIR:-/tmp}/evidence-integrity.XXXXXX")" ||
   { ng 'evidence integrity fixture: 無法建立暫存目錄'; exit 1; }
@@ -652,11 +686,11 @@ fi
 
 # 排除側開頭的前綴逐字釘住。它擋的是「除 A 與 B 外」這一種措辭，不擋那個類別：前綴之後
 # 沒有結束錨點，粗體收尾後追加例外句照樣綠（#93 C 類）。
-has_rg "fallback exclude side carves out the billing reason by name" \
+has "fallback exclude side carves out the billing reason by name" \
   '^[[:space:]]*- \*\*除 `review_actions_billing_or_quota` 外，helper 回的任何 `UNAVAILABLE` 一律不得 fallback\*\*' \
   "$review_triage_ref"
 # 診斷用，非防護：允許側已窮舉，刪掉這一句不會 fail-open。
-has_rg "request failures are named on the exclude side" \
+has "request failures are named on the exclude side" \
   'review_request_failed.*MUST 修 helper 或 retry' \
   "$review_triage_ref"
 
