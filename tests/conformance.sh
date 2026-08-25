@@ -453,7 +453,12 @@ while IFS= read -r sh_file; do
   # 三格過濾器都要分開 rc=1（真的不符合，跳過）與 rc>=2／靜默成功（掃描不可信，
   # 不得跳過）。寫成 `|| continue` 的話掃描器一壞就 continue，整個檔被略過——實測
   # 545 個檔全部被跳過、守護只印一句 PASS。方向與「多檢查偏嚴」相反，是少檢查到 0。
-  head -1 "$sh_file" 2>/dev/null | scan_hit '^#!.*(bash)$'
+  # 先把第一行落地並接住 head 的 rc：`head -1 f 2>/dev/null | scan_hit …` 在檔案讀不到時
+  # 靜默輸出空字串，scan_hit 判「不是 bash」-> continue，該檔既被略過又不進
+  # pipefail_unscannable——仍是 fail-open（Copilot review 抓到）。
+  sh_shebang=$(head -1 "$sh_file" 2>/dev/null) ||
+    { pipefail_unscannable="$pipefail_unscannable $sh_file"; continue; }
+  printf '%s\n' "$sh_shebang" | scan_hit '^#!.*(bash)$'
   case "$?" in
     0) ;;                                                                   # 是 bash 腳本
     1) continue ;;                                                          # 豁免 1：不是
