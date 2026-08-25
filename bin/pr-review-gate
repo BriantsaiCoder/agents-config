@@ -215,7 +215,7 @@ billing_failure_never_ran() {
     gh api "repos/$repo/check-runs/$job_id/annotations" --jq '
       any(.[];
         ((.message // "") | ascii_downcase | contains("job was not started")) and
-        ((.message // "") | ascii_downcase | contains("payments have failed or your spending limit needs to be increased")))' \
+        ((.message // "") | ascii_downcase | contains("spending limit")))' \
       2>/dev/null | grep -qx true || return 1
   done
 }
@@ -284,6 +284,46 @@ fi
 # 不阻擋、只呈報：suppressed 沒有 resolve 機制，拿它當 blocking 條件會變成永久死鎖。
 # 呈報在這行輸出上，是因為它是 push 後 hook 會自動印、且所有人都會讀的那一行。
 # scan 而非 capture：後者在無命中時會 raise error，前者回空陣列。
+#
+# billing review 的判定（issue #94）。原本是**整段字串相等**，GitHub 改動文案一個非
+# 大小寫字元就 fail-open：billing_review 變 false -> 不走 review=UNAVAILABLE -> review
+# 就在 current head 上 -> review=CURRENT -> **STATE=PASS**。一則 billing 失敗通知被當成
+# 通過的 code review，而 hard_deny[1] 只讀 STATE。實測三種漂移（payments->payment、
+# needs to->must、尾端多一個空白）在舊判準下全部落 PASS。
+#
+# 現在錨在兩個穩定核心（"job was not started" 與 "spending limit"）而不是整句。
+# 下方 CI 側 annotation 的判定**一併收斂成同一組 anchor**：先前那一側的第二個 anchor
+# 是近乎整句的 62 字元，同樣的漂移會讓它落 ci=FAIL -> STATE=FAIL_CI，而 billing 中斷
+# 沒辦法靠重跑 CI 清除，等於每個 PR 被永久硬擋。方向雖是 fail-closed，但那是同一個
+# root cause（對 GitHub 控制的文案做字面比對）的另一半，不該只修一邊。
+# 註：CI 側原本的安全來自**分支方向**（不命中就落 ci=FAIL），不是來自 contains——
+# contains 與 == 的差別只影響命中率，不影響失敗方向。
+#
+# 加「非空行數 == 1」的依據是實測，不是推測（issue #94 逐字要求查證 GitHub 實際回什麼）。
+# 掃本 repo 自己的 PR 歷史（`gh api repos/{owner}/{repo}/pulls/<n>/reviews`）：
+#     真 billing 通知     6 筆（PR 74/75/76/77/84/85）  非空行數全部 = 1，六筆逐字相同
+#     真 Copilot review   非空行數 8～28                 全部 >= 8
+# margin 遠大於一行。這一格同時保住 `mixed review body remains current`：一則帶著
+# billing 文字但另有真 finding 的 review 是**真的 review**，不該被判成 billing 而停在
+# UNAVAILABLE。
+# 用 test("\\S") 而不是 `. != ""` 濾空行：後者只濾完全空字串，CRLF 被 split("\n")
+# 切開後留下的孤立 "\r"、以及只含空白的行都會被算成第二行 -> billing_review=false
+# -> review=CURRENT -> **STATE=PASS**。一個會被看不見的字元翻轉的判定式在 merge gate
+# 上不成立（S5 Standards R1 端到端重現過）。
+#
+# 為什麼是 contains 而不是 `startswith("the job was not started because recent")`：
+# 後者更緊（錨在位置 0），但 merge gate 的兩個方向不對稱——假陰性是「billing 通知被當成
+# 通過的 review -> STATE=PASS -> 放行未審程式碼」，假陽性是「真 review 被判成 billing ->
+# reason=review_actions_billing_or_quota」，而那個 reason 後面仍要求 independent reviewer
+# + full local CI + 0 unresolved（review-triage.md 第 3 節），是降級成人工而不是自動放行。
+# 假陰性嚴重得多，所以選對開頭措辭免疫的 contains。
+#
+# 殘留風險，明講：換行或多餘空白落在 **anchor 內部**時（例如 "job was not\nstarted"），
+# 兩個 contains 同時失效，行數判定根本輪不到；`ascii_downcase` 也只折 ASCII，anchor 內
+# 插一個 NBSP 就整條漏。要擋這一類得把判定式推向 regex，成本超過收益。
+# 多行 billing 通知會漏判——但**那個盲點與舊的整段 `==` 相同**（多行 body 本來也不可能
+# 逐字相等），不是本次引入；本次改動在假陰性軸上是嚴格收斂（舊判準抓到的，新判準必抓到）。
+# 負向斷言在 tests/pr-review-gate.sh 釘住已知的五種漂移。
 latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
   --jq '[.[] | select(.user.login | ascii_downcase | contains("copilot"))]
     | sort_by(.submitted_at) | last
@@ -291,8 +331,8 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
         ((.body // "") | [scan("Suppressed comments \\(([0-9]+)\\)")]
           | if length > 0 then .[0][0] else "0" end)
         , ((.body // "") | ascii_downcase
-          | (. == "the job was not started because recent github actions payments have failed or your spending limit needs to be increased." or
-             . == "the job was not started because recent account payments have failed or your spending limit needs to be increased."))
+          | (contains("job was not started") and contains("spending limit") and
+             (split("\n") | map(select(test("\\S"))) | length) == 1))
       ] | @tsv') ||
   unavailable review_probe_failed
 # 用 cut 而非 here-string：後者在 /tmp 與 cwd 皆不可寫時建不出暫存檔（macOS bash 3.2），
