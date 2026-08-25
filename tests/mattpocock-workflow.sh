@@ -16,35 +16,48 @@ else
   ng "ripgrep scanner is available"
 fi
 
-# 全檔唯一的掃描器**命中判別**（唯一的例外是下方 allow_names 那處 `rg -o`，它是提取
-# 不是判別，且自己捕捉 rc）。用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，一支壞掉但
-# exit 0 的 rg 同樣回 0，真違規會被判 PASS（issue #95）。改成 rc 與計數兩邊都要對得上。
-# rc=0 卻交不出正整數總和 = 掃描器自相矛盾（rg 無命中時回 rc=1 且不印），歸「掃描不可信」
-# 而非「沒命中」。檔案不存在不另外先驗：rg 對它回 rc=2，同一格。
-# 省略 target 時讀 stdin，讓 sed／awk 抽出的區塊與 printf 產生的字串共用同一份判別。
+# 全檔唯一的**共用**掃描判別。另有三處自建 rc 判別，各自的理由寫在原地：allow_names
+# 那處 `rg -o`（提取不是判別）、`rg --hidden` 那處（要 --hidden 與 --glob）、
+# delivery_contract_valid（POSIX ERE，見該處註解）。
+# 用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，一支壞掉但 exit 0 的 rg 同樣回 0，
+# 真違規會被判 PASS（issue #95）。改成 rc 與計數兩邊都要對得上。rc=0 卻交不出正整數
+# 總和 = 掃描器自相矛盾（rg 無命中時回 rc=1 且不印），歸「掃描不可信」而非「沒命中」。
+# 檔案不存在不另外先驗：rg 對它回 rc=2，同一格。
+# 省略 target 時讀 stdin，讓 sed／awk 抽出的區塊與 printf 產生的字串共用同一份判別；
+# 顯式的 `-` 與 `--` 讓「stdin」與「target 開頭是 -」都不靠隱式行為。
 # target 是目錄時 rg 逐檔各印一行，--no-filename 去掉 `path:` 前綴後逐行加總——不加總的話
 # 那些多行輸出會落進「不可信」格，結論仍 fail-closed 但成因會被說成掃描器壞了。
+# 加總用參數展開而非 `<<<`：macOS 系統 bash 3.2 把 here-string 的暫存檔開在 **cwd**
+# 而不是 TMPDIR，cwd 不可寫時整支套件會從 354 PASS 掉到 70 PASS（方向 fail-closed，
+# 但等於不能用）。這是 rg -c 換進來時引入的相依，改回純內建就沒有。
+# rg 的 stderr 不吞：ERE → Rust regex 的遷移新增了一整類只會從 stderr 現形的失敗
+# （`a{`、`a\q` 在 grep -qE 是「合法、無命中」，在 rg 是 regex parse error），
+# 吞掉的話 suite 只會印某條斷言 FAIL，一個字都不提 pattern 寫壞了。
 rg_hits() {  # rg_hits <pattern> [target] -> stdout=命中行數總和；rc 0=可信 2=掃描不可信
   local out rc=0 total=0 line
   if [ "$#" -ge 2 ]; then
-    out=$(rg -c --no-filename -e "$1" "$2" 2>/dev/null) || rc=$?
+    out=$(rg -c --no-filename -e "$1" -- "$2") || rc=$?
   else
-    out=$(rg -c --no-filename -e "$1" 2>/dev/null) || rc=$?
+    out=$(rg -c --no-filename -e "$1" -) || rc=$?
   fi
   case "$rc" in
     1) printf '0\n'; return 0 ;;
     0) ;;
     *) return 2 ;;
   esac
-  while IFS= read -r line; do
+  while [ -n "$out" ]; do
+    line=${out%%$'\n'*}
     case "$line" in ''|*[!0-9]*) return 2 ;; esac
     total=$((total + line))
-  done <<< "$out"
+    if [ "$out" = "$line" ]; then out=; else out=${out#*$'\n'}; fi
+  done
   [ "$total" -gt 0 ] || return 2
   printf '%s\n' "$total"
 }
 
-# rc 語意與同檔 lacks() 一致：掃描可信時 return 0（不論 ok／ng），不可信時 ng 並 return 1。
+# rc 語意：掃描可信時 return 0，不可信時 ng 並 return 1。注意這**不是**「不論 ok／ng
+# 都 return 0」——lacks() 在斷言失敗（pattern 真的命中）時也 return 1，所以 rc 單獨
+# 分不出「掃描壞了」與「斷言沒過」。要分辨的是印出來的判定，不是 rc。
 has() {
   local label="$1" pattern="$2" file="$3" n
   n=$(rg_hits "$pattern" "$ROOT/$file") || { ng "$label"; return 1; }
@@ -68,16 +81,18 @@ lacks() {
 # top-level 陳述式，沒有函式作用域，被迫共用同一個暫存變數名並靠執行順序而非作用域
 # 隔離；排除側語意日後要調（例如把「掃描不可信」與「真的沒命中」分成兩種 FAIL 訊息）
 # 得同步改六處，漏改一處沒有任何斷言會抓到。
-# here-string 而非 `printf … |`：少 fork 一個 process，rg_hits 的 stdin 分支照走。
 block_has() {
   local label="$1" pattern="$2" block="$3" n
-  n=$(rg_hits "$pattern" <<<"$block") || { ng "$label"; return 1; }
+  n=$(printf '%s\n' "$block" | rg_hits "$pattern") || { ng "$label"; return 1; }
   if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
 }
 
 block_lacks() {
   local label="$1" pattern="$2" block="$3" n
-  n=$(rg_hits "$pattern" <<<"$block") || { ng "$label"; return 1; }
+  # 空 block 對排除側讀起來就是「乾淨」——而 sed／awk 的 range marker 被改名時抽出的
+  # 正是空字串。四個呼叫端全在排除側，這一行一次關掉四處。區塊定界本身仍在 #93 的 E 類。
+  [ -n "$block" ] || { ng "$label"; return 1; }
+  n=$(printf '%s\n' "$block" | rg_hits "$pattern") || { ng "$label"; return 1; }
   if [ "$n" -eq 0 ]; then ok "$label"; else ng "$label"; fi
 }
 
@@ -104,9 +119,8 @@ section_has() {
   block_has "$label" "$pattern" "$block"
 }
 
-# 四支走 rg_hits 的 helper 共用同一份 fixture 骨架。分開手寫的話（前一版 has 與 lacks
-# 各展開一次、另兩支用迴圈，三種寫法並存），日後要調整這個形狀——例如新增第三種 rc
-# case——得改四個地方，漏改一處沒有任何斷言會抓到。
+# 六支走 rg_hits 的 helper 共用同一份 fixture 骨架。分開手寫的話，日後要調整這個
+# 形狀——例如新增第三種 rc case——得改六個地方，漏改一處沒有任何斷言會抓到。
 # 每支兩條 negative control 加一條 clean positive control（evidence-integrity.md 要求
 # 成對）。第二條（掃描器說成功卻交不出行）才是相對舊 `grep -qE … && ok || ng` 的增量：
 # 第一條 rc=2 舊版也會 ng，只是把成因說成「沒命中」。
@@ -116,29 +130,47 @@ section_has() {
 # 保證不存在的 sentinel，而不是「現在剛好不存在」的普通字。
 lacks_sentinel='THIS_STRING_MUST_NOT_EXIST_IN_THE_SKILL'
 assert_fails_closed() {  # assert_fails_closed <label-prefix> <shim-rc> <helper> <args...>
-  local prefix="$1" shim_rc="$2" why
+  local prefix="$1" shim_rc="$2" why out
   shift 2
   case "$shim_rc" in
     2) why='the scanner errors' ;;
-    *) why='the scanner exits 0 with no output' ;;
+    0) why='the scanner exits 0 with no output' ;;
+    *) why="the scanner returns rc=$shim_rc" ;;
   esac
-  if (rg() { return "$shim_rc"; }; "$@") >/dev/null 2>&1; then
-    ng "$prefix fails closed when $why"
-  else
-    ok "$prefix fails closed when $why"
-  fi
+  # 驗**印出來的判定**而不只是 rc。#95 的症狀就是「印出 PASS」，而 ok／ng 都 return 0，
+  # helper 的 rc 只承載「掃描可不可信」——純 rc 版連 `ok "$1"; return 1` 這種假 helper
+  # 都會全數放行。什麼都沒印同樣不算通過。
+  out=$( (rg() { return "$shim_rc"; }; "$@") 2>&1 )
+  case "$out" in
+    *"  PASS  "*) ng "$prefix fails closed when $why" ;;
+    *"  FAIL  "*) ok "$prefix fails closed when $why" ;;
+    *)            ng "$prefix fails closed when $why" ;;
+  esac
 }
 
 for _shim_rc in 2 0; do
   assert_fails_closed has         "$_shim_rc" has         "fixture" 'rg_hits' tests/mattpocock-workflow.sh
   assert_fails_closed lacks       "$_shim_rc" lacks       "fixture" "$lacks_sentinel" skills/dev-workflow/SKILL.md
-  assert_fails_closed rule_has_in "$_shim_rc" rule_has    "fixture" 'INT-4' 'delegation'
+  assert_fails_closed block_has   "$_shim_rc" block_has   "fixture" 'probe' 'probe line'
+  assert_fails_closed block_lacks "$_shim_rc" block_lacks "fixture" "$lacks_sentinel" 'probe line'
+  # 直接呼叫 rule_has_in 而非 wrapper rule_has：後者寫死 file 參數，會漏掉「非預設
+  # file」那條路徑。
+  assert_fails_closed rule_has_in "$_shim_rc" rule_has_in "fixture" 'INT-4' 'delegation' skills/dev-workflow/SKILL.md
   assert_fails_closed section_has "$_shim_rc" section_has "fixture" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md
 done
 has "has accepts its clean positive control" 'rg_hits' tests/mattpocock-workflow.sh
 lacks "lacks accepts its clean positive control" "$lacks_sentinel" skills/dev-workflow/SKILL.md
-rule_has "rule_has_in accepts its clean positive control" 'INT-4' 'delegation'
+block_has "block_has accepts its clean positive control" 'probe' 'probe line'
+block_lacks "block_lacks accepts its clean positive control" "$lacks_sentinel" 'probe line'
+rule_has_in "rule_has_in accepts its clean positive control" 'INT-4' 'delegation' skills/dev-workflow/SKILL.md
 section_has "section_has accepts its clean positive control" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md
+# lacks 的另一半：pattern 真的存在時必須判 FAIL。shim fixture 只盯 rc 通道，clean
+# positive 只盯「不存在時放行」——把迴圈裡的 `[ "$n" -eq 0 ] || …` 整行刪掉，33 個
+# 呼叫端全綠而零訊號。這條是那個退化的唯一守衛。
+case "$(lacks "fixture" 'rg_hits' tests/mattpocock-workflow.sh 2>&1)" in
+  *"  FAIL  "*) ok "lacks rejects its known-bad control" ;;
+  *)            ng "lacks rejects its known-bad control" ;;
+esac
 
 dirty_review=skills/dev-workflow/references/dirty-review-package.md
 delegation_ref=skills/dev-workflow/references/delegation.md
@@ -159,7 +191,10 @@ delivery_contract_valid() {
   local file="$1" int6 s2 s6 rc
   [ -r "$file" ] || return 2
   int6="$(grep -E '^\- \[INT-6\]' "$file")"; rc=$?
-  case "$rc" in 0) ;; 1) return 1 ;; *) return 2 ;; esac
+  # rc=0 卻交不出內容 = 掃描器自相矛盾，與 rg_hits 同一格。沒有這一格的話，grep 靜默
+  # 成功時下方七條排除側 negative control 會在完全沒掃描的情況下變綠（rc=1 被呼叫端
+  # 讀成「已正確拒絕」）。同檔對 evidence_integrity_contract_valid 立的規矩就是這條。
+  case "$rc" in 0) [ -n "$int6" ] || return 2 ;; 1) return 1 ;; *) return 2 ;; esac
   s2="$(awk '/^## S2 AUTHORIZE$/{on=1;next} on && /^## /{exit} on{print}' "$file")" || return 2
   s6="$(awk '/^## S6 CLOSEOUT$/{on=1;next} on && /^## /{exit} on{print}' "$file")" || return 2
   [[ "$int6" =~ $delivery_int6_pattern ]] &&
@@ -310,7 +345,7 @@ has "routing continuation owns phase-boundary choice" '[Pp]hase boundary.*Contin
 has "routing continuation avoids a hard token threshold" 'grilling.*to-spec.*to-tickets.*同一 context.*不設固定 token threshold' skills/dev-workflow/references/routing-continuations.md
 has "mid-phase compaction routes through handoff" 'compact.*只在 phase boundary.*mid-phase.*handoff' skills/dev-workflow/references/routing-continuations.md
 # 原本是 `[ "$(grep -c …)" -eq 22 ]`：掃描器壞掉時靠空字串進 `[` 觸發
-# `integer expression expected` 才 fail-closed——本檔 has_rg 的沿革註解逐字說過
+# `integer expression expected` 才 fail-closed——本檔 allow_names 的沿革註解逐字說過
 # `980d2c2` 那版 `grep -c` 沒做三態就是這個毛病。既然 rg_hits 已在，收掉。
 if skill_count=$(rg_hits '^skill=' "$ROOT/mattpocock-skills.lock") && [ "$skill_count" -eq 22 ]; then
   ok "Matt selected set contains 22 skills"
@@ -572,7 +607,12 @@ prompt_block="$(sed -n '/^── reviewer prompt 開始 ──$/,/^── review
 # 數行而不是只檢查 -z：sed 的 range 一定含兩個 marker 行，所以把 prompt 內容整段清空
 # 之後 `-z` 仍不成立，守衛會比它自稱的弱。> 2 行才代表 marker 之間真的有東西。
 prompt_lines=0
-[ -n "$prompt_block" ] && prompt_lines="$(printf '%s\n' "$prompt_block" | wc -l | tr -d ' ')"
+if [ -n "$prompt_block" ]; then
+  prompt_lines="$(printf '%s\n' "$prompt_block" | wc -l | tr -d ' ')"
+  # wc 靜默失敗（exit 0 無輸出）時 prompt_lines 是空字串，`[ "" -le 2 ]` 報錯回 rc=2，
+  # if 判偽 → 整段檢查被跳過、兩條斷言都變綠。-1 讓它落進「區塊太短」那格。
+  case "$prompt_lines" in ''|*[!0-9]*) prompt_lines=-1 ;; esac
+fi
 if [ "$prompt_lines" -le 2 ]; then
   ng "reviewer prompt block is non-empty"
   # range 空或只剩 marker 時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓
@@ -628,6 +668,23 @@ case "$evidence_bad_rc" in
   1) ok "evidence integrity rejects the known-bad negative control" ;;
   *) ng "evidence integrity rejects the known-bad negative control (validator error rc=$evidence_bad_rc)" ;;
 esac
+# 掃描器故障那條路徑（rg_hits -> return 2）本來沒有任何控制項。該函式的註解逐字承諾
+# 「掃描不可信 MUST 以 2 傳出去，不得塌成 1」——把 `|| return 2` 改成 `|| return 1`，
+# known-bad 那條會從 `*) ng` 轉成 `1) ok`，掃描器故障被讀成「條文真的不在＝守衛正常」。
+# 這兩條是那個承諾的唯一守衛。
+for _shim_rc in 2 0; do
+  case "$_shim_rc" in
+    2) _eic_why='the scanner errors' ;;
+    *) _eic_why='the scanner exits 0 with no output' ;;
+  esac
+  _eic_rc=0
+  (rg() { return "$_shim_rc"; }; evidence_integrity_contract_valid "$evidence_fixture/good.md") || _eic_rc=$?
+  if [ "$_eic_rc" -gt 1 ]; then
+    ok "evidence integrity reports a validator error when $_eic_why"
+  else
+    ng "evidence integrity reports a validator error when $_eic_why"
+  fi
+done
 evidence_missing_rc=0
 evidence_integrity_contract_valid "$evidence_fixture/missing.md" || evidence_missing_rc=$?
 [ "$evidence_missing_rc" -gt 1 ] &&
@@ -829,7 +886,7 @@ fi
 
 copilot_section="$(sed -n '/^## Copilot$/,$p' "$ROOT/$host_adapters_ref")"
 if copilot_s5_count=$(rg_hits '^- S5 ' <<<"$copilot_section") &&
-   [ "$copilot_s5_count" = 1 ]; then
+   [ "$copilot_s5_count" -eq 1 ]; then
   ok "Copilot adapter has one canonical S5 directive"
 else
   ng "Copilot adapter has one canonical S5 directive"
