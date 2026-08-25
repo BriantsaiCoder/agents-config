@@ -618,7 +618,7 @@ if [ "$prompt_lines" -le 2 ]; then
   # range 空或只剩 marker 時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓
   # 總條數隨檔案狀態浮動，看起來像「少跑了一條」而不是「守衛失去依據」。
   ng "baseline design notes live outside the reviewer prompt"
-elif ! _notes_hits=$(rg_hits '設計註記' <<<"$prompt_block"); then
+elif ! _notes_hits=$(printf '%s\n' "$prompt_block" | rg_hits '設計註記'); then
   # 掃描不可信：兩條都無從判定，一律 ng（沿用上一分支的理由）。
   ng "reviewer prompt block is non-empty"
   ng "baseline design notes live outside the reviewer prompt"
@@ -852,7 +852,7 @@ resolver_output="$(
 )"
 resolver_rc=$?
 if [ "$resolver_rc" -ne 0 ] &&
-   _resolver_hits=$(rg_hits 'Codex locked skill missing: missing-skill' <<<"$resolver_output") &&
+   _resolver_hits=$(printf '%s\n' "$resolver_output" | rg_hits 'Codex locked skill missing: missing-skill') &&
    [ "$_resolver_hits" -gt 0 ]; then
   ok "host resolver fails closed when a locked skill is missing"
 else
@@ -885,7 +885,7 @@ else
 fi
 
 copilot_section="$(sed -n '/^## Copilot$/,$p' "$ROOT/$host_adapters_ref")"
-if copilot_s5_count=$(rg_hits '^- S5 ' <<<"$copilot_section") &&
+if copilot_s5_count=$(printf '%s\n' "$copilot_section" | rg_hits '^- S5 ') &&
    [ "$copilot_s5_count" -eq 1 ]; then
   ok "Copilot adapter has one canonical S5 directive"
 else
