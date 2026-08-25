@@ -16,44 +16,13 @@ else
   ng "ripgrep scanner is available"
 fi
 
-# 全檔唯一的**共用**掃描判別。另有三處自建 rc 判別，各自的理由寫在原地：allow_names
+# 掃描器 rc 三態的共用判別。正本在 tests/lib/scan.sh（issue #97 把它提出來，因為
+# conformance.sh 需要同一份判別——複製第二份正是 PR #96 的 S5 Standards R2 點名要避免的）。
+# 全檔唯一的**共用**掃描判別；另有三處自建 rc 判別，理由各自寫在原地：allow_names
 # 那處 `rg -o`（提取不是判別）、`rg --hidden` 那處（要 --hidden 與 --glob）、
 # delivery_contract_valid（POSIX ERE，見該處註解）。
-# 用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，一支壞掉但 exit 0 的 rg 同樣回 0，
-# 真違規會被判 PASS（issue #95）。改成 rc 與計數兩邊都要對得上。rc=0 卻交不出正整數
-# 總和 = 掃描器自相矛盾（rg 無命中時回 rc=1 且不印），歸「掃描不可信」而非「沒命中」。
-# 檔案不存在不另外先驗：rg 對它回 rc=2，同一格。
-# 省略 target 時讀 stdin，讓 sed／awk 抽出的區塊與 printf 產生的字串共用同一份判別；
-# 顯式的 `-` 與 `--` 讓「stdin」與「target 開頭是 -」都不靠隱式行為。
-# target 是目錄時 rg 逐檔各印一行，--no-filename 去掉 `path:` 前綴後逐行加總——不加總的話
-# 那些多行輸出會落進「不可信」格，結論仍 fail-closed 但成因會被說成掃描器壞了。
-# 加總用參數展開而非 `<<<`：macOS 系統 bash 3.2 把 here-string 的暫存檔開在 **cwd**
-# 而不是 TMPDIR，cwd 不可寫時整支套件會從 354 PASS 掉到 70 PASS（方向 fail-closed，
-# 但等於不能用）。這是 rg -c 換進來時引入的相依，改回純內建就沒有。
-# rg 的 stderr 不吞：ERE → Rust regex 的遷移新增了一整類只會從 stderr 現形的失敗
-# （`a{`、`a\q` 在 grep -qE 是「合法、無命中」，在 rg 是 regex parse error），
-# 吞掉的話 suite 只會印某條斷言 FAIL，一個字都不提 pattern 寫壞了。
-rg_hits() {  # rg_hits <pattern> [target] -> stdout=命中行數總和；rc 0=可信 2=掃描不可信
-  local out rc=0 total=0 line
-  if [ "$#" -ge 2 ]; then
-    out=$(rg -c --no-filename -e "$1" -- "$2") || rc=$?
-  else
-    out=$(rg -c --no-filename -e "$1" -) || rc=$?
-  fi
-  case "$rc" in
-    1) printf '0\n'; return 0 ;;
-    0) ;;
-    *) return 2 ;;
-  esac
-  while [ -n "$out" ]; do
-    line=${out%%$'\n'*}
-    case "$line" in ''|*[!0-9]*) return 2 ;; esac
-    total=$((total + line))
-    if [ "$out" = "$line" ]; then out=; else out=${out#*$'\n'}; fi
-  done
-  [ "$total" -gt 0 ] || return 2
-  printf '%s\n' "$total"
-}
+# shellcheck source=tests/lib/scan.sh
+. "$ROOT/tests/lib/scan.sh"
 
 # rc 語意：掃描可信時 return 0，不可信時 ng 並 return 1。注意這**不是**「不論 ok／ng
 # 都 return 0」——lacks() 在斷言失敗（pattern 真的命中）時也 return 1，所以 rc 單獨

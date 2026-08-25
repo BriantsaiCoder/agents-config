@@ -11,6 +11,47 @@ ok() { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng() { printf '  FAIL  %s\n' "$1"; fail=$((fail + 1)); }
 skip_check() { printf '  SKIP  %s\n' "$1"; skipped=$((skipped + 1)); }
 
+# 掃描器 rc 三態的共用判別（issue #97）。原本全檔用 `rg -q` / `grep -q`，那是單一 bit：
+# 一支壞掉卻 exit 0 的掃描器直接讓斷言變 PASS。實測本檔有 8 條這樣的斷言。
+# 用腳本自身的位置而非 ${AGENTS}：本檔的 host-facing 檢查刻意讀 ${AGENTS}（預設 ~/.agents），
+# 但**共用判別必須來自受審 tree**，否則在 worktree／複本上跑的是 main 的那一份。
+# shellcheck source=tests/lib/scan.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh"
+
+# negative control 驗的是**印出來的判定**，不只是 rc：本 issue 的症狀就是「印出 PASS」，
+# 而 ok／ng 都 return 0，helper 的 rc 只承載「掃描可不可信」。純 rc 版連
+# `ok "$1"; return 1` 這種假 helper 都會放行（PR #96 的 S5 R2 實測）。
+# 探測組合一律選「真 rg 下會 PASS」的，否則 shim 沒生效時 fixture 也會綠、理由卻不對。
+scan_probe_file="$AGENTS/CONVENTIONS.md"
+assert_scan_fails_closed() {  # <label-prefix> <shim-rc> <helper> <args...>
+  local prefix="$1" shim_rc="$2" why out
+  shift 2
+  case "$shim_rc" in
+    2) why='the scanner errors' ;;
+    0) why='the scanner exits 0 with no output' ;;
+    *) why="the scanner returns rc=$shim_rc" ;;
+  esac
+  out=$( (rg() { return "$shim_rc"; }; "$@" && printf '  PASS  probe\n' || printf '  FAIL  probe\n') 2>&1 )
+  case "$out" in
+    *'  PASS  '*) ng "$prefix fails closed when $why" ;;
+    *'  FAIL  '*) ok "$prefix fails closed when $why" ;;
+    *)            ng "$prefix fails closed when $why" ;;
+  esac
+}
+for _scan_shim_rc in 2 0; do
+  assert_scan_fails_closed scan_hit    "$_scan_shim_rc" scan_hit    '規則' "$scan_probe_file"
+  assert_scan_fails_closed scan_hit_f  "$_scan_shim_rc" scan_hit_f  '規則' "$scan_probe_file"
+  # 反向的兩支不能寫成 `! scan_hit`——掃描不可信時 scan_hit 回非 0，`!` 反轉成 true
+  # 就把違規放行了。探測 pattern 用保證不存在的 sentinel。
+  assert_scan_fails_closed scan_miss   "$_scan_shim_rc" scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+  assert_scan_fails_closed scan_miss_f "$_scan_shim_rc" scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+done
+# clean positive control（evidence-integrity.md 要求成對）
+scan_hit    '規則' "$scan_probe_file" && ok "scan_hit accepts its clean positive control" \
+  || ng "scan_hit accepts its clean positive control"
+scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss_f accepts its clean positive control" \
+  || ng "scan_miss_f accepts its clean positive control"
+
 if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
   ok "shared skills source"
 else
@@ -57,8 +98,8 @@ fi
 
 context7_skill="$AGENTS/skills/context7-mcp/SKILL.md"
 if [ -f "$context7_skill" ] &&
-   rg -q 'resolve-library-id' "$context7_skill" &&
-   rg -q 'query-docs' "$context7_skill"; then
+   scan_hit 'resolve-library-id' "$context7_skill" &&
+   scan_hit 'query-docs' "$context7_skill"; then
   ok "Context7 canonical procedure"
 else
   ng "Context7 canonical procedure missing"
@@ -83,7 +124,7 @@ bad_exec_count="$(
   ok "only shared skill scripts are executable" ||
   ng "non-script executable files under shared skills: $bad_exec_count"
 
-if rg -Fq '[ ! -L "$AGENTS/skills/video-downloader" ]' \
+if scan_hit_f '[ ! -L "$AGENTS/skills/video-downloader" ]' \
   "$AGENTS/tests/matt-thin-workflow.sh"; then
   ok "retired skill identity rejects broken symlinks"
 else
@@ -149,17 +190,17 @@ codex_hooks="$AGENTS/skills/init-project-docs/references/hooks/codex/README.md"
 copilot_agents="$AGENTS/skills/init-project-docs/references/agents/copilot/README.md"
 copilot_settings="$AGENTS/skills/init-project-docs/references/settings-templates/copilot/README.md"
 
-if rg -Fq '`.github/copilot/settings.json`' "$host_matrix" &&
-   rg -Fq '`.github/copilot/settings.local.json`' "$host_matrix" &&
-   rg -Fq '`.github/copilot/settings.json`' "$catalog_index" &&
-   rg -Fq '`.github/copilot/settings.local.json`' "$catalog_index"; then
+if scan_hit_f '`.github/copilot/settings.json`' "$host_matrix" &&
+   scan_hit_f '`.github/copilot/settings.local.json`' "$host_matrix" &&
+   scan_hit_f '`.github/copilot/settings.json`' "$catalog_index" &&
+   scan_hit_f '`.github/copilot/settings.local.json`' "$catalog_index"; then
   ok "init-project-docs knows Copilot repository／local settings"
 else
   ng "init-project-docs Copilot repository／local settings are stale"
 fi
 
-if rg -Fq 'startup\|resume\|clear\|compact' "$host_matrix" &&
-   rg -Fq 'startup|resume|clear|compact' "$codex_hooks"; then
+if scan_hit_f 'startup\|resume\|clear\|compact' "$host_matrix" &&
+   scan_hit_f 'startup|resume|clear|compact' "$codex_hooks"; then
   ok "init-project-docs Codex SessionStart sources are current"
 else
   ng "init-project-docs Codex SessionStart misses compact"
@@ -167,40 +208,40 @@ fi
 
 copilot_aliases_current=1
 for alias in read edit search execute; do
-  rg -Fq "\`$alias\`" "$copilot_agents" || copilot_aliases_current=0
+  scan_hit_f "\`$alias\`" "$copilot_agents" || copilot_aliases_current=0
 done
 if [ "$copilot_aliases_current" -eq 1 ] &&
-   ! rg -q 'search/codebase|edit/editFiles|runCommands|execute/createAndRunTask' "$copilot_agents"; then
+   scan_miss 'search/codebase|edit/editFiles|runCommands|execute/createAndRunTask' "$copilot_agents"; then
   ok "init-project-docs Copilot agent aliases are canonical"
 else
   ng "init-project-docs Copilot agent aliases are stale"
 fi
 
-if ! rg -Fq 'Codex recommendation markers:' "$init_docs" &&
-   rg -Fq '## Phase 4–6 建議標記' "$host_matrix"; then
+if scan_miss_f 'Codex recommendation markers:' "$init_docs" &&
+   scan_hit_f '## Phase 4–6 建議標記' "$host_matrix"; then
   ok "init-project-docs host markers have one owner"
 else
   ng "init-project-docs host markers are duplicated or misplaced"
 fi
 
-if rg -Fq 'references/README.md' "$init_docs" &&
-   rg -q '^- \[ \]' "$init_docs"; then
+if scan_hit_f 'references/README.md' "$init_docs" &&
+   scan_hit '^- \[ \]' "$init_docs"; then
   ok "init-project-docs uses shared catalogs and validation checklist"
 else
   ng "init-project-docs catalog／validation hierarchy is incomplete"
 fi
 
-if rg -Fq '`.github/copilot/settings.json`' "$copilot_settings" &&
-   rg -q '限定|supported keys' "$copilot_settings" &&
-   rg -Fq 'Phase 2 先增量更新' "$copilot_settings" &&
-   ! rg -Fq 'Phase 2 實際只產' "$copilot_settings"; then
+if scan_hit_f '`.github/copilot/settings.json`' "$copilot_settings" &&
+   scan_hit '限定|supported keys' "$copilot_settings" &&
+   scan_hit_f 'Phase 2 先增量更新' "$copilot_settings" &&
+   scan_miss_f 'Phase 2 實際只產' "$copilot_settings"; then
   ok "init-project-docs Copilot settings boundary is current"
 else
   ng "init-project-docs Copilot settings boundary is stale"
 fi
 
-if rg -Fq '先讀取共用的 stack/template catalog' "$init_docs" &&
-   rg -Fq '## Phase 4–6 建議標記' "$host_matrix"; then
+if scan_hit_f '先讀取共用的 stack/template catalog' "$init_docs" &&
+   scan_hit_f '## Phase 4–6 建議標記' "$host_matrix"; then
   ok "init-project-docs new workflow prose is zh-TW"
 else
   ng "init-project-docs new workflow prose is not zh-TW"
@@ -216,12 +257,12 @@ actual="$(grep -c '^## [0-9]' "$AGENTS/CONVENTIONS.md")"
 # 驗證」，讀起來像「有 FP ⇒ 該檔會被注入」；同日稽核據此把 tier1／tier2 帶 FP 卻不注入
 # 判成 doc-rot，但那是第二種用途（非注入正本的 byte-level drift sentinel）且已有 grep
 # 斷言守著。普世宣稱本身才是 rot 來源，所以修的是條文不是檔頭——這兩條擋它被改回去。
-if grep -Fq 'byte-level drift sentinel' "$AGENTS/CONVENTIONS.md"; then
+if scan_hit_f 'byte-level drift sentinel' "$AGENTS/CONVENTIONS.md"; then
   ok "CONVENTIONS 規則 6 保留 FP 的第二種用途"
 else
   ng "CONVENTIONS 規則 6 的 FP 用途區分被移除"
 fi
-if grep -Fq '進 context 的問 AI，不進 context 的用 grep' "$AGENTS/CONVENTIONS.md"; then
+if scan_hit_f '進 context 的問 AI，不進 context 的用 grep' "$AGENTS/CONVENTIONS.md"; then
   ok "CONVENTIONS 規則 6 保留 FP 驗證方式判準"
 else
   ng "CONVENTIONS 規則 6 的 FP 驗證判準被移除"
@@ -229,7 +270,7 @@ fi
 
 # 規則 12 標題不得再叫「常駐面」：四個檔裡 tier1／tier2 不進 context，
 # ~/.claude/tests/repo-integrity.sh 有斷言擋著它們被 @-import。
-if grep -q '^## 12\..*常駐面' "$AGENTS/CONVENTIONS.md"; then
+if scan_hit '^## 12\..*常駐面' "$AGENTS/CONVENTIONS.md"; then
   ng "CONVENTIONS 規則 12 標題退回「常駐面」（tier1／tier2 並不常駐）"
 else
   ok "CONVENTIONS 規則 12 標題未誤稱常駐面"
@@ -359,16 +400,18 @@ fi
 PIPE_USE='\| *(grep|awk|sed|sort|head|tail|tr|wc|jq|rg|cut|xargs|comm|uniq)'
 pipefail_missing=""
 while IFS= read -r sh_file; do
-  head -1 "$sh_file" 2>/dev/null | grep -qE '^#!.*(bash)$' || continue     # 豁免 1
+  head -1 "$sh_file" 2>/dev/null | scan_hit '^#!.*(bash)$' || continue     # 豁免 1
   case "$sh_file" in
     */lib-vendored.sh) continue ;;                                          # 豁免 2
     */phase4-canary-harness.sh) continue ;;                                 # 豁免 3
   esac
-  grep -qE "$PIPE_USE" "$sh_file" 2>/dev/null || continue
+  scan_hit "$PIPE_USE" "$sh_file" || continue
   # 只認真正的設定行，不認註解或字串裡的 pipefail。第一版用裸 grep -q 'pipefail'，
   # 於是把 `set -u` 加一行「# 這裡刻意不設 pipefail」就能讓守護 PASS——一支專門抓
   # 假綠的守護自己就是假綠（2026-08-02 實測，Copilot review 抓到）。
-  grep -qE '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" 2>/dev/null && continue
+  # 這一格是唯一方向會反過來的過濾器：掃描器靜默成功時 `&& continue` 會**跳過**
+  # 該檔的檢查（另外兩格壞掉只會多檢查，偏嚴）。走 scan_hit 之後不可信一律不跳過。
+  scan_hit '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" && continue
   pipefail_missing="$pipefail_missing $sh_file"
 done <<EOF
 $(find "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" -type f 2>/dev/null)
@@ -388,7 +431,7 @@ CI_YML="$AGENTS/.github/workflows/ci.yml"
 COUNT_IN_NAME='^[[:space:]]+- name:.*[0-9]+ ?(cases|條|斷言)'
 if [ ! -f "$CI_YML" ]; then
   skip_check "CI step 名稱不含 case 數（$CI_YML 不存在）"
-elif ! grep -qE "$COUNT_IN_NAME" "$CI_YML"; then
+elif scan_miss "$COUNT_IN_NAME" "$CI_YML"; then
   ok "CI step 名稱不含 case 數"
 else
   ng "CI step 名稱複述 case 數（會靜默漂移）：$(grep -cE "$COUNT_IN_NAME" "$CI_YML") 處"
