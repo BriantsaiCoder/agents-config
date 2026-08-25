@@ -217,10 +217,12 @@ count_claim_probe "$count_claim_fixture/good.sh" &&
   ng "計數 lint 對帶座標的 N PASS 誤報" ||
   ok "計數 lint 對帶座標的 N PASS 不誤報"
 
-# rg_matches 的控制項。**只有 rc>=2 那一格**：`rg -q` 的 rc=0 依定義就是「命中」，
-# 沒有「靜默成功」這種故障（它本來就不輸出），所以 rc=0 的 negative control 會要求它
-# 對合法輸入回錯。
+# rg_matches 的控制項，兩格都要：它內部用 `rg -c`（見 scan.sh），rc=0 一定伴隨筆數，
+# 所以「rc=0 但無輸出」是自相矛盾的故障、必須 fail-closed——與 rg_hits 同一格。
+# （前一版註解沿用了 `rg -q` 的語義寫「rc=0 依定義就是命中、沒有靜默成功」，
+# 那在改用 -c 之後就不成立了；Copilot review 抓到。）
 assert_fails_closed rg_matches rg 2 scan_verdict rg_matches 'PR #100' '見 PR #100'
+assert_fails_closed rg_matches rg 0 scan_verdict rg_matches 'PR #100' '見 PR #100'
 if rg_matches 'PR #100' '見 PR #100'; then
   ok "rg_matches accepts its clean positive control"
 else
