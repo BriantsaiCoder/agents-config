@@ -70,20 +70,49 @@ scan_hit_f()  { local n; n=$(_rg_hits_f "$@") && [ "$n" -gt 0 ]; }
 # helper 的 rc 只承載「掃描可不可信」——純 rc 版連 `ok "$1"; return 1` 這種假 helper 都會
 # 全數放行（PR #96 的 S5 R2 實測）。什麼都沒印同樣不算通過。
 # <helper> 若自己不印 verdict（`scan_hit` 只回 rc），傳一個把 rc 轉成 verdict 的 wrapper。
-assert_fails_closed() {  # assert_fails_closed <label-prefix> <shim-rc> <helper> <args...>
-  local prefix="$1" shim_rc="$2" why out
-  shift 2
+# **shim 目標是參數**，不是寫死的 `rg`：前一版寫死之後，任何不是用 rg 的判別（例如
+# find_count）就補不了 control——那正是本輪 S5 Standards 的 BLOCKING 根因。
+# 用 case 分派而不是 eval：shim 目標只有這兩個，明確列出比動態定義安全也好讀。
+assert_fails_closed() {  # assert_fails_closed <prefix> <shim-cmd> <shim-rc> <helper> <args...>
+  local prefix="$1" shim_cmd="$2" shim_rc="$3" why out
+  shift 3
   case "$shim_rc" in
-    2) why='the scanner errors' ;;
-    0) why='the scanner exits 0 with no output' ;;
-    *) why="the scanner returns rc=$shim_rc" ;;
+    2) why="$shim_cmd errors" ;;
+    0) why="$shim_cmd exits 0 with no output" ;;
+    *) why="$shim_cmd returns rc=$shim_rc" ;;
   esac
-  out=$( (rg() { return "$shim_rc"; }; "$@") 2>&1 )
+  case "$shim_cmd" in
+    rg)   out=$( (rg()   { return "$shim_rc"; }; "$@") 2>&1 ) ;;
+    find) out=$( (find() { return "$shim_rc"; }; "$@") 2>&1 ) ;;
+    *)    ng "$prefix: 未知的 shim 目標 $shim_cmd"; return 1 ;;
+  esac
   case "$out" in
     *'  PASS  '*) ng "$prefix fails closed when $why" ;;
     *'  FAIL  '*) ok "$prefix fails closed when $why" ;;
     *)            ng "$prefix fails closed when $why" ;;
   esac
+}
+
+# find 的結果與筆數。與 rg_hits 同一類（掃描器 rc 三態），所以家在這裡而不是消費端。
+# 驗 rc **與 stderr**：局部失敗（某個子目錄不可讀）rc=1 但仍輸出部分結果，rc 偵測不到。
+# **find 的 silent-success 偵測不到**：rc=0 + 空輸出是合法的 0（真的沒有那種檔），
+# 與 rg -c 不同（rg 無命中回 rc=1，rc=0 卻無輸出才是自相矛盾）。呼叫端要自己配 canary。
+find_list() {  # find_list <errfile> <find-args…> -> stdout=結果；rc 0=可信 2=不可信
+  local errfile="$1" out rc=0
+  shift
+  [ -n "$errfile" ] || return 2
+  out=$(find "$@" 2>"$errfile") || rc=$?
+  { [ "$rc" -ne 0 ] || [ -s "$errfile" ]; } && return 2
+  printf '%s' "$out"
+}
+
+find_count() {  # find_count <errfile> <find-args…> -> stdout=筆數；rc 0=可信 2=不可信
+  local out n
+  out=$(find_list "$@") || return 2
+  [ -z "$out" ] && { printf '0\n'; return 0; }
+  n=$(printf '%s\n' "$out" | wc -l | tr -d ' ')
+  case "$n" in ''|*[!0-9]*) return 2 ;; esac
+  printf '%s\n' "$n"
 }
 
 # 給只回 rc 的 helper 用的 verdict wrapper。

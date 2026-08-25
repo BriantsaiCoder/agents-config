@@ -103,34 +103,19 @@ section_has() {
 # success 對它更兇（交不出行看起來就是「沒命中＝乾淨」），所以它的探測 pattern 用一個
 # 保證不存在的 sentinel，而不是「現在剛好不存在」的普通字。
 lacks_sentinel='THIS_STRING_MUST_NOT_EXIST_IN_THE_SKILL'
-assert_fails_closed() {  # assert_fails_closed <label-prefix> <shim-rc> <helper> <args...>
-  local prefix="$1" shim_rc="$2" why out
-  shift 2
-  case "$shim_rc" in
-    2) why='the scanner errors' ;;
-    0) why='the scanner exits 0 with no output' ;;
-    *) why="the scanner returns rc=$shim_rc" ;;
-  esac
-  # 驗**印出來的判定**而不只是 rc。#95 的症狀就是「印出 PASS」，而 ok／ng 都 return 0，
-  # helper 的 rc 只承載「掃描可不可信」——純 rc 版連 `ok "$1"; return 1` 這種假 helper
-  # 都會全數放行。什麼都沒印同樣不算通過。
-  out=$( (rg() { return "$shim_rc"; }; "$@") 2>&1 )
-  case "$out" in
-    *"  PASS  "*) ng "$prefix fails closed when $why" ;;
-    *"  FAIL  "*) ok "$prefix fails closed when $why" ;;
-    *)            ng "$prefix fails closed when $why" ;;
-  esac
-}
-
+# assert_fails_closed 的正本在 tests/lib/scan.sh。第二個參數是 **shim 目標**
+# （`rg`／`find`）：寫死 rg 的話，不是用 rg 的判別（例如 find_count）就補不了 control。
+# 前一版在這裡留了一份舊簽名的本地定義，它會**覆蓋掉** source 進來的那支——
+# 「搬進共用檔」只加了新的沒刪舊的，等於兩份判別並存。
 for _shim_rc in 2 0; do
-  assert_fails_closed has         "$_shim_rc" has         "fixture" 'rg_hits' tests/mattpocock-workflow.sh
-  assert_fails_closed lacks       "$_shim_rc" lacks       "fixture" "$lacks_sentinel" skills/dev-workflow/SKILL.md
-  assert_fails_closed block_has   "$_shim_rc" block_has   "fixture" 'probe' 'probe line'
-  assert_fails_closed block_lacks "$_shim_rc" block_lacks "fixture" "$lacks_sentinel" 'probe line'
+  assert_fails_closed has         rg "$_shim_rc" has         "fixture" 'rg_hits' tests/mattpocock-workflow.sh
+  assert_fails_closed lacks       rg "$_shim_rc" lacks       "fixture" "$lacks_sentinel" skills/dev-workflow/SKILL.md
+  assert_fails_closed block_has   rg "$_shim_rc" block_has   "fixture" 'probe' 'probe line'
+  assert_fails_closed block_lacks rg "$_shim_rc" block_lacks "fixture" "$lacks_sentinel" 'probe line'
   # 直接呼叫 rule_has_in 而非 wrapper rule_has：後者寫死 file 參數，會漏掉「非預設
   # file」那條路徑。
-  assert_fails_closed rule_has_in "$_shim_rc" rule_has_in "fixture" 'INT-4' 'delegation' skills/dev-workflow/SKILL.md
-  assert_fails_closed section_has "$_shim_rc" section_has "fixture" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md
+  assert_fails_closed rule_has_in rg "$_shim_rc" rule_has_in "fixture" 'INT-4' 'delegation' skills/dev-workflow/SKILL.md
+  assert_fails_closed section_has rg "$_shim_rc" section_has "fixture" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md
 done
 has "has accepts its clean positive control" 'rg_hits' tests/mattpocock-workflow.sh
 lacks "lacks accepts its clean positive control" "$lacks_sentinel" skills/dev-workflow/SKILL.md
