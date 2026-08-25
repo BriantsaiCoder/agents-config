@@ -22,6 +22,28 @@ Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so th
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here — not inside two parallel sub-agents.
 
+**Resolve `HEAD` to a SHA and pin an immutable snapshot before spawning anything.** A review
+runs for tens of minutes; if you keep working on the branch meanwhile — and in a multi-round
+review you almost certainly will — the sub-agents' line numbers, `git status`, and even `HEAD`
+itself start describing a different commit. The failure mode isn't hypothetical: in one review
+a sub-agent spent effort deciding whether a line-number mismatch was a tool bug or the file
+moving under it, and the worst case is an axis returning PASS on content that no longer exists.
+
+```
+review_sha=$(git rev-parse HEAD)
+git archive "$review_sha" | tar -x -C <snapshot-dir>
+```
+
+Pass **`<fixed-point>...<review_sha>`** to the sub-agents, never `...HEAD`. Hand them the
+snapshot path too. Two consequences to state in both briefs:
+
+- **All ablation runs on the copy, never the live worktree.** A reviewer mutating the tree the
+  other axis is reading corrupts both.
+- **`git archive` copies are not git repositories.** Anything that shells out to git fails there
+  — in this repo `bin/ci-local` picks up two extra environment-only FAILs (`INT-10 Git pre-push
+  safety rail`, `Stage B2 skill checkpoint`). Ablation on the copy, `ci-local` in a real worktree
+  (`git worktree add`, or `git clone --local --no-hardlinks` if the sandbox blocks hardlinks).
+
 ### 2. Identify the spec source
 
 Look for the originating spec, in this order:
@@ -67,17 +89,19 @@ The house over-engineering baseline — **five items**, mandatory in the Standar
 
 Send a single message with two `Agent` tool calls. Use the `general-purpose` subagent for both.
 
+Both briefs must carry the pinned SHA and the snapshot path from step 1.
+
 **Standards sub-agent prompt** — include:
 
-- The full diff command and commit list.
+- The full diff command (`<fixed-point>...<review_sha>`, not `...HEAD`), the commit list, and the snapshot path.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full — the sub-agent has no other access to it.
-- The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); (b) any baseline smell you spot: name it and quote the hunk; (c) performance regressions the diff introduces — N+1, full scans, blocking calls on a hot path, worse algorithmic complexity, needless repeated work; and (d) correctness defects — boundary conditions, null/empty handling, off-by-one, missing error handling, wrong state transitions. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Report every hit, nitpicks included; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters."
+- The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); (b) any baseline smell you spot: name it and quote the hunk; (c) performance regressions the diff introduces — N+1, full scans, blocking calls on a hot path, worse algorithmic complexity, needless repeated work; and (d) correctness defects — boundary conditions, null/empty handling, off-by-one, missing error handling, wrong state transitions. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Report every hit, nitpicks included; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters. You are reviewing an immutable snapshot: the assignment names an explicit SHA and a read-only copy path. Do every ablation on your own `cp -r` of that copy — the live worktree is off limits, another axis is reading it. State the SHA you reviewed in your report so a stale result is identifiable later."
 
 **Spec sub-agent prompt** — include:
 
-- The diff command and commit list.
+- The diff command (pinned to `<review_sha>`), the commit list, and the snapshot path.
 - The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Report every hit; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters."
+- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Report every hit; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters. You are reviewing an immutable snapshot: the assignment names an explicit SHA and a read-only copy path. Do every ablation on your own `cp -r` of that copy — the live worktree is off limits, another axis is reading it. State the SHA you reviewed in your report so a stale result is identifiable later."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
