@@ -36,6 +36,43 @@ else
   ok "lacks helper fails closed on scan errors"
 fi
 
+# 同 has()，但把「掃描器失敗」與「真的沒命中」分開。has() 是 `grep -qE … && ok || ng`：
+# 單一 bit，掃描器只要回非 0 就等同「沒命中」，而一支壞掉卻 exit 0 的掃描器直接變成 PASS。
+# issue #87 的 comment 逐字點名過「排除側正是 fail-open 會漏出去的地方」，PR #92 Spec R3
+# 在排除側實測到後者：真違規之下那兩條斷言判 PASS。給不能容忍掃描器靜默失敗的斷言用。
+# rc 語意是「掃描可不可信」，不是「斷言過不過」：掃描器可信時一律 return 0（不論 ok/ng），
+# 不可信時 ng 並 return 1。與同檔 lacks() 一致。
+has_rg() {
+  local label="$1" pattern="$2" path="$3" rc=0 n
+  # 用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，一支壞掉但 exit 0 的 rg 同樣回 0，
+  # 真違規會被判 PASS。改成同時要求計數是正整數，rc 與輸出兩邊都得對得上。
+  # 檔案不存在不另外先驗：rg 對它回 rc=2，與下面的「掃描不可信」同一格。
+  n=$(rg -c -e "$pattern" "$ROOT/$path" 2>/dev/null) || rc=$?
+  case "$rc" in
+    # rc=0 卻交不出正整數計數 = 掃描器自相矛盾，歸「不可信」而非「沒命中」。
+    0) case "$n" in
+         ''|*[!0-9]*|0) ng "$label"; return 1 ;;
+         *)             ok "$label" ;;
+       esac ;;
+    1) ng "$label" ;;
+    *) ng "$label"; return 1 ;;
+  esac
+}
+
+# 兩條 negative control。第一條（rc=2）舊的 has() 其實也守得住；has_rg 相對 has 的**全部**
+# 增量是第二條——掃描器說成功卻交不出行。沒有第二條，這個 helper 的存在理由就沒有東西在驗。
+# 探測路徑用 tests/ 自己而不是 CONVENTIONS.md：後者改名時會走到別的分支，fixture 照樣綠。
+if (rg() { return 2; }; has_rg "fixture" 'has_rg' tests/mattpocock-workflow.sh) >/dev/null; then
+  ng "has_rg fails closed when the scanner errors"
+else
+  ok "has_rg fails closed when the scanner errors"
+fi
+if (rg() { return 0; }; has_rg "fixture" 'has_rg' tests/mattpocock-workflow.sh) >/dev/null; then
+  ng "has_rg fails closed when the scanner exits 0 with no output"
+else
+  ok "has_rg fails closed when the scanner exits 0 with no output"
+fi
+
 rule_has_in() {
   local label="$1" id="$2" pattern="$3" file="$4"
   sed -n "/^\\- \\[$id\\]/p" "$ROOT/$file" |
@@ -577,6 +614,51 @@ has "bot fallback requires open ready mergeable PR" 'fallback 前.*open.*ready.*
 has "bot fallback cannot use author self-review" 'independent read-only reviewer.*不得由 PR 作者自審' skills/dev-workflow/references/review-triage.md
 has "bot helper cannot manufacture fallback PASS" 'manual evidence branch.*pr-review-gate.*UNAVAILABLE.*不得.*PASS' skills/dev-workflow/references/review-triage.md
 has "bot UNAVAILABLE remains visible under fallback" 'bot 狀態仍記 `UNAVAILABLE`.*不得偽裝成 PASS' skills/dev-workflow/references/review-triage.md
+
+# fallback 允許側的極性。這三條的覆蓋面是**窄的**：實測擋不住的寫法逐條記在 issue #93，
+# 這裡不複述那份清單——PR #92 的 R2 有六條 findings 就是在挑這段摘要的錯（高估、低估、
+# 分類錯各有）。摘要靠人維護，#93 的每一條都有實測記錄。
+review_triage_ref=skills/dev-workflow/references/review-triage.md
+allow_rc=0
+allow_line=$(rg -e '^[[:space:]]*- \*\*允許 fallback 的 reason 窮舉為一個\*\*' "$ROOT/$review_triage_ref") || allow_rc=$?
+# 實際判準是「反引號內整段為 [a-z][a-z_]*」，不是「有沒有用反引號」——`*_foo`、`FOO`、
+# `foo2`、`foo-bar` 都用 ASCII 反引號而都不算數（#93 D 類）。
+names_rc=0
+allow_names=$(printf '%s' "$allow_line" | rg -o -r '$1' -e '`([a-z][a-z_]*)`' | sort -u) || names_rc=$?
+# 行數用 shell 參數展開判，不外呼 grep -c：少一個外部工具就少一種「工具缺席」失效面。
+# `980d2c2` 那一版用 `grep -c` 且沒做三態，grep 缺席時空字串進 [ -ne ] 會報 integer expression
+# expected 並回 2，elif 鏈跳過這一格、真違規被判 PASS（PR #92 Standards S7 實測）。
+if [ "$allow_rc" -ge 2 ] || [ "$names_rc" -ge 2 ]; then
+  ng "fallback allow side is a closed set (rg 掃描失敗 rc=${allow_rc}/${names_rc}，工具問題非程式碼變更)"
+elif [ "$allow_rc" -ne 0 ]; then
+  ng "fallback allow side is a closed set (找不到允許側錨點——被改寫過？)"
+# rc=0 卻無輸出＝掃描器自相矛盾（說有命中卻交不出行），不是「檔案裡沒有」。沒有這一格，
+# 空字串會穿過下面的多行檢查、落到集合比對而報成「集合是 []」——掃描器故障被說成內容
+# 違規，看的人會去改文件而不是修工具。兩次呼叫併成一格：同一支 rg 壞掉時兩者同時為真，
+# 分開寫的話先觸發的那格會把成因歸給下游那次呼叫（PR #92 Standards R4 實測）。names 那半
+# 必須帶 names_rc -eq 0——rc=1 是「這一行真的沒有反引號 reason 名」，那是真違規，要走下面
+# 的集合比對報「集合是 []」。
+elif [ -z "$allow_line" ] || { [ "$names_rc" -eq 0 ] && [ -z "$allow_names" ]; }; then
+  ng "fallback allow side is a closed set (rg 回 rc=0 卻交不出行——掃描器異常，非程式碼變更)"
+elif [ "$allow_line" != "${allow_line%%$'\n'*}" ]; then
+  ng "fallback allow side is a closed set (允許側錨點命中多行，應為 1)"
+elif [ "$allow_names" != "review_actions_billing_or_quota" ]; then
+  # 集合可能多行，壓成單行再進 label——否則 FAIL 那一行會被換行截斷，看不到第二個名字。
+  allow_names_1line=$(printf '%s' "$allow_names" | tr '\n' '/')
+  ng "fallback allow side is a closed set (允許側出現的 reason 集合是 [${allow_names_1line}])"
+else
+  ok "fallback allow side is a closed set"
+fi
+
+# 排除側開頭的前綴逐字釘住。它擋的是「除 A 與 B 外」這一種措辭，不擋那個類別：前綴之後
+# 沒有結束錨點，粗體收尾後追加例外句照樣綠（#93 C 類）。
+has_rg "fallback exclude side carves out the billing reason by name" \
+  '^[[:space:]]*- \*\*除 `review_actions_billing_or_quota` 外，helper 回的任何 `UNAVAILABLE` 一律不得 fallback\*\*' \
+  "$review_triage_ref"
+# 診斷用，非防護：允許側已窮舉，刪掉這一句不會 fail-open。
+has_rg "request failures are named on the exclude side" \
+  'review_request_failed.*MUST 修 helper 或 retry' \
+  "$review_triage_ref"
 
 has "ledger records conditional RED or same-repro evidence" 'stable.*valuable.*RED.*否則.*repro.*before／after.*理由' skills/dev-workflow/references/ledgers.md
 has "reviewer bug findings preserve conditional RED" 'stable.*valuable.*RED.*否則.*同一 repro.*before／after.*理由' skills/dev-workflow/references/reviewer-template.md
