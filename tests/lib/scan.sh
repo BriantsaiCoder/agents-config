@@ -130,7 +130,8 @@ assert_fails_closed() {  # assert_fails_closed <prefix> <shim-cmd> <shim-rc> <he
 }
 
 # find 的結果與筆數。與 rg_hits 同一類（掃描器 rc 三態），所以家在這裡而不是消費端。
-# 驗 rc **與 stderr**：局部失敗（某個子目錄不可讀）rc=1 但仍輸出部分結果，rc 偵測不到。
+# 驗 rc **與 stderr**：局部失敗（某個子目錄不可讀）rc=1 但仍輸出部分結果——只看結果或
+# 筆數的話那是一個看起來正常的答案，所以 rc 與 stderr 兩邊都要驗，任一有異就判不可信。
 # **find 的 silent-success 偵測不到**：rc=0 + 空輸出是合法的 0（真的沒有那種檔），
 # 與 rg -c 不同（rg 無命中回 rc=1，rc=0 卻無輸出才是自相矛盾）。呼叫端要自己配 canary。
 find_list() {  # find_list <errfile> <find-args…> -> stdout=結果；rc 0=可信 2=不可信

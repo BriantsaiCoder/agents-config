@@ -127,11 +127,15 @@ scan_miss 'rg_hits' "$scan_probe_file" &&
 scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss_f accepts its clean positive control" \
   || ng "scan_miss_f accepts its clean positive control"
 
-# 測試計數宣稱的 lint（issue #89 第 2 項）。只擋「N 條測試全綠」這一種句式：
-# 它是**套件總分**，每加一條斷言就過期一次——本 repo 已經腐爛過三次（283 -> 354 -> 375）。
-# 改寫成不含計數的形式即可，**沒有座標例外**：這種句子的資訊量本來就在「全綠」不在「N」。
-# 不擋「N PASS / M FAIL」：那個形狀在 probe 參數、printf、帶 SHA/日期座標的歷史記錄裡
-# 大量合法出現，機械上分不開，誤報會讓守衛被關掉（#93 的教訓：被誤擋的守門遲早被關）。
+# 測試計數宣稱的 lint（issue #89 第 2 項）。擋兩種句式，都是**套件總分**——每加一條
+# 斷言就過期一次。實例：`c9e5ea1` 寫進一句帶當時總分（283）的「全綠」宣稱，到
+# `49c5c5d` 移除時實際已是 375——`git log -S` 兩筆，腐爛一次、被觀察到過期兩次。
+# 這段刻意不逐字引用那句：引用了本 lint 就會掃到自己（實測踩到），同 lacks_sentinel 的
+# 手法。一支主旨是「別寫不可驗證數字」的 lint，自己的註解也不該放沒有座標的次數。
+# (1)「N …全綠」族：**沒有座標例外**，這種句子的資訊量本來就在「全綠」不在「N」。
+# (2) 註解行的非零「N PASS」：同行帶 issue 編號／SHA／ISO 日期就豁免。整條豁免的舊理由
+#     （「機械上分不開」）被量測否證——tests/ 內 23 筆分桶後裸宣稱為 0，兩道過濾就分乾淨。
+#     誤報仍是真風險（#93 的教訓：被誤擋的守門遲早被關），所以豁免用的是本 repo 既有慣例。
 # 掃**受審 tree** 而不是 ${AGENTS}：註解內容 lint 屬源碼層判別，本檔檔頭已立過這個界線
 # （host-facing 檢查讀 ${AGENTS}，源碼層判別讀受審 tree）。掃 ${AGENTS} 的話本機執行會
 # 因為 main 上的殘留而紅，與開發者當前 tree 無關。
