@@ -54,6 +54,42 @@ _rg_scan() {  # _rg_scan <re|fixed> <pattern> [target] -> stdout=命中行數總
 # 回命中行數；rc 0=掃描可信、2=不可信。這是給「需要精確計數」的呼叫端的公開介面。
 rg_hits() { _rg_scan re "$@"; }
 
+# 回命中的**行內容**（rc 同 rg_hits）。給需要對每一行再做判定的呼叫端——例如
+# 「這行有計數宣稱，但同行是否帶座標」這種 rg 的 Rust regex 沒有 lookahead 做不到的事。
+# 判「這個字串是否命中 pattern」，rc 0=命中 1=沒命中 **2=掃描器不可信**。
+# 給那種「拿一行文字再做一次判定」的呼叫端。**不要用 `! printf … | rg -q …`**：
+# `-q` 把三態壓成一個 bit，rg 因 regex／工具錯誤回 rc>=2 時 `!` 會判成「命中」而豁免，
+# 於是掃描器一壞 lint 就靜默放行——正是本檔存在要防的 fail-open（Copilot review 抓到）。
+# 用 -c 而非 -q 的第二個理由（除了本檔第 13 行那條）：`printf … | rg -q` 在 rg 首次命中
+# 就結束時會讓 printf 收到 EPIPE，pipefail 下整條 pipeline 的 rc 變成 141，
+# 「命中」被誤判成「掃描器故障」。`rg -c` 讀完整個輸入，沒有這個窗口。
+rg_matches() {  # rg_matches <pattern> <string> -> rc 0=命中 1=無命中 2=不可信
+  local out rc=0
+  [ "$#" -eq 2 ] || return 2
+  out=$(printf '%s' "$2" | rg -c -e "$1") || rc=$?
+  case "$rc" in
+    # rc=0 必須交出**正整數**（與 _rg_scan 同一份契約）：`rg -c` 無命中回的是 rc=1，
+    # 所以「rc=0 但筆數 0」自相矛盾，是壞掉的掃描器而不是「沒命中」。只驗「是數字」
+    # 的話 `0` 會被當成命中（return 0）而讓呼叫端靜默豁免（Copilot review 抓到）。
+    0) case "$out" in ''|*[!0-9]*|0) return 2 ;; esac; return 0 ;;
+    1) return 1 ;;
+    *) return 2 ;;
+  esac
+}
+
+rg_lines() {  # rg_lines <pattern> <target> -> stdout=命中行；rc 0=可信 2=不可信
+  local out rc=0
+  [ "$#" -eq 2 ] || return 2
+  out=$(rg --no-filename -e "$1" -- "$2") || rc=$?
+  case "$rc" in
+    1) return 0 ;;                                  # 真的沒有命中行
+    # 同上：rg 無命中回 rc=1，「rc=0 但無輸出」是壞掉的掃描器。印空字串的話呼叫端
+    # 會當成「沒有命中行」而繼續 —— 正是本檔要擋的 fail-open（Copilot review 抓到）。
+    0) [ -n "$out" ] || return 2; printf '%s\n' "$out" ;;
+    *) return 2 ;;
+  esac
+}
+
 # fixed-string 版目前只有下面兩支 boolean wrapper 在用，不列為公開介面——真的出現
 # 「精確計數 + 字面比對」的外部消費端再提上去。stdin 同理只走 regex 路徑
 # （`scan_*_f` 全部帶檔案 target），所以 _rg_scan 的 stdin 分支不分 mode。
@@ -70,20 +106,50 @@ scan_hit_f()  { local n; n=$(_rg_hits_f "$@") && [ "$n" -gt 0 ]; }
 # helper 的 rc 只承載「掃描可不可信」——純 rc 版連 `ok "$1"; return 1` 這種假 helper 都會
 # 全數放行（PR #96 的 S5 R2 實測）。什麼都沒印同樣不算通過。
 # <helper> 若自己不印 verdict（`scan_hit` 只回 rc），傳一個把 rc 轉成 verdict 的 wrapper。
-assert_fails_closed() {  # assert_fails_closed <label-prefix> <shim-rc> <helper> <args...>
-  local prefix="$1" shim_rc="$2" why out
-  shift 2
+# **shim 目標是參數**，不是寫死的 `rg`：前一版寫死之後，任何不是用 rg 的判別（例如
+# find_count）就補不了 control——那正是本輪 S5 Standards 的 BLOCKING 根因。
+# 用 case 分派而不是 eval：shim 目標只有這兩個，明確列出比動態定義安全也好讀。
+assert_fails_closed() {  # assert_fails_closed <prefix> <shim-cmd> <shim-rc> <helper> <args...>
+  local prefix="$1" shim_cmd="$2" shim_rc="$3" why out
+  shift 3
   case "$shim_rc" in
-    2) why='the scanner errors' ;;
-    0) why='the scanner exits 0 with no output' ;;
-    *) why="the scanner returns rc=$shim_rc" ;;
+    2) why="$shim_cmd errors" ;;
+    0) why="$shim_cmd exits 0 with no output" ;;
+    *) why="$shim_cmd returns rc=$shim_rc" ;;
   esac
-  out=$( (rg() { return "$shim_rc"; }; "$@") 2>&1 )
+  case "$shim_cmd" in
+    rg)   out=$( (rg()   { return "$shim_rc"; }; "$@") 2>&1 ) ;;
+    find) out=$( (find() { return "$shim_rc"; }; "$@") 2>&1 ) ;;
+    *)    ng "$prefix: 未知的 shim 目標 $shim_cmd"; return 1 ;;
+  esac
   case "$out" in
     *'  PASS  '*) ng "$prefix fails closed when $why" ;;
     *'  FAIL  '*) ok "$prefix fails closed when $why" ;;
     *)            ng "$prefix fails closed when $why" ;;
   esac
+}
+
+# find 的結果與筆數。與 rg_hits 同一類（掃描器 rc 三態），所以家在這裡而不是消費端。
+# 驗 rc **與 stderr**：局部失敗（某個子目錄不可讀）rc=1 但仍輸出部分結果——只看結果或
+# 筆數的話那是一個看起來正常的答案，所以 rc 與 stderr 兩邊都要驗，任一有異就判不可信。
+# **find 的 silent-success 偵測不到**：rc=0 + 空輸出是合法的 0（真的沒有那種檔），
+# 與 rg -c 不同（rg 無命中回 rc=1，rc=0 卻無輸出才是自相矛盾）。呼叫端要自己配 canary。
+find_list() {  # find_list <errfile> <find-args…> -> stdout=結果；rc 0=可信 2=不可信
+  local errfile="$1" out rc=0
+  shift
+  [ -n "$errfile" ] || return 2
+  out=$(find "$@" 2>"$errfile") || rc=$?
+  { [ "$rc" -ne 0 ] || [ -s "$errfile" ]; } && return 2
+  printf '%s' "$out"
+}
+
+find_count() {  # find_count <errfile> <find-args…> -> stdout=筆數；rc 0=可信 2=不可信
+  local out n
+  out=$(find_list "$@") || return 2
+  [ -z "$out" ] && { printf '0\n'; return 0; }
+  n=$(printf '%s\n' "$out" | wc -l | tr -d ' ')
+  case "$n" in ''|*[!0-9]*) return 2 ;; esac
+  printf '%s\n' "$n"
 }
 
 # 給只回 rc 的 helper 用的 verdict wrapper。

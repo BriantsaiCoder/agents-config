@@ -41,14 +41,73 @@ fi
 # host 檔，positive control 的綠不該取決於它裡面有沒有某個字（同上方的原則）。
 # 不用本檔自己：sentinel 的字面就寫在下面的 control 裡，掃自己會命中，
 # 那個探針就不再是「保證不存在」。
+# find_list／find_count 的正本在 tests/lib/scan.sh（與 rg_hits 同一類判別）。
+# 全檔只留一條 EXIT trap：前一版另起了一條 `trap 'rm -f "$find_errfile"' EXIT`，
+# 被下方 $scratch 那條**覆蓋掉**（bash 的 EXIT trap 只留最後一條），errfile 每跑一次
+# 就洩漏一個到 TMPDIR。errfile 改放 ${scratch}，跟著同一條 trap 清掉。
+scratch="$(mktemp -d "${TMPDIR:-/tmp}/agents-conformance.XXXXXX")"
+trap 'chmod -R u+rwX "$scratch" 2>/dev/null || true; rm -rf "$scratch"' EXIT
+find_errfile="$scratch/find.err"
+
+# find 的 silent-success 從 rc 偵測不到，所以配 canary。**canary 要用與實掃相同的
+# predicate**：前一版的 canary 查的是 `-type d`，而它要保護的三條站點查的是
+# `-name '*.pyc'`／`-perm -111`／`-name '*.bak*'`——predicate 層級壞掉時 canary 不會紅，
+# 而且它守的那條（skill-link）本來就有 source/link 交叉比對，是五條裡唯一不需要它的。
+# 改成建 fixture 植入三種已知違規，用同一組 predicate 正向驗抓得到。
+# 形狀沿用同檔 varname canary。**它只擋 find 整支壞掉，擋不住局部失敗**（某個子目錄
+# 讀不到時 find 仍回部分結果，那條由 find_list 的 stderr 檢查接住）。
+find_canary_dir="$scratch/find-canary"
+mkdir -p "$find_canary_dir/pkg/__pycache__"
+: > "$find_canary_dir/pkg/mod.pyc"
+: > "$find_canary_dir/note.bak"
+: > "$find_canary_dir/runme"
+chmod +x "$find_canary_dir/runme"
+find_canary_fail=""
+if ! find_canary_n=$(find_count "$find_errfile" "$find_canary_dir" \
+     \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \)) ||
+   [ "$find_canary_n" -lt 2 ]; then
+  find_canary_fail="$find_canary_fail cache"
+fi
+if ! find_canary_n=$(find_count "$find_errfile" "$find_canary_dir" -type f -perm -111 \
+     ! -name '*.sh' ! -name '*.py' ! -name '*.ps1' \
+     ! -name '*.js' ! -name '*.cjs' ! -name '*.fsx') ||
+   [ "$find_canary_n" -lt 1 ]; then
+  find_canary_fail="$find_canary_fail exec"
+fi
+if ! find_canary_n=$(find_count "$find_errfile" "$find_canary_dir" -name '*.bak*' -not -name '.*') ||
+   [ "$find_canary_n" -lt 1 ]; then
+  find_canary_fail="$find_canary_fail bak"
+fi
+if [ -z "$find_canary_fail" ]; then
+  ok "find canary：三組實掃 predicate 都抓得到植入的違規"
+else
+  ng "find canary：predicate 抓不到植入的違規（${find_canary_fail}）——下方計數站點的 0 不算數"
+fi
+
+# find_count 的 negative control（evidence-integrity.md 要求成對）。
+# **只有 rc=2 這一格**：find 回 rc=0 + 空輸出是合法的 0（目錄真的沒有那種檔），
+# find_count 必須把它當成可信的 0 而不是「不可信」——那一格由上面的 canary 承擔，
+# 兩者是互補不是重複。硬加 rc=0 的 negative control 會要求 find_count 對合法輸入回錯。
+assert_fails_closed find_count find 2 scan_verdict \
+  find_count "$find_errfile" "$find_canary_dir" -name '*.bak*'
+# 捕捉輸出而不是 `>/dev/null`：這兩支 helper 的 rc=0 只說「掃描可信」，
+# 把輸出丟掉的話 control 在「筆數 0／沒有命中行」時照樣 PASS，等於沒驗到它真的有交出
+# 東西（Copilot review 抓到）。fixture 裡植了 note.bak，所以正解是 >=1。
+if _cp_out=$(find_count "$find_errfile" "$find_canary_dir" -name '*.bak*') &&
+   [ "$_cp_out" -ge 1 ]; then
+  ok "find_count accepts its clean positive control"
+else
+  ng "find_count accepts its clean positive control"
+fi
+
 scan_probe_file="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh"
 for _scan_shim_rc in 2 0; do
-  assert_fails_closed scan_hit    "$_scan_shim_rc" scan_verdict scan_hit    'rg_hits' "$scan_probe_file"
-  assert_fails_closed scan_hit_f  "$_scan_shim_rc" scan_verdict scan_hit_f  'rg_hits' "$scan_probe_file"
+  assert_fails_closed scan_hit    rg "$_scan_shim_rc" scan_verdict scan_hit    'rg_hits' "$scan_probe_file"
+  assert_fails_closed scan_hit_f  rg "$_scan_shim_rc" scan_verdict scan_hit_f  'rg_hits' "$scan_probe_file"
   # 反向的兩支不能寫成 `! scan_hit`——掃描不可信時 scan_hit 回非 0，`!` 反轉成 true
   # 就把違規放行了。探測 pattern 用保證不存在的 sentinel。
-  assert_fails_closed scan_miss   "$_scan_shim_rc" scan_verdict scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
-  assert_fails_closed scan_miss_f "$_scan_shim_rc" scan_verdict scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+  assert_fails_closed scan_miss   rg "$_scan_shim_rc" scan_verdict scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+  assert_fails_closed scan_miss_f rg "$_scan_shim_rc" scan_verdict scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
 done
 # clean positive control（evidence-integrity.md 要求成對）
 scan_hit    'rg_hits' "$scan_probe_file" && ok "scan_hit accepts its clean positive control" \
@@ -68,14 +127,175 @@ scan_miss 'rg_hits' "$scan_probe_file" &&
 scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss_f accepts its clean positive control" \
   || ng "scan_miss_f accepts its clean positive control"
 
+# 測試計數宣稱的 lint（issue #89 第 2 項）。擋兩種句式，都是**套件總分**——每加一條
+# 斷言就過期一次。實例：`c9e5ea1` 寫進一句帶當時總分（283）的「全綠」宣稱，到
+# `49c5c5d` 移除時實際已是 375——`git log -S` 兩筆，腐爛一次、被觀察到過期兩次。
+# 這段刻意不逐字引用那句：引用了本 lint 就會掃到自己（實測踩到），同 lacks_sentinel 的
+# 手法。一支主旨是「別寫不可驗證數字」的 lint，自己的註解也不該放沒有座標的次數。
+# (1)「N …全綠」族：**沒有座標例外**，這種句子的資訊量本來就在「全綠」不在「N」。
+# (2) 註解行的非零「N PASS」：同行帶 issue 編號／SHA／ISO 日期就豁免。整條豁免的舊理由
+#     （「機械上分不開」）被量測否證——tests/ 內 23 筆分桶後裸宣稱為 0，兩道過濾就分乾淨。
+#     誤報仍是真風險（#93 的教訓：被誤擋的守門遲早被關），所以豁免用的是本 repo 既有慣例。
+# 掃**受審 tree** 而不是 ${AGENTS}：註解內容 lint 屬源碼層判別，本檔檔頭已立過這個界線
+# （host-facing 檢查讀 ${AGENTS}，源碼層判別讀受審 tree）。掃 ${AGENTS} 的話本機執行會
+# 因為 main 上的殘留而紅，與開發者當前 tree 無關。
+# 逐檔掃而不是掃目錄：rg_hits 帶 --no-ignore（那是為 scan_miss 的 under-scan 加的），
+# 在這種「命中即違規」的 hit 側會把 .gitignore 掉的檔也算進去——一個 `sed -i.bak` 留下的
+# 編輯器備份就能誤擋，而長期被誤擋的守門遲早被關掉。
+#
+# **兩條 pattern，不是一條**：
+#  (1) 「N 條測試全綠」那一族。第一版釘的是字面拼法（半形空格 + 條 + 測試|斷言 + 全綠），
+#      14 種注入只擋下 2 種——量詞、動詞、空格寬度任一換掉就逃逸。放寬成句式類別。
+#      這一族沒有座標例外：句子的資訊量在「全綠」不在 N。
+#  (2) 註解行裡的非零「N PASS」。第一版整條豁免，理由寫「機械上分不開」——**那個理由
+#      被量測否證**：tests/ 內 23 筆分桶後，程式碼 4、`0 PASS / 0 FAIL` 樣板 16、
+#      帶座標的歷史記錄 3，裸宣稱 0。兩道過濾（限註解行 + 非零；排除同行帶 #n／SHA／
+#      ISO 日期）今天的誤報率就是 0。座標豁免用的正是本 repo 既有的慣例。
+# target 含 bin/：issue #89 的動機案例就在 bin/pr-review-gate，只掃 tests/ 等於漏掉源頭。
+count_claim_root="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
+count_claim_bad=""
+count_claim_unscannable=""
+count_claim_scan() {  # count_claim_scan <file>
+  local f="$1" n lines line
+  # (1) 「N …全綠」族，無座標例外
+  if ! n=$(rg_hits '[0-9]+ *[條個支]? *(測試|斷言)? *(全綠|皆綠|全部綠|全部通過|測試通過|斷言通過)' "$f"); then
+    count_claim_unscannable="$count_claim_unscannable $f"
+    return
+  fi
+  [ "$n" -gt 0 ] && count_claim_bad="$count_claim_bad $f(全綠族)"
+  # (2) 註解行的非零 N PASS，同行無座標才算違規
+  if ! lines=$(rg_lines '^[[:space:]]*#.*[1-9][0-9]* PASS' "$f"); then
+    count_claim_unscannable="$count_claim_unscannable $f"
+    return
+  fi
+  while [ -n "$lines" ]; do
+    line=${lines%%$'\n'*}
+    if [ -n "$line" ]; then
+      # 座標判定走 rg_matches 而不是 `! … | rg -q`：後者在 rg rc>=2 時會判成「有座標」
+      # 而豁免，掃描器一壞 lint 就靜默放行。這支 lint 的主旨正是擋這種 fail-open。
+      rg_matches '#[0-9]+|[0-9a-f]{7,}|20[0-9]{2}-[0-9]{2}-[0-9]{2}' "$line"
+      case "$?" in
+        0) ;;                                                              # 帶座標，豁免
+        1) count_claim_bad="$count_claim_bad $f(裸 N PASS)" ;;
+        *) count_claim_unscannable="$count_claim_unscannable $f"; return ;;
+      esac
+    fi
+    if [ "$lines" = "$line" ]; then lines=; else lines=${lines#*$'\n'}; fi
+  done
+}
+for count_claim_file in "$count_claim_root"/tests/*.sh "$count_claim_root"/tests/lib/*.sh \
+  "$count_claim_root"/bin/*; do
+  [ -f "$count_claim_file" ] || continue
+  case "$count_claim_file" in *.bak*) continue ;; esac
+  count_claim_scan "$count_claim_file"
+done
+if [ -n "$count_claim_unscannable" ]; then
+  ng "套件總分 lint 掃描不可信：$count_claim_unscannable"
+elif [ -z "$count_claim_bad" ]; then
+  ok "測試與 bin 的註解未寫死套件總分"
+else
+  ng "註解寫死了套件總分（改成不含計數或加座標）：$count_claim_bad"
+fi
+
+# 計數宣稱 lint 的 control。fixture 放 $scratch 而不是 tests/ 底下——放那裡會被 lint
+# 自己掃到。known-bad 用 14 種注入裡逃過第一版的其中兩種，證明放寬後的 pattern 抓得到。
+count_claim_fixture="$scratch/count-claim"
+mkdir -p "$count_claim_fixture"
+# fixture 內容用組合而不是字面：完整字面寫在本檔裡的話，lint 掃自己就會命中
+# （放寬 pattern 之後實測踩到）。同 lacks_sentinel 的手法。
+count_claim_kw='測試'
+printf '# 共 375 條%s通過\n' "$count_claim_kw" > "$count_claim_fixture/bad1.sh"
+printf '# 實測 89 %s / 0 FAIL\n' PASS > "$count_claim_fixture/bad2.sh"
+printf '# 實測 89 %s / 0 FAIL（PR #100）\n' PASS > "$count_claim_fixture/good.sh"
+count_claim_probe() {  # count_claim_probe <file> -> 0=判為違規
+  local saved_bad="$count_claim_bad" verdict=1
+  count_claim_bad=""
+  count_claim_scan "$1"
+  [ -n "$count_claim_bad" ] && verdict=0
+  count_claim_bad="$saved_bad"
+  return "$verdict"
+}
+count_claim_probe "$count_claim_fixture/bad1.sh" &&
+  ok "計數 lint 抓得到「共 N 條測試通過」（第一版逃逸的句式）" ||
+  ng "計數 lint 抓得到「共 N 條測試通過」（第一版逃逸的句式）"
+count_claim_probe "$count_claim_fixture/bad2.sh" &&
+  ok "計數 lint 抓得到裸的 N PASS 註解" ||
+  ng "計數 lint 抓得到裸的 N PASS 註解"
+count_claim_probe "$count_claim_fixture/good.sh" &&
+  ng "計數 lint 對帶座標的 N PASS 誤報" ||
+  ok "計數 lint 對帶座標的 N PASS 不誤報"
+
+# rg_matches 的控制項，兩格都要：它內部用 `rg -c`（見 scan.sh），rc=0 一定伴隨筆數，
+# 所以「rc=0 但無輸出」是自相矛盾的故障、必須 fail-closed——與 rg_hits 同一格。
+# （前一版註解沿用了 `rg -q` 的語義寫「rc=0 依定義就是命中、沒有靜默成功」，
+# 那在改用 -c 之後就不成立了；Copilot review 抓到。）
+assert_fails_closed rg_matches rg 2 scan_verdict rg_matches 'PR #100' '見 PR #100'
+assert_fails_closed rg_matches rg 0 scan_verdict rg_matches 'PR #100' '見 PR #100'
+if rg_matches 'PR #100' '見 PR #100'; then
+  ok "rg_matches accepts its clean positive control"
+else
+  ng "rg_matches accepts its clean positive control"
+fi
+rg_matches 'PR #100' '沒有座標的一行'
+[ "$?" -eq 1 ] &&
+  ok "rg_matches rejects its known-bad control" ||
+  ng "rg_matches rejects its known-bad control"
+
+# 第三格：rg 回 rc=0 但筆數 0。`assert_fails_closed` 的 shim 只能控 rc（回 0 時無輸出），
+# 蓋不到「有輸出但輸出是 0」，所以另寫一支 shim。只驗「是數字」的話 0 會被當成命中。
+( rg() { printf '0\n'; return 0; }; rg_matches 'PR #100' '見 PR #100' )
+[ "$?" -eq 2 ] &&
+  ok "rg_matches fails closed when rg exits 0 with a zero count" ||
+  ng "rg_matches fails closed when rg exits 0 with a zero count"
+
+# rg_lines 的控制項。rc=0 但無輸出同樣自相矛盾（rg 無命中回 rc=1）；印空字串的話
+# 呼叫端會當成「沒有命中行」而繼續。
+for _rgl_shim_rc in 2 0; do
+  assert_fails_closed rg_lines rg "$_rgl_shim_rc" scan_verdict \
+    rg_lines '^[[:space:]]*#' "$count_claim_fixture/good.sh"
+done
+if _cp_out=$(rg_lines '^[[:space:]]*#' "$count_claim_fixture/good.sh") &&
+   [ -n "$_cp_out" ]; then
+  ok "rg_lines accepts its clean positive control"
+else
+  ng "rg_lines accepts its clean positive control"
+fi
+
+# 座標判定的掃描器故障必須讓該檔進 unscannable，不得靜默豁免。用 subshell 隔離 shim
+# 與全域累加器：這條驗的是 count_claim_scan 的分派，不是 rg_matches 本身。
+if ( rg_matches() { return 2; }
+     count_claim_bad=""
+     count_claim_unscannable=""
+     count_claim_scan "$count_claim_fixture/bad2.sh"
+     [ -n "$count_claim_unscannable" ] && [ -z "$count_claim_bad" ] ); then
+  ok "計數 lint 在座標判定的掃描器故障時判不可信（不靜默豁免）"
+else
+  ng "計數 lint 在座標判定的掃描器故障時判不可信（不靜默豁免）"
+fi
+
 if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
   ok "shared skills source"
 else
   ng "shared skills source"
 fi
 
+# 第六個同型站點。原本是 `done < <(find … | sort)`：find 靜默回空 -> while 一次都不跑
+# -> mismatches 維持 0 -> PASS，而 `| sort` 讓 rc 連 pipefail 都看不到。**它比另外五條更糟**
+# ——那五條至少在 find rc=2 時會紅，這條連 rc=2 都綠。
+if ! skill_file_list=$(find_list "$find_errfile" "$AGENTS/skills" -mindepth 2 -maxdepth 2 \
+     -name SKILL.md -type f); then
+  ng "skill frontmatter 掃描不可信（find 失敗或有讀不到的路徑）"
+  skill_file_list=""
+  skill_scan_ok=0
+elif [ -z "$skill_file_list" ]; then
+  ng "skill frontmatter 掃描回空——skills/ 不可能沒有 SKILL.md"
+  skill_scan_ok=0
+else
+  skill_scan_ok=1
+fi
 skill_name_mismatches=0
 while IFS= read -r skill_file; do
+  [ -n "$skill_file" ] || continue
   directory_name="$(basename "$(dirname "$skill_file")")"
   frontmatter_name="$(
     awk '
@@ -94,10 +314,14 @@ while IFS= read -r skill_file; do
   frontmatter_name="${frontmatter_name%\"}"
   [ "$frontmatter_name" = "$directory_name" ] ||
     skill_name_mismatches=$((skill_name_mismatches + 1))
-done < <(find "$AGENTS/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -type f | sort)
-[ "$skill_name_mismatches" -eq 0 ] &&
-  ok "skill frontmatter names match directories" ||
+done <<EOF
+$skill_file_list
+EOF
+if [ "$skill_scan_ok" -eq 1 ] && [ "$skill_name_mismatches" -eq 0 ]; then
+  ok "skill frontmatter names match directories"
+elif [ "$skill_scan_ok" -eq 1 ]; then
   ng "skill frontmatter／directory mismatches: $skill_name_mismatches"
+fi
 
 relative_ref_check="$AGENTS/skills/auditing-skill-folder/scripts/check-relative-references.sh"
 relative_ref_test="$AGENTS/tests/relative-references.sh"
@@ -121,24 +345,24 @@ else
   ng "Context7 canonical procedure missing"
 fi
 
-cache_count="$(
-  find "$AGENTS/skills" \
-    \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \) |
-    wc -l | tr -d ' '
-)"
-[ "$cache_count" -eq 0 ] &&
-  ok "shared skills contain no Python cache artifacts" ||
+if ! cache_count=$(find_count "$find_errfile" "$AGENTS/skills" \
+  \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \)); then
+  ng "Python cache 掃描不可信（find 失敗或有讀不到的路徑）"
+elif [ "$cache_count" -eq 0 ]; then
+  ok "shared skills contain no Python cache artifacts"
+else
   ng "Python cache artifacts under shared skills: $cache_count"
+fi
 
-bad_exec_count="$(
-  find "$AGENTS/skills" -type f -perm -111 \
-    ! -name '*.sh' ! -name '*.py' ! -name '*.ps1' \
-    ! -name '*.js' ! -name '*.cjs' ! -name '*.fsx' |
-    wc -l | tr -d ' '
-)"
-[ "$bad_exec_count" -eq 0 ] &&
-  ok "only shared skill scripts are executable" ||
+if ! bad_exec_count=$(find_count "$find_errfile" "$AGENTS/skills" -type f -perm -111 \
+  ! -name '*.sh' ! -name '*.py' ! -name '*.ps1' \
+  ! -name '*.js' ! -name '*.cjs' ! -name '*.fsx'); then
+  ng "可執行檔掃描不可信（find 失敗或有讀不到的路徑）"
+elif [ "$bad_exec_count" -eq 0 ]; then
+  ok "only shared skill scripts are executable"
+else
   ng "non-script executable files under shared skills: $bad_exec_count"
+fi
 
 if scan_hit_f '[ ! -L "$AGENTS/skills/video-downloader" ]' \
   "$AGENTS/tests/matt-thin-workflow.sh"; then
@@ -147,22 +371,25 @@ else
   ng "retired skill identity can miss a broken symlink"
 fi
 
-scratch="$(mktemp -d "${TMPDIR:-/tmp}/agents-conformance.XXXXXX")"
-trap 'chmod -R u+rwX "$scratch" 2>/dev/null || true; rm -rf "$scratch"' EXIT
 mkdir -p "$scratch/home/.claude/skills"
 
 if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
   "$AGENTS/bin/agents-sync" --bootstrap >/dev/null 2>&1 &&
   HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
   "$AGENTS/bin/agents-sync" --doctor >/dev/null 2>&1; then
-  source_count="$(
-    find "$AGENTS/skills" -mindepth 1 -maxdepth 1 -type d \
-      ! -path "$AGENTS/skills/.claude" | wc -l | tr -d ' '
-  )"
-  link_count="$(find "$scratch/home/.claude/skills" -mindepth 1 -maxdepth 1 -type l | wc -l | tr -d ' ')"
-  [ "$source_count" = "$link_count" ] &&
-    ok "Claude skill-link bootstrap: $link_count" ||
+  # 兩個計數都靠 find。工具壞掉時 `find | wc -l` 兩邊都被補成 `"0"`（不是空字串），
+  # 所以**換掉比較運算子救不了**——`=` 與 `-eq` 對兩個 "0" 一樣判相等。真正修掉它的是
+  # find_count 把「工具壞了」與「真的是 0」分開，判別必須在比較之前。
+  if ! source_count=$(find_count "$find_errfile" "$AGENTS/skills" -mindepth 1 -maxdepth 1 -type d \
+       ! -path "$AGENTS/skills/.claude"); then
+    ng "skill-link 來源計數不可信（find 失敗或有讀不到的路徑）"
+  elif ! link_count=$(find_count "$find_errfile" "$scratch/home/.claude/skills" -mindepth 1 -maxdepth 1 -type l); then
+    ng "skill-link 連結計數不可信（find 失敗或有讀不到的路徑）"
+  elif [ "$source_count" -eq "$link_count" ]; then
+    ok "Claude skill-link bootstrap: $link_count"
+  else
     ng "Claude skill-link count $link_count != source $source_count"
+  fi
 else
   ng "Claude skill-link bootstrap／doctor"
 fi
@@ -330,12 +557,15 @@ fi
 #   -not -name '.*'        app 自管的 runtime state 備份（如 .codex-global-state.json.bak）
 #   -not -path '*/attic/*' 規則 11 允許既有 .bak「掃 secret 後刪除或歸檔 attic/」
 #   -not -path '*/backups/*' backups/ 就是規則 11 明訂的操作前快照區
-bak_count="$(find "$AGENTS" -name '*.bak*' \
+if ! bak_count=$(find_count "$find_errfile" "$AGENTS" -name '*.bak*' \
   -not -path '*/.git/*' -not -path '*/attic/*' -not -path '*/backups/*' \
-  -not -name '.*' 2>/dev/null | wc -l | tr -d ' ')"
-[ "$bak_count" = 0 ] &&
-  ok "no manual .bak under ~/.agents" ||
+  -not -name '.*'); then
+  ng ".bak 掃描不可信（find 失敗或有讀不到的路徑）：$(head -1 "$find_errfile" 2>/dev/null)"
+elif [ "$bak_count" -eq 0 ]; then
+  ok "no manual .bak under ~/.agents"
+else
   ng "manual .bak found under ~/.agents: $bak_count"
+fi
 
 # $var 緊接非 ASCII 時 bash 會把後續 byte 吃進變數名，set -u 下變成
 # "out?: unbound variable"。2026-08-02 實測 15 個字元（）（「」，。：；、？！　─ ” ’）
@@ -449,7 +679,21 @@ fi
 PIPE_USE='\| *(grep|awk|sed|sort|head|tail|tr|wc|jq|rg|cut|xargs|comm|uniq)'
 pipefail_missing=""
 pipefail_unscannable=""
+# 第七個同型站點（與 skill frontmatter 那條同形）。原本是
+# `done <<EOF` / `$(find … 2>/dev/null)` / `EOF`：find 靜默回空時 heredoc 只剩一個空行，
+# 迴圈跑一次拿到空檔名，`head -1 ""` 失敗才把它收進 unscannable——**是意外轉紅**，
+# 報的理由還是錯的（「有掃不動的檔」而不是「find 壞了」），而 `2>/dev/null` 正好把
+# 唯一的真訊號吞掉。改走同一支 find_list：rc 與 stderr 都驗，空清單另行判死。
+if ! pipefail_file_list=$(find_list "$find_errfile" "$AGENTS/bin" "$AGENTS/tests" \
+     "$AGENTS/hooks" "$AGENTS/skills" -type f); then
+  pipefail_scan_ok=0
+elif [ -z "$pipefail_file_list" ]; then
+  pipefail_scan_ok=2
+else
+  pipefail_scan_ok=1
+fi
 while IFS= read -r sh_file; do
+  [ -n "$sh_file" ] || continue
   # 三格過濾器都要分開 rc=1（真的不符合，跳過）與 rc>=2／靜默成功（掃描不可信，
   # 不得跳過）。寫成 `|| continue` 的話掃描器一壞就 continue，整個檔被略過——實測
   # 545 個檔全部被跳過、守護只印一句 PASS。方向與「多檢查偏嚴」相反，是少檢查到 0。
@@ -483,9 +727,13 @@ while IFS= read -r sh_file; do
   scan_hit '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" && continue
   pipefail_missing="$pipefail_missing $sh_file"
 done <<EOF
-$(find "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" -type f 2>/dev/null)
+$pipefail_file_list
 EOF
-if [ -n "$pipefail_unscannable" ]; then
+if [ "$pipefail_scan_ok" -eq 0 ]; then
+  ng "pipefail 守護的檔案清單不可信（find 失敗或有讀不到的路徑）：$(head -1 "$find_errfile" 2>/dev/null)"
+elif [ "$pipefail_scan_ok" -eq 2 ]; then
+  ng "pipefail 守護的檔案清單回空——bin／tests／hooks／skills 不可能一個檔都沒有"
+elif [ -n "$pipefail_unscannable" ]; then
   # 掃不動的檔不能靜默不算：那正是這支守護要防的「假綠」。
   ng "pipefail 守護有掃不動的檔（掃描器不可信）：$pipefail_unscannable"
 elif [ -z "$pipefail_missing" ]; then

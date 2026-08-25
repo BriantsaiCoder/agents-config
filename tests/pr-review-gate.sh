@@ -613,7 +613,7 @@ else
   _prod_n="$(printf '%s\n' "$_src" | grep -cE -- '[|][[:space:]]*@tsv')"
   _parsed_n="$(printf '%s\n' "$_parsed" | grep -c . )"
   # 兩個計數在比較前先驗形狀。改成 != 只解掉「報 integer expression expected」那半，
-  # 兩個空字串仍然相等而落進 PASS——實測用一支只讓 grep -c 回空的替身，套件仍 76/0 全綠。
+  # 兩個空字串仍然相等而落進 PASS——實測用一支只讓 grep -c 回空的替身，套件整套全綠（`d53390d`）。
   # 這是本區塊自己在守的那個形狀（工具失敗被印成通過），所以判別要在比較之前。
   _counts_ok=yes
   case "$_prod_n$_parsed_n" in ''|*[!0-9]*) _counts_ok=no ;; esac
@@ -708,7 +708,7 @@ else
     done
     if [ "$reason_checked" -lt 5 ]; then
       # 覆蓋面下限：抽取或排除規則壞掉時會靜默縮到零個名字仍印 PASS。實測把整個 for
-      # body 換成 `:`、或把抽取正則縮成只剩一種後綴，前一版都是 81 PASS / 0 FAIL。
+      # body 換成 `:`、或把抽取正則縮成只剩一種後綴，`4ed9e30` 那一版都是整套全綠。
       ((fail += 1))
       printf 'FAIL reason-name lint 只檢查了 %s 個名字（doc 端至少該有 5 個字面 reason 名）\n' "$reason_checked"
     elif [ -z "$reason_missing" ] && [ -z "$reason_untrusted" ]; then
@@ -758,7 +758,7 @@ done
 
 # doc 端抽取那條分支的 control：前一版四條 control 全部只驗 reason_in_gate 的 rc，
 # extraction -> loop -> verdict 這條實際判定路徑零覆蓋——實測把整個 for body 換成 `:`
-# 仍 81 PASS / 0 FAIL。這兩條讓那條分支在掃描器故障時必須出聲。
+# 仍整套全綠（`4ed9e30`）。這兩條讓那條分支在掃描器故障時必須出聲。
 # control 呼叫 **主 lint 用的同一支 reason_doc_extract**，不是另寫一份近似判別。
 # 只驗「rg 產不產得出輸出」的話，主邏輯哪天把「rc=0 但無輸出」當成可用，control 照樣綠。
 for reason_doc_shim_rc in 2 0; do
