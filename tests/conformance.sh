@@ -11,6 +11,63 @@ ok() { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng() { printf '  FAIL  %s\n' "$1"; fail=$((fail + 1)); }
 skip_check() { printf '  SKIP  %s\n' "$1"; skipped=$((skipped + 1)); }
 
+# 掃描器 rc 三態的共用判別（issue #97）。原本全檔用 `rg -q` / `grep -q`，那是單一 bit：
+# 一支壞掉卻 exit 0 的掃描器直接讓斷言變 PASS。實測本檔**至少** 8 條這樣的斷言
+# ——8 是差分量測法（比較兩種故障下 verdict 不同的條數）可見的下界；兩種故障都印
+# PASS 的那一類該方法看不見，兩軸 review 另外用逐條 mutation 找到更多。不寫定值。
+# 用腳本自身的位置而非 ${AGENTS}：本檔的 host-facing 檢查刻意讀 ${AGENTS}（預設 ~/.agents），
+# 但**共用判別必須來自受審 tree**，否則在 worktree／複本上跑的是 main 的那一份。
+# shellcheck source=tests/lib/scan.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh" ||
+  { printf '  FAIL  掃描判別 lib 缺席（tests/lib/scan.sh）\n'; exit 1; }
+# source 成功不代表函式在：空檔或被截斷的 lib 同樣 rc=0，而 `scan_hit: command not found`
+# 的 rc=127 會讓 negative control 全部印綠（實測清空 lib -> 8 條 control 全 PASS）。
+command -v rg_hits >/dev/null 2>&1 ||
+  { printf '  FAIL  掃描判別 lib 未定義 rg_hits（tests/lib/scan.sh 可能被截斷）\n'; exit 1; }
+
+# negative control 驗的是**印出來的判定**，不只是 rc：本 issue 的症狀就是「印出 PASS」，
+# 而 ok／ng 都 return 0，helper 的 rc 只承載「掃描可不可信」。純 rc 版連
+# `ok "$1"; return 1` 這種假 helper 都會放行（PR #96 的 S5 R2 實測）。
+# 探測組合一律選「真 rg 下會 PASS」的，否則 shim 沒生效時 fixture 也會綠、理由卻不對。
+# 掃描器不在就先出聲：沒有這條的話 rg 缺席時三十幾條斷言各印一行歸因錯誤的結果，
+# 沒有一行說得出「ripgrep 不在」。形狀沿用姊妹檔 mattpocock-workflow.sh。
+if command -v rg >/dev/null 2>&1; then
+  ok "ripgrep scanner is available"
+else
+  ng "ripgrep scanner is available"
+fi
+
+# control fixture 用受審 tree 裡的 lib 而不是 ${AGENTS}/CONVENTIONS.md：後者是 live
+# host 檔，positive control 的綠不該取決於它裡面有沒有某個字（同上方的原則）。
+# 不用本檔自己：sentinel 的字面就寫在下面的 control 裡，掃自己會命中，
+# 那個探針就不再是「保證不存在」。
+scan_probe_file="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh"
+for _scan_shim_rc in 2 0; do
+  assert_fails_closed scan_hit    "$_scan_shim_rc" scan_verdict scan_hit    'rg_hits' "$scan_probe_file"
+  assert_fails_closed scan_hit_f  "$_scan_shim_rc" scan_verdict scan_hit_f  'rg_hits' "$scan_probe_file"
+  # 反向的兩支不能寫成 `! scan_hit`——掃描不可信時 scan_hit 回非 0，`!` 反轉成 true
+  # 就把違規放行了。探測 pattern 用保證不存在的 sentinel。
+  assert_fails_closed scan_miss   "$_scan_shim_rc" scan_verdict scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+  assert_fails_closed scan_miss_f "$_scan_shim_rc" scan_verdict scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file"
+done
+# clean positive control（evidence-integrity.md 要求成對）
+scan_hit    'rg_hits' "$scan_probe_file" && ok "scan_hit accepts its clean positive control" \
+  || ng "scan_hit accepts its clean positive control"
+scan_hit_f  'rg_hits' "$scan_probe_file" && ok "scan_hit_f accepts its clean positive control" \
+  || ng "scan_hit_f accepts its clean positive control"
+scan_miss   'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss accepts its clean positive control" \
+  || ng "scan_miss accepts its clean positive control"
+# known-bad control：helper 本身退化（例如拿掉計數判定）時必須有東西轉紅。
+# 只有 negative control 的話，把 scan_hit 改成「可信時恆真」十條控制項照樣全綠。
+scan_hit 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" &&
+  ng "scan_hit rejects its known-bad control" ||
+  ok "scan_hit rejects its known-bad control"
+scan_miss 'rg_hits' "$scan_probe_file" &&
+  ng "scan_miss rejects its known-bad control" ||
+  ok "scan_miss rejects its known-bad control"
+scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss_f accepts its clean positive control" \
+  || ng "scan_miss_f accepts its clean positive control"
+
 if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
   ok "shared skills source"
 else
@@ -57,8 +114,8 @@ fi
 
 context7_skill="$AGENTS/skills/context7-mcp/SKILL.md"
 if [ -f "$context7_skill" ] &&
-   rg -q 'resolve-library-id' "$context7_skill" &&
-   rg -q 'query-docs' "$context7_skill"; then
+   scan_hit 'resolve-library-id' "$context7_skill" &&
+   scan_hit 'query-docs' "$context7_skill"; then
   ok "Context7 canonical procedure"
 else
   ng "Context7 canonical procedure missing"
@@ -83,7 +140,7 @@ bad_exec_count="$(
   ok "only shared skill scripts are executable" ||
   ng "non-script executable files under shared skills: $bad_exec_count"
 
-if rg -Fq '[ ! -L "$AGENTS/skills/video-downloader" ]' \
+if scan_hit_f '[ ! -L "$AGENTS/skills/video-downloader" ]' \
   "$AGENTS/tests/matt-thin-workflow.sh"; then
   ok "retired skill identity rejects broken symlinks"
 else
@@ -149,17 +206,17 @@ codex_hooks="$AGENTS/skills/init-project-docs/references/hooks/codex/README.md"
 copilot_agents="$AGENTS/skills/init-project-docs/references/agents/copilot/README.md"
 copilot_settings="$AGENTS/skills/init-project-docs/references/settings-templates/copilot/README.md"
 
-if rg -Fq '`.github/copilot/settings.json`' "$host_matrix" &&
-   rg -Fq '`.github/copilot/settings.local.json`' "$host_matrix" &&
-   rg -Fq '`.github/copilot/settings.json`' "$catalog_index" &&
-   rg -Fq '`.github/copilot/settings.local.json`' "$catalog_index"; then
+if scan_hit_f '`.github/copilot/settings.json`' "$host_matrix" &&
+   scan_hit_f '`.github/copilot/settings.local.json`' "$host_matrix" &&
+   scan_hit_f '`.github/copilot/settings.json`' "$catalog_index" &&
+   scan_hit_f '`.github/copilot/settings.local.json`' "$catalog_index"; then
   ok "init-project-docs knows Copilot repository／local settings"
 else
   ng "init-project-docs Copilot repository／local settings are stale"
 fi
 
-if rg -Fq 'startup\|resume\|clear\|compact' "$host_matrix" &&
-   rg -Fq 'startup|resume|clear|compact' "$codex_hooks"; then
+if scan_hit_f 'startup\|resume\|clear\|compact' "$host_matrix" &&
+   scan_hit_f 'startup|resume|clear|compact' "$codex_hooks"; then
   ok "init-project-docs Codex SessionStart sources are current"
 else
   ng "init-project-docs Codex SessionStart misses compact"
@@ -167,40 +224,40 @@ fi
 
 copilot_aliases_current=1
 for alias in read edit search execute; do
-  rg -Fq "\`$alias\`" "$copilot_agents" || copilot_aliases_current=0
+  scan_hit_f "\`$alias\`" "$copilot_agents" || copilot_aliases_current=0
 done
 if [ "$copilot_aliases_current" -eq 1 ] &&
-   ! rg -q 'search/codebase|edit/editFiles|runCommands|execute/createAndRunTask' "$copilot_agents"; then
+   scan_miss 'search/codebase|edit/editFiles|runCommands|execute/createAndRunTask' "$copilot_agents"; then
   ok "init-project-docs Copilot agent aliases are canonical"
 else
   ng "init-project-docs Copilot agent aliases are stale"
 fi
 
-if ! rg -Fq 'Codex recommendation markers:' "$init_docs" &&
-   rg -Fq '## Phase 4–6 建議標記' "$host_matrix"; then
+if scan_miss_f 'Codex recommendation markers:' "$init_docs" &&
+   scan_hit_f '## Phase 4–6 建議標記' "$host_matrix"; then
   ok "init-project-docs host markers have one owner"
 else
   ng "init-project-docs host markers are duplicated or misplaced"
 fi
 
-if rg -Fq 'references/README.md' "$init_docs" &&
-   rg -q '^- \[ \]' "$init_docs"; then
+if scan_hit_f 'references/README.md' "$init_docs" &&
+   scan_hit '^- \[ \]' "$init_docs"; then
   ok "init-project-docs uses shared catalogs and validation checklist"
 else
   ng "init-project-docs catalog／validation hierarchy is incomplete"
 fi
 
-if rg -Fq '`.github/copilot/settings.json`' "$copilot_settings" &&
-   rg -q '限定|supported keys' "$copilot_settings" &&
-   rg -Fq 'Phase 2 先增量更新' "$copilot_settings" &&
-   ! rg -Fq 'Phase 2 實際只產' "$copilot_settings"; then
+if scan_hit_f '`.github/copilot/settings.json`' "$copilot_settings" &&
+   scan_hit '限定|supported keys' "$copilot_settings" &&
+   scan_hit_f 'Phase 2 先增量更新' "$copilot_settings" &&
+   scan_miss_f 'Phase 2 實際只產' "$copilot_settings"; then
   ok "init-project-docs Copilot settings boundary is current"
 else
   ng "init-project-docs Copilot settings boundary is stale"
 fi
 
-if rg -Fq '先讀取共用的 stack/template catalog' "$init_docs" &&
-   rg -Fq '## Phase 4–6 建議標記' "$host_matrix"; then
+if scan_hit_f '先讀取共用的 stack/template catalog' "$init_docs" &&
+   scan_hit_f '## Phase 4–6 建議標記' "$host_matrix"; then
   ok "init-project-docs new workflow prose is zh-TW"
 else
   ng "init-project-docs new workflow prose is not zh-TW"
@@ -216,12 +273,12 @@ actual="$(grep -c '^## [0-9]' "$AGENTS/CONVENTIONS.md")"
 # 驗證」，讀起來像「有 FP ⇒ 該檔會被注入」；同日稽核據此把 tier1／tier2 帶 FP 卻不注入
 # 判成 doc-rot，但那是第二種用途（非注入正本的 byte-level drift sentinel）且已有 grep
 # 斷言守著。普世宣稱本身才是 rot 來源，所以修的是條文不是檔頭——這兩條擋它被改回去。
-if grep -Fq 'byte-level drift sentinel' "$AGENTS/CONVENTIONS.md"; then
+if scan_hit_f 'byte-level drift sentinel' "$AGENTS/CONVENTIONS.md"; then
   ok "CONVENTIONS 規則 6 保留 FP 的第二種用途"
 else
   ng "CONVENTIONS 規則 6 的 FP 用途區分被移除"
 fi
-if grep -Fq '進 context 的問 AI，不進 context 的用 grep' "$AGENTS/CONVENTIONS.md"; then
+if scan_hit_f '進 context 的問 AI，不進 context 的用 grep' "$AGENTS/CONVENTIONS.md"; then
   ok "CONVENTIONS 規則 6 保留 FP 驗證方式判準"
 else
   ng "CONVENTIONS 規則 6 的 FP 驗證判準被移除"
@@ -229,10 +286,12 @@ fi
 
 # 規則 12 標題不得再叫「常駐面」：四個檔裡 tier1／tier2 不進 context，
 # ~/.claude/tests/repo-integrity.sh 有斷言擋著它們被 @-import。
-if grep -q '^## 12\..*常駐面' "$AGENTS/CONVENTIONS.md"; then
-  ng "CONVENTIONS 規則 12 標題退回「常駐面」（tier1／tier2 並不常駐）"
-else
+# 用 scan_miss 而不是 `if scan_hit; then ng; else ok`：後者在掃描不可信時走 else 印
+# PASS——與 `! scan_hit` 是同一個陷阱，只是倒過來寫。
+if scan_miss '^## 12\..*常駐面' "$AGENTS/CONVENTIONS.md"; then
   ok "CONVENTIONS 規則 12 標題未誤稱常駐面"
+else
+  ng "CONVENTIONS 規則 12 標題退回「常駐面」（tier1／tier2 並不常駐）"
 fi
 
 if git -C "$HOME/.agents" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -246,13 +305,14 @@ fi
 
 ci_workflow="$AGENTS/.github/workflows/ci.yml"
 if [ -f "$ci_workflow" ] &&
-  ! grep -Eq 'AGENTS_DEPLOY_ROOT|dist/(skill-index\.md|AGENTS\.md|copilot-instructions\.md)|bin/agents-sync[[:space:]]+(--deploy|--only)' "$ci_workflow"; then
+  scan_miss 'AGENTS_DEPLOY_ROOT|dist/(skill-index\.md|AGENTS\.md|copilot-instructions\.md)|bin/agents-sync[[:space:]]+(--deploy|--only)' "$ci_workflow"; then
   ok "CI uses shared-skills contract"
 else
   ng "CI still consumes retired agents-sync deployment"
 fi
 
-if bash -n "$AGENTS"/bin/* "$AGENTS"/hooks/*.sh "$AGENTS"/tests/*.sh; then
+# tests/lib/*.sh 要單獨列：單層 glob 不遞迴，被所有測試 source 的共用檔會落在閘外。
+if bash -n "$AGENTS"/bin/* "$AGENTS"/hooks/*.sh "$AGENTS"/tests/*.sh "$AGENTS"/tests/lib/*.sh; then
   ok "shared shell syntax"
 else
   ng "shared shell syntax"
@@ -320,12 +380,42 @@ else
   # 掃 repo 內所有放 shell 腳本的目錄。skills/ 有 21 支，第一版漏掉——PASS 訊息因此
   # 在說謊，直到 2026-08-02 的 review 抓出 protect-files.sh 的 fail-open。
   # attic/ 是 CONVENTIONS 規則 11 的退役物，不掃。
-  varname_hits="$(rg -cP "$VARNAME_PAT" \
-    "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" 2>/dev/null |
-    awk -F: '{s+=$2} END{print s+0}')"
-  [ "$varname_hits" = 0 ] &&
-    ok "shell 變數名後未緊接非 ASCII" ||
+  # 四棵樹逐一掃，各自驗 rc **與 stderr**。整批一次掃再 `| awk '{s+=$2}'` 的話有兩層
+  # fail-open：pipe 讓 rc 變成 awk 的、`s+0` 把「完全沒有輸出」變成 0 判 ok；而且
+  # **rc 偵測不到局部失敗**——任一棵樹裡有一個檔讀不到（權限、broken symlink），該檔的
+  # 命中就靜默歸零而 rg 仍回 rc=0。實測把一支真違規檔 chmod 000：守護從 FAIL 變 PASS，
+  # 旁邊的 canary 照樣綠（canary 只擋「掃描器整支壞掉」，擋不住局部失敗）。
+  # 不走 rg_hits 是因為這裡需要 -P（PCRE2 的 \P{ASCII}）與 stderr 檢查，兩者都在
+  # 共用判別的契約之外；同理不能只靠 rc。
+  varname_hits=0
+  varname_unscannable=
+  varname_errfile="$scratch/varname.err"
+  for varname_dir in "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills"; do
+    varname_out="$(rg -cP "$VARNAME_PAT" "$varname_dir" 2>"$varname_errfile")"
+    varname_rc=$?
+    if [ -s "$varname_errfile" ] || [ "$varname_rc" -gt 1 ]; then
+      varname_unscannable="$varname_unscannable $varname_dir"
+      continue
+    fi
+    case "$varname_rc" in
+      1) continue ;;                                   # 這棵樹沒有命中
+      0) ;;
+      *) varname_unscannable="$varname_unscannable $varname_dir"; continue ;;
+    esac
+    varname_sum="$(printf '%s\n' "$varname_out" | awk -F: '{s+=$2} END{print s+0}')"
+    case "$varname_sum" in
+      ''|*[!0-9]*) varname_unscannable="$varname_unscannable $varname_dir" ;;
+      0) varname_unscannable="$varname_unscannable $varname_dir" ;;  # rc=0 卻算不出正數＝自相矛盾
+      *) varname_hits=$((varname_hits + varname_sum)) ;;
+    esac
+  done
+  if [ -n "$varname_unscannable" ]; then
+    ng "shell 變數名掃描不可信（掃不動或輸出對不上）：$varname_unscannable"
+  elif [ "$varname_hits" = 0 ]; then
+    ok "shell 變數名後未緊接非 ASCII"
+  else
     ng "shell 變數名後緊接非 ASCII（bash 會吃進變數名，須改 \${var}）：$varname_hits 處"
+  fi
 fi
 
 # 缺檔時 SKIP 不 FAIL：$AGENTS 可能是還沒有這支 test 的舊 checkout（本分支 merge 前的
@@ -358,22 +448,47 @@ fi
 #  字串裡的 |。寧可漏報也不要因誤判而擋住無關的變更。
 PIPE_USE='\| *(grep|awk|sed|sort|head|tail|tr|wc|jq|rg|cut|xargs|comm|uniq)'
 pipefail_missing=""
+pipefail_unscannable=""
 while IFS= read -r sh_file; do
-  head -1 "$sh_file" 2>/dev/null | grep -qE '^#!.*(bash)$' || continue     # 豁免 1
+  # 三格過濾器都要分開 rc=1（真的不符合，跳過）與 rc>=2／靜默成功（掃描不可信，
+  # 不得跳過）。寫成 `|| continue` 的話掃描器一壞就 continue，整個檔被略過——實測
+  # 545 個檔全部被跳過、守護只印一句 PASS。方向與「多檢查偏嚴」相反，是少檢查到 0。
+  # 先把第一行落地並接住 head 的 rc：`head -1 f 2>/dev/null | scan_hit …` 在檔案讀不到時
+  # 靜默輸出空字串，scan_hit 判「不是 bash」-> continue，該檔既被略過又不進
+  # pipefail_unscannable——仍是 fail-open（Copilot review 抓到）。
+  sh_shebang=$(head -1 "$sh_file" 2>/dev/null) ||
+    { pipefail_unscannable="$pipefail_unscannable $sh_file"; continue; }
+  printf '%s\n' "$sh_shebang" | scan_hit '^#!.*(bash)$'
+  case "$?" in
+    0) ;;                                                                   # 是 bash 腳本
+    1) continue ;;                                                          # 豁免 1：不是
+    *) pipefail_unscannable="$pipefail_unscannable $sh_file" ; continue ;;  # 掃描不可信
+  esac
   case "$sh_file" in
     */lib-vendored.sh) continue ;;                                          # 豁免 2
     */phase4-canary-harness.sh) continue ;;                                 # 豁免 3
   esac
-  grep -qE "$PIPE_USE" "$sh_file" 2>/dev/null || continue
+  scan_hit "$PIPE_USE" "$sh_file"
+  case "$?" in
+    0) ;;                                                                   # 有 pipeline
+    1) continue ;;                                                          # 沒有，不適用
+    *) pipefail_unscannable="$pipefail_unscannable $sh_file" ; continue ;;
+  esac
   # 只認真正的設定行，不認註解或字串裡的 pipefail。第一版用裸 grep -q 'pipefail'，
   # 於是把 `set -u` 加一行「# 這裡刻意不設 pipefail」就能讓守護 PASS——一支專門抓
   # 假綠的守護自己就是假綠（2026-08-02 實測，Copilot review 抓到）。
-  grep -qE '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" 2>/dev/null && continue
+  # `&& continue`：掃描不可信時 scan_hit 回非 0，不 continue，該檔落進 missing 清單
+  # ——方向正確（fail-closed），但成因會被說成「缺 pipefail」。上面兩格已經把
+  # 不可信的檔另外收進 pipefail_unscannable，這一格維持原樣即可。
+  scan_hit '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" && continue
   pipefail_missing="$pipefail_missing $sh_file"
 done <<EOF
 $(find "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" -type f 2>/dev/null)
 EOF
-if [ -z "$pipefail_missing" ]; then
+if [ -n "$pipefail_unscannable" ]; then
+  # 掃不動的檔不能靜默不算：那正是這支守護要防的「假綠」。
+  ng "pipefail 守護有掃不動的檔（掃描器不可信）：$pipefail_unscannable"
+elif [ -z "$pipefail_missing" ]; then
   ok "有 pipeline 的 bash 腳本都有 pipefail"
 else
   ng "有 pipeline 但缺 pipefail：$(printf '%s' "$pipefail_missing" | tr ' ' '\n' | grep -c .) 支——$pipefail_missing"
@@ -388,7 +503,7 @@ CI_YML="$AGENTS/.github/workflows/ci.yml"
 COUNT_IN_NAME='^[[:space:]]+- name:.*[0-9]+ ?(cases|條|斷言)'
 if [ ! -f "$CI_YML" ]; then
   skip_check "CI step 名稱不含 case 數（$CI_YML 不存在）"
-elif ! grep -qE "$COUNT_IN_NAME" "$CI_YML"; then
+elif scan_miss "$COUNT_IN_NAME" "$CI_YML"; then
   ok "CI step 名稱不含 case 數"
 else
   ng "CI step 名稱複述 case 數（會靜默漂移）：$(grep -cE "$COUNT_IN_NAME" "$CI_YML") 處"
