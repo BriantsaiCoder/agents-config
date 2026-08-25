@@ -617,7 +617,21 @@ fi
 PIPE_USE='\| *(grep|awk|sed|sort|head|tail|tr|wc|jq|rg|cut|xargs|comm|uniq)'
 pipefail_missing=""
 pipefail_unscannable=""
+# 第七個同型站點（與 skill frontmatter 那條同形）。原本是
+# `done <<EOF` / `$(find … 2>/dev/null)` / `EOF`：find 靜默回空時 heredoc 只剩一個空行，
+# 迴圈跑一次拿到空檔名，`head -1 ""` 失敗才把它收進 unscannable——**是意外轉紅**，
+# 報的理由還是錯的（「有掃不動的檔」而不是「find 壞了」），而 `2>/dev/null` 正好把
+# 唯一的真訊號吞掉。改走同一支 find_list：rc 與 stderr 都驗，空清單另行判死。
+if ! pipefail_file_list=$(find_list "$find_errfile" "$AGENTS/bin" "$AGENTS/tests" \
+     "$AGENTS/hooks" "$AGENTS/skills" -type f); then
+  pipefail_scan_ok=0
+elif [ -z "$pipefail_file_list" ]; then
+  pipefail_scan_ok=2
+else
+  pipefail_scan_ok=1
+fi
 while IFS= read -r sh_file; do
+  [ -n "$sh_file" ] || continue
   # 三格過濾器都要分開 rc=1（真的不符合，跳過）與 rc>=2／靜默成功（掃描不可信，
   # 不得跳過）。寫成 `|| continue` 的話掃描器一壞就 continue，整個檔被略過——實測
   # 545 個檔全部被跳過、守護只印一句 PASS。方向與「多檢查偏嚴」相反，是少檢查到 0。
@@ -651,9 +665,13 @@ while IFS= read -r sh_file; do
   scan_hit '^[[:space:]]*set[[:space:]]+[^#]*pipefail' "$sh_file" && continue
   pipefail_missing="$pipefail_missing $sh_file"
 done <<EOF
-$(find "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" -type f 2>/dev/null)
+$pipefail_file_list
 EOF
-if [ -n "$pipefail_unscannable" ]; then
+if [ "$pipefail_scan_ok" -eq 0 ]; then
+  ng "pipefail 守護的檔案清單不可信（find 失敗或有讀不到的路徑）：$(head -1 "$find_errfile" 2>/dev/null)"
+elif [ "$pipefail_scan_ok" -eq 2 ]; then
+  ng "pipefail 守護的檔案清單回空——bin／tests／hooks／skills 不可能一個檔都沒有"
+elif [ -n "$pipefail_unscannable" ]; then
   # 掃不動的檔不能靜默不算：那正是這支守護要防的「假綠」。
   ng "pipefail 守護有掃不動的檔（掃描器不可信）：$pipefail_unscannable"
 elif [ -z "$pipefail_missing" ]; then
