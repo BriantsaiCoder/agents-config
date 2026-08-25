@@ -621,6 +621,83 @@ else
   fi
 fi
 
+# ── reason 名跨檔 lint（issue #89）────────────────────────────────────────────
+# review-triage.md 逐字列了一批 reason 名，helper 端改名時文件不會自己跟上——PR #85
+# 就示範過一次（`ci_absent_after_invalid` -> `ci_absent_after_not_numeric`，靠手動同步）。
+# glob 形式（`*_fields_unparsable`）抗腐，字面名不抗腐；CONVENTIONS 規則 7 要求名稱引用過 lint。
+# **只查存在性，不查在允許側還是排除側**——極性由 tests/mattpocock-workflow.sh 那三條
+# 集合比對斷言承擔（PR #92），這裡重複查會變成兩份會各自腐爛的判準。
+triage_doc="$ROOT/skills/dev-workflow/references/review-triage.md"
+
+# rc 三態：掃描器說成功卻交不出正整數計數 = 不可信，不得當成「找到了」。
+# 用 -c 而非 -q：`rg -q` 的 rc=0 只說「有命中」，壞掉但 exit 0 的 rg 同樣回 0（issue #95）。
+# 共用判別的正本是 tests/lib/scan.sh（issue #97）；那支 merge 後這裡可以改成 source 它。
+reason_in_gate() {  # reason_in_gate <name> -> 0=helper 端有 1=沒有 2=掃描不可信
+  local n rc=0
+  n=$(rg -cF -- "$1" "$GATE") || rc=$?
+  case "$rc" in
+    0) case "$n" in ''|*[!0-9]*|0) return 2 ;; *) return 0 ;; esac ;;
+    1) return 1 ;;
+    *) return 2 ;;
+  esac
+}
+
+reason_doc_rc=0
+doc_reasons=$(rg -o -r '$1' -e '`([a-z][a-z_]*_(failed|quota|numeric|unparsable))`' -- "$triage_doc") ||
+  reason_doc_rc=$?
+if [ "$reason_doc_rc" -ne 0 ] || [ -z "$doc_reasons" ]; then
+  # 抽不出任何名字時不能靜默通過：那是「掃描器壞了」或「文件被改成不列名」，兩者都要出聲。
+  ((fail += 1))
+  printf 'FAIL reason-name lint: 掃不出 doc 端的 reason 名（rc=%s）\n' "$reason_doc_rc"
+else
+  reason_missing=
+  reason_untrusted=
+  for reason_name in $(printf '%s\n' "$doc_reasons" | sort -u); do
+    reason_in_gate "$reason_name"
+    case "$?" in
+      1) reason_missing="$reason_missing $reason_name" ;;
+      2) reason_untrusted="$reason_untrusted $reason_name" ;;
+    esac
+  done
+  if [ -z "$reason_missing" ] && [ -z "$reason_untrusted" ]; then
+    ((pass += 1))
+    printf 'PASS reason names in review-triage.md all exist in the helper\n'
+  else
+    ((fail += 1))
+    printf 'FAIL reason names missing from helper:%s / scan untrusted:%s\n' \
+      "${reason_missing:- none}" "${reason_untrusted:- none}"
+  fi
+fi
+
+# known-bad control：doc 端有而 helper 端沒有的名字必須判成 missing（rc=1）。
+reason_in_gate 'definitely_not_a_reason_failed'
+if [ "$?" -eq 1 ]; then
+  ((pass += 1)); printf 'PASS reason-name lint rejects its known-bad control\n'
+else
+  ((fail += 1)); printf 'FAIL reason-name lint rejects its known-bad control\n'
+fi
+
+# negative control ×2：掃描器故障必須回 2（不可信），不得塌成「沒找到」或「找到了」。
+# 第二條（exit 0 卻無輸出）才是相對 `rg -qF` 的增量：rc=2 那格 `rg -q` 版本也守得住。
+for reason_shim_rc in 2 0; do
+  (rg() { return "$reason_shim_rc"; }; reason_in_gate 'review_request_failed')
+  if [ "$?" -eq 2 ]; then
+    ((pass += 1))
+    printf 'PASS reason-name lint fails closed when the scanner returns rc=%s\n' "$reason_shim_rc"
+  else
+    ((fail += 1))
+    printf 'FAIL reason-name lint fails closed when the scanner returns rc=%s\n' "$reason_shim_rc"
+  fi
+done
+
+# clean positive control（evidence-integrity.md 要求成對）。
+reason_in_gate 'review_actions_billing_or_quota'
+if [ "$?" -eq 0 ]; then
+  ((pass += 1)); printf 'PASS reason-name lint accepts its clean positive control\n'
+else
+  ((fail += 1)); printf 'FAIL reason-name lint accepts its clean positive control\n'
+fi
+
 printf '%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，
 # 那是本測試自己的 fail-open（2026-08-02 稽核 Follow-up 3）。
