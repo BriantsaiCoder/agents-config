@@ -162,9 +162,15 @@ count_claim_scan() {  # count_claim_scan <file>
   fi
   while [ -n "$lines" ]; do
     line=${lines%%$'\n'*}
-    if [ -n "$line" ] &&
-       ! printf '%s' "$line" | rg -q '#[0-9]+|[0-9a-f]{7,}|20[0-9]{2}-[0-9]{2}-[0-9]{2}'; then
-      count_claim_bad="$count_claim_bad $f(裸 N PASS)"
+    if [ -n "$line" ]; then
+      # 座標判定走 rg_matches 而不是 `! … | rg -q`：後者在 rg rc>=2 時會判成「有座標」
+      # 而豁免，掃描器一壞 lint 就靜默放行。這支 lint 的主旨正是擋這種 fail-open。
+      rg_matches '#[0-9]+|[0-9a-f]{7,}|20[0-9]{2}-[0-9]{2}-[0-9]{2}' "$line"
+      case "$?" in
+        0) ;;                                                              # 帶座標，豁免
+        1) count_claim_bad="$count_claim_bad $f(裸 N PASS)" ;;
+        *) count_claim_unscannable="$count_claim_unscannable $f"; return ;;
+      esac
     fi
     if [ "$lines" = "$line" ]; then lines=; else lines=${lines#*$'\n'}; fi
   done
@@ -209,7 +215,33 @@ count_claim_probe "$count_claim_fixture/bad2.sh" &&
   ng "計數 lint 抓得到裸的 N PASS 註解"
 count_claim_probe "$count_claim_fixture/good.sh" &&
   ng "計數 lint 對帶座標的 N PASS 誤報" ||
-  ok "計數 lint 對帶座標的 N PASS 不誤報" 
+  ok "計數 lint 對帶座標的 N PASS 不誤報"
+
+# rg_matches 的控制項。**只有 rc>=2 那一格**：`rg -q` 的 rc=0 依定義就是「命中」，
+# 沒有「靜默成功」這種故障（它本來就不輸出），所以 rc=0 的 negative control 會要求它
+# 對合法輸入回錯。
+assert_fails_closed rg_matches rg 2 scan_verdict rg_matches 'PR #100' '見 PR #100'
+if rg_matches 'PR #100' '見 PR #100'; then
+  ok "rg_matches accepts its clean positive control"
+else
+  ng "rg_matches accepts its clean positive control"
+fi
+rg_matches 'PR #100' '沒有座標的一行'
+[ "$?" -eq 1 ] &&
+  ok "rg_matches rejects its known-bad control" ||
+  ng "rg_matches rejects its known-bad control"
+
+# 座標判定的掃描器故障必須讓該檔進 unscannable，不得靜默豁免。用 subshell 隔離 shim
+# 與全域累加器：這條驗的是 count_claim_scan 的分派，不是 rg_matches 本身。
+if ( rg_matches() { return 2; }
+     count_claim_bad=""
+     count_claim_unscannable=""
+     count_claim_scan "$count_claim_fixture/bad2.sh"
+     [ -n "$count_claim_unscannable" ] && [ -z "$count_claim_bad" ] ); then
+  ok "計數 lint 在座標判定的掃描器故障時判不可信（不靜默豁免）"
+else
+  ng "計數 lint 在座標判定的掃描器故障時判不可信（不靜默豁免）"
+fi
 
 if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
   ok "shared skills source"

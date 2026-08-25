@@ -56,6 +56,24 @@ rg_hits() { _rg_scan re "$@"; }
 
 # 回命中的**行內容**（rc 同 rg_hits）。給需要對每一行再做判定的呼叫端——例如
 # 「這行有計數宣稱，但同行是否帶座標」這種 rg 的 Rust regex 沒有 lookahead 做不到的事。
+# 判「這個字串是否命中 pattern」，rc 0=命中 1=沒命中 **2=掃描器不可信**。
+# 給那種「拿一行文字再做一次判定」的呼叫端。**不要用 `! printf … | rg -q …`**：
+# `-q` 把三態壓成一個 bit，rg 因 regex／工具錯誤回 rc>=2 時 `!` 會判成「命中」而豁免，
+# 於是掃描器一壞 lint 就靜默放行——正是本檔存在要防的 fail-open（Copilot review 抓到）。
+# 用 -c 而非 -q 的第二個理由（除了本檔第 13 行那條）：`printf … | rg -q` 在 rg 首次命中
+# 就結束時會讓 printf 收到 EPIPE，pipefail 下整條 pipeline 的 rc 變成 141，
+# 「命中」被誤判成「掃描器故障」。`rg -c` 讀完整個輸入，沒有這個窗口。
+rg_matches() {  # rg_matches <pattern> <string> -> rc 0=命中 1=無命中 2=不可信
+  local out rc=0
+  [ "$#" -eq 2 ] || return 2
+  out=$(printf '%s' "$2" | rg -c -e "$1") || rc=$?
+  case "$rc" in
+    0) case "$out" in ''|*[!0-9]*) return 2 ;; esac; return 0 ;;
+    1) return 1 ;;
+    *) return 2 ;;
+  esac
+}
+
 rg_lines() {  # rg_lines <pattern> <target> -> stdout=命中行；rc 0=可信 2=不可信
   local out rc=0
   [ "$#" -eq 2 ] || return 2
