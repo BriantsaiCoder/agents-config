@@ -90,7 +90,11 @@ fi
 # 兩者是互補不是重複。硬加 rc=0 的 negative control 會要求 find_count 對合法輸入回錯。
 assert_fails_closed find_count find 2 scan_verdict \
   find_count "$find_errfile" "$find_canary_dir" -name '*.bak*'
-if find_count "$find_errfile" "$find_canary_dir" -name '*.bak*' >/dev/null; then
+# 捕捉輸出而不是 `>/dev/null`：這兩支 helper 的 rc=0 只說「掃描可信」，
+# 把輸出丟掉的話 control 在「筆數 0／沒有命中行」時照樣 PASS，等於沒驗到它真的有交出
+# 東西（Copilot review 抓到）。fixture 裡植了 note.bak，所以正解是 >=1。
+if _cp_out=$(find_count "$find_errfile" "$find_canary_dir" -name '*.bak*') &&
+   [ "$_cp_out" -ge 1 ]; then
   ok "find_count accepts its clean positive control"
 else
   ng "find_count accepts its clean positive control"
@@ -246,7 +250,8 @@ for _rgl_shim_rc in 2 0; do
   assert_fails_closed rg_lines rg "$_rgl_shim_rc" scan_verdict \
     rg_lines '^[[:space:]]*#' "$count_claim_fixture/good.sh"
 done
-if rg_lines '^[[:space:]]*#' "$count_claim_fixture/good.sh" >/dev/null; then
+if _cp_out=$(rg_lines '^[[:space:]]*#' "$count_claim_fixture/good.sh") &&
+   [ -n "$_cp_out" ]; then
   ok "rg_lines accepts its clean positive control"
 else
   ng "rg_lines accepts its clean positive control"
