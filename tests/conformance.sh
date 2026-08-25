@@ -12,12 +12,18 @@ ng() { printf '  FAIL  %s\n' "$1"; fail=$((fail + 1)); }
 skip_check() { printf '  SKIP  %s\n' "$1"; skipped=$((skipped + 1)); }
 
 # 掃描器 rc 三態的共用判別（issue #97）。原本全檔用 `rg -q` / `grep -q`，那是單一 bit：
-# 一支壞掉卻 exit 0 的掃描器直接讓斷言變 PASS。實測本檔有 8 條這樣的斷言。
+# 一支壞掉卻 exit 0 的掃描器直接讓斷言變 PASS。實測本檔**至少** 8 條這樣的斷言
+# ——8 是差分量測法（比較兩種故障下 verdict 不同的條數）可見的下界；兩種故障都印
+# PASS 的那一類該方法看不見，兩軸 review 另外用逐條 mutation 找到更多。不寫定值。
 # 用腳本自身的位置而非 ${AGENTS}：本檔的 host-facing 檢查刻意讀 ${AGENTS}（預設 ~/.agents），
 # 但**共用判別必須來自受審 tree**，否則在 worktree／複本上跑的是 main 的那一份。
 # shellcheck source=tests/lib/scan.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh" ||
   { printf '  FAIL  掃描判別 lib 缺席（tests/lib/scan.sh）\n'; exit 1; }
+# source 成功不代表函式在：空檔或被截斷的 lib 同樣 rc=0，而 `scan_hit: command not found`
+# 的 rc=127 會讓 negative control 全部印綠（實測清空 lib -> 8 條 control 全 PASS）。
+command -v rg_hits >/dev/null 2>&1 ||
+  { printf '  FAIL  掃描判別 lib 未定義 rg_hits（tests/lib/scan.sh 可能被截斷）\n'; exit 1; }
 
 # negative control 驗的是**印出來的判定**，不只是 rc：本 issue 的症狀就是「印出 PASS」，
 # 而 ok／ng 都 return 0，helper 的 rc 只承載「掃描可不可信」。純 rc 版連
@@ -374,12 +380,42 @@ else
   # 掃 repo 內所有放 shell 腳本的目錄。skills/ 有 21 支，第一版漏掉——PASS 訊息因此
   # 在說謊，直到 2026-08-02 的 review 抓出 protect-files.sh 的 fail-open。
   # attic/ 是 CONVENTIONS 規則 11 的退役物，不掃。
-  varname_hits="$(rg -cP "$VARNAME_PAT" \
-    "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills" 2>/dev/null |
-    awk -F: '{s+=$2} END{print s+0}')"
-  [ "$varname_hits" = 0 ] &&
-    ok "shell 變數名後未緊接非 ASCII" ||
+  # 四棵樹逐一掃，各自驗 rc **與 stderr**。整批一次掃再 `| awk '{s+=$2}'` 的話有兩層
+  # fail-open：pipe 讓 rc 變成 awk 的、`s+0` 把「完全沒有輸出」變成 0 判 ok；而且
+  # **rc 偵測不到局部失敗**——任一棵樹裡有一個檔讀不到（權限、broken symlink），該檔的
+  # 命中就靜默歸零而 rg 仍回 rc=0。實測把一支真違規檔 chmod 000：守護從 FAIL 變 PASS，
+  # 旁邊的 canary 照樣綠（canary 只擋「掃描器整支壞掉」，擋不住局部失敗）。
+  # 不走 rg_hits 是因為這裡需要 -P（PCRE2 的 \P{ASCII}）與 stderr 檢查，兩者都在
+  # 共用判別的契約之外；同理不能只靠 rc。
+  varname_hits=0
+  varname_unscannable=
+  varname_errfile="$scratch/varname.err"
+  for varname_dir in "$AGENTS/bin" "$AGENTS/tests" "$AGENTS/hooks" "$AGENTS/skills"; do
+    varname_out="$(rg -cP "$VARNAME_PAT" "$varname_dir" 2>"$varname_errfile")"
+    varname_rc=$?
+    if [ -s "$varname_errfile" ] || [ "$varname_rc" -gt 1 ]; then
+      varname_unscannable="$varname_unscannable $varname_dir"
+      continue
+    fi
+    case "$varname_rc" in
+      1) continue ;;                                   # 這棵樹沒有命中
+      0) ;;
+      *) varname_unscannable="$varname_unscannable $varname_dir"; continue ;;
+    esac
+    varname_sum="$(printf '%s\n' "$varname_out" | awk -F: '{s+=$2} END{print s+0}')"
+    case "$varname_sum" in
+      ''|*[!0-9]*) varname_unscannable="$varname_unscannable $varname_dir" ;;
+      0) varname_unscannable="$varname_unscannable $varname_dir" ;;  # rc=0 卻算不出正數＝自相矛盾
+      *) varname_hits=$((varname_hits + varname_sum)) ;;
+    esac
+  done
+  if [ -n "$varname_unscannable" ]; then
+    ng "shell 變數名掃描不可信（掃不動或輸出對不上）：$varname_unscannable"
+  elif [ "$varname_hits" = 0 ]; then
+    ok "shell 變數名後未緊接非 ASCII"
+  else
     ng "shell 變數名後緊接非 ASCII（bash 會吃進變數名，須改 \${var}）：$varname_hits 處"
+  fi
 fi
 
 # 缺檔時 SKIP 不 FAIL：$AGENTS 可能是還沒有這支 test 的舊 checkout（本分支 merge 前的
