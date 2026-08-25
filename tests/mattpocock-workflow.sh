@@ -519,7 +519,7 @@ block_lacks "shared simplification method stays host-neutral" 'Claude|Codex|Copi
 # 外觀復發：未錨行首行尾 → 只釘句首 → 釘住錯誤引用 → 極性反轉。判準是「把這句改成相反
 # 意思，pattern 還能不能命中」；每一條都做過這個反轉測試才留下。
 #
-# 實測：下面三條同時還原成前一版寫法，283 條測試全綠——而 reviewer-template 第 7 行一
+# 實測：下面三條同時還原成前一版寫法，整套仍全綠——而 reviewer-template 第 7 行一
 # 還原，Claude 路徑就再次豁免掉整份 reference，沒有任何 FAIL。
 has "reviewer-template exempts only the prompt block" '豁免的是 prompt 區塊本身.*本檔其餘各節對它們一樣有約束力' skills/dev-workflow/references/reviewer-template.md
 # 釘 cell 尾的 `|`：`非 SKIPPED S5 review` 是修復前的錯誤字串 `非 SKIPPED S5 reviewer prompt`

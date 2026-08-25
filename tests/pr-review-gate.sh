@@ -708,7 +708,7 @@ else
     done
     if [ "$reason_checked" -lt 5 ]; then
       # 覆蓋面下限：抽取或排除規則壞掉時會靜默縮到零個名字仍印 PASS。實測把整個 for
-      # body 換成 `:`、或把抽取正則縮成只剩一種後綴，前一版都是 81 PASS / 0 FAIL。
+      # body 換成 `:`、或把抽取正則縮成只剩一種後綴，`1233665` 那一版都是整套全綠。
       ((fail += 1))
       printf 'FAIL reason-name lint 只檢查了 %s 個名字（doc 端至少該有 5 個字面 reason 名）\n' "$reason_checked"
     elif [ -z "$reason_missing" ] && [ -z "$reason_untrusted" ]; then
@@ -758,7 +758,7 @@ done
 
 # doc 端抽取那條分支的 control：前一版四條 control 全部只驗 reason_in_gate 的 rc，
 # extraction -> loop -> verdict 這條實際判定路徑零覆蓋——實測把整個 for body 換成 `:`
-# 仍 81 PASS / 0 FAIL。這兩條讓那條分支在掃描器故障時必須出聲。
+# 仍整套全綠（`1233665`）。這兩條讓那條分支在掃描器故障時必須出聲。
 # control 呼叫 **主 lint 用的同一支 reason_doc_extract**，不是另寫一份近似判別。
 # 只驗「rg 產不產得出輸出」的話，主邏輯哪天把「rc=0 但無輸出」當成可用，control 照樣綠。
 for reason_doc_shim_rc in 2 0; do

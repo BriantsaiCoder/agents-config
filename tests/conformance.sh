@@ -41,6 +41,35 @@ fi
 # host 檔，positive control 的綠不該取決於它裡面有沒有某個字（同上方的原則）。
 # 不用本檔自己：sentinel 的字面就寫在下面的 control 裡，掃自己會命中，
 # 那個探針就不再是「保證不存在」。
+# find 的計數站點共用判別。`find … | wc -l` 是單一 bit：find 靜默回空（rc=0 無輸出）
+# 時 wc 給 0，判定落到「沒有違規」——實測 shim find 之後五條斷言全部還是綠的。
+# 局部失敗（某個子目錄不可讀）rc=1 但仍輸出部分結果，所以 rc 與 stderr 都要驗；
+# 這與 varname 守護那條是同一形狀（rc 偵測不到局部失敗）。
+# 不走 rg_hits：那支判的是「pattern 在 target 裡命中幾行」，這裡要的是 find 的結果筆數。
+find_count() {  # find_count <errfile> <find-args…> -> stdout=筆數；rc 0=可信 2=不可信
+  local errfile="$1" out rc=0 n
+  shift
+  out=$(find "$@" 2>"$errfile") || rc=$?
+  { [ "$rc" -ne 0 ] || [ -s "$errfile" ]; } && return 2
+  [ -z "$out" ] && { printf '0\n'; return 0; }
+  n=$(printf '%s\n' "$out" | wc -l | tr -d ' ')
+  case "$n" in ''|*[!0-9]*) return 2 ;; esac
+  printf '%s\n' "$n"
+}
+find_errfile="${TMPDIR:-/tmp}/agents-conformance-find.$$"
+trap 'rm -f "$find_errfile"' EXIT
+
+# find 的 silent-success **偵測不到**：rc=0 + 空輸出是合法的 0（目錄真的沒有那種檔），
+# 與 rg -c 不同（rg 無命中回 rc=1，rc=0 卻無輸出才是自相矛盾）。所以另外釘一條 canary：
+# 對一個必定有結果的路徑跑同一支 find_count，回 0 就是工具壞了而不是「真的沒有」。
+# 形狀沿用同檔的 shell 變數名 pattern canary。
+if find_canary=$(find_count "$find_errfile" "$AGENTS/skills" -mindepth 1 -maxdepth 1 -type d) &&
+   [ "$find_canary" -gt 0 ]; then
+  ok "find canary：對必定有結果的路徑取得非零筆數"
+else
+  ng "find canary：對必定有結果的路徑回 0 或失敗——find 不可信，下方計數站點的 0 不算數"
+fi
+
 scan_probe_file="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib/scan.sh"
 for _scan_shim_rc in 2 0; do
   assert_fails_closed scan_hit    "$_scan_shim_rc" scan_verdict scan_hit    'rg_hits' "$scan_probe_file"
@@ -67,6 +96,18 @@ scan_miss 'rg_hits' "$scan_probe_file" &&
   ok "scan_miss rejects its known-bad control"
 scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss_f accepts its clean positive control" \
   || ng "scan_miss_f accepts its clean positive control"
+
+# 測試計數宣稱的 lint（issue #89 第 2 項）。只擋「N 條測試全綠」這一種句式：
+# 它是**套件總分**，每加一條斷言就過期一次——本 repo 已經腐爛過三次（283 -> 354 -> 375）。
+# 改寫成不含計數的形式即可，**沒有座標例外**：這種句子的資訊量本來就在「全綠」不在「N」。
+# 不擋「N PASS / M FAIL」：那個形狀在 probe 參數、printf、帶 SHA/日期座標的歷史記錄裡
+# 大量合法出現，機械上分不開，誤報會讓守衛被關掉（#93 的教訓：被誤擋的守門遲早被關）。
+if count_claim_n=$(rg_hits '[0-9]+ 條(測試|斷言)全綠' "$AGENTS/tests") &&
+   [ "$count_claim_n" -eq 0 ]; then
+  ok "測試檔註解未寫死套件總分"
+else
+  ng "測試檔註解寫死了套件總分（改成不含計數的形式）"
+fi
 
 if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
   ok "shared skills source"
@@ -121,24 +162,24 @@ else
   ng "Context7 canonical procedure missing"
 fi
 
-cache_count="$(
-  find "$AGENTS/skills" \
-    \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \) |
-    wc -l | tr -d ' '
-)"
-[ "$cache_count" -eq 0 ] &&
-  ok "shared skills contain no Python cache artifacts" ||
+if ! cache_count=$(find_count "$find_errfile" "$AGENTS/skills" \
+  \( -type d -name __pycache__ -o -type f \( -name '*.pyc' -o -name '*.pyo' \) \)); then
+  ng "Python cache 掃描不可信（find 失敗或有讀不到的路徑）"
+elif [ "$cache_count" -eq 0 ]; then
+  ok "shared skills contain no Python cache artifacts"
+else
   ng "Python cache artifacts under shared skills: $cache_count"
+fi
 
-bad_exec_count="$(
-  find "$AGENTS/skills" -type f -perm -111 \
-    ! -name '*.sh' ! -name '*.py' ! -name '*.ps1' \
-    ! -name '*.js' ! -name '*.cjs' ! -name '*.fsx' |
-    wc -l | tr -d ' '
-)"
-[ "$bad_exec_count" -eq 0 ] &&
-  ok "only shared skill scripts are executable" ||
+if ! bad_exec_count=$(find_count "$find_errfile" "$AGENTS/skills" -type f -perm -111 \
+  ! -name '*.sh' ! -name '*.py' ! -name '*.ps1' \
+  ! -name '*.js' ! -name '*.cjs' ! -name '*.fsx'); then
+  ng "可執行檔掃描不可信（find 失敗或有讀不到的路徑）"
+elif [ "$bad_exec_count" -eq 0 ]; then
+  ok "only shared skill scripts are executable"
+else
   ng "non-script executable files under shared skills: $bad_exec_count"
+fi
 
 if scan_hit_f '[ ! -L "$AGENTS/skills/video-downloader" ]' \
   "$AGENTS/tests/matt-thin-workflow.sh"; then
@@ -155,14 +196,18 @@ if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
   "$AGENTS/bin/agents-sync" --bootstrap >/dev/null 2>&1 &&
   HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
   "$AGENTS/bin/agents-sync" --doctor >/dev/null 2>&1; then
-  source_count="$(
-    find "$AGENTS/skills" -mindepth 1 -maxdepth 1 -type d \
-      ! -path "$AGENTS/skills/.claude" | wc -l | tr -d ' '
-  )"
-  link_count="$(find "$scratch/home/.claude/skills" -mindepth 1 -maxdepth 1 -type l | wc -l | tr -d ' ')"
-  [ "$source_count" = "$link_count" ] &&
-    ok "Claude skill-link bootstrap: $link_count" ||
+  # 兩個計數都靠 find。工具壞掉時兩邊都變空字串，`=` 判相等 -> **假綠**——這是五個
+  # 計數站點裡唯一連 `[ "" -eq 0 ]` 的報錯都擋不住的（它用字串比較）。
+  if ! source_count=$(find_count "$find_errfile" "$AGENTS/skills" -mindepth 1 -maxdepth 1 -type d \
+       ! -path "$AGENTS/skills/.claude"); then
+    ng "skill-link 來源計數不可信（find 失敗或有讀不到的路徑）"
+  elif ! link_count=$(find_count "$find_errfile" "$scratch/home/.claude/skills" -mindepth 1 -maxdepth 1 -type l); then
+    ng "skill-link 連結計數不可信（find 失敗或有讀不到的路徑）"
+  elif [ "$source_count" -eq "$link_count" ]; then
+    ok "Claude skill-link bootstrap: $link_count"
+  else
     ng "Claude skill-link count $link_count != source $source_count"
+  fi
 else
   ng "Claude skill-link bootstrap／doctor"
 fi
@@ -330,12 +375,15 @@ fi
 #   -not -name '.*'        app 自管的 runtime state 備份（如 .codex-global-state.json.bak）
 #   -not -path '*/attic/*' 規則 11 允許既有 .bak「掃 secret 後刪除或歸檔 attic/」
 #   -not -path '*/backups/*' backups/ 就是規則 11 明訂的操作前快照區
-bak_count="$(find "$AGENTS" -name '*.bak*' \
+if ! bak_count=$(find_count "$find_errfile" "$AGENTS" -name '*.bak*' \
   -not -path '*/.git/*' -not -path '*/attic/*' -not -path '*/backups/*' \
-  -not -name '.*' 2>/dev/null | wc -l | tr -d ' ')"
-[ "$bak_count" = 0 ] &&
-  ok "no manual .bak under ~/.agents" ||
+  -not -name '.*'); then
+  ng ".bak 掃描不可信（find 失敗或有讀不到的路徑）"
+elif [ "$bak_count" -eq 0 ]; then
+  ok "no manual .bak under ~/.agents"
+else
   ng "manual .bak found under ~/.agents: $bak_count"
+fi
 
 # $var 緊接非 ASCII 時 bash 會把後續 byte 吃進變數名，set -u 下變成
 # "out?: unbound variable"。2026-08-02 實測 15 個字元（）（「」，。：；、？！　─ ” ’）
