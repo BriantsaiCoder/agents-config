@@ -124,11 +124,17 @@ probe "billing body is not a code review"      30 UNAVAILABLE 0 head-new 0 0 SUC
 BILLING_DRIFT_WORD="The job was not started because recent GitHub Actions payment have failed or your spending limit needs to be increased."
 BILLING_DRIFT_PHRASE="The job was not started because recent GitHub Actions payments have failed or your spending limit must be increased."
 BILLING_DRIFT_SPACE="$BILLING_REVIEW "
+# 這兩條是 `map(select(. != ""))` 版本的實際觸發點：CRLF 切開後的孤立 "\r" 與全空白行
+# 都不是空字串，會被算成第二行 -> 判成「不是 billing」-> STATE=PASS。
+BILLING_DRIFT_CRLF="$(printf '%s\r\n\r\n' "$BILLING_REVIEW")"
+BILLING_DRIFT_WSLINE="$(printf '%s\n   \n' "$BILLING_REVIEW")"
 MIXED_REVIEW="$BILLING_REVIEW"$'\nissue: real finding'
 probe "mixed review body remains current"       0 PASS 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$MIXED_REVIEW" "" "" "" "review=CURRENT" "STATE=UNAVAILABLE"
 probe "billing drift (payments->payment) is still billing"  30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_WORD" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
 probe "billing drift (needs to->must) is still billing"     30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_PHRASE" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
 probe "billing drift (trailing space) is still billing"     30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_SPACE" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
+probe "billing drift (CRLF blank line) is still billing"    30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_CRLF" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
+probe "billing drift (whitespace line) is still billing"    30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_WSLINE" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
 # runner 從未開始執行 + 等夠久 → 拿不到結論，降級。
 probe "cancelled without steps degrades" 12 PASS_NO_CI 0 head-new 0 0 CANCELLED false false "$OLD" 900001 0
 # 跑過 step 才被取消，可能中斷了一個正在失敗的測試——不必等門檻，直接擋死。

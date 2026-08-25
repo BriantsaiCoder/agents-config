@@ -215,7 +215,7 @@ billing_failure_never_ran() {
     gh api "repos/$repo/check-runs/$job_id/annotations" --jq '
       any(.[];
         ((.message // "") | ascii_downcase | contains("job was not started")) and
-        ((.message // "") | ascii_downcase | contains("payments have failed or your spending limit needs to be increased")))' \
+        ((.message // "") | ascii_downcase | contains("spending limit")))' \
       2>/dev/null | grep -qx true || return 1
   done
 }
@@ -291,15 +291,26 @@ fi
 # 通過的 code review，而 hard_deny[1] 只讀 STATE。實測三種漂移（payments->payment、
 # needs to->must、尾端多一個空白）在舊判準下全部落 PASS。
 #
-# 現在錨在兩個穩定核心（"job was not started" 與 "spending limit"）而不是整句，與同檔
-# CI 側 annotation 的判定同形（見下方 contains 那兩行）——那一側從一開始就是 contains，
-# 所以同樣的漂移在 CI 側是 fail-closed。這裡等於把 review 側對齊既有做法。
+# 現在錨在兩個穩定核心（"job was not started" 與 "spending limit"）而不是整句。
+# 下方 CI 側 annotation 的判定**一併收斂成同一組 anchor**：先前那一側的第二個 anchor
+# 是近乎整句的 62 字元，同樣的漂移會讓它落 ci=FAIL -> STATE=FAIL_CI，而 billing 中斷
+# 沒辦法靠重跑 CI 清除，等於每個 PR 被永久硬擋。方向雖是 fail-closed，但那是同一個
+# root cause（對 GitHub 控制的文案做字面比對）的另一半，不該只修一邊。
+# 註：CI 側原本的安全來自**分支方向**（不命中就落 ci=FAIL），不是來自 contains——
+# contains 與 == 的差別只影響命中率，不影響失敗方向。
 #
 # 加「非空行數 == 1」是為了保住 `mixed review body remains current`：一則帶著 billing
 # 文字但另有真 finding 的 review 是**真的 review**，不該被判成 billing 而停在
 # UNAVAILABLE。純 billing 通知是單行，mixed 不是。
-# 殘留風險：GitHub 若把 billing 通知改成多行，這裡會漏判（fail-open）。比「改一個字元
-# 就漏」窄很多，但不是零——負向斷言在 tests/pr-review-gate.sh 釘住這三種已知漂移。
+# 用 test("\\S") 而不是 `. != ""` 濾空行：後者只濾完全空字串，CRLF 被 split("\n")
+# 切開後留下的孤立 "\r"、以及只含空白的行都會被算成第二行 -> billing_review=false
+# -> review=CURRENT -> **STATE=PASS**。一個會被看不見的字元翻轉的判定式在 merge gate
+# 上不成立（S5 Standards R1 端到端重現過）。
+#
+# 殘留風險，明講：換行或多餘空白落在 **anchor 內部**時（例如 "job was not\nstarted"），
+# 兩個 contains 同時失效，行數判定根本輪不到；`ascii_downcase` 也只折 ASCII，anchor 內
+# 插一個 NBSP 就整條漏。要擋這一類得把判定式推向 regex，成本超過收益。
+# 負向斷言在 tests/pr-review-gate.sh 釘住已知的五種漂移。
 latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
   --jq '[.[] | select(.user.login | ascii_downcase | contains("copilot"))]
     | sort_by(.submitted_at) | last
@@ -308,7 +319,7 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
           | if length > 0 then .[0][0] else "0" end)
         , ((.body // "") | ascii_downcase
           | (contains("job was not started") and contains("spending limit") and
-             (split("\n") | map(select(. != "")) | length) == 1))
+             (split("\n") | map(select(test("\\S"))) | length) == 1))
       ] | @tsv') ||
   unavailable review_probe_failed
 # 用 cut 而非 here-string：後者在 /tmp 與 cwd 皆不可寫時建不出暫存檔（macOS bash 3.2），
