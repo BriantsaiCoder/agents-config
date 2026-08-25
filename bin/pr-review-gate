@@ -284,6 +284,22 @@ fi
 # 不阻擋、只呈報：suppressed 沒有 resolve 機制，拿它當 blocking 條件會變成永久死鎖。
 # 呈報在這行輸出上，是因為它是 push 後 hook 會自動印、且所有人都會讀的那一行。
 # scan 而非 capture：後者在無命中時會 raise error，前者回空陣列。
+#
+# billing review 的判定（issue #94）。原本是**整段字串相等**，GitHub 改動文案一個非
+# 大小寫字元就 fail-open：billing_review 變 false -> 不走 review=UNAVAILABLE -> review
+# 就在 current head 上 -> review=CURRENT -> **STATE=PASS**。一則 billing 失敗通知被當成
+# 通過的 code review，而 hard_deny[1] 只讀 STATE。實測三種漂移（payments->payment、
+# needs to->must、尾端多一個空白）在舊判準下全部落 PASS。
+#
+# 現在錨在兩個穩定核心（"job was not started" 與 "spending limit"）而不是整句，與同檔
+# CI 側 annotation 的判定同形（見下方 contains 那兩行）——那一側從一開始就是 contains，
+# 所以同樣的漂移在 CI 側是 fail-closed。這裡等於把 review 側對齊既有做法。
+#
+# 加「非空行數 == 1」是為了保住 `mixed review body remains current`：一則帶著 billing
+# 文字但另有真 finding 的 review 是**真的 review**，不該被判成 billing 而停在
+# UNAVAILABLE。純 billing 通知是單行，mixed 不是。
+# 殘留風險：GitHub 若把 billing 通知改成多行，這裡會漏判（fail-open）。比「改一個字元
+# 就漏」窄很多，但不是零——負向斷言在 tests/pr-review-gate.sh 釘住這三種已知漂移。
 latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
   --jq '[.[] | select(.user.login | ascii_downcase | contains("copilot"))]
     | sort_by(.submitted_at) | last
@@ -291,8 +307,8 @@ latest_review_state=$(gh api "repos/$repo/pulls/$pr/reviews" \
         ((.body // "") | [scan("Suppressed comments \\(([0-9]+)\\)")]
           | if length > 0 then .[0][0] else "0" end)
         , ((.body // "") | ascii_downcase
-          | (. == "the job was not started because recent github actions payments have failed or your spending limit needs to be increased." or
-             . == "the job was not started because recent account payments have failed or your spending limit needs to be increased."))
+          | (contains("job was not started") and contains("spending limit") and
+             (split("\n") | map(select(. != "")) | length) == 1))
       ] | @tsv') ||
   unavailable review_probe_failed
 # 用 cut 而非 here-string：後者在 /tmp 與 cwd 皆不可寫時建不出暫存檔（macOS bash 3.2），

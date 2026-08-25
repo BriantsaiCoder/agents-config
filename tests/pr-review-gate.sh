@@ -119,8 +119,16 @@ probe "missing conclusion schema blocks"       30 FAIL_CI    0 head-new 0 0 FAIL
 probe "stale-head job blocks"                  30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" failure stale_head
 probe "mismatched-run job blocks"              30 FAIL_CI    0 head-new 0 0 FAILURE false false "$NOW" "" 0 900002 0 "$BILLING" "" "" "" "" "" "" failure mismatched_run
 probe "billing body is not a code review"      30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_REVIEW" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
+# issue #94 的三種已知漂移：舊的「整段 ==」判準對這三種全部落 STATE=PASS
+# （一則 billing 通知被當成通過的 code review）。錨在穩定核心之後三種都要落 UNAVAILABLE。
+BILLING_DRIFT_WORD="The job was not started because recent GitHub Actions payment have failed or your spending limit needs to be increased."
+BILLING_DRIFT_PHRASE="The job was not started because recent GitHub Actions payments have failed or your spending limit must be increased."
+BILLING_DRIFT_SPACE="$BILLING_REVIEW "
 MIXED_REVIEW="$BILLING_REVIEW"$'\nissue: real finding'
 probe "mixed review body remains current"       0 PASS 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$MIXED_REVIEW" "" "" "" "review=CURRENT" "STATE=UNAVAILABLE"
+probe "billing drift (payments->payment) is still billing"  30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_WORD" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
+probe "billing drift (needs to->must) is still billing"     30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_PHRASE" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
+probe "billing drift (trailing space) is still billing"     30 UNAVAILABLE 0 head-new 0 0 SUCCESS false false "$NOW" "" 0 "" 0 "" "$BILLING_DRIFT_SPACE" "" "" "" "reason=review_actions_billing_or_quota" "review=CURRENT"
 # runner 從未開始執行 + 等夠久 → 拿不到結論，降級。
 probe "cancelled without steps degrades" 12 PASS_NO_CI 0 head-new 0 0 CANCELLED false false "$OLD" 900001 0
 # 跑過 step 才被取消，可能中斷了一個正在失敗的測試——不必等門檻，直接擋死。
