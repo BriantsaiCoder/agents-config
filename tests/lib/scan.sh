@@ -68,7 +68,10 @@ rg_matches() {  # rg_matches <pattern> <string> -> rc 0=命中 1=無命中 2=不
   [ "$#" -eq 2 ] || return 2
   out=$(printf '%s' "$2" | rg -c -e "$1") || rc=$?
   case "$rc" in
-    0) case "$out" in ''|*[!0-9]*) return 2 ;; esac; return 0 ;;
+    # rc=0 必須交出**正整數**（與 _rg_scan 同一份契約）：`rg -c` 無命中回的是 rc=1，
+    # 所以「rc=0 但筆數 0」自相矛盾，是壞掉的掃描器而不是「沒命中」。只驗「是數字」
+    # 的話 `0` 會被當成命中（return 0）而讓呼叫端靜默豁免（Copilot review 抓到）。
+    0) case "$out" in ''|*[!0-9]*|0) return 2 ;; esac; return 0 ;;
     1) return 1 ;;
     *) return 2 ;;
   esac
@@ -79,8 +82,10 @@ rg_lines() {  # rg_lines <pattern> <target> -> stdout=命中行；rc 0=可信 2=
   [ "$#" -eq 2 ] || return 2
   out=$(rg --no-filename -e "$1" -- "$2") || rc=$?
   case "$rc" in
-    1) return 0 ;;
-    0) printf '%s\n' "$out" ;;
+    1) return 0 ;;                                  # 真的沒有命中行
+    # 同上：rg 無命中回 rc=1，「rc=0 但無輸出」是壞掉的掃描器。印空字串的話呼叫端
+    # 會當成「沒有命中行」而繼續 —— 正是本檔要擋的 fail-open（Copilot review 抓到）。
+    0) [ -n "$out" ] || return 2; printf '%s\n' "$out" ;;
     *) return 2 ;;
   esac
 }

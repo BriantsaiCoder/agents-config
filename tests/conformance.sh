@@ -233,6 +233,25 @@ rg_matches 'PR #100' '沒有座標的一行'
   ok "rg_matches rejects its known-bad control" ||
   ng "rg_matches rejects its known-bad control"
 
+# 第三格：rg 回 rc=0 但筆數 0。`assert_fails_closed` 的 shim 只能控 rc（回 0 時無輸出），
+# 蓋不到「有輸出但輸出是 0」，所以另寫一支 shim。只驗「是數字」的話 0 會被當成命中。
+( rg() { printf '0\n'; return 0; }; rg_matches 'PR #100' '見 PR #100' )
+[ "$?" -eq 2 ] &&
+  ok "rg_matches fails closed when rg exits 0 with a zero count" ||
+  ng "rg_matches fails closed when rg exits 0 with a zero count"
+
+# rg_lines 的控制項。rc=0 但無輸出同樣自相矛盾（rg 無命中回 rc=1）；印空字串的話
+# 呼叫端會當成「沒有命中行」而繼續。
+for _rgl_shim_rc in 2 0; do
+  assert_fails_closed rg_lines rg "$_rgl_shim_rc" scan_verdict \
+    rg_lines '^[[:space:]]*#' "$count_claim_fixture/good.sh"
+done
+if rg_lines '^[[:space:]]*#' "$count_claim_fixture/good.sh" >/dev/null; then
+  ok "rg_lines accepts its clean positive control"
+else
+  ng "rg_lines accepts its clean positive control"
+fi
+
 # 座標判定的掃描器故障必須讓該檔進 unscannable，不得靜默豁免。用 subshell 隔離 shim
 # 與全域累加器：這條驗的是 count_claim_scan 的分派，不是 rg_matches 本身。
 if ( rg_matches() { return 2; }
