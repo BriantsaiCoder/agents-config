@@ -659,12 +659,18 @@ reason_in_gate() {  # reason_in_gate <name> -> 0=helper 端發射 1=沒有 2=掃
 # 方向要挑會吵的那個：排除清單漏一項是紅的（誤報，看得見），allowlist 漏一項是綠的。
 reason_not_a_name='^(reviews|unresolved|requested_reviewers|suppressed)$'
 
-reason_doc_rc=0
-doc_reasons=$(rg -o -r '$1' -e '`([a-z][a-z_]*)`' -- "$triage_doc") || reason_doc_rc=$?
-if [ "$reason_doc_rc" -ne 0 ] || [ -z "$doc_reasons" ]; then
-  # 抽不出任何名字時不能靜默通過：那是「掃描器壞了」或「文件被改成不列名」，都要出聲。
+# 抽成函式，好讓下面的 control **跑同一段**判別而不是另寫一份近似的。
+# 抽不出任何名字時不能靜默通過：那是「掃描器壞了」或「文件被改成不列名」，都要出聲。
+reason_doc_extract() {  # -> stdout=名單；rc 0=可用 1=抽不出
+  local rc=0 out
+  out=$(rg -o -r '$1' -e '`([a-z][a-z_]*)`' -- "$triage_doc") || rc=$?
+  { [ "$rc" -ne 0 ] || [ -z "$out" ]; } && return 1
+  printf '%s\n' "$out"
+}
+
+if ! doc_reasons=$(reason_doc_extract); then
   ((fail += 1))
-  printf 'FAIL reason-name lint: 掃不出 doc 端的 reason 名（rc=%s）\n' "$reason_doc_rc"
+  printf 'FAIL reason-name lint: 掃不出 doc 端的 reason 名\n'
 else
   reason_sorted=$(printf '%s\n' "$doc_reasons" | sort -u) || reason_sorted=
   if [ -z "$reason_sorted" ]; then
@@ -677,9 +683,8 @@ else
     reason_untrusted=
     reason_checked=0
     for reason_name in $reason_sorted; do
-      case "$reason_name" in
-        reviews|unresolved|requested_reviewers|suppressed) continue ;;
-      esac
+      # 用上面那個變數做排除，不要在這裡再手寫一份名單：兩份會改一處漏一處。
+      [[ "$reason_name" =~ $reason_not_a_name ]] && continue
       reason_checked=$((reason_checked + 1))
       reason_in_gate "$reason_name"
       case "$?" in
@@ -740,11 +745,12 @@ done
 # doc 端抽取那條分支的 control：前一版四條 control 全部只驗 reason_in_gate 的 rc，
 # extraction -> loop -> verdict 這條實際判定路徑零覆蓋——實測把整個 for body 換成 `:`
 # 仍 81 PASS / 0 FAIL。這兩條讓那條分支在掃描器故障時必須出聲。
+# control 呼叫 **主 lint 用的同一支 reason_doc_extract**，不是另寫一份近似判別。
+# 只驗「rg 產不產得出輸出」的話，主邏輯哪天把「rc=0 但無輸出」當成可用，control 照樣綠。
 for reason_doc_shim_rc in 2 0; do
   reason_doc_probe=$( (rg() { return "$reason_doc_shim_rc"; }
-    d=$(rg -o -r '$1' -e '`([a-z][a-z_]*)`' -- "$triage_doc") || d=
-    [ -n "$d" ] && printf 'EXTRACTED' || printf 'EMPTY') 2>&1 )
-  if [ "$reason_doc_probe" = EMPTY ]; then
+    reason_doc_extract >/dev/null && printf 'USABLE' || printf 'REJECTED') 2>&1 )
+  if [ "$reason_doc_probe" = REJECTED ]; then
     ((pass += 1))
     printf 'PASS reason-name lint extraction fails closed when the scanner returns rc=%s\n' "$reason_doc_shim_rc"
   else
