@@ -51,23 +51,6 @@ has() {
   if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
 }
 
-# 每支改用 rg_hits 的 helper 都留兩條 negative control 加一條 clean positive control
-# （evidence-integrity.md 要求成對）。第二條（掃描器說成功卻交不出行）才是相對舊
-# `grep -qE … && ok || ng` 的增量：第一條 rc=2 舊版也會 ng，只是歸因說成「沒命中」。
-# 探測路徑一律用 tests/ 自己 + 必定命中的 pattern：shim 沒生效時 fixture 不會因為
-# 別的理由變綠，理由完全不是以為的那個（7d824af 的教訓）。
-if (rg() { return 2; }; has "fixture" 'rg_hits' tests/mattpocock-workflow.sh) >/dev/null; then
-  ng "has fails closed when the scanner errors"
-else
-  ok "has fails closed when the scanner errors"
-fi
-if (rg() { return 0; }; has "fixture" 'rg_hits' tests/mattpocock-workflow.sh) >/dev/null; then
-  ng "has fails closed when the scanner exits 0 with no output"
-else
-  ok "has fails closed when the scanner exits 0 with no output"
-fi
-has "has accepts its clean positive control" 'rg_hits' tests/mattpocock-workflow.sh
-
 # 檔案不存在不另外先驗（原 `[ -e ]`）：rg_hits 對它回 rc=2，與「掃描不可信」逐字同果。
 lacks() {
   local label="$1" pattern="$2" path n
@@ -80,32 +63,31 @@ lacks() {
   ok "$label"
 }
 
-# 探測 pattern 用下方 clean positive control 的同一個 sentinel，不用普通英文字：
-# lacks 只在「pattern 全部不存在」時 return 0，所以 shim 失效時這兩條要能發出聲音，
-# 而普通字（原本寫 'unused'）只是「現在剛好不存在」——它哪天出現在 SKILL.md 裡，
-# 這兩條 fixture 就在 shim 失效的情況下靜默變綠。
-lacks_sentinel='THIS_STRING_MUST_NOT_EXIST_IN_THE_SKILL'
-if (rg() { return 2; }; lacks "fixture" "$lacks_sentinel" skills/dev-workflow/SKILL.md) >/dev/null; then
-  ng "lacks fails closed when the scanner errors"
-else
-  ok "lacks fails closed when the scanner errors"
-fi
-# lacks 的方向與 has 相反，silent success 對它更兇：rg 交不出行看起來就是「沒命中＝乾淨」。
-if (rg() { return 0; }; lacks "fixture" "$lacks_sentinel" skills/dev-workflow/SKILL.md) >/dev/null; then
-  ng "lacks fails closed when the scanner exits 0 with no output"
-else
-  ok "lacks fails closed when the scanner exits 0 with no output"
-fi
-lacks "lacks accepts its clean positive control" "$lacks_sentinel" skills/dev-workflow/SKILL.md
+# has()／lacks() 的姊妹，掃已由 sed／awk 抽出的區塊字串而不是檔案。沒有這兩支的話，
+# 「取 block 再判」在檔內會是兩個函式化、六個 inline 展開的半吊子狀態：那六處是
+# top-level 陳述式，沒有函式作用域，被迫共用同一個暫存變數名並靠執行順序而非作用域
+# 隔離；排除側語意日後要調（例如把「掃描不可信」與「真的沒命中」分成兩種 FAIL 訊息）
+# 得同步改六處，漏改一處沒有任何斷言會抓到。
+# here-string 而非 `printf … |`：少 fork 一個 process，rg_hits 的 stdin 分支照走。
+block_has() {
+  local label="$1" pattern="$2" block="$3" n
+  n=$(rg_hits "$pattern" <<<"$block") || { ng "$label"; return 1; }
+  if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
+}
+
+block_lacks() {
+  local label="$1" pattern="$2" block="$3" n
+  n=$(rg_hits "$pattern" <<<"$block") || { ng "$label"; return 1; }
+  if [ "$n" -eq 0 ]; then ok "$label"; else ng "$label"; fi
+}
 
 # 區塊先落地成變數再判，pipe 兩端的 rc 才不會被吃掉。本 issue 的範圍是掃描器 rc，
 # 不含 sed／awk 的區塊定界 fail-open（標題被改寫時抽出空內容 → ng，方向對但歸因錯；
 # 區塊「漲大」那個方向記在 #93 的 E 類）。
 rule_has_in() {
-  local label="$1" id="$2" pattern="$3" file="$4" block n
+  local label="$1" id="$2" pattern="$3" file="$4" block
   block=$(sed -n "/^\\- \\[$id\\]/p" "$ROOT/$file") || { ng "$label"; return 1; }
-  n=$(printf '%s\n' "$block" | rg_hits "$pattern") || { ng "$label"; return 1; }
-  if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
+  block_has "$label" "$pattern" "$block"
 }
 
 rule_has() {
@@ -113,35 +95,48 @@ rule_has() {
 }
 
 section_has() {
-  local label="$1" section="$2" pattern="$3" file="$4" block n
+  local label="$1" section="$2" pattern="$3" file="$4" block
   block=$(awk -v heading="## $section" '
     $0 == heading { active=1; next }
     active && /^## / { exit }
     active { print }
   ' "$ROOT/$file") || { ng "$label"; return 1; }
-  n=$(printf '%s\n' "$block" | rg_hits "$pattern") || { ng "$label"; return 1; }
-  if [ "$n" -gt 0 ]; then ok "$label"; else ng "$label"; fi
+  block_has "$label" "$pattern" "$block"
+}
+
+# 四支走 rg_hits 的 helper 共用同一份 fixture 骨架。分開手寫的話（前一版 has 與 lacks
+# 各展開一次、另兩支用迴圈，三種寫法並存），日後要調整這個形狀——例如新增第三種 rc
+# case——得改四個地方，漏改一處沒有任何斷言會抓到。
+# 每支兩條 negative control 加一條 clean positive control（evidence-integrity.md 要求
+# 成對）。第二條（掃描器說成功卻交不出行）才是相對舊 `grep -qE … && ok || ng` 的增量：
+# 第一條 rc=2 舊版也會 ng，只是把成因說成「沒命中」。
+# 探測路徑一律用必定存在、必定命中的 target + pattern：shim 沒生效時 fixture 不會因為
+# 別的理由變綠，理由完全不是以為的那個（7d824af 的教訓）。lacks 的方向相反，silent
+# success 對它更兇（交不出行看起來就是「沒命中＝乾淨」），所以它的探測 pattern 用一個
+# 保證不存在的 sentinel，而不是「現在剛好不存在」的普通字。
+lacks_sentinel='THIS_STRING_MUST_NOT_EXIST_IN_THE_SKILL'
+assert_fails_closed() {  # assert_fails_closed <label-prefix> <shim-rc> <helper> <args...>
+  local prefix="$1" shim_rc="$2" why
+  shift 2
+  case "$shim_rc" in
+    2) why='the scanner errors' ;;
+    *) why='the scanner exits 0 with no output' ;;
+  esac
+  if (rg() { return "$shim_rc"; }; "$@") >/dev/null 2>&1; then
+    ng "$prefix fails closed when $why"
+  else
+    ok "$prefix fails closed when $why"
+  fi
 }
 
 for _shim_rc in 2 0; do
-  # 措辭與 has／lacks 那兩組對齊：rc=0 那條測的是「exit 0 卻無輸出」，不是「掃描器回 0」。
-  case "$_shim_rc" in
-    2) _shim_why='the scanner errors' ;;
-    *) _shim_why='the scanner exits 0 with no output' ;;
-  esac
-  if (rg() { return "$_shim_rc"; }; rule_has "fixture" 'INT-4' 'delegation') >/dev/null; then
-    ng "rule_has_in fails closed when $_shim_why"
-  else
-    ok "rule_has_in fails closed when $_shim_why"
-  fi
-  if (rg() { return "$_shim_rc"; }; section_has "fixture" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md) >/dev/null; then
-    ng "section_has fails closed when $_shim_why"
-  else
-    ok "section_has fails closed when $_shim_why"
-  fi
+  assert_fails_closed has         "$_shim_rc" has         "fixture" 'rg_hits' tests/mattpocock-workflow.sh
+  assert_fails_closed lacks       "$_shim_rc" lacks       "fixture" "$lacks_sentinel" skills/dev-workflow/SKILL.md
+  assert_fails_closed rule_has_in "$_shim_rc" rule_has    "fixture" 'INT-4' 'delegation'
+  assert_fails_closed section_has "$_shim_rc" section_has "fixture" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md
 done
-# evidence-integrity.md 的「negative control 證明會失敗、clean positive control 證明會
-# 通過」是成對的 MUST；上面兩支只有 negative 那一半。
+has "has accepts its clean positive control" 'rg_hits' tests/mattpocock-workflow.sh
+lacks "lacks accepts its clean positive control" "$lacks_sentinel" skills/dev-workflow/SKILL.md
 rule_has "rule_has_in accepts its clean positive control" 'INT-4' 'delegation'
 section_has "section_has accepts its clean positive control" 'S4 VERIFY' 'Risk' skills/dev-workflow/SKILL.md
 
@@ -188,6 +183,10 @@ evidence_integrity_contract_valid() {
 }
 
 has "[INT-4] canonical delegation gate" '^\- \[INT-4\]' skills/dev-workflow/SKILL.md
+# 這處數的是**出現次數**（同一行出現兩次 `[INT-4]` 要算兩次），而 rg_hits 用 `-c`
+# 數的是命中**行數**，語意不同，換過去會改變斷言——與 allow_names 那處 `rg -o` 同類，
+# 不套 rg_hits。門檻是正向的「≥5」，掃描器壞掉時空輸出讓 wc -l 得 0，天然 fail-closed
+# （已實測 grep 的兩種故障下皆 FAIL）。
 refs=$(grep -ho '\[INT-4\]' \
   "$ROOT/skills/dev-workflow/SKILL.md" \
   "$ROOT/$delegation_ref" \
@@ -506,11 +505,7 @@ has "every changed simplification pass re-enters S4 and affected S5" '`changed` 
 section_has "Codex maps the simplification outcome to an explicit apply pass" Codex '^\- S5 simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
 section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot 'simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
 common_simplification="$(sed -n '/^## S5 simplification apply outcome$/,/^## Claude$/p' "$ROOT/$host_adapters_ref" | sed '$d')"
-if _hits=$(printf '%s\n' "$common_simplification" | rg_hits 'Claude|Codex|Copilot') && [ "$_hits" -eq 0 ]; then
-  ok "shared simplification method stays host-neutral"
-else
-  ng "shared simplification method stays host-neutral"
-fi
+block_lacks "shared simplification method stays host-neutral" 'Claude|Codex|Copilot' "$common_simplification"
 # 以下這批守衛的 pattern 一律釘「會翻轉的子句」，不釘引入語。教訓是同一個撰寫方法會換
 # 外觀復發：未錨行首行尾 → 只釘句首 → 釘住錯誤引用 → 極性反轉。判準是「把這句改成相反
 # 意思，pattern 還能不能命中」；每一條都做過這個反轉測試才留下。
@@ -551,12 +546,8 @@ has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` �
 # 就無故轉紅。本文的 placeholder `S5 Standards: <PASS|FAIL|…>` 不會誤命中——`<` 卡在中間。
 preflight_section="$(sed -n '/^## 1\. Preflight Ledger/,/^## 2\. Closeout Ledger/p' "$ROOT/$ledgers_ref")"
 for _axis in Standards Spec; do
-  if _axis_hits=$(printf '%s\n' "$preflight_section" | rg_hits "^S5 ${_axis}: (PASS|FAIL|SKIPPED|UNAVAILABLE)") &&
-     [ "$_axis_hits" -gt 0 ]; then
-    ok "Preflight example carries the ${_axis} axis line"
-  else
-    ng "Preflight example carries the ${_axis} axis line"
-  fi
+  block_has "Preflight example carries the ${_axis} axis line" \
+    "^S5 ${_axis}: (PASS|FAIL|SKIPPED|UNAVAILABLE)" "$preflight_section"
 done
 has "Preflight row 6 requires the review range" '^\| 6 \|.*審查對象 range' "$ledgers_ref"
 has "Preflight row 6 requires quoting two baseline titles" \
@@ -587,7 +578,7 @@ if [ "$prompt_lines" -le 2 ]; then
   # range 空或只剩 marker 時 design-notes 這條無從判定。明確標 FAIL 而非略過——略過會讓
   # 總條數隨檔案狀態浮動，看起來像「少跑了一條」而不是「守衛失去依據」。
   ng "baseline design notes live outside the reviewer prompt"
-elif ! _notes_hits=$(printf '%s\n' "$prompt_block" | rg_hits '設計註記'); then
+elif ! _notes_hits=$(rg_hits '設計註記' <<<"$prompt_block"); then
   # 掃描不可信：兩條都無從判定，一律 ng（沿用上一分支的理由）。
   ng "reviewer prompt block is non-empty"
   ng "baseline design notes live outside the reviewer prompt"
@@ -616,12 +607,8 @@ has "Preflight verification records high-risk failure coverage" 'Tests evidence.
 has "Closeout verification records high-risk failure coverage" 'Relevant verification.*High-risk.*failure model.*catching layer' "$ledgers_ref"
 residual_failure_pattern='^\| (8 \| )?\*\*Residual risks\*\*.*failure model'
 lacks "Residual risks does not own failure coverage" "$residual_failure_pattern" "$ledgers_ref"
-if _residual_hits=$(printf '| 8 | **Residual risks** | bad failure model owner |\n' | rg_hits "$residual_failure_pattern") &&
-   [ "$_residual_hits" -gt 0 ]; then
-  ok "Residual risks guard catches its Preflight negative control"
-else
-  ng "Residual risks guard catches its Preflight negative control"
-fi
+block_has "Residual risks guard catches its Preflight negative control" \
+  "$residual_failure_pattern" '| 8 | **Residual risks** | bad failure model owner |'
 
 evidence_fixture="$(mktemp -d -- "${TMPDIR:-/tmp}/evidence-integrity.XXXXXX")" ||
   { ng 'evidence integrity fixture: 無法建立暫存目錄'; exit 1; }
@@ -659,21 +646,9 @@ has "quota fallback requires current-head local and independent gates" 'current 
 has "billing review cannot masquerade as current" 'Billing failure.*review 標 `UNAVAILABLE`.*MUST NOT 當 `CURRENT`' skills/dev-workflow/references/review-triage.md
 has "non-quota CI failures stay blocked" '任一 failed job 跑過 step.*訊息不符.*其他 failure.*probe 不完整.*`FAIL_CI`.*不得 fallback' skills/dev-workflow/references/review-triage.md
 quota_section=$(sed -n '/^2\. \*\*Actions billing／quota/,/^3\. \*\*Bot unavailable/p' "$ROOT/skills/dev-workflow/references/review-triage.md")
-if _hits=$(printf '%s\n' "$quota_section" | rg_hits '^\s*- Hosted CI (是|視為|改寫成|標記為) `?PASS') && [ "$_hits" -eq 0 ]; then
-  ok "quota section forbids hosted CI affirmative PASS"
-else
-  ng "quota section forbids hosted CI affirmative PASS"
-fi
-if _hits=$(printf '%s\n' "$quota_section" | rg_hits '提醒(後)?(就是|是|成為)停止點|提醒後.*(停止|等待)|等待使用者確認') && [ "$_hits" -eq 0 ]; then
-  ok "quota reminder cannot become a stop gate"
-else
-  ng "quota reminder cannot become a stop gate"
-fi
-if _hits=$(printf '%s\n' "$quota_section" | rg_hits '^\s*- Billing failure.*(是|視為|標為|當成) `?CURRENT') && [ "$_hits" -eq 0 ]; then
-  ok "quota section forbids billing review affirmative CURRENT"
-else
-  ng "quota section forbids billing review affirmative CURRENT"
-fi
+block_lacks "quota section forbids hosted CI affirmative PASS" '^\s*- Hosted CI (是|視為|改寫成|標記為) `?PASS' "$quota_section"
+block_lacks "quota reminder cannot become a stop gate" '提醒(後)?(就是|是|成為)停止點|提醒後.*(停止|等待)|等待使用者確認' "$quota_section"
+block_lacks "quota section forbids billing review affirmative CURRENT" '^\s*- Billing failure.*(是|視為|標為|當成) `?CURRENT' "$quota_section"
 
 has "bot fallback is independent and read-only" 'independent read-only reviewer.*current `head\.sha`' skills/dev-workflow/references/review-triage.md
 has "bot transient states cannot fallback" 'REQUESTED.*WAIT_REVIEW.*MUST NOT fallback' skills/dev-workflow/references/review-triage.md
@@ -820,7 +795,7 @@ resolver_output="$(
 )"
 resolver_rc=$?
 if [ "$resolver_rc" -ne 0 ] &&
-   _resolver_hits=$(printf '%s\n' "$resolver_output" | rg_hits 'Codex locked skill missing: missing-skill') &&
+   _resolver_hits=$(rg_hits 'Codex locked skill missing: missing-skill' <<<"$resolver_output") &&
    [ "$_resolver_hits" -gt 0 ]; then
   ok "host resolver fails closed when a locked skill is missing"
 else
@@ -853,7 +828,7 @@ else
 fi
 
 copilot_section="$(sed -n '/^## Copilot$/,$p' "$ROOT/$host_adapters_ref")"
-if copilot_s5_count=$(printf '%s\n' "$copilot_section" | rg_hits '^- S5 ') &&
+if copilot_s5_count=$(rg_hits '^- S5 ' <<<"$copilot_section") &&
    [ "$copilot_s5_count" = 1 ]; then
   ok "Copilot adapter has one canonical S5 directive"
 else
