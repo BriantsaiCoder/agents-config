@@ -54,6 +54,19 @@ _rg_scan() {  # _rg_scan <re|fixed> <pattern> [target] -> stdout=命中行數總
 # 回命中行數；rc 0=掃描可信、2=不可信。這是給「需要精確計數」的呼叫端的公開介面。
 rg_hits() { _rg_scan re "$@"; }
 
+# 回命中的**行內容**（rc 同 rg_hits）。給需要對每一行再做判定的呼叫端——例如
+# 「這行有計數宣稱，但同行是否帶座標」這種 rg 的 Rust regex 沒有 lookahead 做不到的事。
+rg_lines() {  # rg_lines <pattern> <target> -> stdout=命中行；rc 0=可信 2=不可信
+  local out rc=0
+  [ "$#" -eq 2 ] || return 2
+  out=$(rg --no-filename -e "$1" -- "$2") || rc=$?
+  case "$rc" in
+    1) return 0 ;;
+    0) printf '%s\n' "$out" ;;
+    *) return 2 ;;
+  esac
+}
+
 # fixed-string 版目前只有下面兩支 boolean wrapper 在用，不列為公開介面——真的出現
 # 「精確計數 + 字面比對」的外部消費端再提上去。stdin 同理只走 regex 路徑
 # （`scan_*_f` 全部帶檔案 target），所以 _rg_scan 的 stdin 分支不分 mode。

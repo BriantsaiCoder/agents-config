@@ -134,25 +134,82 @@ scan_miss_f 'THIS_MUST_NOT_EXIST_XYZZY' "$scan_probe_file" && ok "scan_miss_f ac
 # 逐檔掃而不是掃目錄：rg_hits 帶 --no-ignore（那是為 scan_miss 的 under-scan 加的），
 # 在這種「命中即違規」的 hit 側會把 .gitignore 掉的檔也算進去——一個 `sed -i.bak` 留下的
 # 編輯器備份就能誤擋，而長期被誤擋的守門遲早被關掉。
-count_claim_tests="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-count_claim_total=0
+#
+# **兩條 pattern，不是一條**：
+#  (1) 「N 條測試全綠」那一族。第一版釘的是字面拼法（半形空格 + 條 + 測試|斷言 + 全綠），
+#      14 種注入只擋下 2 種——量詞、動詞、空格寬度任一換掉就逃逸。放寬成句式類別。
+#      這一族沒有座標例外：句子的資訊量在「全綠」不在 N。
+#  (2) 註解行裡的非零「N PASS」。第一版整條豁免，理由寫「機械上分不開」——**那個理由
+#      被量測否證**：tests/ 內 23 筆分桶後，程式碼 4、`0 PASS / 0 FAIL` 樣板 16、
+#      帶座標的歷史記錄 3，裸宣稱 0。兩道過濾（限註解行 + 非零；排除同行帶 #n／SHA／
+#      ISO 日期）今天的誤報率就是 0。座標豁免用的正是本 repo 既有的慣例。
+# target 含 bin/：issue #89 的動機案例就在 bin/pr-review-gate，只掃 tests/ 等於漏掉源頭。
+count_claim_root="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
+count_claim_bad=""
 count_claim_unscannable=""
-for count_claim_file in "$count_claim_tests"/*.sh "$count_claim_tests"/lib/*.sh; do
+count_claim_scan() {  # count_claim_scan <file>
+  local f="$1" n lines line
+  # (1) 「N …全綠」族，無座標例外
+  if ! n=$(rg_hits '[0-9]+ *[條個支]? *(測試|斷言)? *(全綠|皆綠|全部綠|全部通過|測試通過|斷言通過)' "$f"); then
+    count_claim_unscannable="$count_claim_unscannable $f"
+    return
+  fi
+  [ "$n" -gt 0 ] && count_claim_bad="$count_claim_bad $f(全綠族)"
+  # (2) 註解行的非零 N PASS，同行無座標才算違規
+  if ! lines=$(rg_lines '^[[:space:]]*#.*[1-9][0-9]* PASS' "$f"); then
+    count_claim_unscannable="$count_claim_unscannable $f"
+    return
+  fi
+  while [ -n "$lines" ]; do
+    line=${lines%%$'\n'*}
+    if [ -n "$line" ] &&
+       ! printf '%s' "$line" | rg -q '#[0-9]+|[0-9a-f]{7,}|20[0-9]{2}-[0-9]{2}-[0-9]{2}'; then
+      count_claim_bad="$count_claim_bad $f(裸 N PASS)"
+    fi
+    if [ "$lines" = "$line" ]; then lines=; else lines=${lines#*$'\n'}; fi
+  done
+}
+for count_claim_file in "$count_claim_root"/tests/*.sh "$count_claim_root"/tests/lib/*.sh \
+  "$count_claim_root"/bin/*; do
   [ -f "$count_claim_file" ] || continue
   case "$count_claim_file" in *.bak*) continue ;; esac
-  if ! count_claim_n=$(rg_hits '[0-9]+ 條(測試|斷言)全綠' "$count_claim_file"); then
-    count_claim_unscannable="$count_claim_unscannable $count_claim_file"
-    continue
-  fi
-  count_claim_total=$((count_claim_total + count_claim_n))
+  count_claim_scan "$count_claim_file"
 done
 if [ -n "$count_claim_unscannable" ]; then
   ng "套件總分 lint 掃描不可信：$count_claim_unscannable"
-elif [ "$count_claim_total" -eq 0 ]; then
-  ok "測試檔註解未寫死套件總分"
+elif [ -z "$count_claim_bad" ]; then
+  ok "測試與 bin 的註解未寫死套件總分"
 else
-  ng "測試檔註解寫死了套件總分（改成不含計數的形式）：$count_claim_total 處"
+  ng "註解寫死了套件總分（改成不含計數或加座標）：$count_claim_bad"
 fi
+
+# 計數宣稱 lint 的 control。fixture 放 $scratch 而不是 tests/ 底下——放那裡會被 lint
+# 自己掃到。known-bad 用 14 種注入裡逃過第一版的其中兩種，證明放寬後的 pattern 抓得到。
+count_claim_fixture="$scratch/count-claim"
+mkdir -p "$count_claim_fixture"
+# fixture 內容用組合而不是字面：完整字面寫在本檔裡的話，lint 掃自己就會命中
+# （放寬 pattern 之後實測踩到）。同 lacks_sentinel 的手法。
+count_claim_kw='測試'
+printf '# 共 375 條%s通過\n' "$count_claim_kw" > "$count_claim_fixture/bad1.sh"
+printf '# 實測 89 %s / 0 FAIL\n' PASS > "$count_claim_fixture/bad2.sh"
+printf '# 實測 89 %s / 0 FAIL（PR #100）\n' PASS > "$count_claim_fixture/good.sh"
+count_claim_probe() {  # count_claim_probe <file> -> 0=判為違規
+  local saved_bad="$count_claim_bad" verdict=1
+  count_claim_bad=""
+  count_claim_scan "$1"
+  [ -n "$count_claim_bad" ] && verdict=0
+  count_claim_bad="$saved_bad"
+  return "$verdict"
+}
+count_claim_probe "$count_claim_fixture/bad1.sh" &&
+  ok "計數 lint 抓得到「共 N 條測試通過」（第一版逃逸的句式）" ||
+  ng "計數 lint 抓得到「共 N 條測試通過」（第一版逃逸的句式）"
+count_claim_probe "$count_claim_fixture/bad2.sh" &&
+  ok "計數 lint 抓得到裸的 N PASS 註解" ||
+  ng "計數 lint 抓得到裸的 N PASS 註解"
+count_claim_probe "$count_claim_fixture/good.sh" &&
+  ng "計數 lint 對帶座標的 N PASS 誤報" ||
+  ok "計數 lint 對帶座標的 N PASS 不誤報" 
 
 if AGENTS_HOME="$AGENTS" "$AGENTS/bin/agents-sync" --check >/dev/null 2>&1; then
   ok "shared skills source"
@@ -258,8 +315,9 @@ if HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
   "$AGENTS/bin/agents-sync" --bootstrap >/dev/null 2>&1 &&
   HOME="$scratch/home" AGENTS_HOME="$AGENTS" \
   "$AGENTS/bin/agents-sync" --doctor >/dev/null 2>&1; then
-  # 兩個計數都靠 find。工具壞掉時兩邊都變空字串，`=` 判相等 -> **假綠**——這是五個
-  # 計數站點裡唯一連 `[ "" -eq 0 ]` 的報錯都擋不住的（它用字串比較）。
+  # 兩個計數都靠 find。工具壞掉時 `find | wc -l` 兩邊都被補成 `"0"`（不是空字串），
+  # 所以**換掉比較運算子救不了**——`=` 與 `-eq` 對兩個 "0" 一樣判相等。真正修掉它的是
+  # find_count 把「工具壞了」與「真的是 0」分開，判別必須在比較之前。
   if ! source_count=$(find_count "$find_errfile" "$AGENTS/skills" -mindepth 1 -maxdepth 1 -type d \
        ! -path "$AGENTS/skills/.claude"); then
     ng "skill-link 來源計數不可信（find 失敗或有讀不到的路徑）"
@@ -440,7 +498,7 @@ fi
 if ! bak_count=$(find_count "$find_errfile" "$AGENTS" -name '*.bak*' \
   -not -path '*/.git/*' -not -path '*/attic/*' -not -path '*/backups/*' \
   -not -name '.*'); then
-  ng ".bak 掃描不可信（find 失敗或有讀不到的路徑）"
+  ng ".bak 掃描不可信（find 失敗或有讀不到的路徑）：$(head -1 "$find_errfile" 2>/dev/null)"
 elif [ "$bak_count" -eq 0 ]; then
   ok "no manual .bak under ~/.agents"
 else

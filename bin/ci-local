@@ -301,7 +301,7 @@ EOF
   ran=$((ran + 1))
   if [ "$rc" -eq 0 ]; then
     printf '[%2d] PASS  %-52s %ss\n' "$total" "$label" "$dur"
-    # PASS 也印最後一行。測試腳本的收尾行帶的是 case 數（「68 PASS / 0 FAIL」、
+    # PASS 也印最後一行。測試腳本的收尾行帶的是 case 數（「N PASS / M FAIL」、
     # 「45 條絆線全部未觸發」），那是唯一不會過期的條數來源——step 名稱曾寫死條數，
     # 實測漂移過兩次（版本絆線 28→45、guard parity 11→13），已於此次一併移除。
     # 若這裡只在 FAIL 印，條數在本機這個 surface 就完全消失了。
@@ -379,7 +379,7 @@ if [ -d "$AGENTS/tests" ]; then
     dur=$(( $(date +%s) - start ))
     lo_ran=$((lo_ran + 1))
     # 與主迴圈同一分工：PASS 只印收尾條數行，FAIL 印 tail -12。共用 tail -1 會把
-    # 失敗原因整段切掉——ownership gate 的收尾行是「13 PASS / 1 FAIL」，真正要看的
+    # 失敗原因整段切掉——ownership gate 的收尾行是「N PASS / M FAIL」形狀，真正要看的
     # 那條路徑在它上面。
     if [ "$rc" -eq 0 ]; then
       printf '     PASS  %-46s %ss\n' "$b" "$dur"
