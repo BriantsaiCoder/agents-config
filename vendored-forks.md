@@ -33,7 +33,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
 | `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
-| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; tree SHA-256 `78ae14e7f5ff0338ed57ccb81f392a06b82b93b8a6ae7c1624e265949a172308` | **Active** |
+| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); tree SHA-256 `d6a7a17ee93b7e83e88807c9202016be7182d8f815a5e943aadf50166d941b09` | **Active** |
 | `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Active** |
 
 <!-- fork-index:end -->
@@ -541,7 +541,15 @@ Man …) and covers none of DI lifetime mismatch, middleware order, `useEffect` 
 leaking across a boundary; on the Claude path those reach a stack-specialist agent through S0
 routing, which is not this brief. Closing either is its own decision, not a side effect of this one.
 
-Approved tree SHA-256: `78ae14e7f5ff0338ed57ccb81f392a06b82b93b8a6ae7c1624e265949a172308`.
+2026-08-25 (issue #90) — pin the review to an immutable SHA snapshot instead of a moving `HEAD`.
+Step 1 resolves `HEAD` once and builds the snapshot with `git worktree add --detach`; both step-4
+briefs carry the SHA, the snapshot path, and the instruction to make git-capable copies rather
+than `cp -r`; step 5 reports the reviewed SHA. `git archive | tar` was rejected as the snapshot
+mechanism because it exits 0 on a bad ref and leaves an empty directory — both axes would then
+review nothing and both return PASS. Reapply on upstream update: without the pin, a review that
+runs for tens of minutes silently retargets whenever the branch moves.
+
+Approved tree SHA-256: `d6a7a17ee93b7e83e88807c9202016be7182d8f815a5e943aadf50166d941b09`.
 Driving rules: `[S5-4]` and `[S5-3]` in `skills/dev-workflow/SKILL.md`.
 
 On upstream update, drop this fork if the new step-4 briefs carry no output cap and step 5 already

@@ -18,9 +18,14 @@ The issue tracker should have been provided to you — run `/setup-matt-pocock-s
 
 Whatever the user said is the fixed point — a commit SHA, branch name, tag, `main`, `HEAD~5`, etc. If they didn't specify one, ask for it.
 
-Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
+Resolve `HEAD` to a SHA first (`review_sha=$(git rev-parse HEAD)`), then capture the diff command once: `git diff <fixed-point>...<review_sha>` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..<review_sha> --oneline`.
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here — not inside two parallel sub-agents.
+
+Also confirm `git status --porcelain` is empty. The snapshot below is built from a commit, so
+uncommitted work is silently absent from it — and this skill advertises reviewing
+work-in-progress changes. Dirty tree means commit first (or review the dirty tree by the
+`[S5-2]` package route instead); it does not mean pinning a SHA and hoping.
 
 **Resolve `HEAD` to a SHA and pin an immutable snapshot before spawning anything.** A review
 runs for tens of minutes; if you keep working on the branch meanwhile — and in a multi-round
@@ -30,19 +35,31 @@ a sub-agent spent effort deciding whether a line-number mismatch was a tool bug 
 moving under it, and the worst case is an axis returning PASS on content that no longer exists.
 
 ```
-review_sha=$(git rev-parse HEAD)
-git archive "$review_sha" | tar -x -C <snapshot-dir>
+review_sha=$(git rev-parse HEAD) &&
+git worktree add --detach <snapshot-dir> "$review_sha"
 ```
 
-Pass **`<fixed-point>...<review_sha>`** to the sub-agents, never `...HEAD`. Hand them the
-snapshot path too. Two consequences to state in both briefs:
+`git worktree add --detach` rather than `git archive | tar`, for two reasons. It fails loudly on
+a bad ref, where the pipeline does not: `git archive <bad-ref> | tar -x -C <existing-dir>` exits
+**0** and leaves an empty directory, so both sub-agents would review nothing and both return
+PASS. And the result **is** a git repository, so checks that shell out to git run there — an
+extracted archive is not one, and every such check fails inside it for reasons that have nothing
+to do with the code under review.
 
-- **All ablation runs on the copy, never the live worktree.** A reviewer mutating the tree the
-  other axis is reading corrupts both.
-- **`git archive` copies are not git repositories.** Anything that shells out to git fails there
-  — in this repo `bin/ci-local` picks up two extra environment-only FAILs (`INT-10 Git pre-push
-  safety rail`, `Stage B2 skill checkpoint`). Ablation on the copy, `ci-local` in a real worktree
-  (`git worktree add`, or `git clone --local --no-hardlinks` if the sandbox blocks hardlinks).
+If the sandbox denies writes to the source repo's `.git/worktrees`, fall back to
+`git clone --local --no-hardlinks <repo> <snapshot-dir> && git -C <snapshot-dir> checkout
+--detach "$review_sha"`. `--no-hardlinks` is not optional where hardlinks are blocked: with an
+explicit `--local`, git dies instead of silently degrading to a copy.
+
+The other way to stop the tree moving is to freeze the branch until both axes finish. Pinning
+is preferred because it costs no serialisation, and it subsumes the freeze's side benefit —
+a reviewer reading a pinned snapshot never sees the main context's in-flight ablation edits
+at all, so there is nothing to misread as an uncommitted change.
+
+Pass **`<fixed-point>...<review_sha>`** to the sub-agents, never `...HEAD`, and hand them the
+snapshot path. Put the snapshot **outside the repo** (`$TMPDIR` or a scratch dir) — a copy
+created inside the worktree shows up in `git status` and, in repos that fingerprint directory
+trees, changes the very hashes a checker is verifying.
 
 ### 2. Identify the spec source
 
@@ -95,13 +112,13 @@ Both briefs must carry the pinned SHA and the snapshot path from step 1.
 
 - The full diff command (`<fixed-point>...<review_sha>`, not `...HEAD`), the commit list, and the snapshot path.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full — the sub-agent has no other access to it.
-- The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); (b) any baseline smell you spot: name it and quote the hunk; (c) performance regressions the diff introduces — N+1, full scans, blocking calls on a hot path, worse algorithmic complexity, needless repeated work; and (d) correctness defects — boundary conditions, null/empty handling, off-by-one, missing error handling, wrong state transitions. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Report every hit, nitpicks included; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters. You are reviewing an immutable snapshot: the assignment names an explicit SHA and a read-only copy path. Do every ablation on your own `cp -r` of that copy — the live worktree is off limits, another axis is reading it. State the SHA you reviewed in your report so a stale result is identifiable later."
+- The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); (b) any baseline smell you spot: name it and quote the hunk; (c) performance regressions the diff introduces — N+1, full scans, blocking calls on a hot path, worse algorithmic complexity, needless repeated work; and (d) correctness defects — boundary conditions, null/empty handling, off-by-one, missing error handling, wrong state transitions. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Report every hit, nitpicks included; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters. You are reviewing an immutable snapshot: the assignment names an explicit SHA and a read-only copy path. Do every ablation on your own copy of it — the live worktree is off limits, another axis is reading it, and mutating it corrupts both reviews. If a check has to shell out to git, make that copy with `git worktree add --detach` or `git clone --local --no-hardlinks` rather than a plain `cp -r`, so the copy is a real repository. State the SHA you reviewed in your report so a stale result is identifiable later."
 
 **Spec sub-agent prompt** — include:
 
 - The diff command (pinned to `<review_sha>`), the commit list, and the snapshot path.
 - The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Report every hit; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters. You are reviewing an immutable snapshot: the assignment names an explicit SHA and a read-only copy path. Do every ablation on your own `cp -r` of that copy — the live worktree is off limits, another axis is reading it. State the SHA you reviewed in your report so a stale result is identifiable later."
+- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Report every hit; raise anything you are unsure about as `question:` rather than dropping it. Tag each finding with a severity and a confidence. No word or finding-count limit — do not filter or truncate; the caller filters. You are reviewing an immutable snapshot: the assignment names an explicit SHA and a read-only copy path. Do every ablation on your own copy of it — the live worktree is off limits, another axis is reading it, and mutating it corrupts both reviews. If a check has to shell out to git, make that copy with `git worktree add --detach` or `git clone --local --no-hardlinks` rather than a plain `cp -r`, so the copy is a real repository. State the SHA you reviewed in your report so a stale result is identifiable later."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
@@ -111,7 +128,7 @@ Present the two reports under `## Standards` and `## Spec` headings, verbatim or
 
 You are the filter the sub-agent briefs defer to, and it operates **within one axis only**: order that axis's findings by the severity and confidence the sub-agent tagged, and if you drop or fold any of them, say which and why in that axis's section. Silently discarding a reported finding defeats the point of removing the output cap.
 
-End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes — that's the reranking the separation exists to prevent.
+End with a one-line summary: the pinned `<review_sha>` both axes reviewed, total findings per axis, and the worst issue _within each axis_ (if any). Without the SHA the whole pin is unauditable at the last step. Don't pick a single winner across axes — that's the reranking the separation exists to prevent.
 
 ## Why two axes
 
