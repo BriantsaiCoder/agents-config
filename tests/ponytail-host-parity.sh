@@ -39,7 +39,17 @@ check_anchor() { # $1=label $2=file $3=^ separated literal clauses
     clause=${rest%%^*}
     if [ -z "$clause" ]; then
       missing=$((missing + 1))
-    elif ! awk -v wanted="$clause" '
+    # 這個 pin 是斷言能不能運作的前提，不是保險。macOS 的 /usr/bin/awk（20200816）用
+    # strcoll 比字串，而 macOS 的 strcoll 把 CJK code point 視為 ignorable：比較只剩非 CJK
+    # 骨架，於是只差在中文的兩條 anchor 一律判等（`注入` == `等風格注入`），骨架有差才正常
+    # （`abc中` != `abd文`）。這也是為什麼 selftest 的 negative control 一直照常紅——它們差在
+    # ASCII；而真正的 anchor drift 只差 CJK，斷言對它完全是 no-op。2026-08-27 實測：anchor
+    # 明明不存在於 CLAUDE.md 時仍報全 PASS。失效方向只朝「更綠」，gate 抓不到自己壞掉，
+    # 所以 selftest 另備一條 CJK-only 變異當中止條件（見 cjk_drift，[evidence-integrity.md]）。
+    # 三種 pin 實測（比對／[；。] 切段／可否被環境覆蓋）：LC_COLLATE=C 前兩項對，但被環境
+    # 既有的 LC_ALL 蓋掉；LC_ALL=C 比對對、切段壞（退化成 byte class，切進多位元組字中間）；
+    # LC_ALL=C.UTF-8 三項全對，故取之。Linux 的 gawk/mawk 走 strcmp，本來就不受影響。
+    elif ! LC_ALL=C.UTF-8 awk -v wanted="$clause" '
       {
         count=split($0, parts, /[；。]/)
         for (i=1; i<=count; i++) {
@@ -237,15 +247,24 @@ expect_fixture_failure() { # $1=root $2=expected output
 }
 
 selftest() {
+  # 三個 anchor 值在本函式共出現 9 次（host fixture ×2 輪、合成 mapping ×1、negative control）。
+  # 集中成變數：改 host-adapters.md 時只動這裡。2026-08-27 就是漏了合成 mapping 那一處，
+  # 而失敗訊息只說 missing N literal clauses，不會指出是哪一份手抄本過期。
+  # 保持手抄而不從 host-adapters.md 衍生是刻意的：第一輪 fixture_check 用的是**真** mapping，
+  # 這三個值是對它的獨立期望；衍生掉就等於把那個檢查刪了。
   local scratch codex_plugin rc=0 out skill_body host test_rc
+  local claude_fx='ponytail 等風格注入=通用慣例'
+  local codex_fx='ponytail=通用慣例'
+  local copilot_fx='ponytail=慣例'
+  local cjk_drift='ponytail=特殊慣例'
   scratch=$(mktemp -d "${TMPDIR:-/tmp}/ponytail-host-parity.XXXXXX") || return 1
   selftest_scratch="$scratch"
   trap cleanup_selftest EXIT
   codex_plugin="$scratch/codex/plugins/cache/ponytail/ponytail/test-version"
   for host in claude codex copilot; do mkdir -p "$scratch/$host"; done
-  printf 'ponytail 注入=通用慣例\n' > "$scratch/claude/CLAUDE.md"
-  printf 'ponytail=通用慣例\n' > "$scratch/codex/AGENTS.md"
-  printf 'ponytail=慣例\n' > "$scratch/copilot/copilot-instructions.md"
+  printf '%s\n' "$claude_fx" > "$scratch/claude/CLAUDE.md"
+  printf '%s\n' "$codex_fx" > "$scratch/codex/AGENTS.md"
+  printf '%s\n' "$copilot_fx" > "$scratch/copilot/copilot-instructions.md"
   printf '{"enabledPlugins":{"ponytail@ponytail":true}}\n' > "$scratch/claude/settings.json"
   printf '{"enabledPlugins":{"ponytail@ponytail":true}}\n' > "$scratch/copilot/settings.json"
   mkdir -p "$scratch/claude/plugin/skills/ponytail" "$codex_plugin/skills/ponytail" \
@@ -274,7 +293,8 @@ ACTIVE EVERY RESPONSE. No drift.
     rc=1
   fi
 
-  printf 'CAP-PONYTAIL\tfixture\tponytail 注入=通用慣例^literal[clause]\tponytail=通用慣例^literal[clause]\tponytail=慣例^literal[clause]\n' > "$scratch/mapping.tsv"
+  printf 'CAP-PONYTAIL\tfixture\t%s^literal[clause]\t%s^literal[clause]\t%s^literal[clause]\n' \
+    "$claude_fx" "$codex_fx" "$copilot_fx" > "$scratch/mapping.tsv"
   printf 'literal[clause]；\n' >> "$scratch/claude/CLAUDE.md"
   printf 'literal[clause]；\n' >> "$scratch/codex/AGENTS.md"
   printf 'literal[clause]；\n' >> "$scratch/copilot/copilot-instructions.md"
@@ -283,9 +303,9 @@ ACTIVE EVERY RESPONSE. No drift.
     printf '%s\n' "$out"
     rc=1
   fi
-  printf 'ponytail 注入=通用慣例\n' > "$scratch/claude/CLAUDE.md"
-  printf 'ponytail=通用慣例\n' > "$scratch/codex/AGENTS.md"
-  printf 'ponytail=慣例\n' > "$scratch/copilot/copilot-instructions.md"
+  printf '%s\n' "$claude_fx" > "$scratch/claude/CLAUDE.md"
+  printf '%s\n' "$codex_fx" > "$scratch/codex/AGENTS.md"
+  printf '%s\n' "$copilot_fx" > "$scratch/copilot/copilot-instructions.md"
 
   mv "$codex_plugin" "$codex_plugin.missing"
   out=$(fixture_check "$scratch" 2>&1); test_rc=$?
@@ -300,9 +320,17 @@ ACTIVE EVERY RESPONSE. No drift.
   fi
   mv "$codex_plugin.missing" "$codex_plugin"
 
-  printf 'MUST NOT treat ponytail=通用慣例；\n' > "$scratch/codex/AGENTS.md"
+  printf 'MUST NOT treat %s；\n' "$codex_fx" > "$scratch/codex/AGENTS.md"
   expect_fixture_failure "$scratch" 'FAIL Codex Ponytail instruction anchor missing' || rc=1
-  printf 'ponytail=通用慣例\n' > "$scratch/codex/AGENTS.md"
+  printf '%s\n' "$codex_fx" > "$scratch/codex/AGENTS.md"
+
+  # check_anchor 的 locale pin 的中止條件。上一條 control 差在 ASCII（`MUST NOT treat `），
+  # pin 被拿掉時它仍會正確紅，所以守不住 pin 本身——2026-08-27 的 anchor drift 就是這樣
+  # 在全綠底下溜過去的。$cjk_drift 與 $codex_fx 的 ASCII 骨架完全相同、只差中文，於是
+  # 沒有 pin 時 strcoll 判它們相等、本條轉綠。實測：拿掉 pin → 本條 FAIL；有 pin → PASS。
+  printf '%s\n' "$cjk_drift" > "$scratch/codex/AGENTS.md"
+  expect_fixture_failure "$scratch" 'FAIL Codex Ponytail instruction anchor missing' || rc=1
+  printf '%s\n' "$codex_fx" > "$scratch/codex/AGENTS.md"
 
   printf '%s\n' "${skill_body/ACTIVE EVERY RESPONSE/INACTIVE EVERY RESPONSE}" > "$codex_plugin/skills/ponytail/SKILL.md"
   expect_fixture_failure "$scratch" 'FAIL Codex Ponytail skill missing 1 semantic anchors' || rc=1
