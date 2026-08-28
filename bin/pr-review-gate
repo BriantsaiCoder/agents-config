@@ -485,3 +485,10 @@ fi
 
 printf 'STATE=PASS pr=%s head=%s ci=%s review=CURRENT unresolved=0 suppressed=%s url=%s\n' \
   "$pr" "$head" "$ci" "$suppressed" "$url"
+# 明確 exit 0，不要靠結尾語句的狀態繼承。本檔的每一個非 PASS 出口都寫死了退出碼
+# （10/11/12/20/30/64），只有 PASS 這條先前是隱含的——在檔尾加任何一行都會改變它。
+# 那不是理論風險：~/.claude/hooks/guard-pr-merge.sh 自 2026-08-28 起把「stdout 宣稱可放行
+# 但 rc 不是 0 或 12」當成矛盾而拒絕合併，所以這裡的隱含狀態一旦被改動，後果是**每一次
+# 合法 merge 都被擋**，而 deny 訊息會叫維護者去查「gate 的退出碼」，不是「檔案最後一行」。
+# 退出碼是本檔對外契約的一部分，該和其他出口一樣寫出來。
+exit 0
