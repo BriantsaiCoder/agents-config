@@ -514,6 +514,7 @@ postgresql-optimization
 prototype
 react-best-practices
 react-router-framework-mode
+speak-human-tw
 tailwind-v4-shadcn
 teach
 testing-library-react-best-practices
@@ -527,7 +528,8 @@ LIST
 )
 # 五類：stack skill、kernel 自身、由 upstream／使用者明示進入的 Matt skill、由
 # ui-ux-pro-max own continuation 的 web-design-reviewer，以及靠精準 description model-invoke
-# 的 specialist（test-gap-analysis）。
+# 的 specialist（test-gap-analysis；speak-human-tw 同類，但它的 description 精準度未經
+# skills/auditing-skill-folder/evals/cases.jsonl 量測，分類是判斷不是實證）。
 # 用純 bash glob 迭代，對齊 tests/vendored-detection.sh:306 的既有寫法：
 # `ls | xargs basename` 配 `for s in $(...)` 會經過 word splitting，目錄名含空白或
 # 換行時拆壞，且 glob 未命中時會把字面 pattern 當成一個項目。`[ -f "$sd/SKILL.md" ]`
@@ -737,6 +739,15 @@ done < "$B2_SKILLS_LOCK"
 #   dotnet-testing-best-practices/references/coverage-crap.md  新檔，承接 crap-score：CRAP 公式、
 #                                      risk band、反解 cov_needed 及其 comp≥15 無解的邊界，以及
 #                                      「絕不估算覆蓋率」的 fallback 階梯。Rule 12 的量化面。
+# 2026-08-28 speak-human-tw 逐檔列舉，與 auditing-skill-folder 同理由。第一版寫成
+# `skills/speak-human-tw/*`，理由是「漂移由 vendored-skills.lock 雙 SHA 釘死，逐檔不多守住
+# 任何東西」——S5 Standards 軸用 ablation 推翻：在 payload 丟一個新檔、同一個 commit 把兩個
+# SHA 一起更新，本測試與 vendored-detection.sh 全綠；只拿掉那行萬用字元才會紅。lock 的雙 SHA
+# 守的是「內容有沒有變」，守不住「有沒有人看過這個新檔」，而後者正是這道閘的用途。既有的目錄
+# 萬用字元（dotnet-find-bugs/*、pinia/* 等）全是 :723 那批**已退役**路徑，不會再變，判準不轉移
+# 到 live skill。
+# payload 不是整個 upstream repo：27 個檔只取 10 個，取捨規則記在 vendored-skills.lock 的檔頭
+# 註解（SKILL.md 相對引用的遞移閉包 + LICENSE）。
 while IFS= read -r changed; do
   case "$changed" in
     skills/agent-browser/SKILL.md | \
@@ -848,6 +859,16 @@ while IFS= read -r changed; do
     skills/shared-security-review/references/vulnerable-packages.md | \
     skills/shared-security-review/references/workflow.md | \
     skills/sdd/SKILL.md | \
+    skills/speak-human-tw/LICENSE | \
+    skills/speak-human-tw/SKILL.md | \
+    skills/speak-human-tw/evals/benchmark.md | \
+    skills/speak-human-tw/evals/run-eval.md | \
+    skills/speak-human-tw/references/examples.md | \
+    skills/speak-human-tw/references/humanize.md | \
+    skills/speak-human-tw/references/patterns.md | \
+    skills/speak-human-tw/references/protected-list.md | \
+    skills/speak-human-tw/references/scenes.md | \
+    skills/speak-human-tw/references/taiwan-localization.md | \
     skills/testing-library-react-best-practices/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/SKILL.md | \
