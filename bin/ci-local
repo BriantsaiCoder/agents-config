@@ -156,6 +156,67 @@ Y
     *)            printf '  PASS  已被 ci.yml 引用者不得再進 local-only\n'; P=$((P+1)) ;;
   esac
 
+  # job-level env。用自訂 sentinel 而非 LC_ALL：本機環境自己就可能帶著 LC_ALL，拿它當
+  # 探針的話「有 env」那條會在實作根本沒解析時照樣綠。sentinel 不可能來自環境。
+  mk jobenv <<'Y'
+jobs:
+  verify:
+    env:
+      CI_LOCAL_ENV_PROBE: sentinel-9f3
+    steps:
+      - name: envstep
+        run: printf 'probe=%s\n' "${CI_LOCAL_ENV_PROBE:-unset}"
+Y
+  o=$(run_st jobenv)
+  hasq "job-level env 傳到 step" "$o" "probe=sentinel-9f3"
+
+  # 反向：沒有 env 的 workflow 不得被憑空注入。兩個變數各守一件事——sentinel 守「不該注入
+  # 的東西沒被注入」，LC_ALL 守「不是硬編一份 locale 冒充解析」。
+  #
+  # LC_ALL 那條必須把父行程的值清空才有鑑別力：CI 上父行程本來就是 C.UTF-8（ci.yml 設的），
+  # 不清空的話硬編 C.UTF-8 的實作在 CI 永遠假綠。清空後子行程看到的只可能來自本檔注入。
+  #
+  # 一開始只探 sentinel，那是不夠的：硬編 locale 的實作不會去設 sentinel，所以這條照樣綠。
+  # 2026-08-28 S5 兩軸獨立指出這點——原註解宣稱它守著「解析而非另抄一份」，而實測只有
+  # 「把解析整段換成硬編」會讓**正向**那條紅，硬編與解析並存則兩條全綠。
+  mk nojobenv <<'Y'
+jobs: {verify: {steps: [{name: envstep, run: "printf 'probe=%s lc=%s\\n' \"${CI_LOCAL_ENV_PROBE:-unset}\" \"${LC_ALL:-unset}\""}]}}
+Y
+  o=$(LC_ALL= LANG= run_st nojobenv)
+  hasq "無 env 的 workflow 不被注入 sentinel" "$o" "probe=unset"
+  hasq "無 env 的 workflow 不被注入 locale"   "$o" "lc=unset"
+
+  # local-only gate 的套用點。主迴圈與 local-only 迴圈是兩個各自獨立的 env 套用處，上面
+  # 三條只覆蓋主迴圈——2026-08-28 S5 實測：只從 local-only 那一處把 env 拿掉，全套仍 29/0。
+  # mk 只建 .github/workflows/，不建 tests/，所以 run_st 從來不會進 local-only 分支；要驗
+  # 這一處就得用 mkt 另外種一支無執行點的測試。
+  mk loenv <<'Y'
+jobs:
+  verify:
+    env:
+      CI_LOCAL_ENV_PROBE: sentinel-lo7
+    steps:
+      - name: ok
+        run: "true"
+Y
+  mkt loenv orphan.sh 'printf "lo_probe=%s\n" "${CI_LOCAL_ENV_PROBE:-unset}"'
+  o=$(run_st loenv)
+  hasq "local-only gate 也套 job env" "$o" "lo_probe=sentinel-lo7"
+
+  # 非字串 env 值：明講而不猜。沒有這條，把 die 換成任一種猜測式字串化都不會有測試轉紅。
+  mk badenv <<'Y'
+jobs:
+  verify:
+    env:
+      FLAG: yes
+    steps:
+      - name: ok
+        run: "true"
+Y
+  o=$(run_st badenv); rc=$?
+  hasq "非字串 env 值明講而不猜" "$o" "不是字串"
+  chk  "非字串 env → exit=2（不是乾淨的通過）" 2 "$rc"
+
   printf '總計：PASS=%s FAIL=%s\n' "$P" "$F"
   # 「至少跑到了」自證：chk/hasq 全數沒執行時上面會印 PASS=0 FAIL=0 卻 exit 0，
   # 那正是本檔開頭說的「一個永遠回綠的 CI 包裝器比沒有更糟」（2026-08-02 稽核
@@ -191,7 +252,8 @@ else
 fi
 export GITHUB_WORKSPACE="$AGENTS" RUNNER_TEMP
 STEPS_FILE=$(mktemp "$RUNNER_TEMP/steps.XXXXXX") || die "mktemp 失敗"
-cleanup() { rm -f "$STEPS_FILE"; [ "$OWN_TEMP" -eq 1 ] && rm -rf "$RUNNER_TEMP"; }
+ENV_FILE=$(mktemp "$RUNNER_TEMP/env.XXXXXX") || die "mktemp 失敗"
+cleanup() { rm -f "$STEPS_FILE" "$ENV_FILE"; [ "$OWN_TEMP" -eq 1 ] && rm -rf "$RUNNER_TEMP"; }
 trap cleanup EXIT
 
 # 每筆「name<TAB>run」以 NUL 結尾（含最後一筆），因為 run 是多行 script。
@@ -219,6 +281,48 @@ for s in steps:
 PY
 [ $? -eq 0 ] || die "解析 $WORKFLOW 的 job '$JOB' 失敗"
 [ -s "$STEPS_FILE" ] || die "job '$JOB' 沒有任何步驟——這不是乾淨的通過"
+
+# job-level env 同樣用解析而非另抄一份，理由與 steps 相同：抄一份就是第二個真實來源。
+#
+# 為什麼要有這一段（2026-08-28）：ci.yml 自 2026-08-02 起把 locale baseline 釘為
+# C.UTF-8，並用 25 行寫明「runner 預設值變動會改變一整類缺陷會不會在 CI 發作」。本檔
+# 複製了 step 清單卻沒複製那個 env，於是「跑 CI 跑的東西」在 locale 這一維上不成立。
+# 這一維會出什麼事，2026-08-27 剛付過代價：macOS 的 awk 以 strcoll 比字串，而 strcoll 把
+# CJK 視為 ignorable，於是 tests/ponytail-host-parity.sh 的中文 anchor 斷言在預設 locale 下
+# 是 no-op——本檔報全綠、推上去 CI 才紅。失效方向只朝「更綠」，本檔自己抓不到。
+#
+# 那支測試已在 1db1938（本 branch 的 base）加了 per-invocation 的 LC_ALL=C.UTF-8 pin，所以
+# 今天沒有任何 local-only 測試是 locale-dependent 的——2026-08-28 S5 逐支掃過，其餘的
+# locale-sensitive 比對兩側都是 ASCII 字面。這一段因此是 prophylaxis 而非在修一個活的缺陷：
+# 「跑 CI 跑的東西」是本檔存在的理由，它不該取決於這週剛好有沒有消費者需要它。下一支中文
+# 斷言不會來問過我們才加。
+#
+# 不硬編 C.UTF-8：ci.yml 哪天改立場，這裡要跟著改而不是靜默分歧。解析不到 env 就不套
+# （空陣列），與 ci.yml 沒有 env 時的行為一致。
+python3 - "$WORKFLOW" "$JOB" > "$ENV_FILE" <<'PY'
+import sys, yaml
+path, job = sys.argv[1], sys.argv[2]
+with open(path) as f:
+    doc = yaml.safe_load(f)
+try:
+    env = doc["jobs"][job].get("env") or {}
+except (KeyError, TypeError):
+    sys.exit("job not found: " + job)
+for k, v in env.items():
+    # 非字串就停，不猜。yaml.safe_load 走 YAML 1.1：`yes`/`on` → True、`1.10` → 1.1、
+    # `0755` → 493、`12:30` → 750（sexagesimal）、`null` → None，而 Actions 的字串化規則
+    # 與這些都不一致。猜一套轉換就是把「第二個真實來源」從 step 清單搬進型別系統——本檔
+    # 整個設計就是在防這件事。同 provision_tools 對無法對應的工具名的處理：明講而不猜，
+    # 因為猜錯的方向是「以為驗過了」。ci.yml 端把值加引號即可。
+    if not isinstance(v, str):
+        sys.exit("job env %s 的值經 YAML 解析後不是字串（得到 %r）；請在 ci.yml 用引號括住它" % (k, v))
+    sys.stdout.write("%s=%s\0" % (k, v))
+PY
+[ $? -eq 0 ] || die "解析 $WORKFLOW 的 job '$JOB' env 失敗"
+
+# NUL 分隔讀進陣列：env 值可以含空白。bash 3.2 沒有 readarray -d，用 while+read -d ''。
+JOB_ENV=()
+while IFS= read -r -d '' kv; do JOB_ENV+=("$kv"); done < "$ENV_FILE"
 
 # provision_tools <run-body> -> 該步驟會提供的執行檔名，一行一個。
 # apt 的套件名不等於執行檔名（ripgrep 裝出來的是 rg），所以需要一張小對照表。表要小、要有
@@ -296,7 +400,8 @@ EOF
   fi
 
   start=$(date +%s)
-  out=$(cd "$AGENTS" && bash -c "$body" 2>&1); rc=$?
+  # ${ARR[@]+"${ARR[@]}"}：bash 3.2 在 set -u 下對空陣列展開會報 unbound。
+  out=$(cd "$AGENTS" && env ${JOB_ENV[@]+"${JOB_ENV[@]}"} bash -c "$body" 2>&1); rc=$?
   dur=$(( $(date +%s) - start ))
   ran=$((ran + 1))
   if [ "$rc" -eq 0 ]; then
@@ -375,7 +480,9 @@ if [ -d "$AGENTS/tests" ]; then
       printf '     RUN   %s\n' "$b"; lo_ran=$((lo_ran + 1)); continue
     fi
     start=$(date +%s)
-    out=$(cd "$AGENTS" && AGENTS_HOME="$AGENTS" bash "$f" 2>&1); rc=$?
+    # local-only gate 不在 ci.yml 裡（runner 沒有那三個 home），但同樣套 job env：
+    # 它們讀 live host config，正是最需要與 CI 同一 locale 的一類。
+    out=$(cd "$AGENTS" && env ${JOB_ENV[@]+"${JOB_ENV[@]}"} AGENTS_HOME="$AGENTS" bash "$f" 2>&1); rc=$?
     dur=$(( $(date +%s) - start ))
     lo_ran=$((lo_ran + 1))
     # 與主迴圈同一分工：PASS 只印收尾條數行，FAIL 印 tail -12。共用 tail -1 會把
