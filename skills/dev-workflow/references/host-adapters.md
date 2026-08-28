@@ -6,15 +6,22 @@ Host adapter 對本 kernel 只可加嚴，MUST NOT 放鬆其 MUST 或無條件�
 
 ## Capability parity
 
-三家等價以 capability 與各自 semantic anchors 判定，不要求 prose、檔案結構或 hash 相同。`^` 分隔同一 capability 必備的 clauses；此表是 `tests/three-host-capability-parity.sh` 的 canonical mapping。
+三家等價以 capability 與各自 semantic anchors 判定，不要求 prose、檔案結構或 hash 相同。`^` 分隔同一 capability 必備的 clauses；此表是三家 parity 的 canonical mapping（測試的失敗訊息用的就是這個詞）。
+
+本表有**兩個** consumer，比對語意不同，改動時兩邊都要顧：
+
+- `tests/three-host-capability-parity.sh` — 表內每一列，`grep -Fq` **子字串**比對。
+- `tests/ponytail-host-parity.sh` — 只讀 CAP-PONYTAIL 那列，把 host 檔依 `[；。]` 切段後逐段**全等**比對。它嚴格得多：mapping 的 anchor 必須是某一整段，而不是某段的一部分。它的 selftest fixture 另有一份 CAP-PONYTAIL 的手抄本，改本表時會一起紅（2026-08-27 實測）。
+
+anchor 與 host 實際措辭對不上時，改哪一邊的判準：**語意分歧改 host，措辭／標點差異改本表。** 前者是三家該一致的東西真的不一致——2026-08-27 曾出現 Codex 寫 `action-first` 而 Claude、Copilot 與本表 meaning 欄都是 `outcome-first`，該次改的是 `~/.codex/AGENTS.md`；後者是同一語意的各家寫法，例如 Codex 那一行整行用半形 `/`，本表 Codex 欄就跟著半形。兩個 matcher 都分不出這兩者，判準只能靠人。
 
 <!-- capability-parity:start -->
 ```tsv
 CAP-WORKFLOW	Shared workflow 是唯一方法來源	dev-workflow/SKILL.md^host-local prose 不複製 method	dev-workflow/SKILL.md^程序只由該 skill 維護	dev-workflow/SKILL.md^workflow 方法與 gates 唯一來源
 CAP-LOCAL-AUTONOMY	安全、local、reversible 工作 MUST 一次執行至完成（[INT-8]）	local、reversible^MUST 一次執行至完成	local、reversible^MUST 一次執行至完成^可直接實作	local、reversible^MUST 一次執行至完成^可直接實作
 CAP-DELEGATION	Delegation 由 AI 自主判定且無須先問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問
-CAP-RESPONSE	Outcome-first 且決策列出 recommendation 與 trade-off	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨
-CAP-PONYTAIL	Plan／implement 套用 Ponytail 通用慣例	ponytail 注入=通用慣例	ponytail=通用慣例	ponytail=慣例
+CAP-RESPONSE	Outcome-first 且決策列出 recommendation 與 trade-off	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項/推薦/取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨
+CAP-PONYTAIL	Plan／implement 套用 Ponytail 通用慣例	ponytail 等風格注入=通用慣例	ponytail=通用慣例	ponytail=慣例
 ```
 <!-- capability-parity:end -->
 
