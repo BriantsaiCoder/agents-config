@@ -6,3 +6,10 @@ playwright-best-practices	https://github.com/currents-dev/playwright-best-practi
 web-design-reviewer	https://github.com/github/awesome-copilot/tree/952c4f45a7bba173f32176a2658a03a1a5ad462c/skills/web-design-reviewer	952c4f45a7bba173f32176a2658a03a1a5ad462c	93784dfa7e42391920887ab9ee2600beb9bd3ff6fda662202e32f4125067d7cc	f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b
 ui-ux-pro-max	https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/14ddef5c05e52d7c253b8f0129de7bcd1045ae5b/.claude/skills/ui-ux-pro-max	14ddef5c05e52d7c253b8f0129de7bcd1045ae5b	dc1761011c3e768b093dd72b7ffa0822c5f72684974d439bac8f52e40757a2f8	83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21
 test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-test/skills/test-gap-analysis	4d25f171766a9b852b229540bf9b8a6874ef16db	718315d6c125ac404ef713b0975de76a3b88527f07c9ac0e3bf10ed5e0cf67fe	a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81
+# speak-human-tw 的 source_url 指 repo root，但 payload 只取 upstream 27 個檔中的 10 個。
+# 取捨規則（re-vendor 時照這條重跑，不要照 URL 整包抓）：
+#   vendor SKILL.md 相對引用的遞移閉包 + LICENSE。
+#   於是 evals/{benchmark,run-eval}.md 被引用故保留，evals/results-v*.md 無人引用故丟棄；
+#   assets/(1.6MB 圖)、scripts/、install/、.github/、README/CHANGELOG/CONTRIBUTING 同理丟棄。
+#   兩個方向都不留懸空：既無 dead pointer，也無未被引用的檔。
+speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	b396c8169f8d8468b79579cc5688ef446fe922a54bbb621ccfbc371677961bd7	c88fa7fef76bc6a7b79ff5917a486c1d813b631a28e5a0bf3969edf7761bbab3
