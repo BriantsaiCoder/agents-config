@@ -537,6 +537,12 @@ LIST
 actual_unrouted=$(
   for sd in "$AGENTS"/skills/*/; do
     [ -f "$sd/SKILL.md" ] || continue
+    # gitignored skill 不受本守衛管轄：本守衛管的是「進版控的共用 skill 有沒有被 route」。
+    # 磁碟 glob 對 gitignore 無感，而 CI 跑 clean clone 根本看不到這些目錄——不跳過的話
+    # 本機恆紅、CI 恆綠，且 UNROUTED_BY_DESIGN 也救不了（stale_declaration 分支要求
+    # 宣告的項目必須存在於磁碟，CI 那側不存在即 FAIL，兩邊無法同時綠）。
+    # 用 if 不用 `&&`：set -e 下 `cmd && continue` 在 cmd 非 0 時會讓整個 subshell 退出。
+    if git -C "$AGENTS" check-ignore -q "$sd"; then continue; fi
     s=${sd%/}; s=${s##*/}
     grep -Fq "\`$s\`" "$KERNEL" "$ROUTING_CONTINUATIONS_REF" || printf '%s\n' "$s"
   done | sort

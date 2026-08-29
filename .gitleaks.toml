@@ -1,23 +1,33 @@
 # gitleaks 設定：三主機共用設定倉（agents-config）
-# 繼承 gitleaks 預設規則集，另將 skills/ 內第三方 vendored 文件排除於掃描外。
+# 繼承 gitleaks 預設規則集，另將 vendored 第三方文件排除於掃描外。
 #
-# 為何排除 skills/：此目錄為 skill 安裝器帶入的第三方文件（大宗是 ecpay/ 公開 sandbox
-# 測試向量、各 skill 文件內的範例 API key）。gitleaks 最易誤報的 generic-api-key 規則在此
-# 命中 224 次，經核對全為公開範例值。已另以真實憑證格式（AIza / gh_ / sk- / eyJ / 去除
-# EXAMPLE 的 AKIA）獨立掃描全庫（含 skills/）= 0，故排除不遮蔽任何真實外洩。
+# 排除哪些、為何：`skills/` 是 skill 安裝器帶入的第三方文件（各 skill 內的範例 API key）；
+# `attic/ecpay/` 是 ECPay 公開 sandbox 測試向量。gitleaks 最易誤報的 generic-api-key
+# 在兩處合計命中 224 次，經核對全為公開範例值。已另以真實憑證格式（AIza / gh_ / sk- /
+# eyJ / 去除 EXAMPLE 的 AKIA）獨立掃描全庫（含上述兩處）= 0，故排除不遮蔽任何真實外洩。
 #
-# ponytail: 天花板——全域排除 skills/ 代表未來若有人把「真實」secret 塞進 skill 文件不會
-# 觸發。可接受的理由：真實憑證只存在於 ~/.codex、從不落入 ~/.agents/skills/，且 skills/ 為
-# vendored 內容非本倉自寫。升級路徑：若日後 skills/ 改為容納自寫敏感內容，改為 rule-scoped
-# allowlist（僅豁免 generic-api-key、保留高信心規則續掃 skills/）。
+# 為何 `attic/ecpay/` 要單獨列而不是整個 `attic/`：CONVENTIONS §11 讓 `attic/` 成為退役
+# 設定檔與 .bak 的落點，那些是自寫內容必須續掃（§11 記錄的實證事件就是 3 份 config.toml.bak
+# 內含同一把明文 API key）。只有 ecpay 這一份 vendored 子樹豁免。
+#
+# allowlist 寫的是路徑；搬檔必須同步改，否則 `git` 與 `dir` 兩種模式會給出相反答案。
+#
+# ponytail: 天花板——`(^|/)` 是可攜的上限，不是嚴格頂層錨定。gitleaks 的 `paths` 用非錨定
+# 比對，且 `dir`（絕對路徑）與 `git`／`protect`（repo 相對路徑）兩模式的 File 欄位形狀不同，
+# 所以 `^skills/` 這種嚴格錨定會在 dir 模式失效——「只豁免頂層」在單一 config 內表達不出來。
+# 殘留：任意巢狀的 `*/skills/`（例如 `tests/fixtures/skills/`）仍被豁免。
+# 早期的 `skills/.*` 更寬：它連 `attic/codex-legacy-skills/`（21 個 tracked 檔）都一起豁免了，
+# 而那是自寫的退役內容——本次改為 `(^|/)skills/` 就是為了收回這一段。
+# 升級路徑：若日後這兩處改為容納自寫敏感內容，改為 rule-scoped allowlist
+# （僅豁免 generic-api-key、保留高信心規則續掃）。
 title = "agents-config gitleaks"
 
 [extend]
 useDefault = true
 
 [[allowlists]]
-description = "vendored 第三方 skill 文件（ECPay 公開 sandbox 測試向量 + AWS AKIAIOSFODNN7EXAMPLE 範例）"
-paths = ['''skills/.*''']
+description = "vendored 第三方文件（skill 內範例 API key + attic/ecpay 的 ECPay 公開 sandbox 測試向量）"
+paths = ['''(^|/)skills/''', '''(^|/)attic/ecpay/''']
 
 [[allowlists]]
 description = "Copilot vendor event metadata 的 exact apiCallId 欄位"
