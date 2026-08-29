@@ -26,3 +26,18 @@ proposals/*/*
 
 # auto mode classifier 決策 log（AUTOMODE_DECISION_LOG=1 時落在 session cwd）
 .automode_decisions.jsonl
+
+# profile.md — 使用者背景（姓名／職稱／產業／居住地／年資）。三 host 皆以絕對路徑引用它：
+# ~/.claude/CLAUDE.md 的 @import、~/.codex/AGENTS.md 與 ~/.copilot/copilot-instructions.md
+# 的「回覆前 MUST 讀」。所以既不能搬走也不能 env 化——它是 prompt 內容不是設定值。
+# 本 repo 是 PUBLIC，PII 絕不進版控。gitignore 只擋版控、不擋讀取，三 host 照常讀得到。
+# 代價：此檔無異地備份，換機需手動重建（`git clean -xfd` 現在也會刪掉它）。勿當成無用條目刪除。
+# 錨定 `/`：只排除 repo 根這一份。§11 規定 attic/ 的退役物要進版控，未錨定會讓未來
+# `git mv` 進 attic/ 的同名檔靜默不被追蹤。
+/profile.md
+
+# exec-briefing — 個人向上簡報 skill，屬個人工作脈絡。同 profile.md：PUBLIC repo 不進版控、
+# 三 host 走實體路徑／symlink 讀取與 git 追蹤無關、無異地備份、勿刪。
+# 已知覆蓋缺口：CI 以 clean clone 枚舉 skills/*，所以 description-lint／word-budget／
+# trigger-eval 永遠掃不到它，品質閘只在本機生效。
+skills/exec-briefing/
