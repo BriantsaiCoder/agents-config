@@ -1,4 +1,4 @@
-# 五大情境細部策略
+# 六大情境細部策略
 
 同一句「AI 味」在不同地方，該砍的力道不一樣。先判斷文字要出現在哪裡，再決定改寫力度。不確定就問作者一句：「這段文字讀者會在哪裡看到？」
 
@@ -9,6 +9,7 @@
 - [銷售頁／課程文案](#銷售頁課程文案力度中偏重)
 - [客服／學員回信](#客服學員回信力度中)
 - [辦公文書](#辦公文書力度中)
+- [技術工作溝通](#技術工作溝通力度中偏輕)
 - [混合情境](#混合情境)
 
 ## 社群貼文（力度：輕）
@@ -73,6 +74,20 @@ FB、IG、Threads、LINE 社群、X。
 - 簡報文字每頁一個重點，刪掉唸稿式長句
 
 **禁改**：法務與合規措辭、系統時間與影響範圍、責任歸屬的表述（誰負責、誰核准不能改模糊）。
+
+## 技術工作溝通（力度：中偏輕）
+
+PR 說明、issue、技術 handoff、incident report、architecture／design／migration plan、runbook。
+
+**目標**：讓結論、decision 與 next action 一眼可見，同時完整保留 evidence、scope、risk 與 rollback。
+
+- outcome-first：先放結論、decision 或 next action，再補原因與 evidence
+- 標題、清單（含編號與 bullet）、表格、checklist 與 code block 是功能性結構；能幫讀者定位、比較或執行時原樣保留。本條在技術情境優先於 SKILL.md 步驟 4 的降格式規則
+- 只處理 AI 套話、空泛價值上升詞、冗句、中國用語與不自然語序
+- 技術準確度優先；自然化可能改變 contract、順序、範圍或責任時，保留原文並標註風險
+- 可疑 citation 或 evidence 依 SKILL.md 的事實查核邊界標示「需查證」，不代編結果
+
+**禁改與敏感值例外**：依 [protected-list.md](protected-list.md) 第 6 類處理；credential／secret 的 key、identifier 與結構保留，值一律遮罩。
 
 ## 混合情境
 

@@ -11,5 +11,6 @@ test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-t
 #   vendor SKILL.md 相對引用的遞移閉包 + LICENSE。
 #   於是 evals/{benchmark,run-eval}.md 被引用故保留，evals/results-v*.md 無人引用故丟棄；
 #   assets/(1.6MB 圖)、scripts/、install/、.github/、README/CHANGELOG/CONTRIBUTING 同理丟棄。
+#   本地 fork 另加 evals/trigger-cases.jsonl，並由 evals/run-eval.md 引用，固定 technical fire／quiet 邊界。
 #   兩個方向都不留懸空：既無 dead pointer，也無未被引用的檔。
-speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	b396c8169f8d8468b79579cc5688ef446fe922a54bbb621ccfbc371677961bd7	c88fa7fef76bc6a7b79ff5917a486c1d813b631a28e5a0bf3969edf7761bbab3
+speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	77b06d542a8fa3ceb20d75e8f4fc09573dc0241090d87e8c6ec0c8f1b03611a2	b4cc3a5c5d15564a35a67fba17cfd766f74394c89732618175744bcc34434eaf

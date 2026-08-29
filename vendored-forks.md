@@ -32,6 +32,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `prototype` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — adopt the self-contained HTML logic demo and add the local offline/synthetic-data/no-secret/no-production-build boundary; tree SHA-256 `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a` | **Active** |
 | `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
 | `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46` | **Active** |
+| `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; tree SHA-256 `b4cc3a5c5d15564a35a67fba17cfd766f74394c89732618175744bcc34434eaf` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 | `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); tree SHA-256 `840273dbf411352fe1220fbda428b8b5bb6997316c4648d4791df44f8d3be73a` | **Active** |
 | `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Active** |
@@ -952,6 +953,34 @@ Evidence it contributed nothing:
 What remains capable of producing the same output: writing ````` ```mermaid ````` fences directly. GitHub, Claude artifacts, and that HTML all render mermaid natively.
 
 **The one scenario that would justify restoring it:** wanting pre-rendered PNG/SVG architecture diagrams committed to the repo, rather than fences rendered by the viewer. That needs `npm i -g @mermaid-js/mermaid-cli` plus this skill back out of `attic/` — follow the re-merge procedure above if upstream has moved by then.
+
+---
+
+## speak-human-tw
+
+**Decision (2026-08-29): accept a local fork for technical-work communication.**
+
+The imported 10-file payload was first verified byte-for-byte against pinned upstream commit
+`ee860be6fb190cbc53dc1d45a2a47c9c9c680243`. The local fork keeps the existing general-purpose
+humanizer and adds only the missing technical branch:
+
+- `SKILL.md` adds the technical-writing trigger, scene summary, protected-token invariant, and v1.5.0 record.
+- `references/scenes.md` keeps outcome, decision, evidence, risk, rollback, and functional structure intact.
+- `references/protected-list.md` protects code, paths, APIs, config keys, commands, versions, results, errors, and logs while redacting credential/secret values.
+- `evals/benchmark.md` adds paired SF-28/SNF-16 coverage plus SF-29 secret redaction; `evals/trigger-cases.jsonl` fixes one technical-writing fire and one raw-log-analysis quiet case.
+
+Approved payload SHA-256 `77b06d542a8fa3ceb20d75e8f4fc09573dc0241090d87e8c6ec0c8f1b03611a2`;
+approved tree SHA-256 `b4cc3a5c5d15564a35a67fba17cfd766f74394c89732618175744bcc34434eaf`.
+
+### Re-merge procedure (when upstream moves)
+
+1. Diff the new upstream revision against pinned commit `ee860be6fb190cbc53dc1d45a2a47c9c9c680243`.
+2. Rebuild the same transitive-reference closure plus `LICENSE`; keep the selection rule in `vendored-skills.lock`.
+3. Replace the payload, then reapply the technical scene, protected-token invariant, and paired benchmark only where upstream still lacks equivalent behavior.
+4. Recompute payload/tree fingerprints and update this section, the index row, and `vendored-skills.lock`.
+5. Run `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, relative-reference checks, SF-28/SF-29/SNF-16, and `evals/trigger-cases.jsonl`.
+
+Rollback by reverting the fork commit: restore the pinned upstream payload and original lock hashes, then remove this section and its index row in the same change.
 
 ---
 

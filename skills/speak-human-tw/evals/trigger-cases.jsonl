@@ -1,0 +1,2 @@
+{"id":"fire-speak-human-tw-technical","skill":"speak-human-tw","prompt":"請把這段 incident report 改自然一點，保留 command、test result 和 log excerpt。","expect":"fire","why":"Technical document with an explicit zh-TW style request must trigger the skill."}
+{"id":"quiet-speak-human-tw-raw-log-analysis","skill":"speak-human-tw","prompt":"分析這段原始 log 的 root cause，指出最可能的 failure path。","expect":"quiet","why":"Raw-log analysis without a writing-style request remains outside this skill."}

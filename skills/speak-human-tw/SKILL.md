@@ -1,17 +1,18 @@
 ---
 name: speak-human-tw
-version: 1.4.0
+version: 1.5.0
 description: |
   「說人話」：繁體中文的去 AI 味改寫 skill。審查與改寫文字，去除 AI 味道、校正中國用語與半形標點，讓文字讀起來像真人寫的。
-  觸發時機：用戶說「去 AI 味」「說人話」「這段好 AI」「改自然一點」「幫我潤稿去掉 AI 感」「校對一下再發」，或要求檢查電子報、社群貼文、銷售頁、課程文案、客服回信、簡報、公告、Email 等對外文字的語感。
-  不要觸發：逐字翻譯、模仿特定品牌 voice、事實查核（非風格問題）、程式碼／log／設定檔、要求「潤成雷蒙的語氣」（那是 content-writing skill 的事，本 skill 只去 AI 味、不加個人風格）。
+  觸發時機：用戶說「去 AI 味」「說人話」「這段好 AI」「改自然一點」「幫我潤稿去掉 AI 感」「校對一下再發」，或要求檢查電子報、社群貼文、銷售頁、課程文案、客服回信、簡報、公告、Email、PR 說明、issue、技術 handoff、incident report、architecture／design／migration plan 等文字的繁中語感。
+  不要觸發：逐字翻譯、模仿特定品牌 voice、事實查核（非風格問題）、純程式碼／原始 log／設定檔本體、要求「潤成雷蒙的語氣」（那是 content-writing skill 的事，本 skill 只去 AI 味、不加個人風格）。含 code、log 或 config 節錄的技術文件，只有在使用者要求檢查繁中語感時才觸發。
 user-invocable: true
 maturity: governed
 review_cadence: quarterly
-last-updated: 2026-07-18
+last-updated: 2026-08-29
 author: Raymond Hou
 tags: [writing, proofreading, zh-tw, de-ai, humanizer]
 changelog:
+  - "1.5.0 (2026-08-29): 新增技術工作溝通情境，保護 code、path、API、config key、CLI／SQL、版本與驗證 evidence，敏感值先遮罩，並保留有資訊功能的標題、表格、步驟與 checklist；benchmark 新增 technical SF／SNF 與 secret regression 案例。"
   - "1.4.0 (2026-07-10): AI 痕跡 36→38，新增立場真空（第 9 種）、公式化開場（第 21 種），並補上首先／其次／最後、總的來說／綜上所述、這意味著、不僅⋯更⋯ 四組識別信號。humanize.md 從 5 個正向目標擴到 8 個，新增允許岔題、讓立場隨時間改變、允許不收尾，並加上「不要表演不確定」與「人味是作者的，不是你的」兩道防護。benchmark 36→40 條。非互動環境（codex exec 等）預設走「跳過確認、事後摘要」。"
   - "1.3.0 (2026-07-10): 新增「自動化工作流模式」——整合進排程／CI／內容產線等無人即時在線的工作流之前，須先問使用者要保留逐次確認清單、還是改成跳過確認、執行完只出事後摘要。事後摘要維持原句／為什麼要改／改成了什麼三欄，只是從問句改成報告。"
   - "1.2.0 (2026-07-09): 新增強制規則——不論 Skill 自動觸發或 Command 直接呼叫，查到建議修改處一律先列完整編號清單（原句／原因／建議改法）交使用者勾選，等回覆才動筆；有實體檔案時，動筆前不得直接寫入或覆蓋原始檔案。取代舊的「預設直接輸出單一改寫版」行為。"
@@ -48,6 +49,8 @@ license: MIT
 2. **原句**：逐字引用原文（含足夠上下文，讓使用者一眼定位到原文位置）
 3. **為什麼要改**：對應到哪一種 AI 痕跡或問題（可標註 [references/patterns.md](references/patterns.md) 的編號與名稱），一句話講清楚，不要空泛帶過
 4. **建議怎麼改**：寫出具體的改寫版本，不是「建議更自然一點」這種空話
+
+若原句含 credential／secret，觸發位置、原句與建議改法都先把敏感值換成 `[REDACTED]`，不得為了逐字引用而回顯明文。
 
 全部列完後，逐字加上這句收尾（{N} 代入實際條數）：
 
@@ -96,6 +99,7 @@ license: MIT
 | 銷售頁／課程文案 | 中偏重 | 砍浮誇宣傳語，但 CTA 力道與急迫感不能改弱 |
 | 客服／學員回信 | 中 | 砍罐頭腔（「感謝您的來信」開場、先頒獎再回答），保留必要的制式條款 |
 | 辦公文書（簡報、公告、Email、報告） | 中 | 砍避險墊片與編號切碎段落；正式公告保持正式語域，不改成聊天口吻 |
+| 技術工作溝通 | 中偏輕 | outcome-first，只砍 AI 套話與冗句；保留 technical tokens、evidence 與有資訊功能的結構 |
 
 不確定情境就問一句：「這段文字讀者會在哪裡看到？」各情境的細部策略與禁改項見 [references/scenes.md](references/scenes.md)。
 
@@ -105,9 +109,10 @@ license: MIT
 
 - **價格與數字**：定價、優惠碼、折扣、人數、日期、數據
 - **專有名詞**：課程名、品牌名、產品名（不因「換詞循環」規則被同義替換）
-- **網址與連結文字**：CTA 連結、報名連結（但要清掉 `utm_source=chatgpt.com` 這類 AI 工具參數）
+- **網址與連結文字**：CTA 連結、報名連結（一般 prose 要清掉 `utm_source=chatgpt.com` 這類 AI 工具參數；code／CLI／log／error evidence 內的 URL 原樣保留）
 - **真實姓名與引號內原話**：見證、訪談、學員故事的真名與原句
 - **承諾條款**：退費政策、保固、免責聲明，只能調語氣不能調意思
+- **技術識別字與證據**：code、path、API、config key、CLI／SQL、版本、測試結果與 error message 原樣保留；credential／secret 只保留 key、identifier 與結構，值一律遮罩
 
 完整清單與誤殺防護見 [references/protected-list.md](references/protected-list.md)。
 
@@ -125,7 +130,7 @@ license: MIT
 
 1. **先刪**：對話殘留、免責聲明、通用積極結論、解說導引句、公式化開場（時代大帽子），刪掉不用補
 2. **再具體化**：誇大意義、廣宣語氣、模糊歸屬、立場真空（各有優缺點、因人而異），改成具體事實或明確判斷；寫不出來就刪
-3. **再降格式**：破折號、粗體、emoji、表格、編號列表、首先／其次／最後三段式，降回散文與正常密度
+3. **再降格式**：破折號、粗體、emoji、表格、編號列表、首先／其次／最後三段式，只處理裝飾性或無資訊功能者；能幫讀者定位、比較或執行的標題、清單、表格、checklist 與 code block 保留，技術情境優先
 4. **同步跑台灣在地化**：中國用語替換與全形標點，見 [references/taiwan-localization.md](references/taiwan-localization.md)
 
 模式優先、詞表兜底：遇到沒列出的新說法，先問它屬於哪一類既有模式，不要求逐詞命中。
@@ -136,7 +141,7 @@ license: MIT
 
 改完全文後逐項核對：
 
-1. 保護清單五類是否原封不動
+1. 保護清單六類是否原封不動（credential／secret 的敏感值除外，必須遮罩）
 2. 原文每個資訊點（事實、數字、判斷、行動）在改寫版都找得到
 3. 沒有新增原文沒有的事實（尤其不能為了「更具體」編造數字或來源）
 4. 語域統一：公告仍像公告、貼文仍像貼文
@@ -175,7 +180,7 @@ license: MIT
 - 粗體一段最多 2–3 個詞；emoji 一則貼文最多 1 個
 - 中文句子一律全形標點「，。：；！？「」（）」
 - 中國用語替換：視頻→影片、質量→品質、信息→資訊、水平→水準、軟件→軟體、網絡→網路
-- 保護價格、真名、連結、引號原話、承諾條款
+- 保護價格、真名、連結、引號原話、承諾條款，以及技術識別字與 evidence；credential／secret 只保留 key、identifier 與結構，值一律遮罩
 
 ## Annotation mode（只標問題，不改寫）
 
@@ -216,7 +221,7 @@ license: MIT
 
 - 38 種 AI 痕跡與範例句：[references/patterns.md](references/patterns.md)
 - 台灣用語與標點：[references/taiwan-localization.md](references/taiwan-localization.md)
-- 五大情境細部策略：[references/scenes.md](references/scenes.md)
+- 六大情境細部策略：[references/scenes.md](references/scenes.md)
 - 保護清單與誤殺防護：[references/protected-list.md](references/protected-list.md)
 - 分場景 before/after 全文示範：[references/examples.md](references/examples.md)
 - 人味正向目標：[references/humanize.md](references/humanize.md)
