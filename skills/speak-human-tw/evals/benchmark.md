@@ -1,6 +1,6 @@
 # 評測集 Benchmark
 
-> 版本：Unreleased（基於 v1.4.0） ｜ 用例總數：42 條（27 SF ＋ 15 SNF）
+> 版本：Unreleased（基於 v1.5.0） ｜ 用例總數：45 條（29 SF ＋ 16 SNF）
 > 執行方式見 [run-eval.md](run-eval.md)。
 
 兩類用例成對維護：
@@ -14,7 +14,7 @@
 
 ---
 
-## SF：該改的（27 條）
+## SF：該改的（29 條）
 
 ### SF-01 誇大意義與轉捩點（社群貼文）
 
@@ -273,9 +273,27 @@
 **問題點**：「看到這裡，我愣了一下」與「我把信讀到這裡，在電腦前停了一下」分別命中「＿＿，我愣了一下」和「我＿＿，在＿＿停了一下」兩種結構；兩句都沒有新增事實，只是插入情緒特寫。若作者未提供這些行為，還構成編造經歷。這是第 20 種「人工戲劇」的罐頭式反應鏡頭變體。
 **預期方向**：刪掉兩句反應鏡頭，保留來信中的具體內容；不得換成「我沉默了幾秒」「我看著螢幕沒說話」等同族句型。
 
+### SF-28 技術工作溝通中的 AI 套話（PR 說明）
+
+**原文**
+
+> 本次優化旨在全面提升系統穩定性與可維護性，為後續迭代奠定堅實基礎。實際變更是把 `RecordParser.Parse` 的 row-width 檢查移到 `MetadataLookup.GetNames` 前。驗證：`dotnet test Importer.Tests/Importer.Tests.csproj --configuration Release`，結果為 `440 passed / 1 skipped`。
+
+**問題點**：第一句是空泛價值上升詞；後兩句已有具體 change 與 evidence。
+**預期方向**：刪掉第一句，直接從實際變更開始；`RecordParser.Parse`、`MetadataLookup.GetNames`、完整 command 與 `440 passed / 1 skipped` 必須原樣保留。
+
+### SF-29 技術 evidence 中的敏感值（incident report）
+
+**原文**
+
+> Root cause 是 deploy job 帶入錯誤的 `API_KEY=<sensitive-value>`。Rollback：`deployctl rollback --release 42`。
+
+**問題點**：config key、command 與 release number 是 evidence，但 credential 的敏感值不能因「原樣保留」而回顯。
+**預期方向**：只把敏感值改成 `API_KEY=[REDACTED]`；`API_KEY`、`deployctl rollback --release 42` 與其餘事實原樣保留。
+
 ---
 
-## SNF：不可誤殺的（15 條）
+## SNF：不可誤殺的（16 條）
 
 ### SNF-01 保護清單：價格與優惠碼（銷售頁）
 
@@ -412,6 +430,20 @@
 **不能動的理由**：「我愣了一下」是作者明確提供的現場反應，交代了第一次稱呼「爸」之後的對話中斷與關係變化；刪掉會損失事件資訊。後面的再次呼喚與回應也讓這個停頓成為敘事的一部分，不是只替情緒加戲。
 **預期行為**：原樣放行。不可只因出現「我愣了一下」就判成第 20 種罐頭式反應鏡頭；應判斷停頓是否有不可替代的敘事或事實功能。
 
+### SNF-16 技術文件的功能性結構與 evidence（handoff）
+
+**原文**
+
+> 結論：`RecordParser.Parse` 維持現有 row-width rejection 順序。
+>
+> - Risk：若先呼叫 `MetadataLookup.GetNames`，錯誤檔可能進入 cleanup path。
+> - Rollback：revert commit `abc1234`。
+> - Repro：`curl 'https://api.example.test/status?utm_source=openai&id=42'`。
+> - Verification：`dotnet test --filter RecordParserTests` → `12 passed / 0 failed`。
+
+**不能動的理由**：結論、Risk、Rollback、Repro、Verification 與清單結構各有明確功能；inline code、commit、command、URL 與結果都是可搜尋或可重播的 evidence。
+**預期行為**：原樣放行。不可把清單改成散文，也不可改寫任何 technical token、URL 或驗證結果；CLI 內的 `utm_source=openai` 也必須保留。
+
 ---
 
 ## 覆蓋矩陣
@@ -429,3 +461,4 @@
 | 長文 scope | 23 | 12 |
 | 立場與開場（立場真空、公式化開場） | 25, 26 | 13, 14 |
 | 人工戲劇（罐頭式反應鏡頭、戲劇性短句） | 27 | 12, 15 |
+| 技術工作溝通（套話、功能性結構、evidence、secret redaction） | 28, 29 | 16 |

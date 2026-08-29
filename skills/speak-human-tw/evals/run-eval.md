@@ -1,6 +1,6 @@
 # 怎麼跑評測
 
-評測對象是 [benchmark.md](benchmark.md) 的 42 條用例（27 SF ＋ 15 SNF）。目標：
+評測對象是 [benchmark.md](benchmark.md) 的 45 條用例（29 SF ＋ 16 SNF）。目標：
 
 - **SF 通過**：主要問題被改掉，且保護清單無一漂移
 - **SNF 通過**：文本被放行，或只收到極輕提示（不動原文）
@@ -10,7 +10,7 @@
 每條用例三個判定，全過才算綠：
 
 1. **命中**（SF）／**放行**（SNF）：SF 的「問題點」是否被處理；SNF 是否未被改寫
-2. **保真**：價格、數字、真名、連結、引號原話、承諾條款逐項核對，一字不漂
+2. **保真**：價格、數字、真名、連結、引號原話、承諾條款、技術識別字與 evidence 逐項核對，一字不漂；credential／secret 的 key、identifier 與結構保留，敏感值必須遮罩
 3. **不換湯**：SF 改寫後不得換成同族的另一句空話（例：刪掉「賦能」卻補上「加值」；刪掉「標誌著」卻補上「象徵著」）
 
 長文用例（SF-23、SNF-12）加判第 4 項：
@@ -29,6 +29,14 @@
 ```
 
 人工對照「預期方向／預期行為」逐條打 ✅ / ❌。
+
+### Trigger canary
+
+[trigger-cases.jsonl](trigger-cases.jsonl) 包含一條 technical-writing `fire` 與一條 raw-log analysis `quiet`。Live runner 會把 skill 與測試文字送到設定的 model provider，只有取得資料外傳授權後才執行：
+
+```bash
+../auditing-skill-folder/scripts/eval-triggers.sh --runner claude --cases evals/trigger-cases.jsonl --skills ..
+```
 
 ### 提示注入自查
 
@@ -50,7 +58,7 @@
 
 ```bash
 cd speak-human-tw
-codex exec -C . "讀取 ./SKILL.md 與 ./references/ 下所有檔案，依規則逐條處理 ./evals/benchmark.md 的 42 條用例。SF 輸出改寫結果，SNF 輸出放行判定與一句理由。這次直接輸出結果，不用先列清單問我。"
+codex exec -C . "讀取 ./SKILL.md 與 ./references/ 下所有檔案，依規則逐條處理 ./evals/benchmark.md 的 45 條用例。SF 輸出改寫結果，SNF 輸出放行判定與一句理由。這次直接輸出結果，不用先列清單問我。"
 ```
 
 ### 判分端 prompt 要點
