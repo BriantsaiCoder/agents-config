@@ -3,12 +3,24 @@ ObjC.import('Foundation')
 
 // ---------- 基礎工具 ----------
 
-// 固定 en_US_POSIX，避免使用者 locale (zh-TW) 影響日期格式化
+// 固定 en_US_POSIX，避免使用者 locale (zh-TW) 影響日期格式化。
+// formatter 建構是熱點（實測 158us/次），而全程只用三種 pattern，故快取。
+const FMT_CACHE = {}
 function fmt(dt, pattern) {
-  const df = $.NSDateFormatter.alloc.init
-  df.locale = $.NSLocale.alloc.initWithLocaleIdentifier('en_US_POSIX')
-  df.dateFormat = pattern
+  let df = FMT_CACHE[pattern]
+  if (df === undefined) {
+    df = $.NSDateFormatter.alloc.init
+    df.locale = $.NSLocale.alloc.initWithLocaleIdentifier('en_US_POSIX')
+    df.dateFormat = pattern
+    FMT_CACHE[pattern] = df
+  }
   return ObjC.unwrap(df.stringFromDate(dt))
+}
+
+function posInt(v, what, dflt) {
+  if (v === undefined) return dflt
+  if (!/^\d+$/.test(v) || parseInt(v, 10) < 1) throw new Error(what + ' 需為正整數，收到: ' + v)
+  return parseInt(v, 10)
 }
 
 function mkdate(y, mo, d, h, mi) {
@@ -31,8 +43,7 @@ function parseISO(s, what) {
 }
 
 function today0() {
-  const now = $.NSDate.date
-  return parseISO(fmt(now, 'yyyy-MM-dd'), '今天')
+  return $.NSCalendar.currentCalendar.startOfDayForDate($.NSDate.date)
 }
 
 // ---------- 授權閘 ----------
@@ -57,28 +68,27 @@ function requireFullAccess() {
 
 function store() { return $.EKEventStore.alloc.init }
 
+function calendars(st) {
+  return ObjC.unwrap(st.calendarsForEntityType($.EKEntityTypeEvent))
+}
+
 function findCalendar(st, name) {
-  const cals = st.calendarsForEntityType($.EKEntityTypeEvent)
-  for (let i = 0; i < cals.count; i++) {
-    const c = cals.objectAtIndex(i)
-    if (ObjC.unwrap(c.title) === name) return c
-  }
-  const avail = []
-  for (let i = 0; i < cals.count; i++) {
-    const c = cals.objectAtIndex(i)
-    if (c.allowsContentModifications) avail.push(ObjC.unwrap(c.title))
-  }
+  const cals = calendars(st)
+  const hit = cals.find(function (c) { return ObjC.unwrap(c.title) === name })
+  if (hit) return hit
+  const avail = cals.filter(function (c) { return c.allowsContentModifications })
+                    .map(function (c) { return ObjC.unwrap(c.title) })
   throw new Error('找不到行事曆「' + name + '」。可寫入的有: ' + avail.join(', '))
 }
 
-function saveOrThrow(st, ev, span, what) {
+// NSError out-param 必須用 $() + isNil() 讀，ObjC.castRefToObject 會 segfault。
+// save 與 remove 共用這一份，避免陷阱處理出現兩份會漂移的副本。
+function ekOrThrow(what, call) {
   const err = $()
-  const ok = st.saveEventSpanError(ev, span, err)
-  if (!ok) {
-    let msg = '(無錯誤訊息)'
-    try { if (!err.isNil()) msg = ObjC.unwrap(err.localizedDescription) } catch (e) {}
-    throw new Error(what + '失敗: ' + msg)
-  }
+  if (call(err)) return
+  let msg = '(無錯誤訊息)'
+  try { if (!err.isNil()) msg = ObjC.unwrap(err.localizedDescription) } catch (e) {}
+  throw new Error(what + '失敗: ' + msg)
 }
 
 function describe(e) {
@@ -93,7 +103,6 @@ function describe(e) {
   const loc = ObjC.unwrap(e.location) || ''
   const tags = []
   if (e.hasRecurrenceRules) tags.push(recurrenceLabel(e))
-  if (allday) tags.push('全天')
   return [
     when,
     ObjC.unwrap(e.title) || '(無標題)',
@@ -112,27 +121,35 @@ function baseId(s) {
   return i < 0 ? s : s.slice(0, i)
 }
 
-function getEvent(st, id, onDate) {
+// 回傳 event 或 null。刪除確認需要「存在與否」這個述詞——用 try/catch 當布林會把
+// store 錯誤、predicate 失敗一併吞成「已刪除」，而那是最不該假綠的地方。
+function findEvent(st, id, onDate) {
   if (onDate === undefined) {
     const ev = st.eventWithIdentifier(id)
-    if (ev.isNil()) throw new Error('找不到事件 id=' + id + '（可能已刪除，或 id 來自另一台機器）')
-    if (ev.hasRecurrenceRules) {
-      throw new Error(
-        '這是重複事件，所有場次共用同一個 id，未指定場次會動到第一場（' +
-        fmt(ev.startDate, 'yyyy-MM-dd') + '）。\n' +
-        '  請加 --on YYYY-MM-DD 指定要操作哪一場。')
-    }
-    return ev
+    return ev.isNil() ? null : ev
   }
   const day = parseISO(onDate, '--on')
-  const evs = st.eventsMatchingPredicate(
-    st.predicateForEventsWithStartDateEndDateCalendars(day, day.dateByAddingTimeInterval(24 * 3600), $()))
+  const evs = ObjC.unwrap(st.eventsMatchingPredicate(
+    st.predicateForEventsWithStartDateEndDateCalendars(day, day.dateByAddingTimeInterval(24 * 3600), $())))
   const want = baseId(id)
-  for (let i = 0; i < evs.count; i++) {
-    const e = evs.objectAtIndex(i)
-    if (baseId(ObjC.unwrap(e.eventIdentifier)) === want) return e
+  const hit = evs.find(function (e) { return baseId(ObjC.unwrap(e.eventIdentifier)) === want })
+  return hit === undefined ? null : hit
+}
+
+function getEvent(st, id, onDate) {
+  const ev = findEvent(st, id, onDate)
+  if (ev === null) {
+    throw new Error(onDate === undefined
+      ? '找不到事件 id=' + id + '（可能已刪除，或 id 來自另一台機器）'
+      : '在 ' + onDate + ' 找不到 id=' + id + ' 的場次')
   }
-  throw new Error('在 ' + onDate + ' 找不到 id=' + id + ' 的場次')
+  if (onDate === undefined && ev.hasRecurrenceRules) {
+    throw new Error(
+      '這是重複事件，所有場次共用同一個 id，未指定場次會動到第一場（' +
+      fmt(ev.startDate, 'yyyy-MM-dd') + '）。\n' +
+      '  請加 --on YYYY-MM-DD 指定要操作哪一場。')
+  }
+  return ev
 }
 
 function parseSpan(v) {
@@ -144,7 +161,7 @@ function parseSpan(v) {
 // ---------- 重複規則 ----------
 // EKRecurrenceFrequency: daily=0 weekly=1 monthly=2 yearly=3
 const FREQ = { daily: 0, weekly: 1, monthly: 2, yearly: 3 }
-const FREQ_NAME = ['每日', '每週', '每月', '每年']
+const FREQ_UNIT = ['日', '週', '月', '年']
 
 // 只驗證參數、不建立 ObjC 物件，便於在 selftest 中測試而不碰行事曆
 function validateRecurrence(flags) {
@@ -158,23 +175,11 @@ function validateRecurrence(flags) {
   if (freq === undefined) {
     throw new Error('--repeat 只接受 daily／weekly／monthly／yearly，收到: ' + flags.repeat)
   }
-  let interval = 1
-  if (flags.interval !== undefined) {
-    if (!/^\d+$/.test(flags.interval) || parseInt(flags.interval, 10) < 1) {
-      throw new Error('--interval 需為正整數，收到: ' + flags.interval)
-    }
-    interval = parseInt(flags.interval, 10)
-  }
+  const interval = posInt(flags.interval, '--interval', 1)
   if (flags.count !== undefined && flags.until !== undefined) {
     throw new Error('--count 與 --until 只能擇一')
   }
-  let count = null
-  if (flags.count !== undefined) {
-    if (!/^\d+$/.test(flags.count) || parseInt(flags.count, 10) < 1) {
-      throw new Error('--count 需為正整數，收到: ' + flags.count)
-    }
-    count = parseInt(flags.count, 10)
-  }
+  const count = posInt(flags.count, '--count', null)
   if (flags.until !== undefined) parseISO(flags.until, '--until')  // 格式錯要在寫入前就擋下
   return { freq: freq, interval: interval, count: count, until: flags.until }
 }
@@ -196,12 +201,10 @@ function recurrenceLabel(e) {
   const rules = e.recurrenceRules
   if (rules.isNil() || rules.count === 0) return '重複'
   const r = rules.objectAtIndex(0)
-  const name = FREQ_NAME[Number(r.frequency)]
+  const unit = FREQ_UNIT[Number(r.frequency)]   // Calendar.app 可建出這四種以外的頻率
   const iv = Number(r.interval)
-  // 頻率越界（Calendar.app 可建出這四種以外的規則）時不要拿 name 去 slice，
-  // 否則 fallback 的「重複」會被組成「重複:每2複」
-  if (name === undefined) return '重複' + (iv > 1 ? ':每' + iv + '次' : '')
-  return '重複:' + (iv > 1 ? '每' + iv + name.slice(1) : name)
+  if (unit === undefined) return '重複' + (iv > 1 ? ':每' + iv + '次' : '')
+  return '重複:每' + (iv > 1 ? iv : '') + unit
 }
 
 // ---------- 參數解析 ----------
@@ -249,64 +252,45 @@ function cmdCalendars(argv) {
   parseFlags(argv, 1, 'calendars')
   requireFullAccess()
   const st = store()
-  const cals = st.calendarsForEntityType($.EKEntityTypeEvent)
   const types = { 0: 'local本機', 1: 'exchange', 2: 'calDAV', 3: 'mobileMe', 4: '訂閱', 5: 'birthdays' }
-  const rows = []
-  for (let i = 0; i < cals.count; i++) {
-    const c = cals.objectAtIndex(i)
-    rows.push([
+  return calendars(st).map(function (c) {
+    return [
       ObjC.unwrap(c.title),
       c.allowsContentModifications ? '可寫' : '唯讀',
       ObjC.unwrap(c.source.title) + '/' + (types[c.source.sourceType] || c.source.sourceType)
-    ].join(' | '))
-  }
-  return rows.sort().join('\n')
+    ].join(' | ')
+  }).sort().join('\n')
 }
 
 function cmdList(argv) {
   const { flags } = parseFlags(argv, 1, 'list')
+  const from = flags.from ? parseISO(flags.from, '--from') : today0()
+  const days = posInt(flags.days, '--days', 7)
   requireFullAccess()
   const st = store()
-  const from = flags.from ? parseISO(flags.from, '--from') : today0()
-  let days = 7
-  if (flags.days !== undefined) {
-    if (!/^\d+$/.test(flags.days) || parseInt(flags.days, 10) < 1) {
-      throw new Error('--days 需為正整數，收到: ' + flags.days)
-    }
-    days = parseInt(flags.days, 10)
-  }
   const to = from.dateByAddingTimeInterval(days * 24 * 3600)
 
   let cals = $()
   if (flags.cal) cals = $([findCalendar(st, flags.cal)])
 
-  const evs = st.eventsMatchingPredicate(
-    st.predicateForEventsWithStartDateEndDateCalendars(from, to, cals))
+  const evs = ObjC.unwrap(st.eventsMatchingPredicate(
+    st.predicateForEventsWithStartDateEndDateCalendars(from, to, cals)))
 
   const head = fmt(from, 'yyyy-MM-dd') + ' 起 ' + days + ' 天'
     + (flags.cal ? '（行事曆: ' + flags.cal + '）' : '（全部行事曆）')
-    + '，共 ' + evs.count + ' 筆'
-  if (evs.count === 0) return head
-  const rows = []
-  for (let i = 0; i < evs.count; i++) rows.push(describe(evs.objectAtIndex(i)))
-  return head + '\n' + rows.join('\n')
+    + '，共 ' + evs.length + ' 筆'
+  if (evs.length === 0) return head
+  return head + '\n' + evs.map(describe).join('\n')
 }
 
 function cmdAdd(argv) {
   const { pos, flags } = parseFlags(argv, 1, 'add')
-  requireFullAccess()
   if (pos.length < 3) {
     throw new Error('用法: calx add <開始> <結束或分鐘數> <標題> [--cal 行事曆] [--loc 地點] [--allday]\n      [--repeat daily|weekly|monthly|yearly] [--interval N] [--count N | --until YYYY-MM-DD]')
   }
-  const st = store()
-  const calName = flags.cal || '工作'
-  const cal = findCalendar(st, calName)
-  if (!cal.allowsContentModifications) {
-    throw new Error('行事曆「' + calName + '」為唯讀（訂閱或系統行事曆），無法新增')
-  }
-  // 先驗證重複參數再動任何寫入，錯誤參數不該留下半個事件
+  // 所有格式驗證排在授權檢查與 store 建立之前：便宜的檢查先跑，
+  // 參數打錯時不必先付 store 冷啟動（實測 33ms），沙箱內也驗得到。
   const recSpec = validateRecurrence(flags)
-
   const start = parseISO(pos[0], '開始時間')
   let end
   if (flags.allday) {
@@ -322,6 +306,14 @@ function cmdAdd(argv) {
     if (end.timeIntervalSinceDate(start) <= 0) throw new Error('結束時間不得早於或等於開始時間')
   }
 
+  requireFullAccess()
+  const st = store()
+  const calName = flags.cal || '工作'
+  const cal = findCalendar(st, calName)
+  if (!cal.allowsContentModifications) {
+    throw new Error('行事曆「' + calName + '」為唯讀（訂閱或系統行事曆），無法新增')
+  }
+
   const ev = $.EKEvent.eventWithEventStore(st)
   ev.title = pos[2]
   ev.startDate = start
@@ -333,7 +325,9 @@ function cmdAdd(argv) {
   if (recSpec) ev.recurrenceRules = $([buildRecurrence(recSpec, start)])
 
   // 建立重複事件要用 EKSpanFutureEvents，否則規則不會套用到整個系列
-  saveOrThrow(st, ev, recSpec ? $.EKSpanFutureEvents : $.EKSpanThisEvent, '新增')
+  ekOrThrow('新增', function (e) {
+    return st.saveEventSpanError(ev, recSpec ? $.EKSpanFutureEvents : $.EKSpanThisEvent, e)
+  })
 
   // 回讀驗證：不以 save 回 true 當作已寫入
   const back = store().eventWithIdentifier(ev.eventIdentifier)
@@ -380,7 +374,7 @@ function cmdEdit(argv) {
     throw new Error('修改後結束時間不得早於或等於開始時間')
   }
 
-  saveOrThrow(st, ev, span, '修改')
+  ekOrThrow('修改', function (e) { return st.saveEventSpanError(ev, span, e) })
 
   // 這裡刻意用 ev.eventIdentifier 而非 getEvent(..., flags.on) 重查，兩種 span 都對，別「修正」成後者：
   //   span=this  → 該場次 detach，ev.eventIdentifier 變成帶 /RID= 的專屬 id，取回的就是那一場。
@@ -407,27 +401,18 @@ function cmdDelete(argv) {
   if (ev.hasRecurrenceRules && flags.span === undefined) {
     console.log('提醒: 這是重複事件，預設只刪本次場次（--span future 可刪本次及之後所有場次）')
   }
-  const err = $()
-  const ok = st.removeEventSpanError(ev, span, err)
-  if (!ok) {
-    let msg = '(無錯誤訊息)'
-    try { if (!err.isNil()) msg = ObjC.unwrap(err.localizedDescription) } catch (e) {}
-    throw new Error('刪除失敗: ' + msg)
-  }
+  ekOrThrow('刪除', function (e) { return st.removeEventSpanError(ev, span, e) })
   // 回讀驗證刪除確實生效。
   // 重複事件刪掉某一場後系列本身仍在，eventWithIdentifier 依然回傳非 nil，
   // 因此指定了場次時要改查「那一天還有沒有這個事件」，否則會誤判成刪除失敗。
-  let stillThere
-  if (flags.on !== undefined) {
-    try { getEvent(store(), pos[0], flags.on); stillThere = true } catch (e) { stillThere = false }
-  } else {
-    stillThere = !store().eventWithIdentifier(pos[0]).isNil()
+  if (findEvent(store(), pos[0], flags.on) !== null) {
+    throw new Error('刪除指令回報成功，但事件仍可讀取，未確認刪除')
   }
-  if (stillThere) throw new Error('刪除指令回報成功，但事件仍可讀取，未確認刪除')
   return '已刪除\n  ' + desc
 }
 
-function cmdSelftest() {
+function cmdSelftest(argv) {
+  parseFlags(argv, 1, 'selftest')
   const results = []
   let rc = 0
   function ck(name, got, want) {
@@ -512,7 +497,7 @@ function run(argv) {
     case 'edit': return cmdEdit(argv)
     case 'delete': return cmdDelete(argv)
     case 'calendars': return cmdCalendars(argv)
-    case 'selftest': return cmdSelftest()
+    case 'selftest': return cmdSelftest(argv)
     case undefined:
     case '-h':
     case '--help': return USAGE
