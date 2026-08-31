@@ -68,6 +68,47 @@ function requireFullAccess() {
 
 function store() { return $.EKEventStore.alloc.init }
 
+function cmdAuthorize(argv) {
+  parseFlags(argv, 1, 'authorize')
+  const before = Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent))
+  if (before === 3) return '行事曆已取得 fullAccess(3)'
+  if (before === 1) {
+    throw new Error('macOS 系統政策限制行事曆權限；請解除家長監護／MDM 限制或聯絡管理員')
+  }
+  if (before === 2) {
+    throw new Error('macOS 已拒絕行事曆權限；請到「系統設定 → 隱私權與安全性 → 行事曆」開啟完整存取權')
+  }
+
+  const st = store()
+  const supportsFull = st.respondsToSelector('requestFullAccessToEventsWithCompletion:')
+  const supportsLegacy = st.respondsToSelector('requestAccessToEntityType:completion:')
+  if (!supportsFull && !supportsLegacy) {
+    throw new Error('此 macOS 版本不支援 EventKit 行事曆授權 API')
+  }
+
+  let done = false, message = ''
+  const completion = ObjC.block('void', ['bool', 'id'], function (ok, error) {
+    try { if (error && !error.isNil()) message = ObjC.unwrap(error.localizedDescription) }
+    catch (e) { message = 'EventKit 錯誤訊息無法解析' }
+    if (!Boolean(ok) && !message) message = '使用者未允許行事曆存取'
+    done = true
+  })
+  if (supportsFull) st.requestFullAccessToEventsWithCompletion(completion)
+  else st.requestAccessToEntityTypeCompletion($.EKEntityTypeEvent, completion)
+
+  // JXA completion 可能不回到主執行緒；TCC status 會先更新，任一完成即可。
+  const deadline = $.NSDate.dateWithTimeIntervalSinceNow(120)
+  while (!done && Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent)) === before &&
+         deadline.timeIntervalSinceNow > 0) {
+    $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(0.1))
+  }
+
+  const after = Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent))
+  if (after === 3) return '行事曆授權成功: fullAccess(3)'
+  if (!done && after === before) throw new Error('等候 macOS 行事曆授權逾時，請重新執行 calx authorize')
+  throw new Error('未取得行事曆完整存取權: status=' + after + (message ? '，' + message : ''))
+}
+
 function calendars(st) {
   return ObjC.unwrap(st.calendarsForEntityType($.EKEntityTypeEvent))
 }
@@ -212,6 +253,7 @@ function recurrenceLabel(e) {
 // 沒有白名單時 `--allDay`（大小寫寫錯）會被當成具值旗標，吃掉後面的 `--cal`，
 // 結果是「非全天 + 寫進預設行事曆 + 零警告」——正是這個工具要防的那種靜默失敗。
 const SPEC = {
+  authorize: { flags: [], bool: [], pos: 0 },
   list:      { flags: ['from', 'days', 'cal'], bool: [], pos: 0 },
   add:       { flags: ['cal', 'loc', 'allday', 'repeat', 'interval', 'count', 'until'], bool: ['allday'], pos: 3 },
   edit:      { flags: ['title', 'start', 'end', 'loc', 'cal', 'on', 'span'], bool: [], pos: 1 },
@@ -447,6 +489,8 @@ function cmdSelftest(argv) {
   throws('parseFlags list 不收位置參數', function () { parseFlags(['list', '2026-09-08'], 1, 'list') })
   throws('parseFlags 白名單不跨子命令', function () { parseFlags(['delete', '--repeat', 'daily'], 1, 'delete') })
   ck('parseFlags edit 接受 --on', String(parseFlags(['edit', 'ID', '--on', '2026-09-21'], 1, 'edit').flags.on), '2026-09-21')
+  ck('parseFlags authorize 接受零參數', String(parseFlags(['authorize'], 1, 'authorize').pos.length), '0')
+  throws('parseFlags authorize 拒絕多餘參數', function () { parseFlags(['authorize', 'extra'], 1, 'authorize') })
 
   ck('validateRecurrence 無重複回 null', String(validateRecurrence({}) === null), 'true')
   const rs = validateRecurrence({ repeat: 'weekly', interval: '2', count: '12' })
@@ -471,6 +515,7 @@ function cmdSelftest(argv) {
 const USAGE = [
   'calx — Apple 行事曆 (EventKit) 查詢／新增／修改／刪除',
   '',
+  '  calx authorize',
   '  calx list   [--from YYYY-MM-DD] [--days N] [--cal 行事曆]',
   '  calx add    <開始> <結束或分鐘數> <標題> [--cal 行事曆] [--loc 地點] [--allday]',
   '                                          [--repeat daily|weekly|monthly|yearly]',
@@ -492,6 +537,7 @@ const USAGE = [
 function run(argv) {
   const cmd = argv[0]
   switch (cmd) {
+    case 'authorize': return cmdAuthorize(argv)
     case 'list': return cmdList(argv)
     case 'add': return cmdAdd(argv)
     case 'edit': return cmdEdit(argv)
