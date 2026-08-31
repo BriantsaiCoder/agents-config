@@ -1,6 +1,0 @@
-#!/bin/bash
-# Apple 行事曆 CRUD（EventKit / JXA 後端）
-# osascript 把 throw 的訊息包成 "<path>: execution error: Error: Error: <訊息> (-2700)"，此處剝除外層。
-DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
-osascript -l JavaScript "$DIR/cal.js" "$@" \
-  2> >(sed -e 's/^.*execution error: Error: \(Error: \)\{0,1\}//' -e 's/ (-[0-9]\{1,\})$//' >&2)

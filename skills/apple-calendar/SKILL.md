@@ -11,22 +11,47 @@ description: 查詢、新增、修改、刪除 macOS Apple 行事曆（Calendar.
 
 ## 指令
 
+腳本在 skill 目錄內，**用絕對路徑呼叫即可，不依賴 PATH**（`S=~/.agents/skills/apple-calendar`）：
+
 ```bash
-cal-list   [--from YYYY-MM-DD] [--days N] [--cal 行事曆]
-cal-add    <開始> <結束或分鐘數> <標題> [--cal 行事曆] [--loc 地點] [--allday]
-                                       [--repeat daily|weekly|monthly|yearly]
-                                       [--interval N] [--count N | --until YYYY-MM-DD]
-cal-edit   <id> [--title T] [--start ISO] [--end ISO] [--loc L] [--cal 行事曆] [--on YYYY-MM-DD] [--span this|future]
-cal-delete <id> [--on YYYY-MM-DD] [--span this|future]
-calx calendars    # 列出行事曆與可寫性
-calx selftest     # 純函式自檢，不碰資料
+$S/cal-list.sh   [--from YYYY-MM-DD] [--days N] [--cal 行事曆]
+$S/cal-add.sh    <開始> <結束或分鐘數> <標題> [--cal 行事曆] [--loc 地點] [--allday]
+                                             [--repeat daily|weekly|monthly|yearly]
+                                             [--interval N] [--count N | --until YYYY-MM-DD]
+$S/cal-edit.sh   <id> [--title T] [--start ISO] [--end ISO] [--loc L] [--cal 行事曆] [--on YYYY-MM-DD] [--span this|future]
+$S/cal-delete.sh <id> [--on YYYY-MM-DD] [--span this|future]
+$S/cal.sh calendars    # 列出行事曆與可寫性
+$S/cal.sh selftest     # 純函式自檢，不碰資料也不需權限
 ```
 
-主入口是 `calx`（`calx list`／`calx add`／…），`cal-*` 是等價包裝。**入口不叫 `cal`** —— 那是 macOS 內建的月曆指令，`/usr/bin/cal` 在 PATH 中排在 `~/bin` 之前，取這個名字會讓所有子命令被系統指令攔截（症狀是 `year 'selftest' not in range 1..9999`，且刪除指令會靜默不執行）。
+`cal.sh` 是主入口（`cal.sh list`／`cal.sh add`／…），`cal-*.sh` 是等價包裝。
+
+**選用：裝成短指令。** 本機已裝（`calx`／`cal-list`／`cal-add`／`cal-edit`／`cal-delete`），換機器要重跑：
+
+```bash
+ln -sfn ~/.agents/skills/apple-calendar/cal.sh ~/bin/calx
+for s in add edit list delete; do ln -sfn ~/.agents/skills/apple-calendar/cal-$s.sh ~/bin/cal-$s; done
+```
+
+**短指令不可叫 `cal`** —— 那是 macOS 內建的月曆指令，`/usr/bin/cal` 在 PATH 中排在 `~/bin` 之前，取這個名字會讓所有子命令被系統指令攔截（症狀是 `year 'selftest' not in range 1..9999`，且刪除指令會靜默不執行）。磁碟檔名帶 `.sh` 是 repo 的 conformance 要求（`skills/` 下的可執行檔必須有腳本副檔名），與指令名無關。
 
 時間格式只吃 `YYYY-MM-DD` 或 `YYYY-MM-DDTHH:MM`（不含秒）；相對日期（「明天」「下週一」）由呼叫端換算成絕對日期後再傳入。
 
 `list` 預設從今天起 7 天、涵蓋全部行事曆。`add` 預設寫入「工作」。
+
+## 參數檢查
+
+未知旗標、大小寫寫錯的旗標、超量位置參數一律**拒絕執行**，不會靜默忽略：
+
+```
+$ cal-add 2026-09-08T14:00 60 "X" --allDay --cal 居家
+未知旗標 --allDay（add 可用: --cal --loc --allday --repeat --interval --count --until）
+
+$ cal-add 2026-09-08T14:00 60 部門 週會
+add 只接受 3 個位置參數，收到 4 個: "2026-09-08T14:00" "60" "部門" "週會"（含空白的參數要用引號包起來）
+```
+
+沒有白名單時 `--allDay` 會被當成具值旗標吃掉後面的 `--cal`，結果是「非全天 + 寫進預設行事曆 + 零警告」。參數檢查排在授權檢查之前，所以沙箱內也驗得到。
 
 ## 輸出格式
 
@@ -93,7 +118,7 @@ cal-add 2026-09-09T08:00 30 "每日站會" --repeat daily --until 2026-09-13
 
 TCC 授權掛在 **responsible process**（也就是呼叫的 AI host）上，不是掛在腳本上。Claude Code 已授權不代表 Codex CLI 或 Copilot CLI 也有 —— 換 host 第一次使用要在「系統設定 → 隱私權與安全性 → 行事曆」放行該 app。實測 `swift script.swift` 直譯會被拒（無 bundle id），`osascript` 才通。
 
-**2. 沙箱擋 EventKit，每次操作都需要停用沙箱。** 症狀不是權限錯誤，而是偽裝成 `-600「應用程式不在執行中」`、`open` 回 `procNotFound`、`pgrep` 回 `sysmond service not found`。這代表**每個 `cal-*`／`calx` 指令都會產生一次核准提示** —— 要做多步操作（查詢後修改、建立後確認）時把它們合併成單一 Bash 指令，不要拆成多次呼叫。
+**2. 沙箱擋 EventKit，每次操作都需要停用沙箱。** 最常見的症狀是**授權狀態變成 `status=0 (notDetermined)`** —— 同一台機器、同一個 host，沙箱外回 3、沙箱內回 0，看起來像沒授權其實是沙箱攔截（工具會在 status=0 時提示這點，別急著去改系統設定）。其他症狀：`-600「應用程式不在執行中」`、`open` 回 `procNotFound`、`pgrep` 回 `sysmond service not found`。這代表**每個 `cal-*`／`calx` 指令都會產生一次核准提示** —— 要做多步操作（查詢後修改、建立後確認）時把它們合併成單一 Bash 指令，不要拆成多次呼叫。
 
 **3. 重複事件的所有場次共用同一個 id。** `cal-edit <id>` 不指定場次會動到**第一場**，不是使用者想改的那場。因此重複事件未給 `--on` 一律拒絕執行。指定 `--on` 後預設只影響該場次（`EKSpanThisEvent`）；`--span future` 才會動到該場次及之後所有場次。單獨改過的場次（detached occurrence）id 會多出 `/RID=…` 後綴，仍可直接餵回 `edit`／`delete`。
 

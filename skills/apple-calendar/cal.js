@@ -41,13 +41,18 @@ function today0() {
 // 換一個 host 就要重新授權。
 function requireFullAccess() {
   const st = $.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent)
-  if (Number(st) !== 3) {
-    const names = { 0: 'notDetermined 尚未決定', 1: 'restricted 受限', 2: 'denied 已拒絕', 4: 'writeOnly 僅可寫入' }
-    throw new Error(
-      '行事曆權限不足: status=' + st + ' (' + (names[st] || '未知') + ')，需要 fullAccess(3)。\n' +
-      '  writeOnly 會讓查詢靜默回傳空結果，因此拒絕繼續。\n' +
-      '  修正: 系統設定 → 隱私權與安全性 → 行事曆 → 開啟目前這個 app（呼叫端）的完整存取權。')
-  }
+  if (Number(st) === 3) return
+  const names = { 0: 'notDetermined 尚未決定', 1: 'restricted 受限', 2: 'denied 已拒絕', 4: 'writeOnly 僅可寫入' }
+  // status=0 在沙箱內是常態：同一台機器、同一個 host，沙箱外回 3、沙箱內回 0。
+  // 不區分的話錯誤訊息會把已授權的使用者導去系統設定，改完症狀不變，形成誤診迴圈。
+  const hint = Number(st) === 0
+    ? '  這個 host 若先前成功用過本工具，status=0 通常是沙箱攔截而非未授權 —— 先以停用沙箱重跑。\n'
+    : ''
+  throw new Error(
+    '行事曆權限不足: status=' + st + ' (' + (names[st] || '未知') + ')，需要 fullAccess(3)。\n' +
+    '  writeOnly 會讓查詢靜默回傳空結果，因此拒絕繼續。\n' +
+    hint +
+    '  仍不行才是真的未授權: 系統設定 → 隱私權與安全性 → 行事曆 → 開啟呼叫端 app 的完整存取權。')
 }
 
 function store() { return $.EKEventStore.alloc.init }
@@ -170,6 +175,7 @@ function validateRecurrence(flags) {
     }
     count = parseInt(flags.count, 10)
   }
+  if (flags.until !== undefined) parseISO(flags.until, '--until')  // 格式錯要在寫入前就擋下
   return { freq: freq, interval: interval, count: count, until: flags.until }
 }
 
@@ -190,30 +196,57 @@ function recurrenceLabel(e) {
   const rules = e.recurrenceRules
   if (rules.isNil() || rules.count === 0) return '重複'
   const r = rules.objectAtIndex(0)
-  const name = FREQ_NAME[Number(r.frequency)] || '重複'
+  const name = FREQ_NAME[Number(r.frequency)]
   const iv = Number(r.interval)
+  // 頻率越界（Calendar.app 可建出這四種以外的規則）時不要拿 name 去 slice，
+  // 否則 fallback 的「重複」會被組成「重複:每2複」
+  if (name === undefined) return '重複' + (iv > 1 ? ':每' + iv + '次' : '')
   return '重複:' + (iv > 1 ? '每' + iv + name.slice(1) : name)
 }
 
 // ---------- 參數解析 ----------
-function parseFlags(argv, from) {
+// 每個子命令的合法旗標與位置參數上限。未知旗標必須擋下而非忽略：
+// 沒有白名單時 `--allDay`（大小寫寫錯）會被當成具值旗標，吃掉後面的 `--cal`，
+// 結果是「非全天 + 寫進預設行事曆 + 零警告」——正是這個工具要防的那種靜默失敗。
+const SPEC = {
+  list:      { flags: ['from', 'days', 'cal'], bool: [], pos: 0 },
+  add:       { flags: ['cal', 'loc', 'allday', 'repeat', 'interval', 'count', 'until'], bool: ['allday'], pos: 3 },
+  edit:      { flags: ['title', 'start', 'end', 'loc', 'cal', 'on', 'span'], bool: [], pos: 1 },
+  delete:    { flags: ['on', 'span'], bool: [], pos: 1 },
+  calendars: { flags: [], bool: [], pos: 0 },
+  selftest:  { flags: [], bool: [], pos: 0 }
+}
+
+function parseFlags(argv, from, cmd) {
+  const spec = SPEC[cmd]
+  if (spec === undefined) throw new Error('內部錯誤: 未定義子命令 "' + cmd + '" 的參數規格')
   const pos = [], flags = {}
   for (let i = from; i < argv.length; i++) {
     const a = argv[i]
     if (a.indexOf('--') === 0) {
       const k = a.slice(2)
-      if (k === 'all' || k === 'allday') { flags[k] = true; continue }
+      if (spec.flags.indexOf(k) < 0) {
+        throw new Error('未知旗標 --' + k + '（' + cmd + ' 可用: ' +
+          (spec.flags.length ? spec.flags.map(function (f) { return '--' + f }).join(' ') : '無') + '）')
+      }
+      if (spec.bool.indexOf(k) >= 0) { flags[k] = true; continue }
       i++
       if (i >= argv.length) throw new Error('--' + k + ' 缺少值')
       flags[k] = argv[i]
     } else pos.push(a)
+  }
+  if (pos.length > spec.pos) {
+    throw new Error(cmd + ' 只接受 ' + spec.pos + ' 個位置參數，收到 ' + pos.length +
+      ' 個: ' + pos.map(function (p) { return '"' + p + '"' }).join(' ') +
+      (spec.pos > 0 ? '（含空白的參數要用引號包起來）' : ''))
   }
   return { pos: pos, flags: flags }
 }
 
 // ---------- 子命令 ----------
 
-function cmdCalendars() {
+function cmdCalendars(argv) {
+  parseFlags(argv, 1, 'calendars')
   requireFullAccess()
   const st = store()
   const cals = st.calendarsForEntityType($.EKEntityTypeEvent)
@@ -231,12 +264,17 @@ function cmdCalendars() {
 }
 
 function cmdList(argv) {
+  const { flags } = parseFlags(argv, 1, 'list')
   requireFullAccess()
-  const { flags } = parseFlags(argv, 1)
   const st = store()
   const from = flags.from ? parseISO(flags.from, '--from') : today0()
-  const days = flags.days ? parseInt(flags.days, 10) : 7
-  if (isNaN(days) || days < 1) throw new Error('--days 需為正整數，收到: ' + flags.days)
+  let days = 7
+  if (flags.days !== undefined) {
+    if (!/^\d+$/.test(flags.days) || parseInt(flags.days, 10) < 1) {
+      throw new Error('--days 需為正整數，收到: ' + flags.days)
+    }
+    days = parseInt(flags.days, 10)
+  }
   const to = from.dateByAddingTimeInterval(days * 24 * 3600)
 
   let cals = $()
@@ -255,8 +293,8 @@ function cmdList(argv) {
 }
 
 function cmdAdd(argv) {
+  const { pos, flags } = parseFlags(argv, 1, 'add')
   requireFullAccess()
-  const { pos, flags } = parseFlags(argv, 1)
   if (pos.length < 3) {
     throw new Error('用法: calx add <開始> <結束或分鐘數> <標題> [--cal 行事曆] [--loc 地點] [--allday]\n      [--repeat daily|weekly|monthly|yearly] [--interval N] [--count N | --until YYYY-MM-DD]')
   }
@@ -307,8 +345,8 @@ function cmdAdd(argv) {
 }
 
 function cmdEdit(argv) {
+  const { pos, flags } = parseFlags(argv, 1, 'edit')
   requireFullAccess()
-  const { pos, flags } = parseFlags(argv, 1)
   if (pos.length < 1) {
     throw new Error('用法: calx edit <id> [--title T] [--start ISO] [--end ISO] [--loc L] [--cal 行事曆] [--on YYYY-MM-DD] [--span this|future]')
   }
@@ -327,7 +365,13 @@ function cmdEdit(argv) {
   let changed = 0
   if (flags.title !== undefined) { ev.title = flags.title; changed++ }
   if (flags.loc !== undefined) { ev.location = flags.loc; changed++ }
-  if (flags.cal !== undefined) { ev.calendar = findCalendar(st, flags.cal); changed++ }
+  if (flags.cal !== undefined) {
+    const target = findCalendar(st, flags.cal)
+    if (!target.allowsContentModifications) {
+      throw new Error('目標行事曆「' + flags.cal + '」為唯讀，無法搬移過去')
+    }
+    ev.calendar = target; changed++
+  }
   // start/end 一起設定後才儲存，避免中間狀態 end<start 被拒
   if (flags.start !== undefined) { ev.startDate = parseISO(flags.start, '--start'); changed++ }
   if (flags.end !== undefined) { ev.endDate = parseISO(flags.end, '--end'); changed++ }
@@ -338,14 +382,20 @@ function cmdEdit(argv) {
 
   saveOrThrow(st, ev, span, '修改')
 
+  // 這裡刻意用 ev.eventIdentifier 而非 getEvent(..., flags.on) 重查，兩種 span 都對，別「修正」成後者：
+  //   span=this  → 該場次 detach，ev.eventIdentifier 變成帶 /RID= 的專屬 id，取回的就是那一場。
+  //   span=future → EventKit 分裂系列並給 ev 一個新的 identifier，指向分裂後的新系列，
+  //                 而新系列的第一場正好是 --on 指定的那場。
+  // 2026-08-31 實測（5 場每日系列，--on 第 3 場 --span future）：回讀報 3/3，
+  // 獨立查詢確認 3/1–3/2 未變、3/3–3/5 已改。
   const back = store().eventWithIdentifier(ev.eventIdentifier)
   if (back.isNil()) throw new Error('修改後回讀不到事件')
   return '已修改\n  修改前: ' + before + '\n  修改後: ' + describe(back)
 }
 
 function cmdDelete(argv) {
+  const { pos, flags } = parseFlags(argv, 1, 'delete')
   requireFullAccess()
-  const { pos, flags } = parseFlags(argv, 1)
   if (pos.length < 1) throw new Error('用法: calx delete <id> [--on YYYY-MM-DD] [--span this|future]')
   const st = store()
   const ev = getEvent(st, pos[0], flags.on)
@@ -401,11 +451,17 @@ function cmdSelftest() {
   ck('parseSpan 預設 this', String(parseSpan(undefined) === $.EKSpanThisEvent), 'true')
   ck('parseSpan future', String(parseSpan('future') === $.EKSpanFutureEvents), 'true')
 
-  const f = parseFlags(['add', 'A', 'B', 'C', '--cal', 'X', '--allday', '--loc', 'L'], 1)
+  const f = parseFlags(['add', 'A', 'B', 'C', '--cal', 'X', '--allday', '--loc', 'L'], 1, 'add')
   ck('parseFlags 位置參數', f.pos.join(','), 'A,B,C')
   ck('parseFlags 具值旗標', f.flags.cal + '/' + f.flags.loc, 'X/L')
   ck('parseFlags 布林旗標', String(f.flags.allday), 'true')
-  throws('parseFlags 旗標缺值', function () { parseFlags(['x', '--cal'], 1) })
+  throws('parseFlags 旗標缺值', function () { parseFlags(['x', '--cal'], 1, 'add') })
+  throws('parseFlags 拒絕未知旗標', function () { parseFlags(['add', '--repaet', 'weekly'], 1, 'add') })
+  throws('parseFlags 拒絕大小寫錯的旗標', function () { parseFlags(['add', '--allDay'], 1, 'add') })
+  throws('parseFlags 拒絕超量位置參數', function () { parseFlags(['add', 'A', 'B', 'C', 'D'], 1, 'add') })
+  throws('parseFlags list 不收位置參數', function () { parseFlags(['list', '2026-09-08'], 1, 'list') })
+  throws('parseFlags 白名單不跨子命令', function () { parseFlags(['delete', '--repeat', 'daily'], 1, 'delete') })
+  ck('parseFlags edit 接受 --on', String(parseFlags(['edit', 'ID', '--on', '2026-09-21'], 1, 'edit').flags.on), '2026-09-21')
 
   ck('validateRecurrence 無重複回 null', String(validateRecurrence({}) === null), 'true')
   const rs = validateRecurrence({ repeat: 'weekly', interval: '2', count: '12' })
@@ -416,6 +472,9 @@ function cmdSelftest() {
   throws('validateRecurrence 拒絕 interval 為 0', function () { validateRecurrence({ repeat: 'weekly', interval: '0' }) })
   throws('validateRecurrence 拒絕 count 非數字', function () { validateRecurrence({ repeat: 'weekly', count: 'many' }) })
   throws('validateRecurrence 拒絕無 --repeat 卻給 --count', function () { validateRecurrence({ count: '3' }) })
+  throws('validateRecurrence 拒絕格式錯的 --until', function () { validateRecurrence({ repeat: 'daily', until: '2026/09/13' }) })
+  throws('validateRecurrence 拒絕無效日期的 --until', function () { validateRecurrence({ repeat: 'daily', until: '2026-02-30' }) })
+  ck('validateRecurrence 保留 --until', validateRecurrence({ repeat: 'daily', until: '2026-09-13' }).until, '2026-09-13')
 
   const st = $.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent)
   results.push('info 目前授權 status=' + st + (Number(st) === 3 ? ' (fullAccess)' : ' (非 fullAccess，讀寫子命令會硬失敗)'))
