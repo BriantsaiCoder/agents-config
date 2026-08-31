@@ -486,6 +486,7 @@ rg -q '架構變更.*`init-project-docs`.*architecture docs' "$KERNEL" ||
 # 路徑（implement／handoff／to-spec 都只在那裡出現）。
 UNROUTED_BY_DESIGN=$(cat <<'LIST'
 agent-browser
+apple-calendar
 aspnet-api-architect
 auth-implementation-patterns
 c-cpp-best-practices
@@ -757,6 +758,7 @@ done < "$B2_SKILLS_LOCK"
 while IFS= read -r changed; do
   case "$changed" in
     skills/agent-browser/SKILL.md | \
+    skills/apple-calendar/* | \
     skills/dotnet-find-bugs/* | \
     skills/dotnet-test/* | \
     skills/native-feel-cross-platform-desktop/* | \
