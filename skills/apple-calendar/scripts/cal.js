@@ -101,7 +101,7 @@ function cmdAuthorize(argv) {
   if (supportsFull) st.requestFullAccessToEventsWithCompletion(completion)
   else st.requestAccessToEntityTypeCompletion($.EKEntityTypeEvent, completion)
 
-  // JXA completion 可能不回到主執行緒；TCC status 會先更新，任一完成即可。
+  // JXA completion 可能不回到主執行緒；明確拒絕可提早停止，成功則仍等待 TCC status 更新。
   const deadline = $.NSDate.dateWithTimeIntervalSinceNow(120)
   while (authorizationWaitPending(
            before, Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent)), done, granted) &&
@@ -111,7 +111,9 @@ function cmdAuthorize(argv) {
 
   const after = Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent))
   if (after === 3) return '行事曆授權成功: fullAccess(3)'
-  if (after === before && (!done || granted)) throw new Error('等候 macOS 行事曆授權逾時，請重新執行 calx authorize')
+  if (authorizationWaitPending(before, after, done, granted)) {
+    throw new Error('等候 macOS 行事曆授權逾時，請重新執行 calx authorize')
+  }
   throw new Error('未取得行事曆完整存取權: status=' + after + (message ? '，' + message : ''))
 }
 
