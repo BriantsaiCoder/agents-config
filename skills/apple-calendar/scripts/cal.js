@@ -68,6 +68,10 @@ function requireFullAccess() {
 
 function store() { return $.EKEventStore.alloc.init }
 
+function authorizationWaitPending(before, current, done, granted) {
+  return current === before && (!done || granted)
+}
+
 function cmdAuthorize(argv) {
   parseFlags(argv, 1, 'authorize')
   const before = Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent))
@@ -86,11 +90,12 @@ function cmdAuthorize(argv) {
     throw new Error('此 macOS 版本不支援 EventKit 行事曆授權 API')
   }
 
-  let done = false, message = ''
+  let done = false, granted = false, message = ''
   const completion = ObjC.block('void', ['bool', 'id'], function (ok, error) {
+    granted = Boolean(ok)
     try { if (error && !error.isNil()) message = ObjC.unwrap(error.localizedDescription) }
     catch (e) { message = 'EventKit 錯誤訊息無法解析' }
-    if (!Boolean(ok) && !message) message = '使用者未允許行事曆存取'
+    if (!granted && !message) message = '使用者未允許行事曆存取'
     done = true
   })
   if (supportsFull) st.requestFullAccessToEventsWithCompletion(completion)
@@ -98,14 +103,15 @@ function cmdAuthorize(argv) {
 
   // JXA completion 可能不回到主執行緒；TCC status 會先更新，任一完成即可。
   const deadline = $.NSDate.dateWithTimeIntervalSinceNow(120)
-  while (!done && Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent)) === before &&
+  while (authorizationWaitPending(
+           before, Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent)), done, granted) &&
          deadline.timeIntervalSinceNow > 0) {
     $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(0.1))
   }
 
   const after = Number($.EKEventStore.authorizationStatusForEntityType($.EKEntityTypeEvent))
   if (after === 3) return '行事曆授權成功: fullAccess(3)'
-  if (!done && after === before) throw new Error('等候 macOS 行事曆授權逾時，請重新執行 calx authorize')
+  if (after === before && (!done || granted)) throw new Error('等候 macOS 行事曆授權逾時，請重新執行 calx authorize')
   throw new Error('未取得行事曆完整存取權: status=' + after + (message ? '，' + message : ''))
 }
 
@@ -491,6 +497,7 @@ function cmdSelftest(argv) {
   ck('parseFlags edit 接受 --on', String(parseFlags(['edit', 'ID', '--on', '2026-09-21'], 1, 'edit').flags.on), '2026-09-21')
   ck('parseFlags authorize 接受零參數', String(parseFlags(['authorize'], 1, 'authorize').pos.length), '0')
   throws('parseFlags authorize 拒絕多餘參數', function () { parseFlags(['authorize', 'extra'], 1, 'authorize') })
+  ck('authorize completion 成功先到仍等待 status', String(authorizationWaitPending(0, 0, true, true)), 'true')
 
   ck('validateRecurrence 無重複回 null', String(validateRecurrence({}) === null), 'true')
   const rs = validateRecurrence({ repeat: 'weekly', interval: '2', count: '12' })
