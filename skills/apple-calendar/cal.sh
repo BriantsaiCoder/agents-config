@@ -8,12 +8,12 @@ set -uo pipefail
 
 # 解析 symlink 到實際檔案位置。不用 readlink -f —— 那是 GNU 擴充，
 # 舊版 macOS 的 BSD readlink 沒有，而這個 repo 會同步到別台機器。
-self="${BASH_SOURCE[0]}"
+self="${BASH_SOURCE[0]:-$0}"
 while [ -L "$self" ]; do
   link=$(readlink "$self")
   case $link in /*) self=$link ;; *) self=$(dirname "$self")/$link ;; esac
 done
-DIR=$(cd "$(dirname "$self")" && pwd)
+DIR=$(cd "$(dirname "$self")" && pwd -P)
 
 { osascript -l JavaScript "$DIR/cal.js" "$@" 2>&1 1>&3 3>&- \
     | sed -e 's/^.*execution error: Error: \(Error: \)\{0,1\}//' -e 's/ (-[0-9]\{1,\})$//' >&2
