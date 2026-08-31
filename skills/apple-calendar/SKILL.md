@@ -11,7 +11,7 @@ description: 查詢、新增、修改、刪除 macOS Apple 行事曆（Calendar.
 
 ## 指令
 
-腳本在 skill 目錄內，**用絕對路徑呼叫即可，不依賴 PATH**（`S=~/.agents/skills/apple-calendar`）：
+腳本在本 skill 的 `scripts/` 下，**用絕對路徑呼叫即可，不依賴 PATH**（`S=~/.agents/skills/apple-calendar/scripts`）：
 
 ```bash
 $S/cal-list.sh   [--from YYYY-MM-DD] [--days N] [--cal 行事曆]
@@ -24,13 +24,15 @@ $S/cal.sh calendars    # 列出行事曆與可寫性
 $S/cal.sh selftest     # 純函式自檢，不碰資料也不需權限
 ```
 
-`cal.sh` 是主入口（`cal.sh list`／`cal.sh add`／…），`cal-*.sh` 是等價包裝。
+主入口是 `scripts/cal.sh`（`cal.sh list`／`cal.sh add`／…）；`scripts/cal-list.sh`、`scripts/cal-add.sh`、`scripts/cal-edit.sh`、`scripts/cal-delete.sh` 是等價包裝，JXA 本體在 `scripts/cal.js`。
 
 **選用：裝成短指令。** 本機已裝（`calx`／`cal-list`／`cal-add`／`cal-edit`／`cal-delete`），換機器要重跑：
 
 ```bash
-ln -sfn ~/.agents/skills/apple-calendar/cal.sh ~/bin/calx
-for s in add edit list delete; do ln -sfn ~/.agents/skills/apple-calendar/cal-$s.sh ~/bin/cal-$s; done
+ln -sfn ~/.agents/skills/apple-calendar/scripts/cal.sh ~/bin/calx
+for s in add edit list delete; do
+  ln -sfn ~/.agents/skills/apple-calendar/scripts/cal-$s.sh ~/bin/cal-$s
+done
 ```
 
 **短指令不可叫 `cal`** —— 那是 macOS 內建的月曆指令，`/usr/bin/cal` 在 PATH 中排在 `~/bin` 之前，取這個名字會讓所有子命令被系統指令攔截（症狀是 `year 'selftest' not in range 1..9999`，且刪除指令會靜默不執行）。磁碟檔名帶 `.sh` 是 repo 的 conformance 要求（`skills/` 下的可執行檔必須有腳本副檔名），與指令名無關。
@@ -136,4 +138,6 @@ TCC 授權掛在 **responsible process**（也就是呼叫的 AI host）上，�
 - JXA 陷阱：`authorizationStatus` 回傳的是**字串**，`=== 3` 永遠 false，須 `Number()`；全天旗標的 setter 是 `allDay`，寫 `isAllDay` 會靜默不生效；讀 `NSError` out-param 用 `$()` + `isNil()`，用 `ObjC.castRefToObject` 會 segfault。
 - 跨 store 實例操作會靜默失敗：用 store A 刪除從 store B 取得的事件不會生效也不報錯。
 
-改動後跑 `calx selftest`（純函式，不碰資料），以及一輪 建立 → 用 `cal-list` 獨立回讀 → 刪除 → 全年掃描確認無殘留。
+改動後跑 `tests/apple-calendar.sh`（會驗 `scripts/` 下的 payload 完整性並執行 selftest），
+以及一輪 建立 → 用 `cal-list` 獨立回讀 → 刪除 → 全年掃描確認無殘留。
+`bin/ci-local` 會把這支測試當 local-only gate 自動跑（GitHub runner 沒有 osascript）。
