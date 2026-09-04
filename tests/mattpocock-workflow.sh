@@ -212,6 +212,9 @@ done
 
 has "setup requires explicit user invocation" 'setup-matt-pocock-skills.*使用者.*明示|使用者.*明示.*setup-matt-pocock-skills' skills/dev-workflow/SKILL.md
 has "global issue-tracker fallback" '~/\.agents/docs/agents/issue-tracker.md' skills/dev-workflow/SKILL.md
+section_has "Codex handles unavailable tools" Codex '工具未提供時以文字列 session plan／進度' "$host_adapters_ref"
+section_has "Codex fallback preserves approval" Codex '不得模擬工具呼叫或略過 protected gate 核准' "$host_adapters_ref"
+section_has "Codex Plan Mode is host-controlled" Codex 'Plan Mode（僅 host／user 可切換）' "$host_adapters_ref"
 has "Copilot delegation uses task" '子代理 = `task` 工具' "$host_adapters_ref"
 has "Copilot hook path is normative" 'Copilot.*Git guard MUST 位於' "$host_adapters_ref"
 
