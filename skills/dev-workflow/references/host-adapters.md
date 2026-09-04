@@ -43,7 +43,7 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 m
 
 ## Codex
 
-- plan = Plan Mode；todo = update_plan；子代理 = spawn_agent／wait_agent。
+- plan = Plan Mode（僅 host／user 可切換）；todo = update_plan；子代理 = spawn_agent／wait_agent。工具未提供時以文字列 session plan／進度，依 [INT-4] 評估自行完成；不得模擬工具呼叫或略過 protected gate 核准。
 - user-only skill command = `$<skill-name>`。
 - Codex native Local/Worktree Handoff 只移動同一 chat 與 code，MUST NOT 觸發 Matt `$handoff`；跨 session／agent 文件仍走 `$handoff`。
 - `implement` 先用 `~/.agents/bin/agents-branch` 或 repo worktree 建 isolated branch；S6 用 PR heartbeat。
