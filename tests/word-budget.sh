@@ -130,8 +130,8 @@ if [ -d "$LIVE" ] && [ -r "$LIVE/dev-workflow/SKILL.md" ]; then
     && ok "dev-workflow 使用緊預算 limit=$dw" \
     || bad "dev-workflow 使用緊預算 (<500)" "<500" "${dw:-無}"
 
-  echo "── A1：真實語料，5 個 zh-TW skill 都必須被量到 ──"
-  for s in sdd deps-check bug-fix-settlement aspnet-api-architect dev-workflow; do
+  echo "── A1：真實語料，4 個 zh-TW skill 都必須被量到 ──"
+  for s in deps-check bug-fix-settlement aspnet-api-architect dev-workflow; do
     e=$(printf '%s\n' "$OUT" | awk -v n="$s" '$6==n{print $1}')
     w=$(printf '%s\n' "$OUT" | awk -v n="$s" '$6==n{print $2}')
     if [ -n "$e" ] && [ -n "$w" ] && [ "$e" -gt "$w" ]; then

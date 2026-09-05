@@ -5,7 +5,7 @@ microsoft-docs	https://github.com/github/awesome-copilot/tree/a3035a6e7cad53ef68
 playwright-best-practices	https://github.com/currents-dev/playwright-best-practices-skill/tree/283d5cbc5d11aac1abda058b16ad22c317d54dc0/playwright-best-practices	283d5cbc5d11aac1abda058b16ad22c317d54dc0	c8be5caab827faae11237d6bbcb7248a3f39659c506cd3267a22fbd50c52bc46	6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f
 web-design-reviewer	https://github.com/github/awesome-copilot/tree/952c4f45a7bba173f32176a2658a03a1a5ad462c/skills/web-design-reviewer	952c4f45a7bba173f32176a2658a03a1a5ad462c	93784dfa7e42391920887ab9ee2600beb9bd3ff6fda662202e32f4125067d7cc	f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b
 ui-ux-pro-max	https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/14ddef5c05e52d7c253b8f0129de7bcd1045ae5b/.claude/skills/ui-ux-pro-max	14ddef5c05e52d7c253b8f0129de7bcd1045ae5b	dc1761011c3e768b093dd72b7ffa0822c5f72684974d439bac8f52e40757a2f8	83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21
-test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-test/skills/test-gap-analysis	4d25f171766a9b852b229540bf9b8a6874ef16db	718315d6c125ac404ef713b0975de76a3b88527f07c9ac0e3bf10ed5e0cf67fe	a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81
+test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-test/skills/test-gap-analysis	4d25f171766a9b852b229540bf9b8a6874ef16db	4b95660dc88bde2ce3ba1bf301a48991603feae10dbf26eed02249b640437ff0	cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37
 # speak-human-tw 的 source_url 指 repo root，但 payload 只取 upstream 27 個檔中的 10 個。
 # 取捨規則（re-vendor 時照這條重跑，不要照 URL 整包抓）：
 #   vendor SKILL.md 相對引用的遞移閉包 + LICENSE。
@@ -13,4 +13,4 @@ test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-t
 #   assets/(1.6MB 圖)、scripts/、install/、.github/、README/CHANGELOG/CONTRIBUTING 同理丟棄。
 #   本地 fork 另加 evals/trigger-cases.jsonl，並由 evals/run-eval.md 引用，固定 technical fire／quiet 邊界。
 #   兩個方向都不留懸空：既無 dead pointer，也無未被引用的檔。
-speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	77b06d542a8fa3ceb20d75e8f4fc09573dc0241090d87e8c6ec0c8f1b03611a2	b4cc3a5c5d15564a35a67fba17cfd766f74394c89732618175744bcc34434eaf
+speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	e8a2f8448dcf6d738b4b68b6e6b436aab3dbed85d37b0cd9e7003a213e48593e	57acbc734cfbaed3381362fd6d7c44f2a56527e1a9ea4e6a0f162bc018dc7359

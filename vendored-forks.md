@@ -32,10 +32,11 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `prototype` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — adopt the self-contained HTML logic demo and add the local offline/synthetic-data/no-secret/no-production-build boundary; tree SHA-256 `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a` | **Active** |
 | `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
 | `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46` | **Active** |
-| `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; tree SHA-256 `b4cc3a5c5d15564a35a67fba17cfd766f74394c89732618175744bcc34434eaf` | **Active** |
+| `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; tree SHA-256 `57acbc734cfbaed3381362fd6d7c44f2a56527e1a9ea4e6a0f162bc018dc7359` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
-| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); tree SHA-256 `840273dbf411352fe1220fbda428b8b5bb6997316c4648d4791df44f8d3be73a` | **Active** |
-| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81` | **Active** |
+| `tdd` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-05 — canonical workflow seam/authorization and GREEN refactor; tree SHA-256 `331550f33e18c8938c55facb6470f6298ce7525605c2aa1986582571b430e461` | **Active** |
+| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); tree SHA-256 `fdf2558075a888f250abc333f547e384fe708dd926ba5ab6e21fed84a0c7a714` | **Active** |
+| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37` | **Active** |
 
 <!-- fork-index:end -->
 
@@ -285,7 +286,7 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 
 ---
 
-## Pinned Matt set — 13 unmodified + 9 recorded forks
+## Pinned Matt set — 12 unmodified + 10 recorded forks
 
 **`mattpocock/skills` selected 22 — active, rebased to v1.2.2 on 2026-08-06.**
 
@@ -492,6 +493,8 @@ recompute the tree fingerprint and run the Matt workflow tests.
 
 ## code-review
 
+**Decision (2026-09-05, user-authorized Sol/Astra optimization):** Canonical reviewer-template now owns house-five and reviewer evidence/output rules; the entrypoint retains full per-axis dispatch requirements and moves snapshot/Fowler detail into required references. This also closes the historical breaking-change/stack-priority gap through the complete canonical prompt. Re-merge only when upstream preserves these semantics; rerun the recorded two-model canaries and repository gates after updating fingerprints. Roll back this batch by reverting its changes together with callers/lock records; do not remove earlier local forks.
+
 **Decision (2026-08-03): remove the sub-agent output cap, and give the aggregate step the filter the briefs now defer to.**
 
 Step 4's two sub-agent briefs both ended `Under 400 words.` A reviewer follows an output cap
@@ -550,22 +553,10 @@ mechanism because it exits 0 on a bad ref and leaves an empty directory — both
 review nothing and both return PASS. Reapply on upstream update: without the pin, a review that
 runs for tens of minutes silently retargets whenever the branch moves.
 
-Approved tree SHA-256: `840273dbf411352fe1220fbda428b8b5bb6997316c4648d4791df44f8d3be73a`.
+Approved tree SHA-256: `fdf2558075a888f250abc333f547e384fe708dd926ba5ab6e21fed84a0c7a714`.
 Driving rules: `[S5-4]` and `[S5-3]` in `skills/dev-workflow/SKILL.md`.
 
-On upstream update, drop this fork if the new step-4 briefs carry no output cap and step 5 already
-defines a within-axis filter; otherwise reapply every edit listed here — delete any word/finding-count
-limit from every sub-agent brief, keep the report-everything + severity/confidence wording, re-add
-the within-axis filter paragraph to the aggregate step, re-narrow step 5's `Do not merge or rerank
-findings` to `**across** the two axes` (without that word it contradicts the within-axis filter
-added one line earlier), re-add all five baseline rules to the step-3 smell baseline, re-add the
-performance and correctness clauses to the Standards brief, and re-add the sentence stating that
-step 4 pastes the baseline into the Standards sub-agent only (dropping it re-opens the "mandatory
-in every reviewer prompt" mismatch with `[S5-3]`) — then recompute
-the tree fingerprint with
-`vendored_tree_sha256 skills/code-review` and update both this section and the index row. If
-upstream renumbers the steps, re-anchor on the brief text and the `## Standards` / `## Spec`
-aggregate headings rather than the step numbers.
+Current re-merge procedure (2026-09-05): compare upstream against the pinned revision. Preserve the immutable snapshot/dirty package and independent axis contracts; use the canonical reviewer-template as the sole house-five and reviewer-output owner. Reapply only missing behavior, retaining the full canonical prompt in the actual Standards dispatch and the common output/hygiene contract in Spec. Do not restore duplicate inlined baselines. Recompute the tree fingerprint, run workflow/reference guards and the recorded model canaries. Historical step numbers above are evidence of prior fixes, not the current dispatch API.
 
 ---
 
@@ -958,6 +949,8 @@ What remains capable of producing the same output: writing ````` ```mermaid ````
 
 ## speak-human-tw
 
+**Decision (2026-09-05, user-authorized Sol/Astra optimization):** Select Rewrite, Annotation or explicit Check-first from the request; existing rewrite authorization no longer requires a second confirmation. Preserve technical/SF/SNF/secret invariants; demand-load history. Re-merge only when upstream preserves these semantics; rerun the recorded two-model canaries and repository gates after updating fingerprints. Roll back this batch by reverting its changes together with callers/lock records; do not remove earlier local forks.
+
 **Decision (2026-08-29): accept a local fork for technical-work communication.**
 
 The imported 10-file payload was first verified byte-for-byte against pinned upstream commit
@@ -969,8 +962,8 @@ humanizer and adds only the missing technical branch:
 - `references/protected-list.md` protects code, paths, APIs, config keys, commands, versions, results, errors, and logs while redacting credential/secret values.
 - `evals/benchmark.md` adds paired SF-28/SNF-16 coverage plus SF-29 secret redaction; `evals/trigger-cases.jsonl` fixes one technical-writing fire and one raw-log-analysis quiet case.
 
-Approved payload SHA-256 `77b06d542a8fa3ceb20d75e8f4fc09573dc0241090d87e8c6ec0c8f1b03611a2`;
-approved tree SHA-256 `b4cc3a5c5d15564a35a67fba17cfd766f74394c89732618175744bcc34434eaf`.
+Approved payload SHA-256 `e8a2f8448dcf6d738b4b68b6e6b436aab3dbed85d37b0cd9e7003a213e48593e`;
+approved tree SHA-256 `57acbc734cfbaed3381362fd6d7c44f2a56527e1a9ea4e6a0f162bc018dc7359`.
 
 ### Re-merge procedure (when upstream moves)
 
@@ -985,6 +978,8 @@ Rollback by reverting the fork commit: restore the pinned upstream payload and o
 ---
 
 ## test-gap-analysis
+
+**Decision (2026-09-05, user-authorized Sol/Astra optimization):** Externalize the language mutation catalog, remove the claim that mutation score misses nothing, and retain static/empirical evidence, authorization, bounded process-tree timeout and restoration contracts. Re-merge only when upstream preserves these semantics; rerun the recorded two-model canaries and repository gates after updating fingerprints. Roll back this batch by reverting its changes together with callers/lock records; do not remove earlier local forks.
 
 **Decision (2026-08-05): vendor one skill out of a 96-skill marketplace, as a recorded fork.**
 
@@ -1021,10 +1016,10 @@ non-existent sibling skills as consumers, and a section heading was labelled "fo
 
 Baseline before the fork: upstream `SKILL.md` SHA-256
 `cfec7d0e13deaee15fb97151d0cd5339fa5f14c109a10c49de81e9a5512231b7` (blob `973a20d`, 19,121B).
-Local `SKILL.md` SHA-256 `f7a49f4422309f92f59abb728838fb73cc16671ede3c2b2133d918062532e1ab`.
+Local `SKILL.md` SHA-256 `61bc459dd039726ec6f42adedc2e8569743da00c69aafe52f336a1548b0f9f9a`.
 Lock `payload_sha256` (hash-of-hashes over every file in the directory, the column's convention)
-`718315d6c125ac404ef713b0975de76a3b88527f07c9ac0e3bf10ed5e0cf67fe`;
-approved tree SHA-256 `a3e8e49626898da48b1640d6c4adda5fa3878d0fc3a5e905b5d32351db634b81`.
+`4b95660dc88bde2ce3ba1bf301a48991603feae10dbf26eed02249b640437ff0`;
+approved tree SHA-256 `cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37`.
 Upstream `LICENSE` (MIT, .NET Foundation and Contributors) is carried with the payload.
 
 The polyglot mutation catalog is deliberately **not** trimmed to .NET. It is the bulk of the file and the
@@ -1078,3 +1073,13 @@ Both fixes landed in `vendored_flag()` **and** `vendored_owner()`. Fixing only t
 A third defect surfaced while writing this section: `fork_recorded()` matched `| \`name\` |` anywhere in this file, so the table above — documentation, not an index — promoted `agent-browser` to `VND*`, asserting an accepted fork decision that was never made. The fork index now sits between `<!-- fork-index:begin/end -->` markers and the lookup is confined to that block; a file with no markers fails closed.
 
 Regression coverage: `tests/vendored-detection.sh`, 58 cases — every provenance form, Git-untracked empty-directory invariance, fail-closed tree scanning, the false-positive defences (prose `upstream` with no colon; a README that merely exists), lock-set detection, flag/owner agreement, the `fork_recorded` scoping regression, and a corpus assertion pinning the exact VND set of `skills/`. Acceptance for the original detector fix itself was a baseline diff: exactly two skill rows changed, nothing else.
+
+---
+
+## tdd
+
+**Decision (2026-09-05):** user approved the Sol/Astra optimization plan. Replace repeated seam confirmation and the blanket no-refactor rule with dev-workflow INT-2/INT-9 and S2 ownership. Independent behavior oracles, public seams and RED-before-GREEN remain.
+
+Approved tree SHA-256: `331550f33e18c8938c55facb6470f6298ce7525605c2aa1986582571b430e461`. Upstream baseline tree remains `807b29b3f7d1ae9c14d8970ad981b697ad908af932b8aa74cf095f671038f346` in mattpocock-skills.lock.
+
+On re-vendor compare the pinned Matt revision, preserve canonical authorization and GREEN micro-refactoring if upstream lacks them, then recompute this tree fingerprint and rerun workflow/caller/model canaries. Rollback: revert this local fork and its index entry together; leave the upstream pin unchanged.

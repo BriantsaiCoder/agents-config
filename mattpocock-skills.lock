@@ -4,10 +4,10 @@ assessed_commit=8b36d4fb2635b3c21998dcd8144439c9e5ba7302
 manifest_sha256=85a5f2ad87b1070c13a97a9379887fc43e5e786a0ab7a3c0f0281d2b30f523b2
 # SHA-256 of sorted `skill=mode` lines derived from the selected skill metadata.
 invocation_manifest_sha256=6e30f32c601ef6473c6895e1e536f87f4ec9a3e179dea19587b5f578d248643a
-# Exact local trees for the 13 selected skills that remain byte-for-byte upstream.
+# Exact local trees for the 12 selected skills that remain byte-for-byte upstream.
 upstream_tree_sha256=grill-with-docs:2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b
 upstream_tree_sha256=setup-matt-pocock-skills:20fabc63fdb530037748eaf9b1a62a53ea91ac5a18cecc0fb001c3002b2673fc
-upstream_tree_sha256=tdd:807b29b3f7d1ae9c14d8970ad981b697ad908af932b8aa74cf095f671038f346
+# tdd fork baseline (2026-09-05): 807b29b3f7d1ae9c14d8970ad981b697ad908af932b8aa74cf095f671038f346; current tree in vendored-forks.md
 upstream_tree_sha256=to-spec:7fe9db6b276a87383996b138efa07e7e20fb5fbec8bd6027e084733b48efba60
 upstream_tree_sha256=to-tickets:030ff9a692ff972061b8fa98caf5fd2cafd5c3b64d1f78480ba8c37bc6d5e454
 upstream_tree_sha256=wayfinder:8c91f90c7129883d2c4cd1f7c255873e215c292801ecf4ed47af995a752b81dd

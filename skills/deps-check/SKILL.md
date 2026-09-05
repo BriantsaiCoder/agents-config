@@ -20,12 +20,11 @@ bash ~/.agents/skills/deps-check/scripts/deps-check.sh <file-path>
 ## Step 2：判讀 callers
 
 - `0` heuristic matches：再查 re-export、dynamic import、reflection、DI／string registration。
-- `1–3` callers：逐一讀取並記錄受影響 contract。
-- `4+` callers：先回報 impact、拆分／compatibility shim 選項並取得使用者確認。
+- `1+` callers：逐一讀取並記錄受影響 contract；高 fan-in 時一併回報 impact 與必要的拆分／compatibility shim 選項。
 
 腳本結果是 heuristic，不是安全證明；C# 同名型別、public member 與 runtime wiring 需人工過濾。
 
-**完成條件：**所有 caller 與非靜態依賴風險都有 disposition；需要的 authorization 已取得後才編輯。
+**完成條件：**所有 caller 與非靜態依賴風險都有 disposition；authorization 依 [dev-workflow](../dev-workflow/SKILL.md) S2 判定，caller 數量不另設確認 gate。新發現的 risk／material scope expansion 仍回 S2。
 
 ## Step 3：修改與驗證
 
