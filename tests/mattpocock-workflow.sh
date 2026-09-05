@@ -447,8 +447,26 @@ rule_has "unstable seam keeps same repro before after" INT-2 '否則.*同一.*re
 rule_has "INT-2 keeps the five-element rule contract" INT-2 '觸發：.*例外：.*驗證：'
 lacks "bugfix no longer has unconditional RED" 'MUST 在 fix 前先有 failing regression test.*例外：無' skills/dev-workflow/SKILL.md
 rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 'stable.*valuable.*\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新增 seam.*micro-refactor.*重跑.*覆寫'
+# Static instruction contracts only; Sol/Astra behavior is measured separately.
+lacks "small tasks no longer route to retired sdd" '^\|.*`sdd`' skills/dev-workflow/SKILL.md
+has "small tasks keep session acceptance criteria" '單檔.*≤3.*session.*情境式驗收條件' skills/dev-workflow/SKILL.md
+lacks "tdd does not reconfirm every existing seam" 'Before writing any test.*confirm them with the user|Ask: "What.s the public interface' skills/tdd/SKILL.md
+has "tdd delegates seam and refactor gates to workflow" 'dev-workflow.*INT-2.*INT-9' skills/tdd/SKILL.md
+lacks "tdd does not ban all green refactoring" 'Refactoring is not part of the loop' skills/tdd/SKILL.md
+lacks "four callers do not create an approval gate" '4\+.*取得使用者確認' skills/deps-check/SKILL.md
+has "deps-check uses canonical scope authorization" 'dev-workflow.*S2' skills/deps-check/SKILL.md
+has "deps-check preserves unknown dependency evidence" 'UNKNOWN 不得解讀為零依賴' skills/deps-check/SKILL.md
+[ ! -e "$ROOT/skills/sdd" ] && [ -f "$ROOT/attic/sdd/SKILL.md" ] \
+  && ok "sdd is reversibly archived outside skill discovery" \
+  || ng "sdd is reversibly archived outside skill discovery"
+has "optional SDD archive requires all tasks complete" '每項.*- \[x\].*未完成' skills/dev-workflow/references/sdd-artifacts.md
+has "optional SDD archive does not invent missing artifacts" '沒有持久化產物.*SKIPPED.*不補造' skills/dev-workflow/references/sdd-artifacts.md
+lacks "trigger corpus has no retired sdd target" '"skill"[[:space:]]*:[[:space:]]*"sdd"' skills/auditing-skill-folder/evals/cases.jsonl
 rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
 rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
+has "code-review loads canonical reviewer contract" 'Read the entire.*canonical reviewer-template.*reviewer-template.md' skills/code-review/SKILL.md
+has "code-review Standards receives the full canonical prompt" 'Standards.*complete canonical marked reviewer prompt block.*performance/correctness' skills/code-review/SKILL.md
+has "code-review both axes receive the common finding contract" 'Both axes.*all-findings/no-word-or-count-cap/caller-side-filtering' skills/code-review/SKILL.md
 has "reviewer template owns severity and confidence" '全部回報、下游過濾.*severity.*confidence|全部回報、下游過濾.*確信度' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template keeps axes separate" '單一 review 軸內.*跨軸不合併、不重排' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template carries the complete-report contract" '全部回報、下游過濾.*不設字數或條數上限.*確信度.*高／中／低' skills/dev-workflow/references/reviewer-template.md
@@ -462,24 +480,13 @@ has "reviewer template carries the complete-report contract" '全部回報、下
 # 把動作句裁掉仍會 PASS——守衛會再次 fail-open，且與 [S5-3] 驗證條款的「全文」不符。
 has "reviewer template carries the Reinvented Stdlib baseline" 'Reinvented Stdlib.*手刻標準庫或平台已提供的功能 → 指名該 API 取代。' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template carries the Redundant Dependency baseline" 'Redundant Dependency.*為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。' skills/dev-workflow/references/reviewer-template.md
-has "code-review Standards baseline carries Reinvented Stdlib" 'Reinvented Stdlib.*手刻標準庫或平台已提供的功能 → 指名該 API 取代。' skills/code-review/SKILL.md
-has "code-review Standards baseline carries Redundant Dependency" 'Redundant Dependency.*為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。' skills/code-review/SKILL.md
 # 2026-08-08：baseline 擴為五條，新三條同樣需要守衛。
 has "reviewer template carries the Unused Local Reuse baseline" 'Unused Local Reuse.*→ 指名既有符號並改呼叫它。' skills/dev-workflow/references/reviewer-template.md
-# 這條在兩個檔的定義刻意不同，pattern 不能共用：reviewer-template 沒有 Fowler 清單，它的
-# 定義前半（只做轉發的中間層、為 spec 沒有的需求預留）是 Codex／Copilot 唯一的 Middle Man
-# 與 Speculative Generality 載體。只釘共通的動作句時，把它換成 code-review 的窄版仍會 PASS。
+# Canonical Needless Indirection includes forwarding layers and speculative hooks;
+# preserve those clauses, not only the shared inline action sentence.
 has "reviewer template carries the Needless Indirection baseline" 'Needless Indirection.*只做轉發的中間層.*為 spec 沒有的需求.*→ 內聯回去' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template carries the Wrong Altitude baseline" 'Wrong Altitude.*→ 把該決策移回它該在的層。' skills/dev-workflow/references/reviewer-template.md
-has "code-review Standards baseline carries Unused Local Reuse" 'Unused Local Reuse.*→ 指名既有符號並改呼叫它。' skills/code-review/SKILL.md
-has "code-review Standards baseline carries Needless Indirection" 'Needless Indirection.*→ 內聯回去，等真的第二個使用點出現再抽。' skills/code-review/SKILL.md
-has "code-review Standards baseline carries Wrong Altitude" 'Wrong Altitude.*→ 把該決策移回它該在的層。' skills/code-review/SKILL.md
-# code-review 沒有優先序清單，reviewer-template 的優先序第 3、4 級（performance、
-# correctness）在該路徑本來無落點——security 由 S0 route 到 shared-security-review、
-# breaking changes 到 deps-check，只有這兩級無家可歸。upstream rebase 會靜默把 clause
-# 掉回原狀，而症狀只是「review 不再報效能／不再報邊界條件」，沒人會發現。
-has "code-review Standards brief carries the performance clause" 'performance regressions the diff introduces' skills/code-review/SKILL.md
-has "code-review Standards brief carries the correctness clause" 'correctness defects — boundary conditions' skills/code-review/SKILL.md
+# code-review dispatches the full canonical prompt; no duplicated five-item/performance/correctness prose.
 # 設計註記 MUST 留在 prompt 區塊外：在區塊內時 Codex／Copilot 會把「不含 efficiency 維」
 # 一起複製進 reviewer prompt，對 reviewer 讀起來就是「這一維不用看」。用標題 grep 證明不了
 # 位置（整段搬到區塊之前也會 PASS），所以直接掃區塊內容。

@@ -428,9 +428,19 @@ actual_code_review_tree_sha="$(vendored_tree_sha256 "$CODE_REVIEW_DIR")"
   fail 'code-review tree differs from the recorded fork fingerprint'
 # 這兩條刻意用 POSIX grep 而非 rg：本檔 73 條 rg 斷言都是 `|| fail`，缺 rg 會響亮失敗；反向斷言
 # 寫成 `rg -q … && fail` 時缺 rg 反而靜默通過（CI 曾因此假綠）。負向檢查一律用必然存在的 grep。
-[ "$(grep -cF 'the caller filters' "$CODE_REVIEW_DIR/SKILL.md")" -eq 2 ] ||
-  fail 'code-review: both sub-agent briefs must defer filtering to the caller ([S5-4])'
-grep -qF 'Under 400 words' "$CODE_REVIEW_DIR/SKILL.md" &&
+rg -q 'Read the entire.*canonical reviewer-template' "$CODE_REVIEW_DIR/SKILL.md" ||
+  fail 'code-review does not load the canonical reviewer contract'
+rg -q 'Paste the required text into each actual reviewer input' "$CODE_REVIEW_DIR/SKILL.md" ||
+  fail 'code-review dispatch can substitute a pointer for the full contract'
+rg -q 'Both axes.*all-findings/no-word-or-count-cap/caller-side-filtering' "$CODE_REVIEW_DIR/SKILL.md" ||
+  fail 'code-review: both axes must receive the canonical output contract ([S5-4])'
+rg -q 'Standards.*complete canonical marked reviewer prompt block.*all five house items.*performance/correctness' "$CODE_REVIEW_DIR/SKILL.md" ||
+  fail 'code-review: Standards dispatch omits required review coverage'
+rg -q 'Spec.*common material.*missing or partial requirements.*scope creep.*incorrectly' "$CODE_REVIEW_DIR/SKILL.md" ||
+  fail 'code-review: Spec dispatch omits requirements or common contract'
+rg -q 'Do not merge or rerank across axes' "$CODE_REVIEW_DIR/SKILL.md" ||
+  fail 'code-review aggregate merges independent axes'
+grep -RqF 'Under 400 words' "$CODE_REVIEW_DIR" &&
   fail 'code-review sub-agent brief still carries an output cap ([S5-4])'
 
 rg -q 'implement.*S4.*S5.*S6|S4.*S5.*S6.*implement' "$KERNEL" ||
@@ -768,6 +778,7 @@ while IFS= read -r changed; do
     skills/dotnet-core-best-practices/references/security-performance.md | \
     skills/dotnet-testing-best-practices/SKILL.md | \
     skills/dotnet-testing-best-practices/references/benchmarks.md | \
+    skills/dotnet-testing-best-practices/references/code-patterns.md | \
     skills/dotnet-testing-best-practices/references/coverage-crap.md | \
     skills/dotnet-testing-best-practices/references/mocking-frameworks.md | \
     skills/vue-best-practices/references/pinia.md | \
@@ -872,6 +883,7 @@ while IFS= read -r changed; do
     skills/speak-human-tw/evals/benchmark.md | \
     skills/speak-human-tw/evals/run-eval.md | \
     skills/speak-human-tw/references/examples.md | \
+    skills/speak-human-tw/references/changelog.md | \
     skills/speak-human-tw/references/humanize.md | \
     skills/speak-human-tw/references/patterns.md | \
     skills/speak-human-tw/references/protected-list.md | \
