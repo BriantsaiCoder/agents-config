@@ -765,6 +765,14 @@ done < "$B2_SKILLS_LOCK"
 # 到 live skill。
 # payload 不是整個 upstream repo：27 個檔只取 10 個，取捨規則記在 vendored-skills.lock 的檔頭
 # 註解（SKILL.md 相對引用的遞移閉包 + LICENSE）。
+# 2026-09-05 11 支 house-authored stack skill description 去例句（skill listing 預算）：6 支 SKILL.md
+# 首次放行，只動 frontmatter description 一行、body 未變；其餘 5 支與 evals/cases.jsonl 早在名單內：
+#   ef6-best-practices/SKILL.md
+#   mysql-best-practices/SKILL.md
+#   next-best-practices/SKILL.md
+#   react-best-practices/SKILL.md
+#   react-router-framework-mode/SKILL.md
+#   typescript-best-practices/SKILL.md
 while IFS= read -r changed; do
   case "$changed" in
     skills/agent-browser/SKILL.md | \
@@ -844,6 +852,7 @@ while IFS= read -r changed; do
     skills/ef-core-best-practices/SKILL.md | \
     skills/ef-core-best-practices/references/rules-expanded.md | \
     skills/ef-core-best-practices/references/working-patterns.md | \
+    skills/ef6-best-practices/SKILL.md | \
     skills/dotnet-logging-best-practices/SKILL.md | \
     skills/frontend-release-verification/SKILL.md | \
     skills/init-project-docs/SKILL.md | \
@@ -859,6 +868,8 @@ while IFS= read -r changed; do
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
     skills/mp-tdd/* | \
+    skills/mysql-best-practices/SKILL.md | \
+    skills/next-best-practices/SKILL.md | \
     skills/nodejs-best-practices/SKILL.md | \
     skills/nodejs-best-practices/references/api-design.md | \
     skills/nodejs-best-practices/references/project-structure-errors.md | \
@@ -866,6 +877,8 @@ while IFS= read -r changed; do
     skills/nodejs-best-practices/references/working-patterns.md | \
     skills/nuxt/SKILL.md | \
     skills/postgresql-optimization/SKILL.md | \
+    skills/react-best-practices/SKILL.md | \
+    skills/react-router-framework-mode/SKILL.md | \
     skills/nuget-manager/* | \
     skills/security-review/SKILL.md | \
     skills/security-review/references/changed-file-attack-surface.md | \
@@ -896,6 +909,7 @@ while IFS= read -r changed; do
     skills/speak-human-tw/references/scenes.md | \
     skills/speak-human-tw/references/taiwan-localization.md | \
     skills/testing-library-react-best-practices/SKILL.md | \
+    skills/typescript-best-practices/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/SKILL.md | \
     skills/vue-best-practices/references/rules-expanded.md | \

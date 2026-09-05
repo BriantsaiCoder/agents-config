@@ -1,6 +1,6 @@
 ---
 name: ef-core-best-practices
-description: 'Use when writing or reviewing EF Core data access — Microsoft.EntityFrameworkCore DbContext/DbSet, Include/ThenInclude, projection, AsNoTracking, migrations, FromSqlRaw/FromSqlInterpolated, optimistic concurrency, change tracking, or query performance. Apply even when user just says "this EF query is slow", "add a migration", or "fix N+1" without naming this skill.'
+description: 'Use when writing or reviewing EF Core data access — Microsoft.EntityFrameworkCore DbContext/DbSet, Include/ThenInclude, projection, AsNoTracking, migrations, FromSqlRaw/FromSqlInterpolated, optimistic concurrency, change tracking, query performance, or N+1 fixes.'
 ---
 
 # Entity Framework Core Best Practices

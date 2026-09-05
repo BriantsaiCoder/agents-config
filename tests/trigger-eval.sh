@@ -564,6 +564,21 @@ if [ -r "$REALCASES" ]; then
   user_only_fire_prompt=$(jq -r 'select(.id=="fire-writing-skill-user-only") | .prompt' "$REALCASES")
   user_only_quiet_prompt=$(jq -r 'select(.id=="quiet-diagnosing-skill-user-only") | .prompt' "$REALCASES")
   eq "user-only fire/quiet 使用同一 prompt" "$user_only_fire_prompt" "$user_only_quiet_prompt"
+  # 2026-09-05 stack skill owner 對：quiet 與 fire 共用同一 prompt，任一側改 prompt 即靜默拆散配對，
+  # 兩側各自 PASS。任一側 id 漂移或 expect 被翻面，owner 語意即失效，同樣算壞。
+  for owner_pair in fire-dapper:quiet-ef-core-dapper fire-ef-core-migration:quiet-dapper-efcore \
+      fire-ef-core-migration:quiet-ef6-efcore-migration fire-ef6-lazy-n1:quiet-ef-core-ef6-edmx \
+      fire-rr-redirect-action:quiet-next-rr-redirect-action fire-next-double-render:quiet-rr-next-app-router \
+      collision-rtl-wins:quiet-react-rtl-query fire-rr-protected-route:quiet-auth-rr-protected-route; do
+    owner_fire=${owner_pair%%:*}; owner_quiet=${owner_pair#*:}
+    owner_fire_prompt=$(jq -r --arg id "$owner_fire" 'select(.id==$id) | .prompt' "$REALCASES")
+    owner_quiet_prompt=$(jq -r --arg id "$owner_quiet" 'select(.id==$id) | .prompt' "$REALCASES")
+    jq -e --arg id "$owner_fire" 'select(.id==$id and .expect=="fire")' "$REALCASES" >/dev/null &&
+      ok "owner 對 fire 側存在且極性為 fire: $owner_fire" || bad "owner 對 fire 側存在且極性為 fire: $owner_fire" "id 缺失或 expect 非 fire"
+    jq -e --arg id "$owner_quiet" 'select(.id==$id and .expect=="quiet")' "$REALCASES" >/dev/null &&
+      ok "owner 對 quiet 側極性: $owner_quiet" || bad "owner 對 quiet 側極性: $owner_quiet" "id 缺失或 expect 非 quiet"
+    eq "owner 對 fire/quiet 使用同一 prompt: $owner_quiet" "$owner_fire_prompt" "$owner_quiet_prompt"
+  done
 else
   bad "cases.jsonl 存在" "$REALCASES 不存在"
 fi
