@@ -444,6 +444,19 @@ done
 [ "$agy_valid" -eq 1 ] && ok "Antigravity preserves valid absolute and relative links" ||
   ng "Antigravity preserves valid absolute and relative links"
 
+agy_valid=1
+for agy_dir in "${agy_roots[@]}"; do
+  ln -sfn "$agy_source/skills/alpha/" "$agy_dir/alpha"
+  ln -sfn '../../../.agents/skills/./beta' "$agy_dir/beta"
+done
+agy_sync --bootstrap-antigravity && agy_sync --doctor || agy_valid=0
+for agy_dir in "${agy_roots[@]}"; do
+  [ "$(readlink "$agy_dir/alpha")" = "$agy_source/skills/alpha/" ] &&
+    [ "$(readlink "$agy_dir/beta")" = '../../../.agents/skills/./beta' ] || agy_valid=0
+done
+[ "$agy_valid" -eq 1 ] && ok "Antigravity accepts equivalent shared target spellings" ||
+  ng "Antigravity accepts equivalent shared target spellings"
+
 mkdir -p "$scratch/host-owned-skill"
 printf '%s\n' '# host owned' > "$scratch/host-owned-skill/SKILL.md"
 agy_valid=1

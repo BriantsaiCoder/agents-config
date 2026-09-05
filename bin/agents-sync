@@ -74,6 +74,7 @@ antigravity_shared_link() {
   [ -L "$link" ] || return 1
   target="$(readlink "$link")" || die "cannot read skill link: $link"
   name="${link##*/}"
+  if [ "$link" -ef "$AGENTS/skills/$name" ]; then return 0; fi
   case "$target" in
     "$AGENTS/skills/$name"|"../../../.agents/skills/$name") return 0 ;;
     "$AGENTS/skills/"*|../../../.agents/skills/*)
