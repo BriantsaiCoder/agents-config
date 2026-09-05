@@ -36,7 +36,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 | `tdd` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-05 — canonical workflow seam/authorization and GREEN refactor; tree SHA-256 `331550f33e18c8938c55facb6470f6298ce7525605c2aa1986582571b430e461` | **Active** |
 | `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); tree SHA-256 `fdf2558075a888f250abc333f547e384fe708dd926ba5ab6e21fed84a0c7a714` | **Active** |
-| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `43c3e31232f626a75cb10f484c12608f557d1b572892e437e2250e1c26ddec63` | **Active** |
+| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37` | **Active** |
 
 <!-- fork-index:end -->
 
@@ -1018,8 +1018,8 @@ Baseline before the fork: upstream `SKILL.md` SHA-256
 `cfec7d0e13deaee15fb97151d0cd5339fa5f14c109a10c49de81e9a5512231b7` (blob `973a20d`, 19,121B).
 Local `SKILL.md` SHA-256 `61bc459dd039726ec6f42adedc2e8569743da00c69aafe52f336a1548b0f9f9a`.
 Lock `payload_sha256` (hash-of-hashes over every file in the directory, the column's convention)
-`953abf554ac299b158f58ffb6cce9d8c01cf16a6fecb76f07ab9a3f801593fe6`;
-approved tree SHA-256 `43c3e31232f626a75cb10f484c12608f557d1b572892e437e2250e1c26ddec63`.
+`4b95660dc88bde2ce3ba1bf301a48991603feae10dbf26eed02249b640437ff0`;
+approved tree SHA-256 `cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37`.
 Upstream `LICENSE` (MIT, .NET Foundation and Contributors) is carried with the payload.
 
 The polyglot mutation catalog is deliberately **not** trimmed to .NET. It is the bulk of the file and the

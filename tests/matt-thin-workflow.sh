@@ -779,6 +779,7 @@ while IFS= read -r changed; do
     skills/dotnet-testing-best-practices/SKILL.md | \
     skills/dotnet-testing-best-practices/references/benchmarks.md | \
     skills/dotnet-testing-best-practices/references/code-patterns.md | \
+    skills/dotnet-testing-best-practices/references/mstest.md | \
     skills/dotnet-testing-best-practices/references/coverage-crap.md | \
     skills/dotnet-testing-best-practices/references/mocking-frameworks.md | \
     skills/vue-best-practices/references/pinia.md | \

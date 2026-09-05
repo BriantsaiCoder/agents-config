@@ -41,3 +41,6 @@ proposals/*/*
 # 已知覆蓋缺口：CI 以 clean clone 枚舉 skills/*，所以 description-lint／word-budget／
 # trigger-eval 永遠掃不到它，品質閘只在本機生效。
 skills/exec-briefing/
+
+# Reviewed, redacted model evidence for the approved skill optimization.
+!proposals/2026-09-05-sol-astra-skills/model-evidence.json

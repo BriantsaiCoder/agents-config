@@ -1,0 +1,16 @@
+# Delivery evidence and replay
+
+Baseline: `017c0017b2e305f45b019b184ae7aaf4bec75617`. Source commit IDs and final current-head CI/review statuses are recorded in the PR and final closeout; this file is the stable location/replay index, not a self-referential claim that a commit has validated itself.
+
+- Baseline CI: `/private/tmp/skills-baseline-ci.log`, `bash bin/ci-local`, exit 0 (27 CI steps + 4 local-only checks).
+- Initial candidate current-head CI: source `7e8047779e59ad3fac91dfa264acaa9b3936de29`, `/private/tmp/skills-current-head-ci.log`, same command, exit 0. The review corrections are revalidated before publication; this previous result does not authorize the new head.
+- Independent Standards reviewer: `01a0708a-501c-7b52-aaa4-2677fd6fa20d`; Spec reviewer: `01a0708a-50a6-7ff1-8abf-486161b4f2c5`. Both used immutable snapshot `7e8047779e59ad3fac91dfa264acaa9b3936de29` and their own copies for checks.
+- Accepted corrections: explicitly track redacted model evidence, retain actual answers/command exits, add A protected and D UNKNOWN canaries, synchronize MSTest reference wording, and remove the catalog EOF blank line. Old review results remain FAIL until the corrected source is independently re-reviewed.
+- Model evidence: [model-evidence.json](model-evidence.json), 32 controlled runs. Exact prompts, source entrypoint hashes, actual final answers and command/exit trace records are committed. Long command outputs have content hashes; full raw JSONL remains at each record's `artifacts` path. Those temporary raw files are not a durable full transcript archive or an OS filesystem-read audit.
+- Invocation observer: `/private/tmp/skills-eval/isolation.json` from `codex debug prompt-input` with the original skill paths disabled for one invocation. It contains no original skill catalog entries. Each fixture provides the corresponding candidate/baseline skill copies.
+
+Replay repository verification: from the checked-out source run `git rev-parse HEAD`, `git diff --check 017c001..HEAD`, and `bash bin/ci-local`; record commands/exits with that source SHA. Run gitleaks on the final source before publication. The default local CI runner intentionally skips hook installation; it lists each exclusion and does not call those skipped steps PASS.
+
+To repeat model comparisons, reconstruct fresh fixtures using the recorded source versions and exact prompts, use CLI 0.153.3 (or record the changed runtime), fixed high effort and the named model, and replace only that group's skill copies. The local execution command for every retained run is in its temporary `command.json`; `run.py` in `/private/tmp/skills-eval` is the experimental launcher. Keep original global skills suppressed and audit actual tool reads. Re-running a model is nondeterministic; compare semantic outcomes before token/time metrics. Do not represent a prompt-only replay or missing temporary raw output as reproduction of the original execution trace.
+
+Live activation, Claude/Copilot canaries, remote CI/bot review, and post-merge cutover are separate gates. Their latest observations belong in the publication/closeout ledger; none is inferred from these controlled CLI results. Rollback after squash merge is the whole PR revert, including callers, skills, contract guards and provenance.

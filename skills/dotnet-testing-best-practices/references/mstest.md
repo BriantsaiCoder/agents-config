@@ -1,6 +1,6 @@
 # MSTest-Specific Patterns (MSTest 3.x / 4.x)
 
-Target skill covers xUnit by default. This file is the MSTest cheat sheet — all 12 Golden Rules still apply; only attributes/APIs change.
+Use this reference for an existing or explicitly selected MSTest project. Apply the behavioral-evidence rules in the parent skill and match attributes/APIs to the installed version; this reference does not change the project's framework or dependency choices.
 
 ## Framework Comparison
 

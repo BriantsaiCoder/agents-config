@@ -69,4 +69,3 @@ Read when selecting candidate mutations. These examples do not replace domain an
 | `x ?? defaultValue` (.NET/JS/Swift) / `x or defaultValue` (Python) / `x \|\| defaultValue` (JS) / `x.unwrap_or(defaultValue)` (Rust) / `x \|\| defaultValue` (Kotlin: `x ?: defaultValue`) | `x` (drop coalescing) | Null coalescing coverage |
 | `x?.Method()` (.NET/Swift/Kotlin) / `x && x.method()` (JS) / `x and x.method()` (Python) | `x.Method()` | Null-conditional coverage |
 | `x!` (Swift) / `x!!` (Kotlin) / `.unwrap()` (Rust) | `x` | Runtime force-unwrap necessity; C# and TypeScript `!` are compile-time-only and therefore equivalent mutants |
-
