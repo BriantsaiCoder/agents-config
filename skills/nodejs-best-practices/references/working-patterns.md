@@ -8,7 +8,7 @@ These four patterns are the ones most commonly missed in generated code. Add the
 Express project, even demos. They are condensed here as one-liners so you can copy-paste the shape; full
 examples and edge cases live in the references listed.
 
-1. **Version-aware async errors** — use the [Express error propagation rules](api-design.md#the-async-handler-wrapper). Reuse existing forwarding on Express 4; do not require a wrapper for returned Promises on Express 5.
+1. **Version-aware async errors** — use the [Express error propagation rules](api-design.md#the-async-handler-wrapper). Add or reuse explicit rejection forwarding on Express 4; do not require a wrapper for returned Promises on Express 5.
 
 2. **Security middleware order** — `app.use(helmet()); app.use(cors()); app.use(express.json({ limit: '1mb' }));`
    helmet first, body-size limit mandatory.
