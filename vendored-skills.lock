@@ -13,4 +13,4 @@ test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-t
 #   assets/(1.6MB 圖)、scripts/、install/、.github/、README/CHANGELOG/CONTRIBUTING 同理丟棄。
 #   本地 fork 另加 evals/trigger-cases.jsonl，並由 evals/run-eval.md 引用，固定 technical fire／quiet 邊界。
 #   兩個方向都不留懸空：既無 dead pointer，也無未被引用的檔。
-speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	9e6dbd710e93a5517149707a3848051f536d8e9d607966d83d202ec3c2ad71f5	562f308123740c39280d1056b78d95aa34e186a7c35f768e639768e3cd99ee0d
+speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	17122db8cd16ae253ebcf4a3e1a40d368350fdda780f23b7a8a912a00de2a648	e51d4b63b2ec7934f55cc0d239e73febd1214cb45cfc6ba3fab7db20d9a80384

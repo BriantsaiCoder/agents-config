@@ -58,8 +58,10 @@ SF-30 另核對正文是否同時保留工具用途並移除未證實效益；�
 
 ### Codex 改寫端指令範例
 
+從本 repo root 執行：
+
 ```bash
-cd speak-human-tw
+cd skills/speak-human-tw
 codex exec -C . "讀取 ./SKILL.md 與 ./references/ 下所有檔案，依規則逐條處理 ./evals/benchmark.md 的 47 條用例。SF 輸出改寫結果，SNF 輸出放行判定與一句理由。這次直接輸出結果，不用先列清單問我。"
 ```
 
