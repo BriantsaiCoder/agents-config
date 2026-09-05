@@ -32,7 +32,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `prototype` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — adopt the self-contained HTML logic demo and add the local offline/synthetic-data/no-secret/no-production-build boundary; tree SHA-256 `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a` | **Active** |
 | `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
 | `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46` | **Active** |
-| `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; tree SHA-256 `57acbc734cfbaed3381362fd6d7c44f2a56527e1a9ea4e6a0f162bc018dc7359` | **Active** |
+| `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; 2026-09-05 preserve factual tool use separately from unsupported benefits; tree SHA-256 `562f308123740c39280d1056b78d95aa34e186a7c35f768e639768e3cd99ee0d` | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
 | `tdd` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-05 — canonical workflow seam/authorization and GREEN refactor; tree SHA-256 `331550f33e18c8938c55facb6470f6298ce7525605c2aa1986582571b430e461` | **Active** |
 | `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); tree SHA-256 `fdf2558075a888f250abc333f547e384fe708dd926ba5ab6e21fed84a0c7a714` | **Active** |
@@ -949,6 +949,8 @@ What remains capable of producing the same output: writing ````` ```mermaid ````
 
 ## speak-human-tw
 
+**Decision (2026-09-05, preservation follow-up):** Clarify the demonstrated mixed-sentence ambiguity: retain identifiable facts and tool use in the delivered rewrite, remove unsupported benefit language separately, and annotate only the missing effect evidence. Preserve the existing live FAIL as evidence, without attributing it causally to cutover. Add paired SF-30/SNF-17 semantic checks; Check-first, Annotation and safety boundaries remain unchanged. Re-merge only when upstream retains this distinction; roll back this follow-up with its paired evals and exact fingerprint records, retaining earlier forks.
+
 **Decision (2026-09-05, user-authorized Sol/Astra optimization):** Select Rewrite, Annotation or explicit Check-first from the request; existing rewrite authorization no longer requires a second confirmation. Preserve technical/SF/SNF/secret invariants; demand-load history. Re-merge only when upstream preserves these semantics; rerun the recorded two-model canaries and repository gates after updating fingerprints. Roll back this batch by reverting its changes together with callers/lock records; do not remove earlier local forks.
 
 **Decision (2026-08-29): accept a local fork for technical-work communication.**
@@ -962,16 +964,16 @@ humanizer and adds only the missing technical branch:
 - `references/protected-list.md` protects code, paths, APIs, config keys, commands, versions, results, errors, and logs while redacting credential/secret values.
 - `evals/benchmark.md` adds paired SF-28/SNF-16 coverage plus SF-29 secret redaction; `evals/trigger-cases.jsonl` fixes one technical-writing fire and one raw-log-analysis quiet case.
 
-Approved payload SHA-256 `e8a2f8448dcf6d738b4b68b6e6b436aab3dbed85d37b0cd9e7003a213e48593e`;
-approved tree SHA-256 `57acbc734cfbaed3381362fd6d7c44f2a56527e1a9ea4e6a0f162bc018dc7359`.
+Approved payload SHA-256 `9e6dbd710e93a5517149707a3848051f536d8e9d607966d83d202ec3c2ad71f5`;
+approved tree SHA-256 `562f308123740c39280d1056b78d95aa34e186a7c35f768e639768e3cd99ee0d`.
 
 ### Re-merge procedure (when upstream moves)
 
 1. Diff the new upstream revision against pinned commit `ee860be6fb190cbc53dc1d45a2a47c9c9c680243`.
 2. Rebuild the same transitive-reference closure plus `LICENSE`; keep the selection rule in `vendored-skills.lock`.
-3. Replace the payload, then reapply the technical scene, protected-token invariant, and paired benchmark only where upstream still lacks equivalent behavior.
+3. Replace the payload, then reapply the technical scene, protected-token invariant, paired benchmark, and mixed-sentence preservation boundary only where upstream still lacks equivalent behavior.
 4. Recompute payload/tree fingerprints and update this section, the index row, and `vendored-skills.lock`.
-5. Run `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, relative-reference checks, SF-28/SF-29/SNF-16, and `evals/trigger-cases.jsonl`.
+5. Run `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, relative-reference checks, SF-28/SF-29/SF-30/SNF-16/SNF-17, and `evals/trigger-cases.jsonl`.
 
 Rollback by reverting the fork commit: restore the pinned upstream payload and original lock hashes, then remove this section and its index row in the same change.
 
