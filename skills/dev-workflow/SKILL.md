@@ -16,14 +16,14 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 ## Always-on guards
 
 - [INT-1] push／open PR／merge／final closeout MUST 只在 S4、S5 適用 gate PASS 後執行。觸發：任一收尾動作。例外：SKIPPED／UNAVAILABLE 須附理由或 probe。驗證：S4/S5 ledger 與 evidence 齊備。
-- [INT-2] BUGFIX／既有 behavior 變更若有 stable、valuable 的 behavior seam，MUST 先有 failing regression test（RED→GREEN）；否則 MUST 以同一 minimal repro 留下 before／after evidence，並記錄不採 RED 的理由，MUST NOT 為流程新增低價值 seam。既有 public behavior seam 視為已確認，只有新增 seam 才需另向使用者確認。觸發：BUGFIX 或既有 behavior 變更。例外：無。驗證：RED evidence 早於 fix，或同一 repro 的 before／after evidence。
+- [INT-2] BUGFIX／既有 behavior 變更若有 stable、valuable 的 behavior seam，MUST 先有 failing regression test（RED→GREEN）；否則 MUST 以同一 minimal repro 留下 before／after evidence，並記錄不採 RED 的理由，MUST NOT 為流程新增低價值 seam。觸發：BUGFIX 或既有 behavior 變更。例外：無。驗證：RED evidence 早於 fix，或同一 repro 的 before／after evidence。
 - [INT-3] [T0-8] protected gate MUST 停在 S2 等核准；auto／autopilot 不豁免，Medium-risk MUST NOT 成為第二次確認 gate。觸發：plan-first、architecture／High-risk、未授權 external／protected side effect、material scope expansion。例外：清楚、in-scope、local、reversible 的 Low／Medium-risk user-requested work 可做，Medium 留 session plan。驗證：protected gate 有核准原句；direct path 有 user 原句 + risk／reversibility。
 - [INT-4] Delegation MUST 先讀並遵守 [delegation contract](references/delegation.md)；MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate。觸發：任何 delegation。例外：host/runtime 容量與 higher-priority instructions。驗證：reference contract 全數成立。
 - [INT-5] `setup-matt-pocock-skills` MUST 只在使用者明示時執行；tracker contract 優先 repo `docs/agents/issue-tracker.md`，否則讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：需 tracker contract。例外：無。驗證：contract 或 setup 原句。
 - [INT-6] 任何已核准、預計納入 VCS 的檔案新增／修改，首次寫入前 MUST 位於 task branch／worktree（非 main／master）；否則先建，current-branch 不得覆寫。觸發：新增／修改。例外：無。驗證：pre-write branch／baseline + S4–S6。
 - [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 自動 invoke；S0 只推薦 host-specific explicit invocation command 並等待使用者啟動。觸發：命中 user-only skill。例外：無。驗證：frontmatter + invocation 原句。
 - [INT-8] 核准清單與已核准 scope 內 local、reversible 工作 MUST 一次執行至完成，不得逐項重問或中途停下等指令；回報進度不是停止條件。blanket authorization 只涵蓋原句前已明列 scope。只有 [T0-5]、[T0-8]／[INT-3]、user-owned 取捨或工具／環境阻塞可中斷；新發現只列 follow-up，未核准不得做。觸發：≥2 個已核准項目，或已核准 scope 內實作。例外：無。驗證：核准原句早於新增 scope + 單次彙總 status／evidence。
-- [INT-9] Kernel 只在 [INT-2] 選定 stable／valuable seam 時 route 到 [tdd](../tdd/SKILL.md)；既有 public behavior seam 視為已確認，只有新增 seam 才需先向使用者確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。本條覆寫 upstream 的逐 seam 重問與固定 choreography。觸發：kernel 管理的 tdd cycle。例外：無。驗證：RED／GREEN／retest evidence。
+- [INT-9] Kernel 只在 [INT-2] 選定 stable／valuable seam 時 route 到 [tdd](../tdd/SKILL.md)；既有 public behavior seam 視為已確認，只有新增 seam 才需先向使用者確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。覆寫下游 seam／refactor 程序。觸發：kernel 管理的 tdd cycle。例外：無。驗證：RED／GREEN／retest evidence。
 
 - [INT-10] 全域／security config MUST 走 isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push main／master。範圍：`CLAUDE.md`／`AGENTS.md`／`copilot-instructions.md`、tier0／tier1／tier2、kernel／references、hooks、permission／sandbox、CI workflow，以及 plugin install／enable、MCP 啟用、新 credential 或 external tool capability。`pre-push` 未安裝時沒有機械 enforcement；`--no-verify` 可略過且不保證 `--mirror` 隱式刪除。觸發：diff 命中範圍。例外：使用者當下明示直接推 main。驗證：PR + review-triage gate PASS；例外引用原句。
 
@@ -54,7 +54,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 | Microsoft concepts／tutorial／config；API signature／SDK sample | 前者 `microsoft-docs`；後者 `microsoft-code-reference` |
 | third-party library／SDK／API／CLI current lookup | provider-native official docs；absent／`UNAVAILABLE` 才 Context7 fallback（`context7-mcp`） |
 | 新 UI／redesign／缺 visual direction | `ui-ux-pro-max`；host ideation capability 接續 |
-| 單檔且 ≤3 tasks 的低風險 change | `sdd` |
+| 單檔、單一行為且 ≤3 tasks 的低風險 change | 在 session 記行為、影響檔案與情境式驗收條件，進 S2 |
 | 既有單一 skill behavior／invocation／description／pruning，或既有 AGENTS.md／CLAUDE.md／pointed-at agent doc 的 authoring 品質 | `writing-for-agents`；canonical placement 先由 host workflow 決定，skill scaffolding 歸 host creator |
 | skill folder keep／trim／delete／migrate 稽核 | `auditing-skill-folder`；verdict 不授權修改 |
 | 單一 skill trigger failure | MUST 有 preserved RED；caller 無則 `diagnosing-bugs` 建；Step 2c RED／diagnosis 後接 `writing-for-agents` |
@@ -65,7 +65,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 ## S2 AUTHORIZE
 
 1. mutation／side effect 一律先讀 [authorization matrix](references/authorization-matrix.md)；mechanical trigger 決定 risk floor，AI 自評不得降級。
-2. 核准前只留 session plan／todo；user／repo 要求或跨-session 才寫 `docs/agents/specs/`、`docs/agents/plans/`、`sdd/<slug>/`。Delegation 不得繞過授權（[INT-4]）。
+2. 核准前只留 session plan／todo；user／repo 要求或跨-session 才寫 `docs/agents/specs/`、`docs/agents/plans/`；SDD 產物／歸檔讀 [reference](references/sdd-artifacts.md)。Delegation 不得繞過授權（[INT-4]）。
 3. 寫入前 MUST 記 `Delivery Scope: Local-only／PR-closeout`；後者須核准並依 S6，否則 `Local-only`。
 
 ## Implementation adapters
