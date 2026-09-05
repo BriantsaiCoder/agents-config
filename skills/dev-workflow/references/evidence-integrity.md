@@ -4,6 +4,12 @@
 
 本檔補強 S4 verification evidence；不取代 S5、CI 或 bot review，也不授權新增 dependency 或測試基礎設施。結果沿用四態 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`；未執行不得標 `PASS`。
 
+## Verification scope
+
+- Medium／High 留 before／after evidence。依 diff 判斷 integration／E2E／security 的適用性；host／repo 明定 required checks 不得略過。
+- 不適用標 `SKIPPED`（理由）；工具／環境使適用檢查無法執行標 `UNAVAILABLE`（probe），不得改稱不適用。
+- 適用 checks 通過後，僅新變更、失敗、未解疑慮或明定 gate 要求才擴大／重跑。
+
 ## Fresh final evidence
 
 - 完成證據 MUST 來自最後一次影響行為的 edit 之後的一次 final verification pass；後續 behavior-affecting edit 使舊結果失效。
