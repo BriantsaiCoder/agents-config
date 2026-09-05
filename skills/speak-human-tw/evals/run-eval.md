@@ -1,6 +1,6 @@
 # 怎麼跑評測
 
-評測對象是 [benchmark.md](benchmark.md) 的 45 條用例（29 SF ＋ 16 SNF）。目標：
+評測對象是 [benchmark.md](benchmark.md) 的 47 條用例（30 SF ＋ 17 SNF）。目標：
 
 - **SF 通過**：主要問題被改掉，且保護清單無一漂移
 - **SNF 通過**：文本被放行，或只收到極輕提示（不動原文）
@@ -12,6 +12,8 @@
 1. **命中**（SF）／**放行**（SNF）：SF 的「問題點」是否被處理；SNF 是否未被改寫
 2. **保真**：價格、數字、真名、連結、引號原話、承諾條款、技術識別字與 evidence 逐項核對，一字不漂；credential／secret 的 key、identifier 與結構保留，敏感值必須遮罩
 3. **不換湯**：SF 改寫後不得換成同族的另一句空話（例：刪掉「賦能」卻補上「加值」；刪掉「標誌著」卻補上「象徵著」）
+
+SF-30 另核對正文是否同時保留工具用途並移除未證實效益；只把空泛效益換成較白話說法仍 FAIL。只在修改說明或補充詢問出現工具名稱不能算保真通過。SNF-17 判定放行且不更動原文即可通過，不要求重貼原文或補效益數據。
 
 長文用例（SF-23、SNF-12）加判第 4 項：
 
@@ -56,9 +58,11 @@
 
 ### Codex 改寫端指令範例
 
+從本 repo root 執行：
+
 ```bash
-cd speak-human-tw
-codex exec -C . "讀取 ./SKILL.md 與 ./references/ 下所有檔案，依規則逐條處理 ./evals/benchmark.md 的 45 條用例。SF 輸出改寫結果，SNF 輸出放行判定與一句理由。這次直接輸出結果，不用先列清單問我。"
+cd skills/speak-human-tw
+codex exec -C . "讀取 ./SKILL.md 與 ./references/ 下所有檔案，依規則逐條處理 ./evals/benchmark.md 的 47 條用例。SF 輸出改寫結果，SNF 輸出放行判定與一句理由。這次直接輸出結果，不用先列清單問我。"
 ```
 
 ### 判分端 prompt 要點
