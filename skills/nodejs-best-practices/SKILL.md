@@ -14,10 +14,10 @@ Frontend-only components / Deno / Bun-exclusive runtimes out of scope.
 
 ## Golden Rules
 
-Why + patterns → `references/rules-expanded.md`.
+Rule explanations → `references/rules-expanded.md`; writing/reviewing workflow → `references/working-patterns.md`.
 
 1. **Structure by feature, not technical role.**
-2. **async/await + proper error propagation.** Wrap async handlers; never empty `catch {}`.
+2. **Propagate async errors.** Express 4 needs explicit rejection forwarding; Express 5 forwards returned Promise rejections. Never empty `catch {}`.
 3. **Validate inputs at boundary** (Zod / Joi).
 4. **Env config validated at startup.**
 5. **TS strict; `unknown` not `any`.**
@@ -47,7 +47,7 @@ Why + patterns → `references/rules-expanded.md`.
 
 ## Reference Map
 
-- `references/rules-expanded.md` — rule whys + patterns
+- `references/rules-expanded.md` — rule explanations
 - `references/project-structure-errors.md` — feature folders, custom errors
 - `references/security-validation.md` — Zod/Joi, env validation, secrets
 - `references/api-design.md` — middleware order, TS setup, Pino + AsyncLocalStorage
@@ -55,6 +55,6 @@ Why + patterns → `references/rules-expanded.md`.
 - `references/testing.md` — unit + integration, `supertest`
 - `references/backend-testing-patterns.md` — testcontainers, nock, fixtures, coverage, CI
 - `references/deployment-docker.md` — multi-stage Dockerfile, lockfile + audit
-- `references/working-patterns.md` — aggregated patterns
+- `references/working-patterns.md` — writing/reviewing workflow
 
 Open one at a time.
