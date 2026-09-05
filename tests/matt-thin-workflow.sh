@@ -765,10 +765,14 @@ done < "$B2_SKILLS_LOCK"
 # 到 live skill。
 # payload 不是整個 upstream repo：27 個檔只取 10 個，取捨規則記在 vendored-skills.lock 的檔頭
 # 註解（SKILL.md 相對引用的遞移閉包 + LICENSE）。
-# 2026-09-05 第 2 級 description 精簡（skill listing 預算）：6 支 SKILL.md 首次放行，只動 frontmatter
-# description 一行、body 未變；其餘 5 支與 evals/cases.jsonl 早在名單內。逐檔列出：
-#   ef6-best-practices/SKILL.md  mysql-best-practices/SKILL.md  next-best-practices/SKILL.md
-#   react-best-practices/SKILL.md  react-router-framework-mode/SKILL.md  typescript-best-practices/SKILL.md
+# 2026-09-05 11 支 house-authored stack skill description 去例句（skill listing 預算）：6 支 SKILL.md
+# 首次放行，只動 frontmatter description 一行、body 未變；其餘 5 支與 evals/cases.jsonl 早在名單內：
+#   ef6-best-practices/SKILL.md
+#   mysql-best-practices/SKILL.md
+#   next-best-practices/SKILL.md
+#   react-best-practices/SKILL.md
+#   react-router-framework-mode/SKILL.md
+#   typescript-best-practices/SKILL.md
 while IFS= read -r changed; do
   case "$changed" in
     skills/agent-browser/SKILL.md | \
