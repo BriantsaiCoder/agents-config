@@ -83,7 +83,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 ## S4 VERIFY
 
 - Risk=blast radius/reversibility/contract/data/security;global workflow/security config=High,疑則上調。
-- Low=targeted;Medium=affected suite/build/lint;High=full CI-equivalent+integration/E2E/security。只跑非等價增益 checks;M/H=before/after。Behavior-affecting edit、正式 spec artifact／明列 acceptance criteria、Medium／High／PR 或新增／修改 custom gate 讀 [evidence integrity](references/evidence-integrity.md)。
+- Low=targeted;Medium=affected suite/build/lint;High=full CI-equivalent+適用 integration/E2E/security。只跑非等價增益 checks。Behavior-affecting edit、正式 spec artifact／明列 acceptance criteria、Medium／High／PR 或新增／修改 custom gate 讀 [evidence integrity](references/evidence-integrity.md)。
 - Skill change 另驗 frontmatter、relative references 與 skill scripts；model-invoked 跑 positive/negative trigger canary，user-only 跑 explicit-only canary。UI 變更留 browser evidence。
 - 會部署時另跑 `frontend-release-verification` 或 `backend-release-verification`，再跑 `dependency-security-scan`；不部署標 SKIPPED。
 - 記錄 command、exit code 與必要輸出，不以「應該」代替。

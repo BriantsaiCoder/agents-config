@@ -111,23 +111,26 @@ S5 Spec: PASS：對照 sdd/batch-insert-chunk/proposal.md 逐條確認，無偏�
 
 **呈現粒度（六項語意一律不得省略，省的只有版面）：**
 
-- **展開完整六列表格**：中高風險、或任一項非 `PASS`、或不走 PR 路徑。
-- **PR 路徑且全 PASS**：`Self-simplification`、`Diff self-review`、`Review gate`、`Residual risks` 四列與 PR body 的 Preflight Ledger（第 1 節）同源，**MUST 合併為單行**帶過，不得四列各寫一行指向同一處——那正是要壓掉的重複。用固定段落名，不用 `#` 編號佔位符（那在 GitHub 語境會被讀成 issue／PR 編號，也容易被原樣輸出）。例：
+依序採用第一個符合條件的格式；六項各自保留狀態與證據：
+
+- **展開完整六列表格**：中高風險，或任一項為 `FAIL`／`UNAVAILABLE`。
+- **低風險、PR 路徑且全 PASS**：`Self-simplification`、`Diff self-review`、`Review gate`、`Residual risks` 四列與 PR body 的 Preflight Ledger（第 1 節）同源，**MUST 合併為單行**帶過，不得四列各寫一行指向同一處——那正是要壓掉的重複。用固定段落名，不用 `#` 編號佔位符（那在 GitHub 語境會被讀成 issue／PR 編號，也容易被原樣輸出）。例：
   `Self-simplification／Diff self-review／Review gate／Residual risks — PASS，見 PR body 的 Preflight Ledger。`
   `Relevant verification` 與 `PR / CI / review status` 兩列 MUST 逐項展開——只有這兩列帶著 Preflight 當時還不存在的資訊（實際跑了什麼、CI 與 bot review 的最終狀態）。
-- **低風險、單檔、不進 PR 且全 PASS**：可壓成單行，六項次序不變，例：
-  `Closeout: simplification／self-review／verification／review／PR-status／risks — PASS，dotnet test exit 0 (398 passed)，無殘留風險`
+- **低風險、單檔、不進 PR，各項為 PASS 或附理由的 SKIPPED**：可壓成單行，六項次序不變，逐項保留狀態、證據與 skip 理由，例：
+  `Closeout: simplification PASS（無新增抽象、依賴、單用包裝或預留設定）／self-review PASS（逐行核對，無無關變更或殘留）／verification PASS（git diff --check exit 0）／review SKIPPED（低風險單檔文件）／PR-status SKIPPED（Local-only）／risks PASS（無殘留風險）`
+- **其他情況**：展開完整六列表格。
 
 理由：六列中有四列與 Preflight Ledger 逐欄重複，而 PR 路徑上讀者已在 PR body 看過同樣內容；整份重述會稀釋真正新增的那兩列。壓縮的是版面不是評估——任一項未評估仍是 closeout 不完整。
 
-### 範例（已填）
+### 範例（低風險 PR、全 PASS）
 
 ```
 ## Closeout Ledger
 
 - Self-simplification／Diff self-review／Review gate／Residual risks — PASS，見 PR body 的 Preflight Ledger。
-- Relevant verification — PASS：DOTNET_SYSTEM_NET_DISABLEIPV6=1 dotnet test → exit 0（Passed! 398）；dotnet build --configuration Release → exit 0。
-- PR / CI / review status — PR #64 已開；gh pr checks 全綠；Copilot review 異步產出 3 條，2 條採納 1 條附 technical reason pushback，thread 皆 resolve。
+- Relevant verification — PASS：source state=<final HEAD SHA>；replay=<實際驗證命令> → exit 0（<通過數>）。
+- PR / CI / review status — PASS：PR <url>；current-head CI PASS；bot review CURRENT；0 unresolved actionable findings；suppressed comments 已逐條處理。
 ```
 
 ---

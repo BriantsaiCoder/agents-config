@@ -600,6 +600,13 @@ has "S4 defines low medium high risk tiers" 'Low.*Medium.*High' skills/dev-workf
 has "S4 expands targeted affected full by risk" 'targeted.*affected.*full CI|targeted.*affected.*full suite' skills/dev-workflow/SKILL.md
 lacks "S4 no longer always reruns everything" 'S4 MUST 全跑|Build／test／lint 與 task-specific probes 全跑' skills/dev-workflow/SKILL.md
 has "S4 routes all evidence-integrity triggers" 'Behavior-affecting edit.*正式 spec artifact／明列 acceptance criteria.*Medium／High／PR.*新增／修改 custom gate.*evidence-integrity\.md' skills/dev-workflow/SKILL.md
+# 只驗 policy clauses；不宣稱模型 runtime 行為。若 clause 被刪，缺檢查會朝假綠偏。
+section_has "S4 keeps full CI and scopes integration E2E security" 'S4 VERIFY' 'High=full CI-equivalent\+適用 integration/E2E/security' skills/dev-workflow/SKILL.md
+section_has "verification scope preserves medium high before after evidence" 'Verification scope' 'Medium／High.*before／after' "$evidence_integrity_ref"
+section_has "verification scope preserves repository required checks" 'Verification scope' 'repo 明定 required checks 不得略過' "$evidence_integrity_ref"
+section_has "inapplicable checks require a reasoned skip" 'Verification scope' '不適用.*SKIPPED.*理由' "$evidence_integrity_ref"
+section_has "blocked applicable checks are unavailable not inapplicable" 'Verification scope' '工具／環境.*適用檢查.*UNAVAILABLE.*probe.*不得.*不適用' "$evidence_integrity_ref"
+section_has "verification repeats only for a new reason or required gate" 'Verification scope' '僅新變更、失敗、未解疑慮或明定 gate 要求才擴大／重跑' "$evidence_integrity_ref"
 has "medium high and PR evidence binds source and replay" 'Medium／High 或 PR.*source state.*replay command' "$evidence_integrity_ref"
 has "dirty and clean source states are exact" 'clean tree.*current HEAD.*dirty tree.*immutable HEAD.*dirty review package.*hash' "$evidence_integrity_ref"
 has "formal acceptance mapping covers negative invariants" '正式 spec artifact.*明列 acceptance criteria.*behavior change.*acceptance criterion.*negative invariant.*test／probe／gate' "$evidence_integrity_ref"
@@ -739,6 +746,13 @@ has "bot fixes use the applicable S4 tier" 'actionable.*自動修.*S4 risk tier.
 has "closeout ledger keeps all six rows semantically" '六項語意一律不得省略' skills/dev-workflow/references/ledgers.md
 has "closeout ledger expands the two Preflight-absent rows" 'Relevant verification.*PR / CI / review status.*MUST 逐項展開' skills/dev-workflow/references/ledgers.md
 has "closeout ledger cites a stable section not a placeholder" '見 PR body 的 Preflight Ledger' skills/dev-workflow/references/ledgers.md
+has "closeout selects the first applicable presentation branch" '依序採用第一個符合條件的格式' "$ledgers_ref"
+has "closeout expands higher risk failures and unavailable evidence" '^\- \*\*展開完整六列表格\*\*：中高風險，或任一項為 `FAIL`／`UNAVAILABLE`' "$ledgers_ref"
+has "closeout PR compression is limited to low risk pass" '^\- \*\*低風險、PR 路徑且全 PASS\*\*' "$ledgers_ref"
+has "closeout local compression permits only reasoned skips" '^\- \*\*低風險、單檔、不進 PR，各項為 PASS 或附理由的 SKIPPED\*\*.*逐項保留狀態、證據與 skip 理由' "$ledgers_ref"
+has "closeout local example does not report omitted review or PR as pass" 'Closeout:.*review SKIPPED（低風險單檔文件）.*PR-status SKIPPED（Local-only）' "$ledgers_ref"
+has "closeout local example carries simplification and diff evidence" 'Closeout: simplification PASS（[^）]+）／self-review PASS（[^）]+）／verification PASS' "$ledgers_ref"
+has "closeout other cases retain the full table" '^\- \*\*其他情況\*\*：展開完整六列表格' "$ledgers_ref"
 
 # B2b 呈現壓縮的兩個界線（2026-08-04）。Opus 5 與 GPT-5.6 Sol 兩份官方指引同時命中 ledger：
 # 前者說 delete your verification scaffolding，後者說刪 repeated process instructions that
