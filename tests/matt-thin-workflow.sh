@@ -842,6 +842,7 @@ while IFS= read -r changed; do
     skills/dotnet-winforms-best-practices/references/code-patterns.md | \
     skills/dotnet-winforms-best-practices/references/layout-design.md | \
     skills/ef-core-best-practices/SKILL.md | \
+    skills/ef6-best-practices/SKILL.md | \
     skills/ef-core-best-practices/references/rules-expanded.md | \
     skills/ef-core-best-practices/references/working-patterns.md | \
     skills/dotnet-logging-best-practices/SKILL.md | \
@@ -859,6 +860,8 @@ while IFS= read -r changed; do
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
     skills/mp-tdd/* | \
+    skills/mysql-best-practices/SKILL.md | \
+    skills/next-best-practices/SKILL.md | \
     skills/nodejs-best-practices/SKILL.md | \
     skills/nodejs-best-practices/references/api-design.md | \
     skills/nodejs-best-practices/references/project-structure-errors.md | \
@@ -866,6 +869,8 @@ while IFS= read -r changed; do
     skills/nodejs-best-practices/references/working-patterns.md | \
     skills/nuxt/SKILL.md | \
     skills/postgresql-optimization/SKILL.md | \
+    skills/react-best-practices/SKILL.md | \
+    skills/react-router-framework-mode/SKILL.md | \
     skills/nuget-manager/* | \
     skills/security-review/SKILL.md | \
     skills/security-review/references/changed-file-attack-surface.md | \
@@ -896,6 +901,7 @@ while IFS= read -r changed; do
     skills/speak-human-tw/references/scenes.md | \
     skills/speak-human-tw/references/taiwan-localization.md | \
     skills/testing-library-react-best-practices/SKILL.md | \
+    skills/typescript-best-practices/SKILL.md | \
     skills/typescript-best-practices/references/config-and-project.md | \
     skills/vue-best-practices/SKILL.md | \
     skills/vue-best-practices/references/rules-expanded.md | \

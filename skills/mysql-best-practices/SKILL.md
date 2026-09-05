@@ -1,6 +1,6 @@
 ---
 name: mysql-best-practices
-description: 'Use when writing or reviewing MySQL 8.x / 8.4 LTS / 9.x (plus 5.7 legacy) SQL, schema, or DAL code — MySqlConnector, mysql2, DDL/migrations, stored procedures, my.cnf tuning, utf8mb4, InnoDB choices, keyset pagination, transactions, or deadlock diagnosis. Apply even when user just says "design this MySQL schema", "this query is slow on MySQL", or "fix this deadlock" without naming this skill.'
+description: 'Use when writing or reviewing MySQL 8.x / 8.4 LTS / 9.x (plus 5.7 legacy) SQL, schema, or DAL code — MySqlConnector, mysql2, DDL/migrations, stored procedures, my.cnf tuning, utf8mb4, InnoDB choices, keyset pagination, transactions, or deadlock diagnosis.'
 ---
 
 # MySQL Best Practices
