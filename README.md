@@ -1,6 +1,8 @@
-# ~/.agents — 三主機 shared skills data plane
+# ~/.agents — shared skills data plane
 
 > Claude、Codex、Copilot 共用 `skills/` 的 workflow 實作；各 host 自己擁有 global routing／governance control plane。
+
+Antigravity Desktop／CLI 可明示接入同一份 skills；此工具只管理連結，不部署其 global config 或宣稱各 host 的 workflow 能力等價。
 
 ## Ownership
 
@@ -17,13 +19,18 @@
 
 - Codex／Copilot 原生讀取 `~/.agents/skills`。
 - Claude 的 `~/.claude/skills/*` 是 `../../.agents/skills/*` 相對 symlink。
-- `~/.agents` live checkout 必須留在 `main`；在此切 branch 會同時改變三家看到的 shared skills。
+- Antigravity Desktop 的 global skills 路徑是 `~/.gemini/config/skills`（[官方文件](https://antigravity.google/docs/skills)）；CLI 是 `~/.gemini/antigravity-cli/skills`（[官方文件](https://antigravity.google/docs/cli/plugins/)）。`agy -p '/skills' --output-format json` 可查 CLI discovery，預期 shared skill 的 path 指向 CLI skills 目錄、realpath 指向 `~/.agents/skills`；此 slash command 不啟動模型回合。UNVERIFIED: Desktop 的實際載入須另查其 native skills 清單，不以 CLI 結果代替。
+- `~/.agents` live checkout 必須留在 `main`；在此切 branch 會同時改變所有已接入 host 看到的 shared skills。
 
 ```sh
 ~/.agents/bin/agents-sync --check      # 驗 shared skills source
-~/.agents/bin/agents-sync --doctor     # 再驗已初始化的 Claude skill links
+~/.agents/bin/agents-sync --doctor     # 再驗已初始化的 Claude／Antigravity links
 ~/.agents/bin/agents-sync --bootstrap  # 只重建 Claude skill links
+~/.agents/bin/agents-sync --bootstrap-antigravity  # 只初始化 Desktop／CLI links
+~/.agents/bin/agents-sync --all        # 明示初始化 Claude 與 Antigravity
 ```
+
+Antigravity 初始化保留正確的 absolute／relative shared links，新增 link 指向目前 `AGENTS_HOME/skills`；有 `SKILL.md` 的同名 host-local 目錄／foreign link 優先保留。其他 plugin／workspace 的名稱優先序由 Antigravity 自己處理，不掃整個 `~/.gemini` 重作 resolver。錯誤 shared target、非 skill 同名路徑或 symlinked destination root／parent 會拒絕；兩個 root 先 preflight，才新增缺少的 links 並移除 exact matching shared-name 的失效 links。`--doctor` 會攔下已存在 root 的缺漏連結；root 尚不存在則回報 not initialized。`--doctor` 不初始化，`--bootstrap` 保持 Claude-only。
 
 無參數、`--deploy`、`--only` 已退役並會 fail-loud；這些介面不讀寫任何 host global config。
 

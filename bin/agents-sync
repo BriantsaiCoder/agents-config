@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 #
-# agents-sync — shared skills visibility checker and Claude skill-link bootstrap.
+# agents-sync — shared skills visibility checker and explicit host-link bootstrap.
 #
-# Host global config is owned by ~/.claude, ~/.codex, and ~/.copilot. This
+# Host global config is owned by ~/.claude, ~/.codex, ~/.copilot, and ~/.gemini. This
 # command never reads, validates, generates, or deploys those control planes.
 #
 # Usage:
 #   agents-sync --check      validate the shared skills source
-#   agents-sync --doctor     validate the source and any initialized Claude links
+#   agents-sync --doctor     validate the source and initialized host links
 #   agents-sync --bootstrap  rebuild only ~/.claude/skills relative symlinks
+#   agents-sync --bootstrap-antigravity  initialize Desktop and CLI skill links
+#   agents-sync --all        explicitly bootstrap both Claude and Antigravity
 set -euo pipefail
 
 AGENTS="${AGENTS_HOME:-$HOME/.agents}"
 CLAUDE_SKILLS="$HOME/.claude/skills"
+ANTIGRAVITY_DIRS=("$HOME/.gemini/config/skills" "$HOME/.gemini/antigravity-cli/skills")
 
 die() { printf 'agents-sync: %s\n' "$*" >&2; exit 1; }
 note() { printf '%s\n' "$*" >&2; }
@@ -65,6 +68,81 @@ check_claude_links() {
   fi
 }
 
+# Only links with the matching shared name are ours; aliases must not pass doctor.
+antigravity_shared_link() {
+  local link="$1" target name
+  [ -L "$link" ] || return 1
+  target="$(readlink "$link")" || die "cannot read skill link: $link"
+  name="${link##*/}"
+  case "$target" in
+    "$AGENTS/skills/$name"|"../../../.agents/skills/$name") return 0 ;;
+    "$AGENTS/skills/"*|../../../.agents/skills/*)
+      die "Antigravity skill target mismatch: $link" ;;
+  esac
+  return 1
+}
+
+check_antigravity_links() {
+  local allow_missing="${1:-no}" dir parent skills skill name link count local_count
+  skills="$(skill_dirs)" || die 'cannot enumerate shared skills'
+  for dir in "${ANTIGRAVITY_DIRS[@]}"; do
+    for parent in "$HOME/.gemini" "${dir%/skills}" "$dir"; do
+      if [ -L "$parent" ] || { [ -e "$parent" ] && [ ! -d "$parent" ]; }; then
+        die "refusing unsafe Antigravity destination root: $parent"
+      fi
+    done
+    if [ ! -d "$dir" ]; then
+      note "Antigravity skill links: not initialized ($dir)"
+      continue
+    fi
+    count=0 local_count=0
+    while IFS= read -r skill; do
+      name="${skill##*/}"
+      link="$dir/$name"
+      if [ -e "$link" ] || [ -L "$link" ]; then
+        if antigravity_shared_link "$link"; then
+          [ "$link" -ef "$skill" ] || die "Antigravity skill target mismatch: $link"
+          count=$((count + 1))
+        elif [ -f "$link/SKILL.md" ]; then
+          local_count=$((local_count + 1))
+        else
+          die "refusing conflicting non-skill Antigravity path: $link"
+        fi
+      elif [ "$allow_missing" != yes ]; then
+        die "Antigravity shared skill link missing: $link"
+      fi
+    done <<< "$skills"
+    for link in "$dir"/*; do
+      if antigravity_shared_link "$link" && [ "$allow_missing" != yes ]; then
+        [ -f "$AGENTS/skills/${link##*/}/SKILL.md" ] ||
+          die "Antigravity shared skill source missing: $link"
+      fi
+    done
+    note "Antigravity skill links: $count valid, $local_count host-owned ($dir)"
+  done
+}
+
+bootstrap_antigravity() {
+  check_source
+  # Validate both destinations before changing either; never replace a local skill.
+  check_antigravity_links yes
+  local dir skills skill link
+  skills="$(skill_dirs)" || die 'cannot enumerate shared skills'
+  for dir in "${ANTIGRAVITY_DIRS[@]}"; do
+    mkdir -p "$dir"
+    while IFS= read -r skill; do
+      link="$dir/${skill##*/}"
+      [ -e "$link" ] || [ -L "$link" ] || ln -s "$skill" "$link"
+    done <<< "$skills"
+    for link in "$dir"/*; do
+      if antigravity_shared_link "$link"; then
+        [ -f "$AGENTS/skills/${link##*/}/SKILL.md" ] || unlink "$link"
+      fi
+    done
+  done
+  check_antigravity_links
+}
+
 bootstrap() {
   check_source
   mkdir -p "$CLAUDE_SKILLS"
@@ -101,15 +179,27 @@ case "${1:-}" in
     [ "$#" -eq 1 ] || die 'usage: agents-sync --doctor'
     check_source
     check_claude_links
+    check_antigravity_links
     ;;
   --bootstrap)
     [ "$#" -eq 1 ] || die 'usage: agents-sync --bootstrap'
     bootstrap
     ;;
+  --bootstrap-antigravity)
+    [ "$#" -eq 1 ] || die 'usage: agents-sync --bootstrap-antigravity'
+    bootstrap_antigravity
+    ;;
+  --all)
+    [ "$#" -eq 1 ] || die 'usage: agents-sync --all'
+    check_source
+    check_antigravity_links yes
+    bootstrap
+    bootstrap_antigravity
+    ;;
   ''|--deploy|--only)
     die 'host deployment is retired; each host owns its global config'
     ;;
   *)
-    die "unknown argument: $1 (use --check, --doctor, or --bootstrap)"
+    die "unknown argument: $1 (use --check, --doctor, --bootstrap, --bootstrap-antigravity, or --all)"
     ;;
 esac

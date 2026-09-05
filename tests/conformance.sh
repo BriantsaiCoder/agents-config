@@ -394,6 +394,125 @@ else
   ng "Claude skill-link bootstrap／doctor"
 fi
 
+# Antigravity 使用 temp HOME 驗真實 CLI；只看 link count 會讓錯誤目標假綠。
+agy_home="$scratch/antigravity-home"
+agy_source="$agy_home/.agents"
+agy_roots=("$agy_home/.gemini/config/skills" "$agy_home/.gemini/antigravity-cli/skills")
+mkdir -p "$agy_source/skills/alpha" "$agy_source/skills/beta"
+printf '%s\n' '# alpha' > "$agy_source/skills/alpha/SKILL.md"
+printf '%s\n' '# beta' > "$agy_source/skills/beta/SKILL.md"
+agy_sync() {
+  HOME="$agy_home" AGENTS_HOME="$agy_source" "$AGENTS/bin/agents-sync" "$@" \
+    > "$scratch/antigravity-sync.log" 2>&1
+}
+if agy_sync --bootstrap && [ ! -e "$agy_home/.gemini" ]; then
+  ok "default bootstrap remains Claude-only"
+else
+  ng "default bootstrap remains Claude-only"
+fi
+agy_valid=1
+agy_sync --bootstrap-antigravity || agy_valid=0
+for agy_dir in "${agy_roots[@]}"; do
+  for agy_name in alpha beta; do
+    [ -L "$agy_dir/$agy_name" ] &&
+      [ "$agy_dir/$agy_name" -ef "$agy_source/skills/$agy_name" ] || agy_valid=0
+  done
+done
+agy_sync --doctor || agy_valid=0
+[ "$agy_valid" -eq 1 ] && ok "explicit Antigravity bootstrap covers both roots" ||
+  ng "explicit Antigravity bootstrap covers both roots"
+
+agy_valid=1
+for agy_dir in "${agy_roots[@]}"; do
+  mkdir -p "$agy_dir"
+  ln -sfn "$agy_source/skills/beta" "$agy_dir/alpha"
+  if agy_sync --doctor; then agy_valid=0; fi
+  ln -sfn "$agy_source/skills/alpha" "$agy_dir/alpha"
+done
+[ "$agy_valid" -eq 1 ] && ok "Antigravity doctor rejects same-count wrong targets" ||
+  ng "Antigravity doctor rejects same-count wrong targets"
+
+agy_valid=1
+for agy_dir in "${agy_roots[@]}"; do
+  ln -sfn '../../../.agents/skills/alpha' "$agy_dir/alpha"
+done
+agy_sync --bootstrap-antigravity && agy_sync --doctor || agy_valid=0
+for agy_dir in "${agy_roots[@]}"; do
+  [ "$(readlink "$agy_dir/alpha")" = '../../../.agents/skills/alpha' ] &&
+    [ "$(readlink "$agy_dir/beta")" = "$agy_source/skills/beta" ] || agy_valid=0
+done
+[ "$agy_valid" -eq 1 ] && ok "Antigravity preserves valid absolute and relative links" ||
+  ng "Antigravity preserves valid absolute and relative links"
+
+mkdir -p "$scratch/host-owned-skill"
+printf '%s\n' '# host owned' > "$scratch/host-owned-skill/SKILL.md"
+agy_valid=1
+for agy_dir in "${agy_roots[@]}"; do
+  rm -f "$agy_dir/alpha" "$agy_dir/beta"
+  ln -s "$scratch/host-owned-skill" "$agy_dir/alpha"
+  mkdir -p "$agy_dir/beta"
+  printf '%s\n' '# local beta' > "$agy_dir/beta/SKILL.md"
+done
+agy_sync --bootstrap-antigravity && agy_sync --doctor || agy_valid=0
+for agy_dir in "${agy_roots[@]}"; do
+  [ "$(readlink "$agy_dir/alpha")" = "$scratch/host-owned-skill" ] &&
+    [ ! -L "$agy_dir/beta" ] &&
+    [ "$(cat "$agy_dir/beta/SKILL.md")" = '# local beta' ] || agy_valid=0
+done
+[ "$agy_valid" -eq 1 ] && ok "Antigravity preserves host-owned skills and links" ||
+  ng "Antigravity preserves host-owned skills and links"
+
+agy_valid=1
+for agy_dir in "${agy_roots[@]}"; do
+  rm -f "$agy_dir/alpha"
+  printf '%s\n' 'keep local file' > "$agy_dir/alpha"
+  if agy_sync --bootstrap-antigravity; then
+    agy_valid=0
+  elif ! grep -Fq 'refusing' "$scratch/antigravity-sync.log"; then
+    agy_valid=0
+  fi
+  [ -f "$agy_dir/alpha" ] && [ ! -L "$agy_dir/alpha" ] &&
+    [ "$(cat "$agy_dir/alpha")" = 'keep local file' ] || agy_valid=0
+  rm -f "$agy_dir/alpha"
+  ln -s "$agy_source/skills/alpha" "$agy_dir/alpha"
+done
+[ "$agy_valid" -eq 1 ] && ok "Antigravity refuses conflicting non-skill paths" ||
+  ng "Antigravity refuses conflicting non-skill paths"
+
+agy_valid=1
+for agy_dir in "${agy_roots[@]}"; do
+  ln -s "$agy_source/skills/retired" "$agy_dir/retired"
+  ln -s "$scratch/host-owned-skill" "$agy_dir/foreign"
+done
+agy_sync --bootstrap-antigravity || agy_valid=0
+for agy_dir in "${agy_roots[@]}"; do
+  [ ! -L "$agy_dir/retired" ] && [ -L "$agy_dir/foreign" ] || agy_valid=0
+  rm -f "$agy_dir/alpha"
+  if agy_sync --doctor; then agy_valid=0; fi
+  ln -s "$agy_source/skills/alpha" "$agy_dir/alpha"
+done
+[ "$agy_valid" -eq 1 ] && ok "Antigravity prunes only owned stale links and detects missing links" ||
+  ng "Antigravity prunes only owned stale links and detects missing links"
+
+rm -f "$agy_home/.claude/skills/alpha" "${agy_roots[0]}/alpha" "${agy_roots[1]}/alpha"
+if agy_sync --all && [ -L "$agy_home/.claude/skills/alpha" ] &&
+   [ -L "${agy_roots[0]}/alpha" ] && [ -L "${agy_roots[1]}/alpha" ]; then
+  ok "explicit all bootstraps Claude and both Antigravity roots"
+else
+  ng "explicit all bootstraps Claude and both Antigravity roots"
+fi
+
+mv "${agy_roots[1]}" "$scratch/saved-cli-skills"
+ln -s "$scratch/saved-cli-skills" "${agy_roots[1]}"
+rm -f "${agy_roots[0]}/alpha"
+if agy_sync --bootstrap-antigravity ||
+   ! grep -Fq 'destination root' "$scratch/antigravity-sync.log" ||
+   [ -e "${agy_roots[0]}/alpha" ] || [ -L "${agy_roots[0]}/alpha" ]; then
+  ng "Antigravity preflights both roots before writing"
+else
+  ok "Antigravity preflights both roots before writing"
+fi
+
 retired_fail=0
 for mode in default --deploy --only; do
   case "$mode" in
