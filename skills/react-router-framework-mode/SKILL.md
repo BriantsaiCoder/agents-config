@@ -1,6 +1,6 @@
 ---
 name: react-router-framework-mode
-description: Use when building or reviewing React Router framework-mode apps — routes and nested layouts, route module exports, loaders/actions, redirects after actions, Forms/fetchers, revalidation timing, navigation and link prefetching, pending or optimistic UI, error boundaries, sessions, SSR/SPA/prerender config, and react-router.config.ts.
+description: Use when building or reviewing React Router framework-mode apps — routes and nested layouts, route module exports, loaders/actions, redirects, Forms/fetchers, revalidation, navigation and link prefetching, pending or optimistic UI, error boundaries, sessions and protected routes, and SSR/SPA/prerender config in react-router.config.ts.
 ---
 
 # React Router Framework Mode

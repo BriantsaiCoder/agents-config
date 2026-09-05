@@ -1,6 +1,6 @@
 ---
 name: react-best-practices
-description: 'Use when writing or reviewing React 18+/19 JSX/TSX: components, hooks, Context, Suspense, Server Components semantics, shadcn/ui, TanStack Query, keys, memoization, inputs, DOM effects, React-specific state patterns, excess re-renders, stale closures, effect cleanup, and ref-vs-state or controlled-input choices.'
+description: 'Use when writing or reviewing React 18+/19 JSX/TSX: components, hooks, Context, Suspense, Server Components semantics, shadcn/ui, TanStack Query, keys, memoization, controlled inputs, DOM effects and cleanup, React-specific state patterns, excess re-renders, stale closures, and ref vs state.'
 ---
 
 # React Best Practices

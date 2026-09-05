@@ -1,6 +1,6 @@
 ---
 name: ef6-best-practices
-description: 'Use when writing or reviewing EF6 (System.Data.Entity) data access on .NET Framework or .NET 6+ — DbContext/ObjectContext, EDMX, Database/Code First, lazy/eager loading, Include, migrations, raw SQL via SqlQuery, change tracking, query performance, or lazy-loading N+1 fixes.'
+description: 'Use when writing or reviewing EF6 (System.Data.Entity) data access on .NET Framework or .NET 6+ — DbContext/ObjectContext, EDMX, Database/Code First, lazy/eager loading, Include, migrations, raw SQL via SqlQuery, change tracking, query performance, or N+1 fixes.'
 ---
 
 # EF6 Best Practices

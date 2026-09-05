@@ -1,6 +1,6 @@
 ---
 name: auth-implementation-patterns
-description: Use when implementing or reviewing JWT, OAuth2/OIDC, sessions, cookies, refresh tokens, RBAC/ABAC, multi-tenant authorization, SSO, or any auth-related security bug, including requests about login, endpoint protection, token storage, or cross-tenant data access that never name auth.
+description: Use when implementing or reviewing JWT, OAuth2/OIDC, sessions, cookies, refresh tokens, RBAC/ABAC, multi-tenant authorization, SSO, login, endpoint access control, token storage, cross-tenant data access, or any auth-related security bug.
 ---
 
 # Authentication & Authorization Patterns

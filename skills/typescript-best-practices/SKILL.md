@@ -1,6 +1,6 @@
 ---
 name: typescript-best-practices
-description: 'Use when writing or reviewing TypeScript: .ts/.tsx, generics and generic inference, conditional/mapped/template-literal types, discriminated unions and union narrowing, type guards, assertion functions, Zod schemas, tsconfig strictness, any/as cleanup, API typing, tightening types, or unexpected type widening.'
+description: 'Use when writing or reviewing TypeScript: .ts/.tsx, generics and inference, conditional/mapped/template-literal types, discriminated unions and narrowing, type guards, assertion functions, Zod schemas, tsconfig strictness, any/as cleanup, API typing, tightening types, or unexpected widening.'
 ---
 
 # TypeScript Best Practices
