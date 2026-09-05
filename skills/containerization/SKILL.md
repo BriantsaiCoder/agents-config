@@ -1,6 +1,6 @@
 ---
 name: containerization
-description: Use when writing or reviewing Dockerfiles for any stack — multi-stage builds, .dockerignore, Linux/Windows containers, ASP.NET Core, .NET Framework + IIS, Node.js, Python, Go, Java. Covers containerizing an app, shrinking an image, build caching, and running as non-root.
+description: Use when writing or reviewing Dockerfiles for any stack — multi-stage builds, .dockerignore, Linux/Windows containers, image size, build caching, non-root users, ASP.NET Core, .NET Framework + IIS, Node.js, Python, Go, Java.
 ---
 
 # Containerization
