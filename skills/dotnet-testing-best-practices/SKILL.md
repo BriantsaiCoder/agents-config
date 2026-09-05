@@ -5,60 +5,33 @@ description: 'Use when writing, running, or reviewing .NET tests — xUnit [Fact
 
 # .NET Testing Best Practices
 
-xUnit v3 primary (NUnit alt). Compose Moq/NSubstitute, AutoFixture/Bogus, WebApplicationFactory, Testcontainers. Assert with the built-in `Assert` by default — FluentAssertions v8+ requires a paid licence for commercial use (v7 is the last permanently open-source line; pin `7.*`, or use AwesomeAssertions/Shouldly). Not for production code (`dotnet-core-best-practices` / `dotnet-framework-best-practices`) or E2E (Playwright). Cross-ref: `ef-core-best-practices`, `dapper-best-practices`. Detail in `references/code-patterns.md#rule-N`.
+Inspect the test project's framework/version, target framework, dependencies and conventions before changing tests. Reuse its runner, fixtures and assertion tools; add a dependency only for an actual unmet requirement. For production code use `dotnet-core-best-practices` / `dotnet-framework-best-practices`; browser E2E belongs to Playwright.
 
-## 13 Golden Rules
+## Behavioral evidence
 
-1. **AAA layout, one logical assertion per test.**
-2. **Name `Method_Scenario_ExpectedResult`.**
-3. **`[Theory]` + `[InlineData]`/`[MemberData]`/`[ClassData]` over copy-paste.**
-4. **Mock only what you don't own.** Strict mocks on own interfaces = red flag.
-5. **Moq OR NSubstitute, not both.**
-6. **AutoFixture for test data; Bogus for realistic fakes.** No hand-crafting irrelevant fields.
-7. **`WebApplicationFactory<Program>` for integration** — boots full pipeline in-memory; catches routing/DI/middleware bugs. → `references/integration-testing.md`.
-8. **Testcontainers for DB, not EF in-memory.** In-memory ignores constraints / SQL semantics.
-9. **Isolate tests** — no shared mutable state, no order dependency. `IAsyncLifetime` per-test.
-10. **Test observable behavior, not implementation.** Public API only. 生成測試時，將每個明示的 scenario、variant 與 qualifier 對應至精確命名的 public behavior，並回報 requirement → test evidence。
-11. **Keep tests fast.** Unit <10ms, integration <1s, E2E <10s. `IClassFixture<T>` for expensive shared context.
-12. **Coverage guides, not goals.** Cover business rules, validation, errors; skip POCOs/DTOs/generated.
-13. **A benchmark is a test whose assertion is a number.** Release mode, `[Benchmark(Baseline = true)]`, one variable at a time; too few iterations to finish the statistics = not evidence.
+- Test observable contracts through the existing public or project-approved boundary. Map each explicit scenario, variant and qualifier to requirement → test evidence. Keep expected results independent of the implementation under test.
+- Use one coherent scenario per test, enough assertions to establish its outcome, and a name that identifies behavior and boundary. Distinct zero/negative boundaries are not duplicates; parameterize only when it improves diagnostics.
+- Check for false confidence: missing or commented-out assertions, systematic surface calls without a contract assertion, `Assert.True(true)`, self-comparisons, swallowed failures, or async assertions whose result is never awaited. An intentional no-throw test is valid when that is the named contract.
+- Match the required exception type and relevant details. Broad `ThrowsAny<Exception>`, `Record.Exception`, or `catch (Exception)` is insufficient for a specific-failure contract; `Record.Exception` is valid for no-throw or with the needed follow-up assertions.
+- Isolate mutable state and remove order dependencies. Share expensive context only with explicit ownership/reset; disable parallelism for unavoidable shared external resources, not to hide order bugs.
+- Choose doubles for meaningful boundaries, not internal call choreography. Reuse simple data/builders and existing mocking tools; AutoFixture/Bogus are optional. A strict mock is a problem when it fixes implementation details rather than a required interaction.
+- Integration tests must preserve the semantics under test: EF in-memory cannot prove relational constraints or provider SQL behavior. Use the real provider via existing test infrastructure (Testcontainers if appropriate); use WebApplicationFactory when HTTP routing/DI/middleware is the contract.
+- Choose targeted tests and broader checks by affected behavior and risk. Measure slowness against the project's baseline and environment; use finite runner bounds, not universal per-test millisecond limits. Coverage guides investigation, not tests of trivial DTOs for a percentage.
+- Rate findings by demonstrated false confidence, unreliability and business impact. Naming, helper style and tool preferences alone do not justify High/Critical severity.
 
-## Severity Checklist
+## Version and tool traps
 
-| Severity | Check | Rule |
-|---|---|---|
-| Critical | Tests interdependent (order / shared state) | 9 |
-| Critical | Tests missing assertions | — |
-| Critical | **Assertion-free coverage touching** — a class calls every public member in declaration order but never asserts an observable contract. Distinct from one accidental omission: the tell is systematic surface coverage | 12 |
-| Critical | **Self-referential assertion** — `Assert.Equal(dto.Name, dto.Name)` or another expression whose two sides are the same value | — |
-| Critical | **Swallowed exception** — `try { Act(); } catch (Exception) { }` or a catch that only logs, so failure cannot fail the test. A deliberate no-throw test is valid when that is the named behavior | — |
-| Critical | **Always-true assertions** — `Assert.True(true)`, `Assert.Equal(x, x)`, any condition that cannot fail | — |
-| Critical | **Commented-out assertions** — the test still runs and still counts toward coverage | — |
-| Critical | **Missing `await` on an async assertion** — `async Task` test calling `Assert.ThrowsAsync<T>(...)` without `await`. Silently passes even when the assertion would have failed | — |
-| High | Strict mocks on own interfaces | 4 |
-| High | DB tests on EF in-memory for behavior | 8 |
-| High | Test names unclear (`Test1`) | 2 |
-| High | **Broad exception acceptance** — `Assert.ThrowsAny<Exception>(...)`, `Record.Exception`, or `catch (Exception)` without an exact-type and relevant-details assertion when the contract requires a specific failure. `Record.Exception` remains valid for an explicit no-throw contract or when followed by those assertions | — |
-| Medium | Parameterized tests copy-pasted | 3 |
-| Medium | Test data hand-crafted with irrelevant details | 6 |
-| Medium | Implementation details tested | 10 |
-| Low | Both Moq and NSubstitute in same project | 5 |
-| Low | Trivial getters/DTOs tested for coverage | 12 |
-| Low | **Assertion message repeats the assertion** — `Assert.True(a == b, "a and b are not equal")` adds nothing; say what the business rule is | — |
+- xUnit `IAsyncLifetime`: **v3 extends `IAsyncDisposable`, both members return `ValueTask`; v2 members return `Task`.** Match the installed package, not the target framework alone.
+- xUnit `Assert.Throws<T>` / `Assert.ThrowsAsync<T>` require the exact exception type; `ThrowsAny<T>` is for contracts intentionally allowing derived exceptions. Await asynchronous assertions.
+- Prefer the project's existing assertion tool or built-in `Assert`. FluentAssertions v8+ requires a paid licence for commercial use; v7 is the last permanently open-source line. Verify licence/version before upgrading; do not add or pin a library merely to follow this skill. AwesomeAssertions/Shouldly are alternatives when a change is needed.
+- BenchmarkDotNet measurements need Release mode, a recorded baseline, controlled variables, sufficient iterations and variance. A timing number without these is not performance evidence.
 
-Calibrate honestly: Critical/High is for false confidence and unreliability only. Two tests covering distinct boundaries (zero vs negative) are not duplicates — separate cases give clearer failure diagnostics.
+## Load references for the relevant branch
 
-## xUnit Version Traps
-
-- `IAsyncLifetime` — **v3: `IAsyncLifetime : IAsyncDisposable`, both members return `ValueTask`; v2: both return `Task`.** Fixtures and parallelism → `references/code-patterns.md` / `references/cli.md`.
-- xUnit `Assert.Throws<T>` / `Assert.ThrowsAsync<T>` require the exact exception type; use `ThrowsAny<T>` only when derived exceptions are part of the contract. Disable parallelism only for shared external resources, never to hide order bugs.
-
-## Reference Navigation
-
-- `references/code-patterns.md` — Rules 1–12 code, structure, AAA, speed
-- `references/mocking-frameworks.md` — Moq, NSubstitute, HttpClient/ILogger, AutoFixture, finding what needs a seam
-- `references/coverage-crap.md` — Rule 12 in numbers: CRAP formula, coverage collection, why a CI line threshold isn't this
-- `references/integration-testing.md` — WebApplicationFactory, Testcontainers, DB, auth, Respawn, CI/CD
-- `references/mstest.md` — MSTest 3.x/4.x, Assert, TestContext, DataRow
-- `references/cli.md` — `dotnet test` CLI, filters, `--blame`, parallelism
-- `references/benchmarks.md` — BenchmarkDotNet baselines, `[MemoryDiagnoser]`, variance
+- [code-patterns.md](references/code-patterns.md): AAA, data-driven tests, fixtures and behavior assertions; examples are optional patterns, not dependency mandates.
+- [mocking-frameworks.md](references/mocking-frameworks.md): existing Moq/NSubstitute, HttpClient/ILogger, data tools and seam diagnosis.
+- [integration-testing.md](references/integration-testing.md): WebApplicationFactory, real DB/provider, auth and reset/CI setup.
+- [mstest.md](references/mstest.md): installed MSTest 3.x/4.x APIs, TestContext and DataRow differences.
+- [cli.md](references/cli.md): runner filters, blame and parallelism.
+- [coverage-crap.md](references/coverage-crap.md): coverage collection and CRAP interpretation; thresholds do not replace behavior evidence.
+- [benchmarks.md](references/benchmarks.md): BenchmarkDotNet baselines, memory and variance.

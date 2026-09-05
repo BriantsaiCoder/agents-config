@@ -1,6 +1,6 @@
-# .NET Testing Code Patterns per Golden Rule
+# .NET Testing Code Patterns
 
-Complete code examples for each Golden Rule in main `SKILL.md`. For Moq/NSubstitute deep dive see `mocking-frameworks.md`; for WebApplicationFactory/Testcontainers see `integration-testing.md`.
+Optional examples; match the existing project tools and framework. Numbered sections retain stable reference anchors; they are not mandatory defaults. For Moq/NSubstitute deep dive see `mocking-frameworks.md`; for WebApplicationFactory/Testcontainers see `integration-testing.md`.
 
 **xUnit version stance:** examples target xUnit v3 (package `xunit.v3` 3.x), where `IAsyncLifetime : IAsyncDisposable` and both members return `ValueTask`. On xUnit v2 (package `xunit` 2.x) change them back to `Task InitializeAsync()` / `Task DisposeAsync()`. v3 also adds an assembly-wide fixture level — `[assembly: AssemblyFixture(typeof(TFixture))]` — for resources too expensive even per collection.
 
@@ -117,7 +117,7 @@ sub.GetByIdAsync(42, Arg.Any<CancellationToken>())
 ## Rule 6 — AutoFixture / Bogus
 
 ```csharp
-// ❌ Without AutoFixture — lots of irrelevant setup
+// Explicit data: prefer a small existing builder if repeated setup becomes noise.
 var order = new Order
 {
     Id = 1, CustomerId = 42, CustomerName = "Test",
@@ -125,7 +125,7 @@ var order = new Order
     CreatedAt = DateTime.UtcNow, Items = new List<OrderItem>()
 };
 
-// ✅ With AutoFixture — only specify what matters
+// If AutoFixture is already appropriate for the project: specify what matters.
 var fixture = new Fixture();
 var order = fixture.Build<Order>()
     .With(o => o.Status, OrderStatus.Pending)  // only this matters for the test
@@ -264,16 +264,7 @@ Assert.Equal("Shipped", result.Status);
 
 ## Rule 11 — Speed targets
 
-| Test Type | Target Speed | Tools |
-|-----------|-------------|-------|
-| Unit | < 10ms each | Moq/NSubstitute, in-memory fakes |
-| Integration | < 1s each | WebApplicationFactory, Testcontainers (shared fixture) |
-| E2E | < 10s each | Playwright, real services |
-
-**Speed tips:**
-- Share expensive fixtures with `IClassFixture<T>` (per-class) or `ICollectionFixture<T>` (across classes)
-- Use `[Collection]` to group tests sharing the same database container
-- Avoid `Thread.Sleep` — use `TaskCompletionSource` or polling with timeout
+Measure the affected suite on the actual runner and compare with its baseline. Set finite bounds for hung tests and record performance regressions with the same workload; there is no universal unit/integration/E2E duration cutoff. Share expensive context through existing fixtures only with isolation and reset guarantees. Prefer a completion signal (`TaskCompletionSource`) or bounded condition polling over `Thread.Sleep`.
 
 ## Rule 12 — Coverage strategy
 
