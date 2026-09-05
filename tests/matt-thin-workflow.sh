@@ -859,6 +859,11 @@ while IFS= read -r changed; do
     skills/mp-grill-with-docs/* | \
     skills/mp-improve-codebase-architecture/* | \
     skills/mp-tdd/* | \
+    skills/nodejs-best-practices/SKILL.md | \
+    skills/nodejs-best-practices/references/api-design.md | \
+    skills/nodejs-best-practices/references/project-structure-errors.md | \
+    skills/nodejs-best-practices/references/rules-expanded.md | \
+    skills/nodejs-best-practices/references/working-patterns.md | \
     skills/nuxt/SKILL.md | \
     skills/postgresql-optimization/SKILL.md | \
     skills/nuget-manager/* | \

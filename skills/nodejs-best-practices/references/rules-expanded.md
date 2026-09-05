@@ -10,7 +10,7 @@ The Why behind each rule.
 
 ## 2. async/await + proper error propagation
 
-Wrap async route handlers so rejections reach Express's error middleware. Custom error classes (`AppError` with `statusCode` + `isOperational`). Never `catch {}` empty.
+Check the Express major version before choosing error propagation; see [async error handling](api-design.md#the-async-handler-wrapper). Custom error classes (`AppError` with `statusCode` + `isOperational`). Never `catch {}` empty.
 
 **Why**: Unhandled promise rejection crashes the process in Node 15+. Silent catches hide bugs.
 
@@ -34,7 +34,7 @@ Zod / Joi for `req.body`, `req.params`, `req.query` at route entry. 400 + struct
 
 ## 6. Express middleware correctness
 
-Error middleware needs 4 params `(err, req, res, next)`. `helmet()`, `cors()`, request-ID middleware. Wrap async handlers with a `next(err)` helper.
+Error middleware needs 4 params `(err, req, res, next)` and must follow the routes. `helmet()`, `cors()`, request-ID middleware. Use the version-aware error propagation in Rule 2.
 
 **Why**: Express identifies error middleware by arity. 3 params = regular; 4 = error handler. Missing param silently turns it into regular middleware that never runs on errors.
 
@@ -74,23 +74,6 @@ Multi-stage Docker (build with devDeps, prod with runtime only). `USER node`. `N
 
 **Why**: Root in container = vulnerability gives attacker root. Missing signal handling = `docker stop` drops in-flight requests.
 
-## Working Pattern — Writing
+## Working Patterns
 
-1. Project layout: feature folders.
-2. Boundary: Zod schema at route entry → 400 with structured errors.
-3. Service layer: pure functions where possible, no Express types leaking.
-4. Async wrapper for routes; centralized error middleware (4 params) at the end of the chain.
-5. Logger (Pino) with `AsyncLocalStorage` request-context; every log carries request ID.
-6. DB: pool + parameterized queries; ORM with explicit transactions where multi-statement.
-7. Config validated at startup; secrets via env var; `NODE_ENV=production` in prod image.
-
-## Working Pattern — Reviewing
-
-1. **Security** — input validated before reaching business logic? Concat into SQL / FS / shell? Hardcoded secrets? Missing `helmet()`?
-2. **Async hygiene** — async route without error wrapper? Empty `catch {}`? Unhandled rejection in `setInterval` / `setImmediate`?
-3. **Error middleware** — does the 4-param error handler exist and is it last? Custom error class for operational vs programmer error?
-4. **Event loop** — `*Sync` calls on request path? Synchronous crypto / heavy regex / massive `JSON.parse`?
-5. **DB** — `new Client()` per request? String-concat SQL? Missing transactions on multi-step writes?
-6. **Logging** — `console.log`? Logs without request ID? PII in log lines?
-7. **Tests** — over-mocked internals? Missing route-level integration tests?
-8. **Deploy** — Dockerfile running as root? Single-stage build with devDeps? Missing `dumb-init`?
+For writing or reviewing Node.js code, use [working-patterns.md](working-patterns.md).

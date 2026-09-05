@@ -176,8 +176,7 @@ export class UsersService {
 
 ## Async Handler Wrapper
 
-Express does not natively catch promise rejections from async handlers. Without a wrapper, an unhandled
-rejection crashes the process (Node 15+) or silently hangs the request.
+The following wrapper and usage examples target Express 4. For Express 4/5 and callback/detached async boundaries, see [async error handling](api-design.md#the-async-handler-wrapper).
 
 ```typescript
 // src/common/middleware/async-handler.ts
@@ -227,11 +226,7 @@ router.post(
 export { router as usersRouter };
 ```
 
-**Note:** Express 5 is the current stable line (5.2.x). Its router forwards a rejected promise returned by
-an async handler to the 4-parameter error middleware, so **`asyncHandler` is unnecessary on 5.x** — only
-projects still on Express 4 (4.21.x, maintenance-only) need the wrapper. When upgrading you can drop the
-wrappers wholesale, but budget for the other 5.x breaking changes at the same time: `req.query` becomes
-getter-only (no reassignment) and `path-to-regexp` route syntax is stricter.
+**Migration note:** Existing wrappers may remain on Express 5; do not remove them merely for this style change. An authorized major upgrade must also account for `req.query` becoming getter-only and stricter `path-to-regexp` route syntax.
 
 ---
 
@@ -280,7 +275,7 @@ export const errorHandler = (
 | Error handler with 3 params | Express treats it as regular middleware | Add `_next` as 4th param |
 | `app.use(errorHandler)` before routes | Error handler never receives errors | Register error handler **after** all routes |
 | `res.json(err)` | Serializes `Error` as `{}` (non-enumerable props) | Extract message/statusCode explicitly |
-| `catch (e) { console.log(e) }` in route | Swallows error, request hangs forever | Use `asyncHandler` + let error reach middleware |
+| `catch (e) { console.log(e) }` in route | Swallows error, request hangs forever | Forward the error using [async error handling](api-design.md#the-async-handler-wrapper) |
 
 ---
 

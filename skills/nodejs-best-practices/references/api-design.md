@@ -138,8 +138,14 @@ app.use(errorHandler);
 
 ### The async handler wrapper
 
-Express 4 does not catch promise rejections. This wrapper forwards them to error middleware.
-**Express 5 (current stable, 5.2.x) handles rejected promises natively — skip this section on 5.x.**
+Check the installed Express major version in the project manifest/lockfile.
+
+- **Express 4:** explicitly forward async handler rejections to `next(err)`; reuse an existing wrapper or equivalent `.catch(next)` handling.
+- **Express 5:** rejections from a Promise returned by a route handler/middleware reach the error middleware automatically. An `async` handler returns such a Promise; no wrapper is required. Existing working wrappers need not be removed.
+- **Both versions:** callback errors and detached/unreturned asynchronous work are outside that returned Promise. Forward callback errors with `next(err)` and catch detached rejections explicitly; a surrounding async handler alone does not catch them.
+- Register error middleware with all four parameters `(err, req, res, next)` after routes. Do not swallow errors.
+
+See [Express error handling](https://expressjs.com/en/guide/error-handling/). The wrapper below is an Express 4 example; it remains compatible with Express 5.
 
 ```typescript
 // src/common/middleware/async-handler.ts
@@ -201,7 +207,7 @@ export const authorize = (...roles: string[]) => {
   };
 };
 
-// Usage:
+// Express 4 usage (the existing wrapper is also compatible with Express 5):
 router.delete('/:id', authenticate, authorize('admin'), asyncHandler(deleteUser));
 ```
 
