@@ -8,7 +8,7 @@ Implement the work described by the user in the spec or tickets.
 
 Use /tdd where possible, at pre-agreed seams.
 
-Run typechecking regularly, single test files regularly, and the full test suite once at the end.
+Use [dev-workflow](../dev-workflow/SKILL.md) S4 and [evidence-integrity](../dev-workflow/references/evidence-integrity.md) to select checks for the changed behavior. Reuse the repo's test stack, complete required checks, and expand or repeat only for new changes, failures, unresolved concerns, or an explicit gate.
 
 Once done, use /code-review to review the work.
 

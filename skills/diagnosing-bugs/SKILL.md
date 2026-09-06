@@ -46,7 +46,7 @@ The goal is not a clean repro but a **higher reproduction rate**. Loop the trigg
 
 ### When you genuinely cannot build a loop
 
-Stop and say so explicitly. List what you tried. Ask the user for: (a) access to whatever environment reproduces it, (b) a captured artifact (HAR file, log dump, core dump, screen recording with timestamps), or (c) permission to add temporary production instrumentation. Do **not** proceed to hypothesise without a loop.
+Continue read-only investigation through code paths and available logs; label hypotheses unverified and state what evidence would distinguish them. List the repro attempts and ask only for missing access, a captured artifact, or instrumentation approval that blocks the next dependent step. Continue independent authorized analysis. Do not claim a root cause or fix is confirmed without supporting verification; do not enter the fix phases without a red-capable loop or the equivalent before/after repro allowed by [dev-workflow](../dev-workflow/SKILL.md) [INT-2].
 
 ### Completion criterion — a tight loop that goes red
 
@@ -57,7 +57,7 @@ Phase 1 is done when the loop is **tight** and **red-capable**: you can name **o
 - [ ] **Fast** — seconds, not minutes.
 - [ ] **Agent-runnable** — you can run it unattended; a human in the loop only via `scripts/hitl-loop.template.sh`.
 
-If you catch yourself reading code to build a theory before this command exists, **stop — jumping straight to a hypothesis is the exact failure this skill prevents.** No red-capable command, no Phase 2.
+Read code to construct the loop or form falsifiable hypotheses. Until a red-capable command exists, stay in the read-only investigation branch above; a plausible explanation does not complete Phase 1 or prove a fix.
 
 ## Phase 2 — Reproduce + minimise
 
@@ -81,7 +81,7 @@ Do not proceed until you have reproduced **and** minimised.
 
 ## Phase 3 — Hypothesise
 
-Generate **3–5 ranked hypotheses** before testing any of them. Single-hypothesis generation anchors on the first plausible idea.
+Rank the falsifiable hypotheses supported by available evidence. Start with the strongest candidate and add alternatives when uncertainty remains; do not invent hypotheses to meet a quota.
 
 Each hypothesis must be **falsifiable**: state the prediction it makes.
 

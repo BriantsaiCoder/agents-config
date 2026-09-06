@@ -20,7 +20,9 @@ Cookbook 的位置與格式以目前 host 的 `rules/cookbook.md` 為準。先�
 - Race、event ordering、reflection 或外部 library 的環境差異：mechanical guard 不足時，考慮 cookbook。
 - Architecture choice 的 why：若程式看不出且會被反覆推翻，考慮 ADR／cookbook。
 
-## 摘要格式
+## 摘要範例
+
+三者皆不需要時，只用一句，例如：「無需另存知識；新增的 regression test 已守住這個行為。」有需展開的項目才選用下列相關列，不強制標題或列出無需動作的項目。
 
 ```text
 📝 錯誤學習評估：

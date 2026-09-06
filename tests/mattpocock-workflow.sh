@@ -250,6 +250,15 @@ has "focused security routes to shared-security-review" 'focused.*`shared-securi
 has "heavy security audit is explicit and artifact-aware" '明示.*artifacts.*`security-audit`' skills/dev-workflow/SKILL.md
 has "security pipeline gates stay separate" 'SBOM.*`dependency-security-scan`' skills/dev-workflow/SKILL.md
 has "bug settlement assessment stays mandatory" '強制.*評估|評估.*強制' skills/bug-fix-settlement/SKILL.md
+has "empty settlement reports one sentence" '皆不需要.*一句.*替代 guard' skills/bug-fix-settlement/SKILL.md
+lacks "settlement does not impose a fixed report" '無條件輸出' skills/bug-fix-settlement/SKILL.md
+has "implementation tests use the shared verification scope" 'dev-workflow.*S4.*evidence-integrity' skills/implement/SKILL.md
+lacks "implementation does not mandate repeated or full-suite tests" 'Run typechecking regularly|full test suite once at the end' skills/implement/SKILL.md
+has "diagnosis continues bounded read-only work without a repro" 'Continue read-only investigation.*unverified' skills/diagnosing-bugs/SKILL.md
+has "diagnosis cannot claim an unverified cause or fix" 'Do not claim.*root cause.*fix.*confirmed' skills/diagnosing-bugs/SKILL.md
+lacks "diagnosis does not forbid reading code to form hypotheses" 'Do \*\*not\*\* proceed to hypothesise without a loop|No red-capable command, no Phase 2' skills/diagnosing-bugs/SKILL.md
+lacks "diagnosis does not invent a fixed hypothesis count" 'Generate \*\*3–5 ranked hypotheses\*\*' skills/diagnosing-bugs/SKILL.md
+has "vendored continuation defers to the recorded override contract" 'step0-vendored-gate.md.*recorded override' "$routing_continuations_ref"
 has "bug settlement memory requires explicit request" 'Memory.*只有使用者明示' skills/bug-fix-settlement/SKILL.md
 has "bug settlement persistence is target-authorized" 'Cookbook.*Workflow.*exact target|exact target.*Cookbook.*Workflow' skills/bug-fix-settlement/SKILL.md
 lacks "bug settlement no longer equates recommendation with authorization" '一旦標記 ✅，Step 2 就必須完成對應寫入' skills/bug-fix-settlement/SKILL.md
@@ -332,6 +341,9 @@ has "mechanical triggers set a non-overridable risk floor" 'mechanical trigger.*
 has "multiple triggers take the highest risk floor" '多個 trigger.*最高 risk floor' "$authorization_matrix_ref"
 has "S2 keeps local reversible Medium autonomous" 'Medium-risk.*session plan.*不需第二次確認|Medium.*本身不是第二次授權 gate' "$authorization_matrix_ref"
 has "S2 stops before High or protected boundaries" 'High.*protected boundary.*material scope expansion.*停|High.*material scope expansion.*protected boundary.*停' "$authorization_matrix_ref"
+has "S2 reuses exact approval without reopening the same gate" 'exact action／scope.*既有.*核准.*不.*重問' "$authorization_matrix_ref"
+rule_has "in-scope necessary findings are completed" INT-8 'scope 內必要修正.*直接完成'
+rule_has "only expanded findings wait for authorization" INT-8 '超出.*scope.*follow-up.*未核准不得做'
 has "S2 asks only for material ambiguity" '只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問' "$authorization_matrix_ref"
 has "S2 keeps reversible defaults autonomous" '低風險.*可逆.*無 material impact.*sensible default.*default／impact' "$authorization_matrix_ref"
 lacks "S2 does not restore blanket ask-before-edit" '有多種合理解讀且會改檔時.*停下發問' skills/dev-workflow/SKILL.md "$authorization_matrix_ref"

@@ -17,13 +17,15 @@ anchor 與 host 實際措辭對不上時，改哪一邊的判準：**語意分�
 
 **Accepted divergence（CAP-PONYTAIL，2026-09-06）**：Copilot 的 [T0-10] 把 ponytail 適用範圍收窄為「只採 reuse／YAGNI 原則」，Claude／Codex 仍是「通用慣例」。這是**已知且被使用者明示接受**的語意分歧（詢問是否鏡像到另外兩家，回覆「不用」），不是待修的 drift——故 meaning 欄改為如實描述「適用範圍 host-local」，而非假裝三家一致。三家若日後要收斂，改的是 host 檔不是本表。註記在此的理由：meaning 欄不參與任何斷言（`ponytail-host-parity.sh` 只檢查它非空），gate 全綠不代表三家語意相同，讀者需要這行才不會誤讀。
 
+**2026-09-07 核准調整（上述 2026-09-06 為歷史決定）**：使用者核准 Astra prompting 審核項目 1–6，Codex 改採 reuse／YAGNI／最小完整實作，輸出與測試交回 host／repo／dev-workflow；Claude 與 Copilot 的 host-local 範圍不變。以下 mapping 對應這次 Codex candidate，須與其 AGENTS.md 一起驗證及交付，不能把尚未切換的 live host 判為已套用。
+
 <!-- capability-parity:start -->
 ```tsv
 CAP-WORKFLOW	Shared workflow 是唯一方法來源	dev-workflow/SKILL.md^host-local prose 不複製 method	dev-workflow/SKILL.md^程序只由該 skill 維護	dev-workflow/SKILL.md^workflow 方法與 gates 唯一來源
 CAP-LOCAL-AUTONOMY	安全、local、reversible 工作 MUST 一次執行至完成（[INT-8]）	local、reversible^MUST 一次執行至完成	local、reversible^MUST 一次執行至完成^可直接實作	local、reversible^MUST 一次執行至完成^可直接實作
 CAP-DELEGATION	Delegation 由 AI 自主判定且無須先問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問
 CAP-RESPONSE	Outcome-first 且決策列出 recommendation 與 trade-off	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項/推薦/取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨
-CAP-PONYTAIL	Plan／implement 套用 Ponytail 慣例，適用範圍 host-local（見表上方 Accepted divergence）	ponytail 等風格注入=通用慣例	ponytail=通用慣例	[T0-10] 開發套用 ponytail=慣例，但只採 reuse／YAGNI 原則
+CAP-PONYTAIL	Plan／implement 套用 Ponytail 慣例，適用範圍 host-local（見表上方 Accepted divergence）	ponytail 等風格注入=通用慣例	ponytail 只採 reuse／YAGNI／最小完整實作	[T0-10] 開發套用 ponytail=慣例，但只採 reuse／YAGNI 原則
 ```
 <!-- capability-parity:end -->
 

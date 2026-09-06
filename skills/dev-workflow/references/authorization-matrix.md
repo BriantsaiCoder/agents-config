@@ -17,7 +17,7 @@ Mutation 或 side effect 進 S2 時載入。先由 path、command class、branch
 
 `local reversible` 表示 tracked change 可由 VCS 回復，或 machine-local config 已有 temp backup／rollback；未備份的 untracked／ignored 刪除不算 reversible。MCP install／enable／add／update，或修改 command／args／env，均屬 Policy。刪除／停用／放寬既有 hook、sandbox、permission 或其他 control 也屬 Policy，不因 diff 是刪除而降級。Secret-bearing 內容進 chat／transcript 視為 egress，依 [T0-4] 禁止。
 
-High、protected boundary 或 material scope expansion 必須停在 S2；只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問。低風險、可逆、無 material impact 採 sensible default 並記 default／impact。
+High、protected boundary 或 material scope expansion 在 S2 先核對 exact action／scope 與既有 plan／核准；已涵蓋且風險與副作用未變時不重問，仍完成適用 gates。缺少適用 plan／核准或發生實質變更才停在相依步驟，續做已授權的獨立工作；不得把「先分析／等確認」當成 implementation 授權。只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問。低風險、可逆、無 material impact 採 sensible default 並記 default／impact。
 
 ## Local checkpoint commit
 
