@@ -17,7 +17,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 - [INT-1] push／open PR／merge／final closeout MUST 只在 S4、S5 適用 gate PASS 後執行。觸發：任一收尾動作。例外：SKIPPED／UNAVAILABLE 須附理由或 probe。驗證：S4/S5 ledger 與 evidence 齊備。
 - [INT-2] BUGFIX／既有 behavior 變更若有 stable、valuable 的 behavior seam，MUST 先有 failing regression test（RED→GREEN）；否則 MUST 以同一 minimal repro 留下 before／after evidence，並記錄不採 RED 的理由，MUST NOT 為流程新增低價值 seam。觸發：BUGFIX 或既有 behavior 變更。例外：無。驗證：RED evidence 早於 fix，或同一 repro 的 before／after evidence。
-- [INT-3] [T0-8] protected gate MUST 停在 S2 等核准；auto／autopilot 不豁免，Medium-risk MUST NOT 成為第二次確認 gate。觸發：plan-first、architecture／High-risk、未授權 external／protected side effect、material scope expansion。例外：清楚、in-scope、local、reversible 的 Low／Medium-risk user-requested work 可做，Medium 留 session plan。驗證：protected gate 有核准原句；direct path 有 user 原句 + risk／reversibility。
+- [INT-3] S2 依 [T0-8] 與 authorization matrix 判定授權；auto／autopilot 不豁免 protected gate，Medium-risk 本身 MUST NOT 成為第二次確認 gate。觸發：進入 S2。例外：無。驗證：matrix 分類 + 適用時的核准原句。
 - [INT-4] Delegation MUST 先讀並遵守 [delegation contract](references/delegation.md)；MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate。觸發：任何 delegation。例外：host/runtime 容量與 higher-priority instructions。驗證：reference contract 全數成立。
 - [INT-5] `setup-matt-pocock-skills` MUST 只在使用者明示時執行；tracker contract 優先 repo `docs/agents/issue-tracker.md`，否則讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：需 tracker contract。例外：無。驗證：contract 或 setup 原句。
 - [INT-6] 任何已核准、預計納入 VCS 的檔案新增／修改，首次寫入前 MUST 位於 task branch／worktree（非 main／master）；否則先建，current-branch 不得覆寫。觸發：新增／修改。例外：無。驗證：pre-write branch／baseline + S4–S6。
@@ -94,7 +94,7 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 - [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
 - [S5-2] Working tree dirty review MUST 在讀任何 raw diff 前完成 `references/dirty-review-package.md`；任一 finding 即 FAIL。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
 - [S5-3] 非 SKIPPED 的 Standards 軸 prompt MUST 套用 `references/reviewer-template.md` 的 canonical over-engineering contract；專屬 reviewer 也須收到等價完整 contract。觸發：S5 review。例外：無。驗證：prompt evidence。
-- [S5-4] Reviewer output MUST 套用 `references/reviewer-template.md` 的「全部回報、下游過濾」與單軸 aggregate contract。觸發：任何 review agent prompt。例外：無。驗證：review output evidence。
+- [S5-4] Reviewer output MUST 套用 `references/reviewer-template.md` 的 evidence-first actionable contract 與單軸 aggregate contract；不得用固定字數／條數上限截斷 findings。觸發：任何 review agent prompt。例外：無。驗證：review output evidence。
 - 各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
 - Spec 不存在可標 SKIPPED；缺 reviewer capability 必須附 UNAVAILABLE probe，不得假裝自審等價。
 - Actionable finding 回 implementation；bug finding 依 [INT-2] 在 stable／valuable seam 補 RED，否則留同一 repro before／after 與理由。Delegation 依 [INT-4]。

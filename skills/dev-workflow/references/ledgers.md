@@ -1,4 +1,4 @@
-<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | referenced-from: dev-workflow/SKILL.md S6 CLOSEOUT | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md + .codex/AGENTS.override.md（Mandatory Closeout Ledger 收割）| last-verified: 2026-08-09 -->
+<!-- tier: workflow-reference | consumed-by: claude,codex,copilot | referenced-from: dev-workflow/SKILL.md S6 CLOSEOUT | generated-from: proposals/2026-07-07-three-host-unification/03-workflow-layer.md + .codex/AGENTS.override.md（closeout evidence policy）| last-verified: 2026-09-05 -->
 
 # ledgers.md — S6 CLOSEOUT 的 ledger 定義
 
@@ -10,7 +10,7 @@
 | Ledger | 時機 | 落點 | 列數 | 阻擋作用 |
 |--------|------|------|------|---------|
 | **Preflight** | push / 開 PR **之前** | 寫進 PR body | 8 rows | 缺 row 或缺證據 → 不得 push / 開 PR |
-| **Closeout** | 實作 / 開 PR / merge 後的**最終回覆** | 可見於回覆正文（非 PR 路徑亦必出） | 6 rows | 缺此 ledger → closeout 不完整 |
+| **Closeout** | 實作 / 開 PR / merge 後的**最終回覆** | 可見於回覆正文 | 依結果 | 缺 outcome、必要驗證或未解風險 → closeout 不完整 |
 | **Postflight** | merge **之後** | 回覆一行帶過 | 2 項 | 無（收尾記錄） |
 
 四態標記（全鏈通則，同 SKILL.md）：`PASS` / `FAIL` / `UNAVAILABLE`（須附 probe 失敗證據）/ `SKIPPED`（須附理由）。無證據不得標 PASS。
@@ -22,7 +22,7 @@
 - `git merge-base <PR 的 baseRefOid> HEAD` MUST 等於記錄的 baseline SHA——用 base 的實際 commit SHA（`gh pr view <n> --json baseRefOid`），不是分支名：本地的 `main` ref 與 GitHub 上的 base commit 可能不同，拿分支名算出來的 merge-base 驗的是另一件事。S5 審查範圍即 `git diff <baseline>..HEAD`。不相等時 GitHub 呈現的 diff 會含入 baseline 之前的 commit，「這個 PR 的 diff」就有兩種讀法——要嘛同一份 code 被重複審，要嘛因為「看起來審過了」被略過。比對 merge-base 而非 base 本身：base 換了但祖先鏈仍含 baseline 時（PR 被 retarget 到已含前一批變更的 main）range 其實沒變，比對 base 會誤報。用分支名指稱起點則對不回去：分支會被 force-push 更新，也會在 merge 後依 Postflight 刪除。
 - S4 依 `git diff --name-only <前次 closeout SHA>..HEAD` 的累積影響重新判 risk tier 並重跑適用 checks；不得因新 commit 很小而降低整體風險。
 - S5 只重審該 diff 觸及的檔案與其 transitive impact；未觸及範圍可沿用前次 findings 並註明 baseline SHA，範圍不得由 reviewer 任意縮小。
-- S6 重出完整六項 ledger；未受影響項目可引用 baseline SHA。Current-head CI／review 結果一律失效並依 `review-triage.md` 重查。
+- S6 更新 user-facing closeout；未受影響的完整 evidence 留在 Preflight/session artifact 並可引用 baseline SHA。Current-head CI／review 結果一律失效並依 `review-triage.md` 重查。
 
 ---
 
@@ -94,43 +94,24 @@ S5 Spec: PASS：對照 sdd/batch-insert-chunk/proposal.md 逐條確認，無偏�
 
 ---
 
-## 2. Closeout Ledger（收割 Codex override 原文，最終回覆必出）
+## 2. User-facing closeout
 
-實作 / 開 PR / merge 後的最終回覆 MUST 含可見的 `Closeout Ledger`，不可只說「做完了」。收割自 Codex override 的 Mandatory Closeout Ledger，六列各標 `PASS` / `FAIL` / `SKIPPED`（Review gate 的「不可用」對映四態的 `UNAVAILABLE` + probe 證據）+ 證據：
+完整 audit evidence 留在 Preflight ledger、session artifact 或 PR checks；最終回覆不重複固定六列。Closeout MUST：
 
-| Row | 內容 |
-|-----|------|
-| **Self-simplification** | PASS / FAIL / SKIPPED，附證據（四檢核結果）|
-| **Diff self-review** | PASS / FAIL / SKIPPED，附證據（逐行走查摘要）|
-| **Relevant verification** | 依 S4 risk tier 列 task-specific probe／targeted test／affected build／full suite 的確切指令與 exit code；Medium／High 或 PR 另列 final verification pass 的 source state 與 replay command；High-risk 另列 failure model 與 catching layer mapping |
-| **Review gate** | reviewer 型別、agent id 或不可用理由、最終 finding 摘要、審查對象 range 與 baseline 五條中兩條的逐字標題——證據項與 Preflight row 6 同一套，不因不走 PR 而降級。呈現粒度依下方粒度節，不在此重述其觸發條件 |
-| **PR / CI / review status** | 適用時：PR 連結、CI 綠燈狀態、bot review 處理狀態 |
-| **Residual risks** | 殘留風險（中高風險附 rollback）|
+1. 先說 outcome，以及未完成／被阻擋的 scope。
+2. 只列足以支持 outcome 的 final verification；PR 路徑附連結與 current-head CI／review 狀態。
+3. 明列仍會影響使用者決策的 residual risk；中高風險附 rollback。沒有殘留風險時不為格式硬加一列。
 
-**規則：缺此 ledger → closeout 不完整。** 即使結論全 PASS、即使任務結論是「不需沉澱」，仍 MUST 明確輸出此 ledger 讓用戶看見已執行評估。
+Relevant verification 在 High-risk 任務 MUST 包含 failure model 與 catching layer mapping。
 
-**呈現粒度（六項語意一律不得省略，省的只有版面）：**
+任一 gate 為 `FAIL`／`UNAVAILABLE`、使用者要求 audit，或 evidence 不在可存取 artifact 時，展開相關證據與四態結果。其餘情況引用 Preflight/session artifact，不重述 self-simplification、diff self-review 或 reviewer metadata。
 
-依序採用第一個符合條件的格式；六項各自保留狀態與證據：
-
-- **展開完整六列表格**：中高風險，或任一項為 `FAIL`／`UNAVAILABLE`。
-- **低風險、PR 路徑且全 PASS**：`Self-simplification`、`Diff self-review`、`Review gate`、`Residual risks` 四列與 PR body 的 Preflight Ledger（第 1 節）同源，**MUST 合併為單行**帶過，不得四列各寫一行指向同一處——那正是要壓掉的重複。用固定段落名，不用 `#` 編號佔位符（那在 GitHub 語境會被讀成 issue／PR 編號，也容易被原樣輸出）。例：
-  `Self-simplification／Diff self-review／Review gate／Residual risks — PASS，見 PR body 的 Preflight Ledger。`
-  `Relevant verification` 與 `PR / CI / review status` 兩列 MUST 逐項展開——只有這兩列帶著 Preflight 當時還不存在的資訊（實際跑了什麼、CI 與 bot review 的最終狀態）。
-- **低風險、單檔、不進 PR，各項為 PASS 或附理由的 SKIPPED**：可壓成單行，六項次序不變，逐項保留狀態、證據與 skip 理由，例：
-  `Closeout: simplification PASS（無新增抽象、依賴、單用包裝或預留設定）／self-review PASS（逐行核對，無無關變更或殘留）／verification PASS（git diff --check exit 0）／review SKIPPED（低風險單檔文件）／PR-status SKIPPED（Local-only）／risks PASS（無殘留風險）`
-- **其他情況**：展開完整六列表格。
-
-理由：六列中有四列與 Preflight Ledger 逐欄重複，而 PR 路徑上讀者已在 PR body 看過同樣內容；整份重述會稀釋真正新增的那兩列。壓縮的是版面不是評估——任一項未評估仍是 closeout 不完整。
-
-### 範例（低風險 PR、全 PASS）
+### 範例（PR、全 PASS）
 
 ```
-## Closeout Ledger
+已完成 <outcome>，PR <url>；current-head CI 與 bot review PASS，0 unresolved actionable findings。
 
-- Self-simplification／Diff self-review／Review gate／Residual risks — PASS，見 PR body 的 Preflight Ledger。
-- Relevant verification — PASS：source state=<final HEAD SHA>；replay=<實際驗證命令> → exit 0（<通過數>）。
-- PR / CI / review status — PASS：PR <url>；current-head CI PASS；bot review CURRENT；0 unresolved actionable findings；suppressed comments 已逐條處理。
+驗證：<final source state> 執行 <replay command>，exit 0。殘留風險：<risk + rollback>。
 ```
 
 ---

@@ -33,7 +33,7 @@ Build the briefs below from the live canonical text. **Paste the required text i
 
 | Brief | Required material actually sent |
 |---|---|
-| Both axes | Original request and approved revisions; exact diff command and commits; immutable SHA plus snapshot path, or HEAD plus scanned package hash/manifest. Include the canonical input-hygiene rules, finding format/severity/confidence, all-findings/no-word-or-count-cap/caller-side-filtering contract, and reviewer identity/result fields. Include the full “Ablation ownership” section from the snapshot reference. Ask each reviewer to state the source identity reviewed. |
+| Both axes | Original request and approved revisions; exact diff command and commits; immutable SHA plus snapshot path, or HEAD plus scanned package hash/manifest. Include the canonical input-hygiene rules, finding format/severity/confidence, actionable/no-word-or-count-cap/caller-side-triage contract, and reviewer identity/result fields. Include the full “Ablation ownership” section from the snapshot reference. Ask each reviewer to state the source identity reviewed. |
 | Standards | Send the complete canonical marked reviewer prompt block, including all five house items and the full performance/correctness priorities, plus standards sources and the Fowler reference. Avoid copying a canonical clause twice within this brief. Require source rule and file/hunk evidence; distinguish hard violations from heuristic smells. |
 | Spec | Send the common material above, plus the requirements source. Ask: “Report missing or partial requirements, unrequested behavior (scope creep), and requested behavior that is implemented incorrectly. Quote the spec/request evidence for every finding. Apply the common finding and output contract.” Keep the house-five and Fowler baselines in Standards only. |
 
@@ -43,6 +43,6 @@ Both reviews are read-only; independent reviewers may run in parallel when the h
 
 ## 4. Aggregate within each axis
 
-Apply canonical feedback handling and caller-side triage independently. Present `## Standards` and `## Spec`; order each by severity/confidence and explain each dropped or folded finding within its own axis. Do not merge or rerank across axes, silently discard findings, or turn one axis's PASS into the other's PASS.
+Apply canonical feedback handling and caller-side triage independently. Present `## Standards` and `## Spec`; order each actionable finding by severity/confidence. Do not merge or rerank across axes, silently discard an actionable finding, or turn one axis's PASS into the other's PASS.
 
 **Complete:** report the reviewed SHA/package identity, status and finding count per axis, worst issue within each axis, and any clarified scope, skipped Spec or unavailable capability. Review findings do not authorize patches or closeout side effects.

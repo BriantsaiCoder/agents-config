@@ -466,10 +466,10 @@ rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standa
 rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
 has "code-review loads canonical reviewer contract" 'Read the entire.*canonical reviewer-template.*reviewer-template.md' skills/code-review/SKILL.md
 has "code-review Standards receives the full canonical prompt" 'Standards.*complete canonical marked reviewer prompt block.*performance/correctness' skills/code-review/SKILL.md
-has "code-review both axes receive the common finding contract" 'Both axes.*all-findings/no-word-or-count-cap/caller-side-filtering' skills/code-review/SKILL.md
-has "reviewer template owns severity and confidence" '全部回報、下游過濾.*severity.*confidence|全部回報、下游過濾.*確信度' skills/dev-workflow/references/reviewer-template.md
+has "code-review both axes receive the common finding contract" 'Both axes.*actionable/no-word-or-count-cap/caller-side-triage' skills/code-review/SKILL.md
+has "reviewer template owns actionable severity and confidence" 'evidence-first actionable review.*確信度' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template keeps axes separate" '單一 review 軸內.*跨軸不合併、不重排' skills/dev-workflow/references/reviewer-template.md
-has "reviewer template carries the complete-report contract" '全部回報、下游過濾.*不設字數或條數上限.*確信度.*高／中／低' skills/dev-workflow/references/reviewer-template.md
+has "reviewer template rejects output caps and style-only noise" '不設字數或條數上限.*不為湊數加入純 style preference' skills/dev-workflow/references/reviewer-template.md
 # [S5-3] 要求 baseline 逐字進 Standards 軸的 reviewer prompt（2026-08-03 當時兩條、現為
 # 五條），但在 2026-08-03 之前零測試守它——同日 reviewer-template.md 被編輯注入 [S5-4] 時，
 # [S5-3] 的兩條仍被漏掉，單純是注意力都在 S5-4，沒有守衛擋。規則沒有機械守衛就會在下一次
@@ -548,7 +548,7 @@ has "Preflight row 6 points at the resolved definition" 'reviewer-template.md` �
 #
 # 狀態值收成四態 alternation 而非釘死某一個：釘死的話，範例改用別的狀態（完全合法）
 # 就無故轉紅。本文的 placeholder `S5 Standards: <PASS|FAIL|…>` 不會誤命中——`<` 卡在中間。
-preflight_section="$(sed -n '/^## 1\. Preflight Ledger/,/^## 2\. Closeout Ledger/p' "$ROOT/$ledgers_ref")"
+preflight_section="$(sed -n '/^## 1\. Preflight Ledger/,/^## 2\. User-facing closeout/p' "$ROOT/$ledgers_ref")"
 for _axis in Standards Spec; do
   block_has "Preflight example carries the ${_axis} axis line" \
     "^S5 ${_axis}: (PASS|FAIL|SKIPPED|UNAVAILABLE)" "$preflight_section"
@@ -556,13 +556,9 @@ done
 has "Preflight row 6 requires the review range" '^\| 6 \|.*審查對象 range' "$ledgers_ref"
 has "Preflight row 6 requires quoting two baseline titles" \
   '^\| 6 \|.*baseline 五條中至少兩條的標題' "$ledgers_ref"
-# Closeout 的 Review gate 列帶著同一套證據項，同樣要有守衛——否則那兩項在非 PR 路徑上
-# 被整段刪掉，上面兩條錨 `^| 6 |` 的斷言不可能命中（S5 實測：整段刪掉仍全綠）。
-# 同樣拆兩條：串接版在證據項對調順序時會無故轉紅（S5 實測 REORDER → 0）。
-has "Closeout Review gate requires the review range" \
-  '^\| \*\*Review gate\*\* \|.*審查對象 range' "$ledgers_ref"
-has "Closeout Review gate requires the baseline titles" \
-  '^\| \*\*Review gate\*\* \|.*baseline 五條中兩條的逐字標題' "$ledgers_ref"
+# Closeout 引用完整 evidence 的 canonical artifact，而不是複製 reviewer metadata。
+has "Closeout keeps detailed evidence in its canonical artifact" \
+  '完整 audit evidence 留在 Preflight ledger、session artifact 或 PR checks' "$ledgers_ref"
 # cascade 子句掛在只釘句首的斷言後面，整段刪掉仍全綠（實測）——同一支檔上面才寫過這個教訓。
 has "ledgers explains the cascade cost" '三層以上的 stack 不能逐層各判各的' "$ledgers_ref"
 # review-triage 引用的是這個標題的逐字形式，改名會靜默斷鏈。
@@ -747,28 +743,14 @@ has "PR bug findings preserve conditional RED" 'finding 是 bug.*\[INT-2\].*RED.
 lacks "no review path restores blanket RED" 'bug finding 先補 RED test|先寫紅測' skills/dev-workflow/SKILL.md skills/dev-workflow/references/review-triage.md
 has "bot fixes use the applicable S4 tier" 'actionable.*自動修.*S4 risk tier.*exit code' skills/dev-workflow/references/review-triage.md
 
-# B2 Closeout Ledger：六列有四列與 Preflight Ledger 逐欄重複，PR 路徑上讀者已在 PR body
-# 看過。壓縮的是版面不是評估——這條斷言釘住「六項語意不得省略」，否則下一次會被讀成
-# 「PR 路徑可以少評估四項」。
-has "closeout ledger keeps all six rows semantically" '六項語意一律不得省略' skills/dev-workflow/references/ledgers.md
-has "closeout ledger expands the two Preflight-absent rows" 'Relevant verification.*PR / CI / review status.*MUST 逐項展開' skills/dev-workflow/references/ledgers.md
-has "closeout ledger cites a stable section not a placeholder" '見 PR body 的 Preflight Ledger' skills/dev-workflow/references/ledgers.md
-has "closeout selects the first applicable presentation branch" '依序採用第一個符合條件的格式' "$ledgers_ref"
-has "closeout expands higher risk failures and unavailable evidence" '^\- \*\*展開完整六列表格\*\*：中高風險，或任一項為 `FAIL`／`UNAVAILABLE`' "$ledgers_ref"
-has "closeout PR compression is limited to low risk pass" '^\- \*\*低風險、PR 路徑且全 PASS\*\*' "$ledgers_ref"
-has "closeout local compression permits only reasoned skips" '^\- \*\*低風險、單檔、不進 PR，各項為 PASS 或附理由的 SKIPPED\*\*.*逐項保留狀態、證據與 skip 理由' "$ledgers_ref"
-has "closeout local example does not report omitted review or PR as pass" 'Closeout:.*review SKIPPED（低風險單檔文件）.*PR-status SKIPPED（Local-only）' "$ledgers_ref"
-has "closeout local example carries simplification and diff evidence" 'Closeout: simplification PASS（[^）]+）／self-review PASS（[^）]+）／verification PASS' "$ledgers_ref"
-has "closeout other cases retain the full table" '^\- \*\*其他情況\*\*：展開完整六列表格' "$ledgers_ref"
+# B2 user-facing closeout：保留決策所需結果與 evidence，不複製 Preflight scaffolding。
+has "closeout leads with outcome and incomplete scope" '先說 outcome.*未完成／被阻擋的 scope' "$ledgers_ref"
+has "closeout preserves final verification and PR state" 'final verification.*PR 路徑.*current-head CI／review' "$ledgers_ref"
+has "closeout surfaces decision-relevant risk and rollback" 'residual risk.*中高風險附 rollback' "$ledgers_ref"
+has "closeout expands failures and unavailable evidence" 'gate 為 `FAIL`／`UNAVAILABLE`.*展開相關證據' "$ledgers_ref"
+has "closeout avoids duplicating preflight-only detail" '不重述 self-simplification、diff self-review 或 reviewer metadata' "$ledgers_ref"
 
-# B2b 呈現壓縮的兩個界線（2026-08-04）。Opus 5 與 GPT-5.6 Sol 兩份官方指引同時命中 ledger：
-# 前者說 delete your verification scaffolding，後者說刪 repeated process instructions that
-# do not change behavior。壓的是版面不是評估，所以兩條斷言各釘一邊——「語意不得省略」擋
-# 收斂被讀成減少評估，「MUST 合併為單行／一列」擋規則被讀回逐列各寫一行。
-#
-# Closeout 那條原本寫「四列…此處以『見 PR body』帶過即可」，語意含糊到可以讀成四列各寫
-# 一行指向同一處——實測就是這樣被執行的，四行各說一次「見 PR body」，而那正是要壓掉的重複。
-has "closeout collapses the four same-source rows into one line" '四列.*MUST 合併為單行' skills/dev-workflow/references/ledgers.md
+# B2b Preflight 自身仍可做低風險呈現壓縮，完整 evidence 不變。
 has "preflight ledger keeps all eight rows semantically" '八項語意一律不得省略' skills/dev-workflow/references/ledgers.md
 has "preflight collapses the two self-attested rows when clean" 'Diff self-review.*Self-simplification.*MUST 合併為一列' skills/dev-workflow/references/ledgers.md
 has "preflight compression yields to any row with real content" '任一列非 PASS.*MUST 獨立展開' skills/dev-workflow/references/ledgers.md
