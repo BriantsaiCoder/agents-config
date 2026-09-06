@@ -23,7 +23,7 @@ CAP-WORKFLOW	Shared workflow 是唯一方法來源	dev-workflow/SKILL.md^host-lo
 CAP-LOCAL-AUTONOMY	安全、local、reversible 工作 MUST 一次執行至完成（[INT-8]）	local、reversible^MUST 一次執行至完成	local、reversible^MUST 一次執行至完成^可直接實作	local、reversible^MUST 一次執行至完成^可直接實作
 CAP-DELEGATION	Delegation 由 AI 自主判定且無須先問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問	[INT-4]^AI 自主判定^無須另問
 CAP-RESPONSE	Outcome-first 且決策列出 recommendation 與 trade-off	回覆 SHOULD outcome-first^編號選項／推薦／取捨	回覆 SHOULD outcome-first^編號選項/推薦/取捨	回覆 SHOULD outcome-first^編號選項／推薦／取捨
-CAP-PONYTAIL	Plan／implement 套用 Ponytail 慣例，適用範圍 host-local（見下方 accepted divergence）	ponytail 等風格注入=通用慣例	ponytail=通用慣例	[T0-10] 開發套用 ponytail=慣例，但只採 reuse／YAGNI 原則
+CAP-PONYTAIL	Plan／implement 套用 Ponytail 慣例，適用範圍 host-local（見表上方 Accepted divergence）	ponytail 等風格注入=通用慣例	ponytail=通用慣例	[T0-10] 開發套用 ponytail=慣例，但只採 reuse／YAGNI 原則
 ```
 <!-- capability-parity:end -->
 
