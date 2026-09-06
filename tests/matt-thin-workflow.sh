@@ -432,7 +432,7 @@ rg -q 'Read the entire.*canonical reviewer-template' "$CODE_REVIEW_DIR/SKILL.md"
   fail 'code-review does not load the canonical reviewer contract'
 rg -q 'Paste the required text into each actual reviewer input' "$CODE_REVIEW_DIR/SKILL.md" ||
   fail 'code-review dispatch can substitute a pointer for the full contract'
-rg -q 'Both axes.*all-findings/no-word-or-count-cap/caller-side-filtering' "$CODE_REVIEW_DIR/SKILL.md" ||
+rg -q 'Both axes.*actionable/no-word-or-count-cap/caller-side-triage' "$CODE_REVIEW_DIR/SKILL.md" ||
   fail 'code-review: both axes must receive the canonical output contract ([S5-4])'
 rg -q 'Standards.*complete canonical marked reviewer prompt block.*all five house items.*performance/correctness' "$CODE_REVIEW_DIR/SKILL.md" ||
   fail 'code-review: Standards dispatch omits required review coverage'

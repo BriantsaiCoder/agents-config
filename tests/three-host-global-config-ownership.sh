@@ -321,12 +321,18 @@ head -1 "$COPILOT_CANDIDATE/copilot-instructions.md" | grep -q '^<!-- GENERATED 
   bad 'Copilot generated banner still present'
 sect 'Codex／Copilot 無 generated banner'
 
-for candidate in "$CODEX_CANDIDATE" "$COPILOT_CANDIDATE"; do
-  for rule in cookbook cpp dotnet frontend-spa infra testing typescript winforms; do
-    [ -f "$candidate/rules/$rule.md" ] || bad "local stack rule missing: $candidate/rules/$rule.md"
-  done
+# Copilot's native user-level modular location and applyTo contract:
+# https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions
+for rule in cookbook cpp dotnet frontend-spa infra testing typescript winforms; do
+  [ -f "$CODEX_CANDIDATE/rules/$rule.md" ] ||
+    bad "Codex local stack rule missing: $CODEX_CANDIDATE/rules/$rule.md"
+  copilot_rule="$COPILOT_CANDIDATE/instructions/$rule.instructions.md"
+  [ -f "$copilot_rule" ] ||
+    bad "Copilot native modular instruction missing: $copilot_rule"
+  head -3 "$copilot_rule" | grep -q '^applyTo: ' ||
+    bad "Copilot native modular instruction lacks applyTo: $copilot_rule"
 done
-sect 'Codex／Copilot local stack rules 齊備'
+sect 'Codex rules／Copilot native modular instructions 齊備'
 
 for retired in dist hosts; do
   if [ -e "$AGENTS/$retired" ]; then

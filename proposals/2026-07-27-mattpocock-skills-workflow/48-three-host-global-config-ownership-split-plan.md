@@ -207,7 +207,7 @@ Ownership stage只以 **current live effective content** 為baseline，允許的
 | Global instruction body | `~/.claude/CLAUDE.md` | `~/.codex/AGENTS.md` | `~/.copilot/copilot-instructions.md` | none |
 | Thin safety／workflow kernel | Claude-local files／section | `AGENTS.md` local section | `copilot-instructions.md` local section | `skills/dev-workflow`只承載shared kernel contract，不擁有host config |
 | Routing | Claude-local section／file | Codex-local section | Copilot-local section | none |
-| Stack rules | `~/.claude/rules/**` | `~/.codex/rules/**` | `~/.copilot/rules/**` | compatibility copies only under `.agents/rules` |
+| Stack rules | `~/.claude/rules/**` | `~/.codex/rules/**` | `~/.copilot/instructions/*.instructions.md`（`applyTo`） | compatibility copies only under `.agents/rules` |
 | Hooks | `~/.claude/hooks/**` | `~/.codex/hooks/**` | `~/.copilot/hooks/**` | none |
 | Settings | `~/.claude/settings.json` | `~/.codex/config.toml` and app-local state | `~/.copilot/settings.json`／`config.json` | none |
 | MCP／permissions | Claude-local files | Codex-local config | `mcp-config.json`／`permissions-config.json` | none |
@@ -760,7 +760,7 @@ Repo：isolated `~/.copilot` worktree。
 **Interfaces:**
 
 - Consumes: live effective Copilot instructions, existing local hooks and current stack rules.
-- Produces: Copilot-local instructions／rules／hooks while native shared-skill discovery remains unchanged.
+- Produces: Copilot-local instructions／native modular instructions／hooks while native shared-skill discovery remains unchanged.
 
 - [ ] **Step D1: Capture private before evidence**
 
@@ -770,9 +770,9 @@ Repo：isolated `~/.copilot` worktree。
 
   Test the current generated banner and `.agents/core|rules` fallbacks; require non-zero before implementation.
 
-- [ ] **Step D3: Localize instructions and stack rules**
+- [ ] **Step D3: Localize global and modular instructions**
 
-  Remove only the generated banner, replace only allowed fallback paths, preserve embedded routing and materialize exact stack-rule bytes.
+  Remove only the generated banner, replace only allowed fallback paths, preserve embedded routing and materialize exact stack-rule bytes as `~/.copilot/instructions/*.instructions.md` with `applyTo`.
 
 - [ ] **Step D4: Version safe existing hooks**
 

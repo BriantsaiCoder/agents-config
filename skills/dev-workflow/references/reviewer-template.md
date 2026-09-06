@@ -44,15 +44,15 @@
    - **TypeScript**：`any` 從邊界洩漏進內部、`as` 斷言掩蓋型別不符、公開簽名被放寬（optional 化 / union 加寬）。
    - **Node.js**：unhandled rejection、stream / socket / listener 未清理、同步 I/O 或 CPU 密集運算落在請求熱路徑。
 
-先掃高風險級別，命中就記；同一級別掃完再往下一級。不確定是否為問題時，用 `question:` 提出而非略過。
+先掃高風險級別，命中就記；同一級別掃完再往下一級。只有缺少的資訊會阻擋 correctness／spec verdict 時才用 `question:`，不要把一般不確定性轉成作者待辦。
 
 **每條 finding 用 conventional comment 前綴標示嚴重度 / 型別**
 - `issue:` — 必須修，屬 bug / 破壞 / 安全漏洞。
 - `suggestion:` — 建議改善，非阻擋。
-- `nitpick:` — 微小、可選，通常不阻擋合併。
-- `question:` — 我不確定，需要作者澄清意圖或確認假設。
+- `nitpick:` — 僅限有具體維護成本或 repo standard 證據的微小問題；純偏好不報。
+- `question:` — 缺少的資訊會阻擋 correctness／spec verdict，需要作者澄清。
 
-**依 [S5-3]：house over-engineering baseline 五條，逐字適用於本 prompt。** 與上方「優先序」不同，這五條要求你**多報**而非少報：
+**依 [S5-3]：house over-engineering baseline 五條，逐字適用於本 prompt。** 命中且有具體影響與修法時回報：
 - **Reinvented Stdlib** — 手刻標準庫或平台已提供的功能 → 指名該 API 取代。
 - **Redundant Dependency** — 為平台／既有模組已有的能力新增依賴 → 依選型階梯（原生 > 標準庫 > 既有模組 > 第三方 > 手寫）回退。
 - **Unused Local Reuse** — 這個 repo 裡已經有的 helper／type／pattern 被重寫一份。與「同一 diff 內重複」不同，這條看的是 diff 對**既有資產**的重複 → 指名既有符號並改呼叫它。
@@ -61,7 +61,7 @@
 
 五條皆為 judgement call；documented repo standard 覆寫之。
 
-**依 [S5-4]：全部回報、下游過濾。** 命中項一律回報（含 `nitpick:` 與 `question:`），不設字數或條數上限，不在本階段自行丟棄。每條除上述前綴外另標確信度 `確信：高／中／低`。篩選與排序由 main context 於單一 review 軸內另跑一 pass；Standards／Spec 跨軸不合併、不重排。
+**依 [S5-4]：evidence-first actionable review。** 回報有可重現觸發情境、具體影響與可行修法的 findings；不設字數或條數上限，也不為湊數加入純 style preference。`nitpick:` 必須有 repo standard 或可觀察維護成本；`question:` 只用於缺少資訊會阻擋 verdict。每條另標確信度 `確信：高／中／低`。main context 於單一 review 軸內依 severity／confidence 排序與處理；Standards／Spec 跨軸不合併、不重排。
 
 **每條 finding 格式**：`<前綴> <檔案:行> — <一句描述問題> → <觸發情境：什麼輸入 / 狀態會出錯> → <建議修法>`。
 沒有可回報的問題時，明確輸出「無 actionable findings」，不要為湊數而編。
