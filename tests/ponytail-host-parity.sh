@@ -255,7 +255,7 @@ selftest() {
   local scratch codex_plugin rc=0 out skill_body host test_rc
   local claude_fx='ponytail 等風格注入=通用慣例'
   local codex_fx='ponytail=通用慣例'
-  local copilot_fx='ponytail=慣例'
+  local copilot_fx='[T0-10] 開發套用 ponytail=慣例，但只採 reuse／YAGNI 原則'
   local cjk_drift='ponytail=特殊慣例'
   scratch=$(mktemp -d "${TMPDIR:-/tmp}/ponytail-host-parity.XXXXXX") || return 1
   selftest_scratch="$scratch"
