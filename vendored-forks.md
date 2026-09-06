@@ -18,7 +18,8 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `ask-matt` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — keep the router thin and point phase/context transitions to the canonical shared continuation contract instead of vendoring a second authority; tree SHA-256 `beb486c313e815a3381d4fbc1b1a05e935ce6b4d957f7b50dabd0d8c33318d2f` | **Active** |
 | `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-08-02 — re-adjudicated thin fork: narrow Clean Code triggers, retain a 360-word judgment checklist, keep only self-consistent illustrative SOLID snippets, and remove duplicated async/editorconfig payload; tree SHA-256 `3f1cb3c62da34813c63d3d041feb0287044a5df5047f1cf824d95a25ba8f89b0` | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
-| `diagnosing-bugs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-01 — add the missing Agent Skill trigger-failure branch before RED-canary handoff; tree SHA-256 `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba` | **Active** |
+| `diagnosing-bugs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-01 — add Agent Skill trigger-failure routing; 2026-09-07 — allow bounded unverified read-only investigation without a repro and evidence-sized hypotheses; tree SHA-256 `84993bd42da0fab491570f8c13d42b21b93286d956afa02047acaf6b8ed15a7c` | **Active** |
+| `implement` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-07 — defer test scope and repetition to shared S4/evidence-integrity; tree SHA-256 `bdf2616dab353cbc48103fb216df721ee52088f30c9e0fbae4897e49d3b3cddf` | **Active** |
 | `improve-codebase-architecture` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-19 — report 與 reply prose 預設使用 zh-TW；technical terms、code identifiers、paths 與 domain terms 保持 English 或原文；tree SHA-256 `5e331195ca420e2ea8258ed32fb054043f6ac521fdce99f520822cc8e254b8fc` | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Retired to `attic/` 2026-08-02** |
@@ -286,7 +287,7 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 
 ---
 
-## Pinned Matt set — 12 unmodified + 10 recorded forks
+## Pinned Matt set — 11 unmodified + 11 recorded forks
 
 **`mattpocock/skills` selected 22 — active, rebased to v1.2.2 on 2026-08-06.**
 
@@ -294,8 +295,8 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 - Upstream manifest: `.claude-plugin/plugin.json` SHA-256 `85a5f2ad87b1070c13a97a9379887fc43e5e786a0ab7a3c0f0281d2b30f523b2` (25 published skills).
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
 - Excluded from the 25 published skills: `wizard` (credential/migration side-effect generator overlaps protected house gates), `wait-what` (personal communication modifier, not engineering workflow), and `to-questionnaire` (unneeded outward async-document flow overlapping existing clarification routes). Re-entry requires a new decision record and canary.
-- The 13 entries other than `ask-matt`, `code-review`, `diagnosing-bugs`, `grilling`, `handoff`, `improve-codebase-architecture`, `prototype`, `triage`, and `writing-for-agents` are byte-for-byte upstream and immutable.
-- The nine recorded forks have exact payload fingerprints and re-merge procedures below.
+- The `upstream_tree_sha256` entries in the lock remain byte-for-byte upstream and immutable; the fork index above identifies the exceptions, including `tdd` and `implement`.
+- Recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
 2026-08-06 rebase 的歷史 evidence 同時釘住 local commit
@@ -571,13 +572,21 @@ only that missing description branch; the body is untouched.
 
 The v1.1→v1.2.2 upstream comparison is empty: `git diff --exit-code ed37663cc5fbef691ddfecd080dff42f7e7e350d 8b36d4fb2635b3c21998dcd8144439c9e5ba7302 -- skills/diagnosing-bugs` returned 0.
 
-Approved tree SHA-256: `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba`.
+Approved tree SHA-256: `84993bd42da0fab491570f8c13d42b21b93286d956afa02047acaf6b8ed15a7c`.
 Evidence and the 21:00 control are recorded in
 `proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`.
 
-On upstream update, drop this fork if the new description carries an equivalent Agent Skill
-trigger-failure／RED-canary branch; otherwise reapply the one-line description change and recompute
-the tree fingerprint.
+**Extension (2026-09-07):** user approved Astra audit items 1–6. Retain the trigger branch; allow code/log tracing and falsifiable, explicitly unverified hypotheses while a repro is unavailable. Keep fix/confirmation evidence requirements, and replace the fixed hypothesis quota with evidence-based ranking. The previous tree was `d044ea6809882228085061b89347026b7360e520cc4c68680d8f0eb359da21ba`; compare against local baseline `9de079a` for this extension. A fresh fetch of the pinned upstream SKILL.md returned HTTP 404, so direct upstream comparison is `UNAVAILABLE`, not re-verified.
+
+On upstream update, compare both the trigger and read-only investigation branches. Drop each local override only if upstream provides equivalent behavior; otherwise reapply it and recompute the tree fingerprint. Run `tests/mattpocock-workflow.sh`, `tests/matt-thin-workflow.sh`, and `tests/vendored-detection.sh`.
+
+## implement
+
+**Decision (2026-09-07):** user approved Astra audit item 2 as part of items 1–6. Replace only the unconditional regular/full-suite test instruction with shared S4/evidence-integrity routing. Keep explicit-only invocation metadata and other workflow text unchanged; the shared kernel continues to own branch and closeout gates.
+
+Baseline tree `08a0cb886cb9474eee27feb13ddb96b9087d90b39a6f9ff913195d9b60728bd0` matched the pinned lock at local baseline `9de079a`. A fresh fetch of the upstream SKILL.md returned HTTP 404; direct upstream comparison is `UNAVAILABLE`. Current tree SHA-256 is recorded in the fork index; invocation metadata and its manifest fingerprint are unchanged.
+
+On upstream update, compare the testing instruction against the pinned baseline and this fork. Drop the override if upstream delegates risk-appropriate verification and repetition to the host workflow; otherwise reapply only that instruction and update the tree fingerprint. Run `tests/mattpocock-workflow.sh`, `tests/matt-thin-workflow.sh`, and `tests/vendored-detection.sh`.
 
 ---
 
