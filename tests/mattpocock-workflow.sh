@@ -806,8 +806,8 @@ has "skill changes require invocation canaries" 'Skill change.*frontmatter.*rela
 has "references declare load conditions" 'Load when' skills/dev-workflow/SKILL.md
 lacks "kernel does not inline reviewer baselines" 'Reinvented Stdlib|Redundant Dependency|Unused Local Reuse|Needless Indirection|Wrong Altitude' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' "$host_adapters_ref"
-has "Copilot S5 delegates dirty reviews to read-only tasks" 'S5 在 working tree dirty 時用 read-only `task`（依 \[INT-4\]）' "$host_adapters_ref"
-has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' "$host_adapters_ref"
+section_has "Copilot S5 delegates dirty reviews to read-only tasks" Copilot 'S5 review agent（working tree dirty）= read-only `task`（依 \[INT-4\]）' "$host_adapters_ref"
+section_has "Copilot S5 handles clean reviews" Copilot 'clean.*fixed-point.*`code-review`' "$host_adapters_ref"
 lacks "delegation has no fixed numeric or stage fan-out" '併發(數)?[[:space:]]*≤[[:space:]]*[0-9]+|累計 delegation[[:space:]]*≤[[:space:]]*[0-9]+|恰好[[:space:]]*[0-9]+[[:space:]]*個.*agent|每批[[:space:]]*[0-9]+[[:space:]]*個|直接開[[:space:]]*[0-9]+[[:space:]]*個|固定 fan-out' skills/dev-workflow/SKILL.md "$delegation_ref" "$host_adapters_ref"
 has "host resolver derives the user-only count" 'expected_user_only_count=.*0' tests/host-skill-resolver.sh
 lacks "host resolver has no hard-coded user-only count" '13/13|-eq 13' tests/host-skill-resolver.sh
