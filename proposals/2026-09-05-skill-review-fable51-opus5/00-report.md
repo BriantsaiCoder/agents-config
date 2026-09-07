@@ -132,7 +132,7 @@ prompt-audit Group 2「trigger-case enumeration」：`Apply even when user just 
 
 ## 8. 獨立回查（2026-09-05 20:41，另一 session；依 memory `audit-finding-with-evidence-still-wrong` 回查來源）
 
-成立：§2 三組 grep 0 命中（重跑）、§4.1 `diff -rq` exit 0／untracked／584 行、§3 本 session 17 支 name-only 與 `skillUsage` 全 NEVER 對得上、§4.3 的 11 支 enumeration 名單、dev-workflow 點名 34 支、agents 點名 8 支。
+成立：§2 三組 grep 0 命中（重跑）、§4.1 `diff -rq` exit 0／untracked／585 行（ledger 計法，`wc -l` 584）、§3 本 session 17 支 name-only 與 `skillUsage` 全 NEVER 對得上、§4.3 的 11 支 enumeration 名單、dev-workflow 點名 34 支、agents 點名 8 支。
 
 更正三處：
 
