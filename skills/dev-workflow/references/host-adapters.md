@@ -36,16 +36,14 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 
 ## Claude
 
-- plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent；決策提問 = AskUserQuestion。
+- plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent；決策提問 = AskUserQuestion；前端視覺 review agent = `uiux-reviewer`（Claude-only）。
 - Claude main role = `fable`（Claude Fable 5.1）with effort `high`, including plan mode。Fable owns investigation／root causes／architecture／design／decisions、final evidence verification、independent read-only S5 review coordination 與 final user response。
 - Fable→Opus serial implementation routing：取得 implementation 授權後，MUST automatically delegate implementation、integration、testing、fixes 與 authorized closeout mutations to configured `implementer` agent（`claude-opus-5`，effort `high`；定義在 `~/.claude/agents/implementer.md`）。相依 scope 依序執行；implementer 自行完成 assigned scope 並回傳結果，same-work recursion is forbidden。
 - routine implementation／test failures 由 implementer diagnose、fix、retest within assigned scope；遇到 invalid design premise，stop dependent writes，return evidence to Fable for decision 與 needed authorization。
 - Fable may run checks and inspect evidence；implementer report is not completion evidence，Fable MUST reverify source state 與結果。Explicitly unavailable implementer is an UNAVAILABLE blocker；generic no-tools fallback does not authorize Fable implementation or model substitution。
-- 委派訊息內容與背景摘要依 [delegation contract](delegation.md)；subagent 看不到父對話，背景只能靠訊息內的摘要。
 - 同一 scope 的修正與重測 MUST 優先用 `SendMessage` 依回傳的 agent id 續用原 implementer；只有原代理不可用或工作是新的獨立任務時才建立新代理。
 - 同一 ready frontier 上彼此獨立的 1–4 個 blocker MUST 合併在同一次 `AskUserQuestion`；dependent 題等前一批回答。Skip／dismiss MUST NOT 視為答案、核准或採用預設值。
 - user-only skill command = `/<skill-name>`。
-- S5 review agents 依 [INT-4]；`uiux-reviewer` 是 Claude-only。
 - 用專屬 review agent 不豁免 `references/reviewer-template.md`：豁免的是 prompt 區塊本身與「怎麼用」中以該區塊為前提的步驟，其餘各節對 Claude 一樣有約束力，MUST 在維護 `code-review` 的 baseline 或判 S5 EXIT 時讀。不在此列舉是哪幾節——列舉會漏，新增的節就掉在外面。這條與 `simplify` 綁定都不因專屬 agent 而豁免。
 - 兩軸 findings 處理完後 MUST 跑 `simplify`（Claude-only）當 apply pass；`changed`／`no-op` 與重驗依共用 S5 simplification outcome。
 - S5 simplification mechanism = Fable decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。
@@ -71,6 +69,6 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 - plan = `--mode plan`；todo = update_todo；子代理 = `task` 工具。
 - user-only skill command = `/<skill-name>`。
 - 命中 [T0-8] protected gate 時，非 plan mode 必須先提出計畫並取得核准。
-- S5 review agent（working tree dirty）= read-only `task`（依 [INT-4]）；clean／fixed-point review 才執行 `code-review`；simplification mechanism = main-context explicit apply pass。
+- S5 simplification mechanism = main-context explicit apply pass。
 - Copilot user-level Git guard MUST 位於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
 - 子代理沿用模型預設 effort；僅 hard debugging、security、migration 或高風險 review 升 `high`，`xhigh`／`max` 需量測證明收益。
