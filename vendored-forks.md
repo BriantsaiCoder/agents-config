@@ -672,10 +672,12 @@ Four constraints are deliberate and must survive any re-merge:
 - **absolute path, not a literal one** — the skill still says "temporary directory of the user's OS".
   `$TMPDIR` differs per host (Claude Code sets `/tmp/claude-<uid>`; Codex and Copilot get the macOS
   default `/var/folders/…`), so the resolved path belongs in the emitted block, never in this file.
-- **`nothing else, at most four lines`** — added 2026-07-31 after the first live run. The original
-  wording named the three required elements but set no ceiling, and the run produced a four-paragraph
-  block that restated environment state already in the document. The cap plus "everything the next
-  agent needs beyond that is in the document" is what keeps the block a pointer rather than a summary.
+- **`nothing else` + `Everything the next agent needs beyond that is in the document`** — the three
+  required elements alone let the first live run (2026-07-31) produce a four-paragraph block that
+  restated environment state already in the document; the exclusion clause is what keeps the block a
+  pointer rather than a summary. A numeric cap (`at most four lines`) was added the same day and
+  dropped 2026-09-07 (prompt-audit 1f numeric ceiling): the enumeration plus the exclusion already
+  bound the block, and a number tuned against one run over-constrains Fable 5.1.
 - **`not a machine-parseable contract`** — prevents a downstream script from parsing the block and
   turning a human convenience into an undeclared interface.
 
