@@ -25,6 +25,7 @@ set -uo pipefail
 AGENTS="${AGENTS_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd -P)}"
 KERNEL="$AGENTS/skills/dev-workflow/SKILL.md"
 DELEGATION_REF="$AGENTS/skills/dev-workflow/references/delegation.md"
+HOST_ADAPTERS_REF="$AGENTS/skills/dev-workflow/references/host-adapters.md"
 
 pass=0; fail=0; skip=0
 ok()   { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
@@ -236,6 +237,7 @@ esac
 # ── kernel 正本 ──────────────────────────────────────────────────────────
 [ -r "$KERNEL" ] || { printf 'FAIL: kernel missing: %s\n' "$KERNEL" >&2; exit 1; }
 [ -r "$DELEGATION_REF" ] || { printf 'FAIL: delegation reference missing: %s\n' "$DELEGATION_REF" >&2; exit 1; }
+[ -r "$HOST_ADAPTERS_REF" ] || { printf 'FAIL: host adapters missing: %s\n' "$HOST_ADAPTERS_REF" >&2; exit 1; }
 int4="$(grep -F '[INT-4]' "$KERNEL" | head -1)"
 [ -n "$int4" ] || { printf 'FAIL: [INT-4] not found in kernel\n' >&2; exit 1; }
 printf '%s\n' "$int4" | grep -qE 'MUST.*觸發：.*例外：.*驗證：' || {
@@ -257,6 +259,18 @@ for cond in '無條件約束' '可獨立平行' '寫入 ownership MUST 不重疊
     && ok "[INT-4] 含核心片段：$cond" \
     || ng "[INT-4] 缺核心片段：$cond"
 done
+for exception_clause in \
+  'Codex 的唯一 eligibility 例外' \
+  'Astra→Sol serial implementation routing' \
+  '此例外不適用 Claude／Copilot' \
+  'same-work recursion is forbidden'; do
+  grep -Fq "$exception_clause" "$DELEGATION_REF" \
+    && ok "[INT-4] Codex serial exception 含：$exception_clause" \
+    || ng "[INT-4] Codex serial exception 缺：$exception_clause"
+done
+grep -Fq 'Astra→Sol serial implementation routing' "$HOST_ADAPTERS_REF" \
+  && ok '[INT-4] Codex serial exception 指向 host adapter choreography' \
+  || ng '[INT-4] Codex serial exception 缺 host adapter choreography'
 grep -Fq '無條件約束不在可授權範圍內' "$policy_file" \
   && ok '[INT-4] 明示無條件約束不可被授權繞過' \
   || ng '[INT-4] 未擋住「取得授權就能寫入重疊／序列相依」的路徑'
