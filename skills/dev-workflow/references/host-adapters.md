@@ -51,8 +51,8 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 - Astra→Sol serial implementation routing：取得 implementation 授權後，MUST automatically delegate implementation、integration、testing、fixes 與 authorized closeout mutations to configured `implementer`（`gpt-5.6-sol`，`xhigh`）。相依 scope 依序執行；implementer 自行完成 assigned scope 並回傳結果，same-work recursion is forbidden。
 - routine implementation／test failures 由 implementer diagnose、fix、retest within assigned scope；遇到 invalid design premise，stop dependent writes，return evidence to Astra for decision 與 needed authorization。
 - Astra may run checks and inspect evidence；Sol report is not completion evidence，Astra MUST reverify source state 與結果。Explicitly unavailable implementer is an UNAVAILABLE blocker；generic no-tools fallback does not authorize Astra implementation or model substitution。
-- 建立新子代理時，MUST 預設使用 `fork_turns="none"`；委派訊息 MUST 交代目標、working directory／可修改範圍、必要限制與已決事項、必要文件及驗收方式。
-- 必要背景 MUST 先摘要進委派訊息；摘要不足時才繼承必要的近期 turns，只有完整父對話不可省略時才使用 `fork_turns="all"`。
+- 建立新子代理時，MUST 預設使用 `fork_turns="none"`；委派訊息內容與背景摘要依 [delegation contract](delegation.md)。
+- 摘要不足時才繼承必要的近期 turns，只有完整父對話不可省略時才使用 `fork_turns="all"`。
 - 同一任務的修正與重測 MUST 優先用 follow-up 續用原代理；只有原代理不可用或工作是新的獨立任務時才建立新代理。
 - user-only skill command = `$<skill-name>`。
 - Codex native Local/Worktree Handoff 只移動同一 chat 與 code，MUST NOT 觸發 Matt `$handoff`；跨 session／agent 文件仍走 `$handoff`。
