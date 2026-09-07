@@ -535,6 +535,7 @@ section_has "Codex delegation messages defer to the shared contract" Codex '委�
 section_has "Codex escalates inherited context only when summaries are insufficient" Codex '摘要不足時才繼承必要的近期 turns.*完整父對話不可省略.*`fork_turns="all"`' "$host_adapters_ref"
 section_has "Codex reuses the original agent for same-task follow-up" Codex '同一任務的修正與重測 MUST 優先.*follow-up.*原代理.*只有原代理不可用.*新的獨立任務.*建立新代理' "$host_adapters_ref"
 section_has "Codex maps simplification edits to the implementer" Codex '^\- S5 simplification mechanism = Astra decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
+section_has "Claude maps uiux-reviewer as the visual review agent" Claude '前端視覺 review agent = `uiux-reviewer`（Claude-only）' "$host_adapters_ref"
 section_has "Claude keeps Fable as coordinator" Claude 'Claude Fable 5\.1.*effort `high`.*plan mode' "$host_adapters_ref"
 section_has "Claude keeps decisions and final evidence with Fable" Claude 'Fable owns investigation.*architecture.*decisions.*final evidence.*independent read-only S5 review.*final user response' "$host_adapters_ref"
 section_has "Claude automatically routes authorized operations to the implementer" Claude 'MUST automatically delegate implementation.*integration.*testing.*fixes.*closeout.*implementer.*claude-opus-5.*high' "$host_adapters_ref"
@@ -545,7 +546,7 @@ section_has "Claude keeps routine failures with the implementer" Claude 'routine
 section_has "Claude returns invalid design premises to Fable" Claude 'invalid design premise.*stop dependent writes.*return evidence to Fable.*decision.*authorization' "$host_adapters_ref"
 section_has "Claude reuses the original implementer for same-scope follow-up" Claude 'SendMessage.*續用原 implementer.*只有原代理不可用.*新的獨立任務.*建立新代理' "$host_adapters_ref"
 section_has "Claude maps simplification edits to the implementer" Claude '^\- S5 simplification mechanism = Fable decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
-section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot 'simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
+section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot '^\- S5 simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
 common_simplification="$(sed -n '/^## S5 simplification apply outcome$/,/^## Claude$/p' "$ROOT/$host_adapters_ref" | sed '$d')"
 block_lacks "shared simplification method stays host-neutral" 'Claude|Codex|Copilot' "$common_simplification"
 # 以下這批守衛的 pattern 一律釘「會翻轉的子句」，不釘引入語。教訓是同一個撰寫方法會換
