@@ -72,7 +72,7 @@ zh-TW；術語照附錄 A 用詞對照表（建立／物件／佇列；禁「創
 
 ## 12. Claude 規則面預算（CLAUDE.md + core 合計）
 
-`~/.claude/CLAUDE.md` 與三個 Claude-local core 檔合計 ≤20KB（量測：`cat ~/.claude/CLAUDE.md ~/.claude/core/tier{0,1,2}-*.md | wc -c`）。觸發：編輯 CLAUDE.md 或 Claude core。理由：2026-07-08 審計（F7）發現 CLAUDE.md 與 tier0-2 逐句重複 ~6KB——重複不只費 token，更製造 drift 面。CLAUDE.md 只放 Claude 專屬語意；與 tier 規則重疊者一律刪除改 rule-ID 引用。例外：無。驗證：量測式 ≤20480；`grep -c "原生（語言 / 框架" ~/.claude/CLAUDE.md` = 0（抽樣重複片語）。
+`~/.claude/CLAUDE.md` 與三個 Claude-local core 檔合計 ≤20KB（量測：`cat ~/.claude/CLAUDE.md ~/.claude/core/tier{0,1,2}-*.md | wc -c`）。觸發：編輯 CLAUDE.md 或 Claude core。理由：2026-07-08 審計（F7）發現 CLAUDE.md 與 tier0-2 逐句重複 ~6KB——重複不只費 token，更製造 drift 面。CLAUDE.md 只放 Claude 專屬語意；與常駐載入的 tier0 規則重疊者一律刪除改 rule-ID 引用。tier1／tier2 不載入（dotclaude `tests/repo-integrity.sh` 反向斷言 CLAUDE.md 不 import 它們），其條文與 CLAUDE.md 重疊時以 CLAUDE.md 為正本，tier 側依 §3 退役成殼。例外：無。驗證：量測式 ≤20480；`grep -c "原生（語言 / 框架" ~/.claude/CLAUDE.md` = 0（抽樣重複片語）。
 
 **這四個檔不是同一種東西，標題 2026-08-03 由「常駐面」改為「規則面」**：只有 `~/.claude/CLAUDE.md` 與 `~/.claude/core/tier0-safety.md` 真的常駐（前者由 host 載入、後者被 @-import）；`~/.claude/core/tier1-workflow.md` 與 `~/.claude/core/tier2-style.md` **不進 context**，`~/.claude/tests/repo-integrity.sh` 有機械斷言擋著它們被 @-import。四個仍合計同一份預算，因為本條防的是**條文重複造成的 drift 面**，而重複不分注入與否——但別把這個預算讀成「這四個檔都在吃常駐 token」。指紋用途的對應差異見規則 6。
 
