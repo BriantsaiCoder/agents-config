@@ -456,6 +456,7 @@ has "delegation has no user-authored fixed limits" '不得設定 user-authored �
 has "runtime capacity remains a technical bound" 'host/runtime 可用容量仍是技術上限' "$delegation_ref"
 has "S5 review agents stay read-only while AI chooses usage" 'S5 Standards／Spec outcomes.*如使用 review agents，MUST 為 read-only，數量與批次由 AI 決定' "$delegation_ref"
 has "downstream fixed choreography is advisory" '下游 skill 的固定 spawn 時機／數量一律由本條覆寫為 advisory choreography.*coverage、outcome 與 independence requirements 保留' "$delegation_ref"
+has "delegation messages carry the complete task contract" '委派訊息 MUST 交代目標與用途.*working directory／可修改範圍.*已決事項與限制.*必要文件.*驗收方式.*必要背景 MUST 先摘要進訊息' "$delegation_ref"
 rule_has "delegation cannot bypass authorization gates" INT-4 'MUST NOT 用 delegation 迴避 S2 授權或 \[T0-8\] plan gate'
 rule_has "stable valuable seam requires RED" INT-2 'stable.*valuable.*seam.*failing regression test.*RED'
 rule_has "unstable seam keeps same repro before after" INT-2 '否則.*同一.*repro.*before／after.*理由'
@@ -530,8 +531,8 @@ section_has "Codex requires Astra to reverify implementer evidence" Codex 'Astra
 section_has "Codex keeps routine failures with Sol" Codex 'routine implementation／test failures.*implementer.*diagnose.*fix.*retest.*assigned scope' "$host_adapters_ref"
 section_has "Codex returns invalid design premises to Astra" Codex 'invalid design premise.*stop dependent writes.*return evidence to Astra.*decision.*authorization' "$host_adapters_ref"
 section_has "Codex defaults new subagents to no inherited turns" Codex '建立新子代理時.*MUST 預設.*`fork_turns="none"`' "$host_adapters_ref"
-section_has "Codex delegation messages carry the complete task contract" Codex '委派訊息 MUST 交代目標.*working directory／可修改範圍.*必要限制與已決事項.*必要文件.*驗收方式' "$host_adapters_ref"
-section_has "Codex escalates inherited context only when summaries are insufficient" Codex '必要背景 MUST 先摘要.*摘要不足.*必要的近期 turns.*完整父對話不可省略.*`fork_turns="all"`' "$host_adapters_ref"
+section_has "Codex delegation messages defer to the shared contract" Codex '委派訊息內容與背景摘要依.*delegation\.md' "$host_adapters_ref"
+section_has "Codex escalates inherited context only when summaries are insufficient" Codex '摘要不足時才繼承必要的近期 turns.*完整父對話不可省略.*`fork_turns="all"`' "$host_adapters_ref"
 section_has "Codex reuses the original agent for same-task follow-up" Codex '同一任務的修正與重測 MUST 優先.*follow-up.*原代理.*只有原代理不可用.*新的獨立任務.*建立新代理' "$host_adapters_ref"
 section_has "Codex maps simplification edits to the implementer" Codex '^\- S5 simplification mechanism = Astra decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
 section_has "Claude keeps Fable as coordinator" Claude 'Claude Fable 5\.1.*effort `high`.*plan mode' "$host_adapters_ref"
