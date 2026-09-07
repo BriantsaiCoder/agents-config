@@ -76,14 +76,14 @@ Copilot review 七個 PR 皆「Approval recommended」（#65 第 1 輪 Changes r
 
 ## 8. 第二輪 delta（2026-09-07 21:47 起，另一 session 重跑同句請求）
 
-範圍補上一輪未列的三個面：`~/.claude/templates/`、`~/.claude/agents/`、host-adapters Claude 節；skill 層以阿拉伯數字、拼字數字（`at most (one|…|ten) (lines|words|…)`）、中文量詞三組 pattern 重掃。**更正 §1 第 1 點**：「numeric cap grep 全 0」只跑了阿拉伯數字那組——`skills/handoff/SKILL.md:18` 的「at most four lines」是本地 fork `332acdb`（vendored-forks 紀錄日 2026-07-31）加的數字上限，拼字數字漏掃。
+範圍補上一輪未列的三個面：`~/.claude/templates/`、`~/.claude/agents/`、host-adapters Claude 節；skill 層以阿拉伯數字、拼字數字（`at most (one|two|three|four|five|six|seven|eight|nine|ten) (lines?|words?|sentences?|bullets?|items?)`）、中文量詞（`(上限|不超過|最多) ?\d+ ?(項|行|字|句|條)`）三組 pattern 重掃。**更正 §1 第 1 點**：「numeric cap grep 全 0」只跑了阿拉伯數字那組——`skills/handoff/SKILL.md:18` 的「at most four lines」是本地 fork `332acdb`（vendored-forks 紀錄日 2026-07-31）加的數字上限，拼字數字漏掃。
 
 | # | 位置 | pattern | 處置 | PR |
 |---|---|---|---|---|
 | D1 | `~/.claude/templates/compact.md` | keep-list #11 re-baseline：對齊 Fable 5.1 遷移指引的 compaction summarization prompt 六類保留項與兩種聲音權重 | rewrite：補 問題／使用者原句 兩欄，決策欄補未採用方案與原因，加「只輸出文字不呼叫工具」「使用者原句與識別項逐字、其他貼近原文、推理只留結論」 | dotclaude [#67](https://github.com/BriantsaiCoder/dotclaude/pull/67)（`1f5e5f7`） |
-| D2 | `~/.claude/agents/uiux-reviewer.md` 前置檢查 | harness drift（Group 3 tool names in prompt、1a）：2.1.260 的 MCP tools deferred，原文「工具不存在即停止」把 deferred 誤判成未安裝 | rewrite 三步：deferred 先依 server instruction 載入 core set（不硬寫 select 清單）、無條件呼叫 `tabs_context_mcp`、失敗才標 `UNAVAILABLE`（probe）並結束；去「（強制）／必須」 | dotclaude #67 |
+| D2 | `~/.claude/agents/uiux-reviewer.md` 前置檢查 | harness drift（Group 3 tool names in prompt、1a）：2.1.260 的 MCP tools deferred，原文「工具不存在即停止」把 deferred 誤判成未安裝 | rewrite 三步：deferred 先依 server instruction 載入 core set（不硬寫 select 清單）、無條件呼叫 `tabs_context_mcp`、失敗才標 `UNAVAILABLE`（probe）並結束；去「（強制）／必須」 | dotclaude [#67](https://github.com/BriantsaiCoder/dotclaude/pull/67) |
 | D3 | `skills/handoff/SKILL.md:18` | 1f 數字上限 | remove；`vendored-forks.md` index row 與 `## handoff` 決策節同步，加 Extension (2026-09-07) 段 | agents-config [#128](https://github.com/BriantsaiCoder/agents-config/pull/128)（`7b4ca00`） |
-| D4 | `skills/dev-workflow/references/delegation.md:7` | Fable 5.1「give the reason, not just the request」；Codex adapter #124 已有，Claude／Copilot 缺 | add host-neutral 一段（目標與用途、working directory／可修改範圍、已決事項與限制、必要文件、驗收方式；背景先摘要），為 Codex 版超集 | agents-config #128 |
+| D4 | `skills/dev-workflow/references/delegation.md:7` | Fable 5.1「give the reason, not just the request」；Codex adapter #124 已有，Claude／Copilot 缺 | add host-neutral 一段（目標與用途、working directory／可修改範圍、已決事項與限制、必要文件、驗收方式；背景先摘要），為 Codex 版超集 | agents-config [#128](https://github.com/BriantsaiCoder/agents-config/pull/128) |
 
 Flag 不動：ponytail 注入「leaves ONE runnable check」與 Fable 5.1 test-sprawl 指引相反（CLAUDE.md:7 只擋覆寫 [T0-2]／[INT-2]）；`~/.claude/core/tier1-workflow.md` 無 host 載入、語意已由 harness Delivering work 與 ledgers row 1／3 承接；`skills/improve-codebase-architecture/HTML-REPORT.md:52`「≤6 words」屬上游卡片格式釘；`~/.claude/agents/code-reviewer.md:11`「Run git diff」與 reviewer-template 精確 source state 實務不衝突。
 
