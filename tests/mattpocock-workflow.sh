@@ -543,7 +543,7 @@ section_has "Claude blocks instead of substituting an unavailable implementer" C
 section_has "Claude requires Fable to reverify implementer evidence" Claude 'Fable may run checks.*implementer report is not completion evidence.*reverify' "$host_adapters_ref"
 section_has "Claude keeps routine failures with the implementer" Claude 'routine implementation／test failures.*implementer.*diagnose.*fix.*retest.*assigned scope' "$host_adapters_ref"
 section_has "Claude returns invalid design premises to Fable" Claude 'invalid design premise.*stop dependent writes.*return evidence to Fable.*decision.*authorization' "$host_adapters_ref"
-section_has "Claude delegation messages carry the complete task contract" Claude '委派訊息 MUST 交代目標.*working directory／可修改範圍.*必要限制與已決事項.*必要文件.*驗收方式' "$host_adapters_ref"
+section_has "Claude delegation messages defer to the shared contract" Claude '委派訊息內容與背景摘要依.*delegation\.md.*subagent 看不到父對話' "$host_adapters_ref"
 section_has "Claude reuses the original implementer for same-scope follow-up" Claude 'SendMessage.*續用原 implementer.*只有原代理不可用.*新的獨立任務.*建立新代理' "$host_adapters_ref"
 section_has "Claude maps simplification edits to the implementer" Claude '^\- S5 simplification mechanism = Fable decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
 section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot 'simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
@@ -806,7 +806,7 @@ has "skill changes require invocation canaries" 'Skill change.*frontmatter.*rela
 has "references declare load conditions" 'Load when' skills/dev-workflow/SKILL.md
 lacks "kernel does not inline reviewer baselines" 'Reinvented Stdlib|Redundant Dependency|Unused Local Reuse|Needless Indirection|Wrong Altitude' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' "$host_adapters_ref"
-has "Copilot S5 delegates dirty reviews adaptively" 'working tree dirty 時，依 \[INT-4\] 由 AI 自主決定是否、何時及使用多少 read-only `task`' "$host_adapters_ref"
+has "Copilot S5 delegates dirty reviews to read-only tasks" 'working tree dirty 時 S5 用 read-only `task`（依 \[INT-4\]）' "$host_adapters_ref"
 has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' "$host_adapters_ref"
 lacks "delegation has no fixed numeric or stage fan-out" '併發(數)?[[:space:]]*≤[[:space:]]*[0-9]+|累計 delegation[[:space:]]*≤[[:space:]]*[0-9]+|恰好[[:space:]]*[0-9]+[[:space:]]*個.*agent|每批[[:space:]]*[0-9]+[[:space:]]*個|直接開[[:space:]]*[0-9]+[[:space:]]*個|固定 fan-out' skills/dev-workflow/SKILL.md "$delegation_ref" "$host_adapters_ref"
 has "host resolver derives the user-only count" 'expected_user_only_count=.*0' tests/host-skill-resolver.sh
@@ -889,7 +889,7 @@ else
 fi
 
 copilot_section="$(sed -n '/^## Copilot$/,$p' "$ROOT/$host_adapters_ref")"
-if copilot_s5_count=$(printf '%s\n' "$copilot_section" | rg_hits '^- S5 ') &&
+if copilot_s5_count=$(printf '%s\n' "$copilot_section" | rg_hits '^- .*S5 ') &&
    [ "$copilot_s5_count" -eq 1 ]; then
   ok "Copilot adapter has one canonical S5 directive"
 else
