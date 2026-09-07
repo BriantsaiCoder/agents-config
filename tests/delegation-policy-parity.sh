@@ -260,17 +260,23 @@ for cond in '無條件約束' '可獨立平行' '寫入 ownership MUST 不重疊
     || ng "[INT-4] 缺核心片段：$cond"
 done
 for exception_clause in \
-  'Codex 的唯一 eligibility 例外' \
-  'Astra→Sol serial implementation routing' \
-  '此例外不適用 Claude／Copilot' \
+  '唯一 eligibility 例外' \
+  '此例外不適用 Copilot' \
   'same-work recursion is forbidden'; do
   grep -Fq "$exception_clause" "$DELEGATION_REF" \
-    && ok "[INT-4] Codex serial exception 含：$exception_clause" \
-    || ng "[INT-4] Codex serial exception 缺：$exception_clause"
+    && ok "[INT-4] serial exception 含：$exception_clause" \
+    || ng "[INT-4] serial exception 缺：$exception_clause"
 done
-grep -Fq 'Astra→Sol serial implementation routing' "$HOST_ADAPTERS_REF" \
-  && ok '[INT-4] Codex serial exception 指向 host adapter choreography' \
-  || ng '[INT-4] Codex serial exception 缺 host adapter choreography'
+# 每個 host 的 routing 片語只寫一次：delegation.md 要列出它，host-adapters.md 要定義它。
+for pair in 'Codex Astra→Sol' 'Claude Fable→Opus'; do
+  routing_clause="${pair#* } serial implementation routing"
+  grep -Fq "$routing_clause" "$DELEGATION_REF" \
+    && ok "[INT-4] serial exception 含：$routing_clause" \
+    || ng "[INT-4] serial exception 缺：$routing_clause"
+  grep -Fq "$routing_clause" "$HOST_ADAPTERS_REF" \
+    && ok "[INT-4] ${pair%% *} serial exception 指向 host adapter choreography" \
+    || ng "[INT-4] ${pair%% *} serial exception 缺 host adapter choreography"
+done
 grep -Fq '無條件約束不在可授權範圍內' "$policy_file" \
   && ok '[INT-4] 明示無條件約束不可被授權繞過' \
   || ng '[INT-4] 未擋住「取得授權就能寫入重疊／序列相依」的路徑'

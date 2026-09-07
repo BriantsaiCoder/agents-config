@@ -37,11 +37,18 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 ## Claude
 
 - plan = EnterPlanMode；todo = TodoWrite；子代理 = Task／Agent；決策提問 = AskUserQuestion。
+- Claude main role = `fable`（Claude Fable 5.1）with effort `high`, including plan mode。Fable owns investigation／root causes／architecture／design／decisions、final evidence verification、independent read-only S5 review coordination 與 final user response。
+- Fable→Opus serial implementation routing：取得 implementation 授權後，MUST automatically delegate implementation、integration、testing、fixes 與 authorized closeout mutations to configured `implementer` agent（`claude-opus-5`，effort `high`；定義在 `~/.claude/agents/implementer.md`）。相依 scope 依序執行；implementer 自行完成 assigned scope 並回傳結果，same-work recursion is forbidden。
+- routine implementation／test failures 由 implementer diagnose、fix、retest within assigned scope；遇到 invalid design premise，stop dependent writes，return evidence to Fable for decision 與 needed authorization。
+- Fable may run checks and inspect evidence；implementer report is not completion evidence，Fable MUST reverify source state 與結果。Explicitly unavailable implementer is an UNAVAILABLE blocker；generic no-tools fallback does not authorize Fable implementation or model substitution。
+- 委派訊息 MUST 交代目標、working directory／可修改範圍、必要限制與已決事項、必要文件及驗收方式；subagent 看不到父對話，必要背景 MUST 先摘要進委派訊息。
+- 同一 scope 的修正與重測 MUST 優先用 `SendMessage` 依回傳的 agent id 續用原 implementer；只有原代理不可用或工作是新的獨立任務時才建立新代理。
 - 同一 ready frontier 上彼此獨立的 1–4 個 blocker MUST 合併在同一次 `AskUserQuestion`；dependent 題等前一批回答。Skip／dismiss MUST NOT 視為答案、核准或採用預設值。
 - user-only skill command = `/<skill-name>`。
 - S5 Standards／Spec outcomes 仍須覆蓋；是否平行與 subagent 數量依 [INT-4] 自主決定，review agent 保持 read-only；`uiux-reviewer` 是 Claude-only。
 - 用專屬 review agent 不豁免 `references/reviewer-template.md`：豁免的是 prompt 區塊本身與「怎麼用」中以該區塊為前提的步驟，其餘各節對 Claude 一樣有約束力，MUST 在維護 `code-review` 的 baseline 或判 S5 EXIT 時讀。不在此列舉是哪幾節——列舉會漏，新增的節就掉在外面。這條與 `simplify` 綁定都不因專屬 agent 而豁免。
 - 兩軸 findings 處理完後 MUST 跑 `simplify`（Claude-only）當 apply pass；`changed`／`no-op` 與重驗依共用 S5 simplification outcome。
+- S5 simplification mechanism = Fable decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。
 - `ledgers.md` Preflight 要求的兩軸狀態行與 row 6 三欄／baseline 標題，在 Claude 側由 `~/.claude/hooks/guard-s5-ledger.sh`（PreToolUse，攔 `gh pr create`）機械檢查——缺項在開 PR 當下就被擋，不是事後才發現。兩軸皆 `SKIPPED` 走豁免路徑（沒跑審查就沒有記錄可填）。已知不修的破口：inline `--body` 時 `--title`／`--label` 的值也算進 body、`gh pr edit` 不在射程內；細節與理由寫在該檔註解。
 
 ## Codex
