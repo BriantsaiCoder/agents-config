@@ -167,9 +167,9 @@ shadow_shared="$scratch/shared-skills-live-shape"
 mkdir -p "$shadow_shared/.claude/.cc-writes"
 for link in "$CLAUDE_CANDIDATE"/skills/*; do
   shadow_skill="$shadow_shared/$(basename "$link")"
-  [ -d "$link" ] || die "Claude skill source missing: $link"
+  [ -d "$link" ] || { bad "Claude skill source missing: $link"; continue; }
   mkdir -p "$shadow_skill"
-  cp -R "$link"/. "$shadow_skill"/ || die "cannot copy Claude skill source: $link"
+  cp -R "$link"/. "$shadow_skill"/ || bad "cannot copy Claude skill source: $link"
 done
 # 2026-08-08：原本把 repo-integrity.sh 的任何非 0 退出都斷言成「inventory 把 skills/.claude
 # 當 skill」，並把輸出丟進 /dev/null。那支測試有 66 條斷言，其中只有一條與 .claude 有關——
@@ -177,7 +177,7 @@ done
 # 追查方向被帶偏。skills/.claude 專屬的覆蓋已在上方 126-135 行（bootstrap／doctor／不建 link），
 # 這裡只需驗「shadow root 形狀下 repo-integrity 整體仍綠」，並把真正的 FAIL 行印出來。
 integrity_log="$scratch/claude-repo-integrity.log"
-if ! (
+if [ "$fail" -eq "$_wm" ] && ! (
   cd "$CLAUDE_CANDIDATE"
   SHARED_SKILLS_ROOT="$shadow_shared" bash tests/repo-integrity.sh
 ) > "$integrity_log" 2>&1; then
