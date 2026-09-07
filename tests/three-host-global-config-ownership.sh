@@ -166,7 +166,10 @@ sect 'agents-sync 對 exact skills/.claude 的處置'
 shadow_shared="$scratch/shared-skills-live-shape"
 mkdir -p "$shadow_shared/.claude/.cc-writes"
 for link in "$CLAUDE_CANDIDATE"/skills/*; do
-  mkdir -p "$shadow_shared/$(basename "$link")"
+  shadow_skill="$shadow_shared/$(basename "$link")"
+  [ -d "$link" ] || die "Claude skill source missing: $link"
+  mkdir -p "$shadow_skill"
+  cp -R "$link"/. "$shadow_skill"/ || die "cannot copy Claude skill source: $link"
 done
 # 2026-08-08：原本把 repo-integrity.sh 的任何非 0 退出都斷言成「inventory 把 skills/.claude
 # 當 skill」，並把輸出丟進 /dev/null。那支測試有 66 條斷言，其中只有一條與 .claude 有關——
