@@ -12,7 +12,7 @@ Host adapter 對本 kernel 只可加嚴，MUST NOT 放鬆其 MUST 或無條件�
 
 - `tests/three-host-capability-parity.sh` — 表內每一列，`grep -Fq` **子字串**比對。
 - `tests/ponytail-host-parity.sh` — 只讀 CAP-PONYTAIL 那列，把 host 檔依 `[；。]` 切段後逐段**全等**比對。它嚴格得多：mapping 的 anchor 必須是某一整段，而不是某段的一部分。它的 selftest fixture 另有一份 CAP-PONYTAIL 的手抄本，改本表時會一起紅（2026-08-27 實測）。
-- meaning 欄（第 2 欄）不參與任何斷言：前者只比對三個 host 欄，後者只檢查它非空。gate 全綠不代表三家語意相同，語意是否一致只能靠人讀。
+- meaning 欄（第 2 欄）不參與任何語意斷言：前者只比對三個 host 欄，後者只檢查它非空。gate 全綠不代表三家語意相同，語意是否一致只能靠人讀。
 
 anchor 與 host 實際措辭對不上時，改哪一邊的判準：**語意分歧改 host，措辭／標點差異改本表。** 前者是三家該一致的東西真的不一致——2026-08-27 曾出現 Codex 寫 `action-first` 而 Claude、Copilot 與本表 meaning 欄都是 `outcome-first`，該次改的是 `~/.codex/AGENTS.md`；後者是同一語意的各家寫法，例如 Codex 那一行整行用半形 `/`，本表 Codex 欄就跟著半形。兩個 matcher 都分不出這兩者，判準只能靠人。
 
