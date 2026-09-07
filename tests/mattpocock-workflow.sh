@@ -806,7 +806,7 @@ has "skill changes require invocation canaries" 'Skill change.*frontmatter.*rela
 has "references declare load conditions" 'Load when' skills/dev-workflow/SKILL.md
 lacks "kernel does not inline reviewer baselines" 'Reinvented Stdlib|Redundant Dependency|Unused Local Reuse|Needless Indirection|Wrong Altitude' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' "$host_adapters_ref"
-has "Copilot S5 delegates dirty reviews to read-only tasks" 'working tree dirty 時 S5 用 read-only `task`（依 \[INT-4\]）' "$host_adapters_ref"
+has "Copilot S5 delegates dirty reviews to read-only tasks" 'S5 在 working tree dirty 時用 read-only `task`（依 \[INT-4\]）' "$host_adapters_ref"
 has "Copilot S5 handles clean reviews" 'clean.*fixed-point.*`code-review`' "$host_adapters_ref"
 lacks "delegation has no fixed numeric or stage fan-out" '併發(數)?[[:space:]]*≤[[:space:]]*[0-9]+|累計 delegation[[:space:]]*≤[[:space:]]*[0-9]+|恰好[[:space:]]*[0-9]+[[:space:]]*個.*agent|每批[[:space:]]*[0-9]+[[:space:]]*個|直接開[[:space:]]*[0-9]+[[:space:]]*個|固定 fan-out' skills/dev-workflow/SKILL.md "$delegation_ref" "$host_adapters_ref"
 has "host resolver derives the user-only count" 'expected_user_only_count=.*0' tests/host-skill-resolver.sh
@@ -889,7 +889,7 @@ else
 fi
 
 copilot_section="$(sed -n '/^## Copilot$/,$p' "$ROOT/$host_adapters_ref")"
-if copilot_s5_count=$(printf '%s\n' "$copilot_section" | rg_hits '^- .*S5 ') &&
+if copilot_s5_count=$(printf '%s\n' "$copilot_section" | rg_hits '^- S5 ') &&
    [ "$copilot_s5_count" -eq 1 ]; then
   ok "Copilot adapter has one canonical S5 directive"
 else

@@ -71,6 +71,6 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 - plan = `--mode plan`；todo = update_todo；子代理 = `task` 工具。
 - user-only skill command = `/<skill-name>`。
 - 命中 [T0-8] protected gate 時，非 plan mode 必須先提出計畫並取得核准。
-- working tree dirty 時 S5 用 read-only `task`（依 [INT-4]）；clean／fixed-point review 才執行 `code-review`；simplification mechanism = main-context explicit apply pass。
+- S5 在 working tree dirty 時用 read-only `task`（依 [INT-4]）；clean／fixed-point review 才執行 `code-review`；simplification mechanism = main-context explicit apply pass。
 - Copilot user-level Git guard MUST 位於 `~/.copilot/hooks/guard-git-push.{json,sh}`。
 - 子代理沿用模型預設 effort；僅 hard debugging、security、migration 或高風險 review 升 `high`，`xhigh`／`max` 需量測證明收益。
