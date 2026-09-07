@@ -28,7 +28,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; tree SHA-256 `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21` | **Active** |
 | `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — narrow the trigger to an explicit interview request, adopt design-tree/frontier dependency sequencing, retain the canaried one-question HITL default, add re-estimated progress headers, and keep delegated decisions behind a separate action gate; payload SHA-256 `dcbdd6b8968b8ea2f35a56ce4d1be62a90d4421ac0228e379d24d8e9bbb9802f` | **Active** |
-| `handoff` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session, capped at four lines; payload SHA-256 `94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560` | **Active** |
+| `handoff` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session; 2026-09-07 — drop the four-line cap on that prompt (prompt-audit rule 1f, numeric output ceiling); payload SHA-256 `73f75e10b33ca3058b69dab7f95a2f0c35c3a46de9dd4fab68d3b46a4572b639` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
 | `prototype` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — adopt the self-contained HTML logic demo and add the local offline/synthetic-data/no-secret/no-production-build boundary; tree SHA-256 `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a` | **Active** |
 | `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
@@ -672,12 +672,20 @@ Four constraints are deliberate and must survive any re-merge:
 - **absolute path, not a literal one** — the skill still says "temporary directory of the user's OS".
   `$TMPDIR` differs per host (Claude Code sets `/tmp/claude-<uid>`; Codex and Copilot get the macOS
   default `/var/folders/…`), so the resolved path belongs in the emitted block, never in this file.
-- **`nothing else, at most four lines`** — added 2026-07-31 after the first live run. The original
-  wording named the three required elements but set no ceiling, and the run produced a four-paragraph
-  block that restated environment state already in the document. The cap plus "everything the next
-  agent needs beyond that is in the document" is what keeps the block a pointer rather than a summary.
+- **`nothing else` + `Everything the next agent needs beyond that is in the document`** — the three
+  required elements alone let the first live run (2026-07-31) produce a four-paragraph block that
+  restated environment state already in the document; the exclusion clause is what keeps the block a
+  pointer rather than a summary. A numeric cap (`at most four lines`) was added the same day and
+  dropped 2026-09-07 (prompt-audit rule 1f, numeric output ceiling): a number tuned against one run
+  over-constrains Fable 5.1 — do not re-add one.
 - **`not a machine-parseable contract`** — prevents a downstream script from parsing the block and
   turning a human convenience into an undeclared interface.
+
+**Extension (2026-09-07):** user approved dropping the numeric cap (`at most four lines`) from the
+start-prompt sentence — prompt-audit rule 1f: numeric output ceilings come out and the surviving format
+instruction (three named elements, nothing else) carries the bound. The previous payload SHA-256 was
+`94b9c425dbbe1c5b3f788fbea1fd588b6c6fa9f5e1c5b8c2c201c07088204560`; compare against local baseline
+`1ea47b2` for this extension.
 
 Explicitly out of scope for this fork, each its own future decision: a fixed `handoff-latest.md`
 filename, a `SessionStart` hook that auto-injects the pending handoff (needs consume-or-expire, or it
