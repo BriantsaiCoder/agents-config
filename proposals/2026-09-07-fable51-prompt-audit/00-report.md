@@ -73,3 +73,22 @@ Copilot review 七個 PR 皆「Approval recommended」（#65 第 1 輪 Changes r
 - **「死 pattern」要用測試的枚舉方式驗**，不是看路徑存不存在；diff-based 清單含刪除檔。
 - **dotclaude 的 `gh pr merge --delete-branch` 要停沙箱跑**：沙箱內 fetch 撞 cert.pem，留下 main 停舊 commit、改動變成未提交修改的半套狀態；#62 用 `git reset --mixed origin/main` 補救（先驗證 working tree 與 origin/main 逐 byte 相同）。
 - 沙箱內外 `repo-integrity.sh` 的 PASS 數差 2（停沙箱時兩條依賴沙箱的檢查不跑），報數字前先確認執行環境。
+
+## 8. 第二輪 delta（2026-09-07 21:47 起，另一 session 重跑同句請求）
+
+範圍補上一輪未列的三個面：`~/.claude/templates/`、`~/.claude/agents/`、host-adapters Claude 節；skill 層以阿拉伯數字、拼字數字（`at most (one|…|ten) (lines|words|…)`）、中文量詞三組 pattern 重掃。**更正 §1 第 1 點**：「numeric cap grep 全 0」只跑了阿拉伯數字那組——`handoff/SKILL.md:18` 的「at most four lines」是本地 fork `332acdb`（2026-07-31）加的數字上限，拼字數字漏掃。
+
+| # | 位置 | pattern | 處置 | PR |
+|---|---|---|---|---|
+| D1 | `~/.claude/templates/compact.md` | keep-list #11 re-baseline：對齊 Fable 5.1 遷移指引的 compaction summarization prompt 六類保留項與兩種聲音權重 | rewrite：補 問題／未採用方案／使用者原句 三欄與「只輸出文字不呼叫工具」「使用者原句與識別項逐字、其他貼近原文、推理只留結論」 | dotclaude [#67](https://github.com/BriantsaiCoder/dotclaude/pull/67)（`1f5e5f7`） |
+| D2 | `~/.claude/agents/uiux-reviewer.md` 前置檢查 | Group 4 harness drift：2.1.260 的 MCP tools deferred，原文「工具不存在即停止」把 deferred 誤判成未安裝 | rewrite 三步：deferred 先依 server instruction 載入 core set、無條件呼叫 `tabs_context_mcp`、失敗才標 `UNAVAILABLE`（probe）並結束；刪硬寫 tool id（Group 3） | dotclaude #67 |
+| D3 | `skills/handoff/SKILL.md:18` | 1f 數字上限 | remove；`vendored-forks.md` index row 與 `## handoff` 決策節同步，加 Extension (2026-09-07) 段 | agents-config [#128](https://github.com/BriantsaiCoder/agents-config/pull/128)（`7b4ca00`） |
+| D4 | `dev-workflow/references/delegation.md:7` | Fable 5.1「give the reason, not just the request」；Codex adapter #124 已有，Claude／Copilot 缺 | add host-neutral 一段（目標與用途、working directory／可修改範圍、已決事項與限制、必要文件、驗收方式；背景先摘要），為 Codex 版超集 | agents-config #128 |
+
+Flag 不動：ponytail 注入「leaves ONE runnable check」與 Fable 5.1 test-sprawl 指引相反（CLAUDE.md:7 只擋覆寫 [INT-2]）；`tier1-workflow.md` 無 host 載入、語意已由 harness Delivering work 與 ledgers row 1／3 承接；uiux-reviewer 只認 claude-in-chrome（desktop Browser pane 等效能力）；`improve-codebase-architecture/HTML-REPORT.md:52`「≤6 words」屬上游卡片格式釘；`agents/code-reviewer.md:11`「Run git diff」與 reviewer-template 精確 source state 實務不衝突。
+
+S5：兩 repo 各兩輪兩軸，reviewer 審 detached-worktree snapshot。第一輪兩 repo 皆抓到同類缺口——agents-config 兩軸同抓 `vendored-forks.md` 底部 `## handoff` 決策節仍把四行上限列為 must-survive（執行者只改了 index row）；dotclaude 抓 select 清單與 harness core set 不一致、compact 保真度句兩處。simplify 四角度 apply pass 各 `changed` 一顆 commit（刪硬寫 tool id、清單成超集、紀錄去重）。第二輪抓到 simplify 誤加的 proposals 座標（本檔 §2 無 handoff 決策）。Copilot：#67 一條「ToolSearch 未在 repo 定義」有據駁回（harness 內建工具名）；#128「Approval recommended」，0 thread；兩 PR `pr-review-gate` 皆 `STATE=PASS suppressed=0`。
+
+Follow-up：`host-adapters.md:54-55` Codex 委派條文收斂為 Codex-only delta 並改指 delegation.md（同批改 `tests/mattpocock-workflow.sh:533` regex）；`~/.claude/README.md:13` 仍標 compact.md 為 cross-session handoff 模板；deferred≠absent 的 probe 規則可上移 dev-workflow Gate contract（`playwright-best-practices/references/mcp-workflow.md` 同型曝險）；compact.md 的 問題／使用者原句 兩欄與 Claude Code 內建 compact summarizer 重疊，可改走 `/compact <instructions>`；uiux-reviewer 是否接受 `mcp__Claude_Browser__*` 等效 provider。
+
+教訓：收到同句稽核請求先查 proposals 當日正本，只做 delta（session memory `audit-rerun-check-proposals-first`）；引用 proposals 座標前 grep 該節真含此決策；VND\* fork 的紀錄有 index row 與決策節兩處。
