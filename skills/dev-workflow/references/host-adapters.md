@@ -15,9 +15,7 @@ Host adapter 對本 kernel 只可加嚴，MUST NOT 放鬆其 MUST 或無條件�
 
 anchor 與 host 實際措辭對不上時，改哪一邊的判準：**語意分歧改 host，措辭／標點差異改本表。** 前者是三家該一致的東西真的不一致——2026-08-27 曾出現 Codex 寫 `action-first` 而 Claude、Copilot 與本表 meaning 欄都是 `outcome-first`，該次改的是 `~/.codex/AGENTS.md`；後者是同一語意的各家寫法，例如 Codex 那一行整行用半形 `/`，本表 Codex 欄就跟著半形。兩個 matcher 都分不出這兩者，判準只能靠人。
 
-**Accepted divergence（CAP-PONYTAIL，2026-09-06）**：Copilot 的 [T0-10] 把 ponytail 適用範圍收窄為「只採 reuse／YAGNI 原則」，Claude／Codex 仍是「通用慣例」。這是**已知且被使用者明示接受**的語意分歧（詢問是否鏡像到另外兩家，回覆「不用」），不是待修的 drift——故 meaning 欄改為如實描述「適用範圍 host-local」，而非假裝三家一致。三家若日後要收斂，改的是 host 檔不是本表。註記在此的理由：meaning 欄不參與任何斷言（`ponytail-host-parity.sh` 只檢查它非空），gate 全綠不代表三家語意相同，讀者需要這行才不會誤讀。
-
-**2026-09-07 核准調整（上述 2026-09-06 為歷史決定）**：使用者核准 Astra prompting 審核項目 1–6，Codex 改採 reuse／YAGNI／最小完整實作，輸出與測試交回 host／repo／dev-workflow；Claude 與 Copilot 的 host-local 範圍不變。以下 mapping 對應這次 Codex candidate，須與其 AGENTS.md 一起驗證及交付，不能把尚未切換的 live host 判為已套用。
+**Accepted divergence（CAP-PONYTAIL）**：三家對 ponytail 的適用範圍是使用者明示接受的語意分歧（#120、#121），不是待修的 drift；各 host 的實際範圍以下表 CAP-PONYTAIL 列的三個 anchor 欄為準。meaning 欄寫「適用範圍 host-local」；它不參與任何斷言（`ponytail-host-parity.sh` 只檢查它非空），gate 全綠不代表三家語意相同。
 
 <!-- capability-parity:start -->
 ```tsv

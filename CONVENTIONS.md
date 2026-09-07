@@ -12,7 +12,9 @@
 
 ## 3. 規則 ID 永不重編、永不回收
 
-刪除或降級規則時留殼標記：`[T1-7 DEPRECATED→T0-2 2026-07]`。理由：舊 session transcript、commit message、cookbook 條目可能引用舊 ID；重編會讓歷史引用全部斷鏈且無人察覺。
+刪除或降級規則時留殼標記：`[T1-7 DEPRECATED→T0-2 2026-07]`。理由：舊 session transcript、commit message、cookbook 條目可能引用舊 ID；重編會讓歷史引用全部斷鏈且無人察覺。shared kernel／references 的殼標記登錄在本節，不進 dev-workflow kernel（注入 context 只放現行規則）；`tests/matt-thin-workflow.sh` 釘住此處（2026-09-07）。
+
+[R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]
 
 ## 4. 跨檔引用只用規則 ID 或檔路徑
 

@@ -27,8 +27,6 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 
 - [INT-10] 全域／security config MUST 走 isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push main／master。範圍：`CLAUDE.md`／`AGENTS.md`／`copilot-instructions.md`、tier0／tier1／tier2、kernel／references、hooks、permission／sandbox、CI workflow，以及 plugin install／enable、MCP 啟用、新 credential 或 external tool capability。`pre-push` 未安裝時沒有機械 enforcement；`--no-verify` 可略過且不保證 `--mirror` 隱式刪除。觸發：diff 命中範圍。例外：使用者當下明示直接推 main。驗證：PR + review-triage gate PASS；例外引用原句。
 
-[R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]
-
 ## S0 ROUTE
 
 由上而下 route；可組合：

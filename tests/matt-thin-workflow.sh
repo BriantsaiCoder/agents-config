@@ -62,8 +62,10 @@ done
 
 rg -q '^description: .*開發任務必讀.*三 host.*S0.*S2.*S4.*S6' "$KERNEL" ||
   fail 'dev-workflow description lost its all-development-task trigger'
-grep -Fqx '[R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]' "$KERNEL" ||
-  fail 'retired workflow ID shells must preserve DEPRECATED targets and dates'
+grep -Fqx '[R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]' "$AGENTS/CONVENTIONS.md" ||
+  fail 'retired workflow ID shells must stay registered in CONVENTIONS.md §3'
+! grep -Fq 'DEPRECATED→' "$KERNEL" ||
+  fail 'kernel must not carry retired-ID shells (they live in CONVENTIONS.md §3)'
 [ "$(grep -Fc 'FP:DEVWF-2026Q3' "$KERNEL")" -eq 1 ] ||
   fail 'dev-workflow fingerprint must appear exactly once'
 
