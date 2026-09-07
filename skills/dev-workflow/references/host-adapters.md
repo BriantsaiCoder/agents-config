@@ -33,7 +33,7 @@ Tier0 安全內容由 `tests/tier0-parity.sh` 驗；model、effort、permission 
 
 ## S5 simplification apply outcome
 
-Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 main context 做一次 apply pass，只處理已核准 scope 與 `reviewer-template.md` 五條 over-engineering baseline。結果 MUST 記為 `changed` 或 `no-op`；`changed` 回 S4 並把 affected diff 重新納入 S5，避免 simplify output 繞過 [S5-1]；`no-op` 留明確 evidence。
+Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 active host 的 implementation owner 做一次 apply pass，只處理已核准 scope 與 `reviewer-template.md` 五條 over-engineering baseline。結果 MUST 記為 `changed` 或 `no-op`；`changed` 回 S4 並把 affected diff 重新納入 S5，避免 simplify output 繞過 [S5-1]；`no-op` 留明確 evidence。
 
 ## Claude
 
@@ -47,11 +47,15 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 m
 
 ## Codex
 
-- plan = Plan Mode（僅 host／user 可切換）；todo = update_plan；子代理 = spawn_agent／wait_agent。工具未提供時以文字列 session plan／進度，依 [INT-4] 評估自行完成；不得模擬工具呼叫或略過 protected gate 核准。
+- plan = Plan Mode（僅 host／user 可切換）；todo = update_plan；子代理 = spawn_agent／wait_agent。工具未提供時以文字列 session plan／進度；不得模擬工具呼叫或略過 protected gate 核准。
+- Codex main role = `gpt-6-astra` with reasoning `high`, including Plan Mode。Astra owns investigation／root causes／architecture／design／decisions、final evidence verification、independent read-only S5 review coordination 與 final user response。
+- Astra→Sol serial implementation routing：取得 implementation 授權後，MUST automatically delegate implementation、integration、testing、fixes 與 authorized closeout mutations to configured `implementer`（`gpt-5.6-sol`，`xhigh`）。相依 scope 依序執行；implementer 自行完成 assigned scope 並回傳結果，same-work recursion is forbidden。
+- routine implementation／test failures 由 implementer diagnose、fix、retest within assigned scope；遇到 invalid design premise，stop dependent writes，return evidence to Astra for decision 與 needed authorization。
+- Astra may run checks and inspect evidence；Sol report is not completion evidence，Astra MUST reverify source state 與結果。Explicitly unavailable implementer is an UNAVAILABLE blocker；generic no-tools fallback does not authorize Astra implementation or model substitution。
 - user-only skill command = `$<skill-name>`。
 - Codex native Local/Worktree Handoff 只移動同一 chat 與 code，MUST NOT 觸發 Matt `$handoff`；跨 session／agent 文件仍走 `$handoff`。
 - `implement` 先用 `~/.agents/bin/agents-branch` 或 repo worktree 建 isolated branch；S6 用 PR heartbeat。
-- S5 simplification mechanism = main-context explicit apply pass。
+- S5 simplification mechanism = Astra decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。
 - Git guard 由 `~/.codex/hooks.json` 與 `~/.codex/rules/default.rules` 疊加，不能取代 tier0／CI。
 
 ## Copilot
