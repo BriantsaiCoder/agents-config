@@ -36,8 +36,10 @@ Low／flag，不動：CLAUDE.md:16「送出前刪」與 harness「stop when the 
 | dotclaude [#63](https://github.com/BriantsaiCoder/dotclaude/pull/63) | commit pre-existing `D skills/sdd`（目標已歸檔 attic） | `37af76e` | PASS；reviewer 確認 repo-integrity §5 shared-source 斷言在刪除前必紅 |
 | dotclaude [#64](https://github.com/BriantsaiCoder/dotclaude/pull/64) | 刪 `commands/sdd.md`（sol-astra Group A 遷移 caller 漏掉的最後一個 `/sdd` 入口；三家皆已無 sdd 入口） | `06556c9` | PASS；question：執行者報「118 PASS」與 live 120 不符 → 重跑確認 120，118 是停沙箱時兩條依賴沙箱的檢查沒跑 |
 | dotclaude [#65](https://github.com/BriantsaiCoder/dotclaude/pull/65) | README 結構樹去 `commands/`；Copilot 第 1 輪 1 inline finding → 補一行「目前不存在、`.gitignore` 仍保留 `!commands/`」；第 2 輪 1 suppressed 措辭 nit → 附理由 pushback | `5dc7031` | PASS |
+| dotclaude [#66](https://github.com/BriantsaiCoder/dotclaude/pull/66) | follow-up：tier2 [T2-7]、[T2-9] 退役成殼 `[… DEPRECATED→CLAUDE.md#Defaults 2026-09]`（正本 CLAUDE.md，tier1／2 無 host 載入）；repo-integrity 新增「注入檔（CLAUDE.md、tier0）不帶 DEPRECATED→」斷言，rc≥2 走 FAIL | `2e89301` | PASS；3 nitpick 採 2（殼目標去空白、變數改名），[T2-7] 語意部分承接屬既存 drift 不動 |
+| agents-config [#126](https://github.com/BriantsaiCoder/agents-config/pull/126) | follow-up：CONVENTIONS §12 重疊規則限定為常駐 tier0，補例外「[T2-6] 由 ownership 測試釘住不退役」；host-adapters「meaning 欄不參與語意斷言」上移到 consumer 段 | `cbc892b` | 第 1 輪 Standards FAIL（§12「例外：無」與 ownership 測試釘 [T2-6] 相衝）→ 補例外後 PASS |
 
-Copilot review 五個 PR 皆「Approval recommended」（#65 第 1 輪 Changes recommended）。請求方式：`pr-review-gate` 的 REST 仍是 no-op，全部改走 GraphQL `requestReviews(botIds:)`。
+Copilot review 七個 PR 皆「Approval recommended」（#65 第 1 輪 Changes recommended）。請求方式：`pr-review-gate` 的 REST 仍是 no-op，全部改走 GraphQL `requestReviews(botIds:)`。
 
 **撤回一項**：agents-config `tests/matt-thin-workflow.sh:901` allowlist 的 `skills/sdd/SKILL.md` 被 reviewer 判為死 pattern，實測拿掉即紅：該測試用 `git diff --name-only $WORKFLOW_BASE -- skills` 列變動檔，被刪除的檔也在清單裡。worktree 與 local branch 清掉，未 push。
 
@@ -45,6 +47,7 @@ Copilot review 五個 PR 皆「Approval recommended」（#65 第 1 輪 Changes r
 
 - dotclaude：每個 PR `bash tests/repo-integrity.sh` 沙箱內 120 PASS／0 FAIL；三支 parity 測試（`ponytail-host-parity` 14/0/0、`three-host-capability-parity` 3/0/0、`tier0-parity`）對改後 live CLAUDE.md 全綠；禁用片語清單零命中；`git diff --check` 0；gitleaks staged／pre-commit no leaks。
 - agents-config：`bin/ci-local` 27 PASS／0 FAIL、local-only 4 PASS；`conformance.sh` 73/0（含 CONVENTIONS「13 條」標題數）；新增兩條斷言在 scratch 複本做 mutation：kernel 追加 `[R-9 DEPRECATED→INT-9 2026-09]` → 紅、CONVENTIONS.md 移除殼標記行 → 紅、positive 綠。
+- follow-up PR：dotclaude repo-integrity 121 PASS／0 FAIL，新斷言 3 個 control（clean 綠、CLAUDE.md 注入殼標記紅、tier0 chmod 000 → rc=2 紅）；ownership 測試 [T2-6] PASS；agents-config ci-local 27 PASS、conformance 73/0、ponytail-parity 14/0/0。
 - 全部 PR：current-head CI PASS、`pr-review-gate` STATE=PASS、unresolved 0、suppressed 逐條處置。
 
 ## 5. 決策紀錄
@@ -56,12 +59,11 @@ Copilot review 五個 PR 皆「Approval recommended」（#65 第 1 輪 Changes r
 | A5 §3 處置 | 搬移而非刪除，§3 補一句落點；替代 revert A5 或改寫 §3。使用者 merge #125 即核准 |
 | #62、#125 merge | 使用者逐次確認（全域 config） |
 | `D skills/sdd`、`commands/sdd.md`、README 行 | 使用者逐項核准；`commands/sdd.md` 刪而非改指 attic（改指會讓 Claude 單獨保有退役流程） |
+| Follow-up 三項 | 使用者核准兩個 PR（#66、#126）：正本是被載入的 CLAUDE.md，tier2 [T2-7]／[T2-9] 退役成殼；§12 限定 tier0；meaning 欄說明上移。tier 檔反向 guard 依 YAGNI 改為守「注入檔不帶殼標記」，落在 dotclaude repo-integrity |
 
 ## 6. 未做與 follow-up
 
-- CLAUDE.md:13、17 與未載入的 tier2 [T2-7]、[T2-9] 清單語意不同（CONVENTIONS.md §12），pre-existing，要對齊需先決定正本。
-- host-adapters.md「meaning 欄不參與斷言」是整張表的性質，可上移到表頭「兩個 consumer」段；下一個 accepted divergence 出現前不急。
-- CONVENTIONS.md §3 新句只宣稱 kernel 不帶殼標記；tier 檔未設反向 guard（機械枚舉三家 host 檔現況零命中）。
+- [T2-7] 的語意只部分落在 CLAUDE.md:17（evidence 由 [T0-1]／[T0-2] 承接、next step 由 :13 承接，「原因未明時列下一診斷動作」在單步任務無明文）；既存 drift，CLAUDE.md 距軟閘 53 B，不補字。
 - 官方 [TUNE] A/B 與 Step 7 行為探針未跑；本次全部改動的效果由 reviewer 語意核對與機械守衛承擔，不是量測。
 - `.gitignore` 的 `!commands/` allowlist 保留（dormant）；`~/.claude/commands` 目錄現不存在。
 
