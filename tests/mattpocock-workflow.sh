@@ -565,7 +565,7 @@ section_has "Claude constrains unavailable-implementer takeover" Claude 'impleme
 section_has "Claude requires Fable to reverify implementer evidence" Claude 'implementer report is not completion evidence.*Fable MUST reverify' "$host_adapters_ref"
 section_has "Claude keeps routine failures with the implementation owner" Claude "$routine_failures_with_owner" "$host_adapters_ref"
 section_has "Claude returns delegated invalid design premises to Fable" Claude 'delegated implementer.*invalid design premise.*stop dependent writes.*return evidence to Fable.*decision.*authorization' "$host_adapters_ref"
-section_has "Claude reuses the original implementer for same-scope follow-up" Claude 'host 有 `SendMessage` 時 MUST 優先.*續用原 implementer.*只有原代理不可用.*host 無 `SendMessage`.*新的獨立任務.*建立新代理' "$host_adapters_ref"
+section_has "Claude reuses the original implementer for same-scope follow-up" Claude 'host 有 `SendMessage` 時 MUST 優先.*續用原 implementer.*只有.*原代理不可用.*host 無 `SendMessage`.*新的獨立任務這三種情形之一.*建立新代理' "$host_adapters_ref"
 section_has "Claude requires a re-sent packet to carry the previous round" Claude '為同一 scope 建立新代理時.*delegation\.md.*MUST 標註前一輪的 changed files 與失敗項.*MUST NOT 逐字重貼' "$host_adapters_ref"
 section_has "Claude defaults new subagents to no inherited parent context" Claude 'MUST 預設不繼承父對話（不用 `subagent_type: "fork"`）' "$host_adapters_ref"
 section_has "Claude forbids fork as a substitute for implementer delegation" Claude 'MUST NOT 用 fork 取代委派給 configured `implementer`' "$host_adapters_ref"
