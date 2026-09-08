@@ -42,8 +42,8 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 - 實作分工通報：Fable MUST 在開始該任務的已授權實作前，用一句簡短進度訊息告知實作者（Fable 直接實作或 opus implementer）、負責範圍與選擇原因；實作者或委派範圍變更時 MUST 更新通報。通報不新增使用者確認 gate；僅啟動 read-only reviewer 不視為更換實作者。
 - routine implementation／test failures 由 current implementation owner diagnose、fix、retest within owned scope；delegated implementer 遇到 invalid design premise 時，stop dependent writes，return evidence to Fable for decision 與 needed authorization。
 - Fable may run checks and inspect evidence；implementer report is not completion evidence，Fable MUST reverify source state 與結果。implementer unavailable 時，Fable MAY 接手，但只限既有授權、runtime permission 與 tool capability；MUST NOT bypass denied tools、sandbox、[T0-8] 或 independent read-only S5 review 要求。
-- 建立新子代理時 MUST 預設不繼承父對話（不用 `subagent_type: "fork"`）；`subagent_type` 二選一，fork 會丟掉 configured `implementer` 的 model 與 effort 綁定，因此交給該 implementer 時 MUST NOT 用 fork，必要背景一律依 [delegation contract](delegation.md) 摘要進 packet。
-- 同一 scope 的修正與重測，host 有 `SendMessage` 時 MUST 優先依回傳的 agent id 續用原 implementer；只有原代理不可用或工作是新的獨立任務時才建立新代理。host 無 `SendMessage`（開工前以工具清單為準）時改為重發 packet：內容與背景摘要依 [delegation contract](delegation.md)，且 MUST 標註前一輪的 changed files 與失敗項；已交付且未變更的部分 MUST NOT 逐字重貼。
+- 建立新子代理時 MUST 預設不繼承父對話（不用 `subagent_type: "fork"`）；fork 會帶入完整父對話並強制沿用 main 的 model（`model` override 被忽略），因此 MUST NOT 用 fork 取代委派給 configured `implementer`，只有完整父對話不可省略時才用 fork。
+- 同一 scope 的修正與重測，host 有 `SendMessage` 時 MUST 優先依回傳的 agent id 續用原 implementer；只有原代理不可用、host 無 `SendMessage`（開工前以工具清單為準），或工作是新的獨立任務時才建立新代理。為同一 scope 建立新代理時 packet 內容與背景摘要依 [delegation contract](delegation.md)，且 MUST 標註前一輪的 changed files 與失敗項；已交付且未變更的部分 MUST NOT 逐字重貼。
 - 同一 ready frontier 上彼此獨立的 1–4 個 blocker MUST 合併在同一次 `AskUserQuestion`；dependent 題等前一批回答。Skip／dismiss MUST NOT 視為答案、核准或採用預設值。
 - user-only skill command = `/<skill-name>`。
 - 用專屬 review agent 不豁免 `references/reviewer-template.md`：豁免的是 prompt 區塊本身與「怎麼用」中以該區塊為前提的步驟，其餘各節對 Claude 一樣有約束力，MUST 在維護 `code-review` 的 baseline 或判 S5 EXIT 時讀。不在此列舉是哪幾節——列舉會漏，新增的節就掉在外面。這條與 `simplify` 綁定都不因專屬 agent 而豁免。
