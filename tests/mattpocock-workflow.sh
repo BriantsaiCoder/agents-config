@@ -464,7 +464,7 @@ has "delegation has no user-authored fixed limits" '不得設定 user-authored �
 has "runtime capacity remains a technical bound" 'host/runtime 可用容量仍是技術上限' "$delegation_ref"
 has "S5 review agents stay read-only while AI chooses usage" 'S5 Standards／Spec outcomes.*如使用 review agents，MUST 為 read-only，數量與批次由 AI 決定' "$delegation_ref"
 has "downstream fixed choreography is advisory" '下游 skill 的固定 spawn 時機／數量一律由本條覆寫為 advisory choreography.*coverage、outcome 與 independence requirements 保留' "$delegation_ref"
-has "delegation messages carry the complete task contract" '委派訊息 MUST 交代目標與用途.*working directory／可修改範圍.*已決事項與限制.*必要文件.*驗收方式.*必要背景 MUST 先摘要進訊息' "$delegation_ref"
+has "delegation messages carry the complete task contract" '委派訊息 MUST 交代目標與用途.*working directory／可修改範圍.*已決事項與限制.*必要文件.*驗收方式.*必要背景 MUST 先摘要進訊息，不靠子代理自行推斷（子代理預設不繼承父對話）' "$delegation_ref"
 rule_has "delegation cannot bypass authorization gates" INT-4 'MUST NOT 用 delegation 迴避 S2 授權或 \[T0-8\] plan gate'
 rule_has "stable valuable seam requires RED" INT-2 'stable.*valuable.*seam.*failing regression test.*RED'
 rule_has "unstable seam keeps same repro before after" INT-2 '否則.*同一.*repro.*before／after.*理由'
@@ -540,7 +540,7 @@ section_has "Codex permits bounded context isolation" Codex 'bounded scope.*larg
 section_has "Codex does not delegate solely for a model difference" Codex "$model_difference_not_trigger" "$host_adapters_ref"
 section_has "Codex retains Sol xhigh as an optional implementation role" Codex '需要 delegation 時.*configured `implementer`.*gpt-5\.6-sol.*xhigh' "$host_adapters_ref"
 section_has "Codex forbids implementer recursion" Codex "$same_work_recursion_forbidden" "$host_adapters_ref"
-section_has "Codex announces the implementation split before starting" Codex '實作分工通報.*Astra MUST 在開始.*已授權實作前.*告知實作者.*負責範圍與選擇原因' "$host_adapters_ref"
+section_has "Codex announces the implementation split before starting" Codex '實作分工通報.*Astra MUST 在開始.*已授權實作前.*告知實作者.*Sol implementer.*負責範圍與選擇原因' "$host_adapters_ref"
 section_has "Codex re-announces when the implementation owner changes" Codex "$split_reannounce_on_owner_change" "$host_adapters_ref"
 section_has "Codex constrains unavailable-implementer takeover" Codex 'implementer unavailable.*Astra MAY 接手.*既有授權.*runtime permission.*tool capability.*MUST NOT bypass denied tools.*sandbox.*\[T0-8\].*independent read-only S5 review' "$host_adapters_ref"
 section_has "Codex requires Astra to reverify implementer evidence" Codex 'implementer report is not completion evidence.*Astra MUST reverify' "$host_adapters_ref"
@@ -570,7 +570,7 @@ section_has "Claude requires a re-sent packet to carry the previous round" Claud
 section_has "Claude defaults new subagents to no inherited parent context" Claude 'MUST 預設不繼承父對話（不用 `subagent_type: "fork"`）' "$host_adapters_ref"
 section_has "Claude forbids fork as a substitute for implementer delegation" Claude 'MUST NOT 用 fork 取代委派給 configured `implementer`' "$host_adapters_ref"
 section_has "Claude confines fork to indispensable full parent context" Claude '只有完整父對話不可省略時才用 fork' "$host_adapters_ref"
-section_has "Claude announces the implementation split before starting" Claude '實作分工通報.*MUST 在開始.*已授權實作前.*告知實作者.*負責範圍與選擇原因' "$host_adapters_ref"
+section_has "Claude announces the implementation split before starting" Claude '實作分工通報.*MUST 在開始.*已授權實作前.*告知實作者.*configured `implementer`.*負責範圍與選擇原因' "$host_adapters_ref"
 section_has "Claude re-announces when the implementation owner changes" Claude "$split_reannounce_on_owner_change" "$host_adapters_ref"
 section_has "Claude maps simplification edits to the active implementation owner" Claude '^\- S5 simplification mechanism = Fable decides disposition; active implementation owner applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
 section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot '^\- S5 simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
