@@ -175,9 +175,14 @@ selftest() {
   scan_miss_f 'Astra→Sol serial implementation routing' "$scratch/routing-clean.md" \
     && ok 'forced serial absence：clean positive control 通過' \
     || ng 'forced serial absence：clean positive control 被拒'
-  scan_miss_f 'Astra→Sol serial implementation routing' "$scratch/routing-bad.md" \
-    && ng 'forced serial absence：known-bad marker 未被拒' \
-    || ok 'forced serial absence：known-bad negative control 被拒'
+  if scan_hit_f 'Astra→Sol serial implementation routing' "$scratch/routing-bad.md"; then
+    ok 'forced serial absence：known-bad marker 已可信驗證'
+    scan_miss_f 'Astra→Sol serial implementation routing' "$scratch/routing-bad.md" \
+      && ng 'forced serial absence：known-bad marker 未被拒' \
+      || ok 'forced serial absence：known-bad negative control 被拒'
+  else
+    ng 'forced serial absence：known-bad marker 缺失或掃描不可信'
+  fi
   for _scan_shim_rc in 2 0; do
     assert_fails_closed forced_serial_absence rg "$_scan_shim_rc" scan_verdict scan_miss_f \
       'Astra→Sol serial implementation routing' "$scratch/routing-clean.md"
