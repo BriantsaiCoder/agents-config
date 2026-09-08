@@ -8,7 +8,8 @@
 # 2026-07-07 blueprint 描述的 dist/codex-AGENTS.md 生成流程從未實作。指紋成了假保證。
 #
 # 2026-08-04 的第二次 RED 顯示，單靠寬鬆 token 表會同時漏掉語意漂移與製造誤報：
-#   [T0-1]/[T0-5]/[T0-7] Claude/Copilot 保留舊 blanket gate，Codex 已採 risk-based contract（[T0-5] 於 2026-09-08 三家對齊）；
+#   [T0-1]/[T0-5]/[T0-7] Claude/Copilot 保留舊 blanket gate，Codex 已採 risk-based contract
+#   （[T0-1]、[T0-5] 於 2026-09-08 三家對齊，[T0-7] 現三家逐字相同；Codex [T0-1] 的獨有子句見 REQUIRED 表上方註記）；
 #   [T0-9] 三家未承接 shared review-triage 的 bot UNAVAILABLE fallback；
 #   [T0-1] checker 把「file path」按空白拆成兩個 token，Codex 的合法「path」因此被誤報。
 #
@@ -34,6 +35,9 @@ na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 # clause 以 grep -i -F 在規則行內比對；空白是 clause 的一部分，不得拆成鬆散 token。
 # T0-5 的 material／實質 trigger 三家無共同子串（Claude／Copilot 用 Material、Codex 用 實質），
 # grep -F 表達不了 OR，只靠 outcome／scope／risk 間接守住；別以為這個方向仍有 guard（2026-09-08）。
+# T0-1 的 Codex 行另有獨有子句「同 session 目標／狀態未變可重用，實際修改／執行 target 或可能外部變更時仍須 live probe」
+# （Claude／Copilot 無；要 mirror 就整句搬，排除條件是子句的一部分），本表沒有 clause 守它；mirror 或 accepted
+# divergence 待決（2026-09-08）。
 REQUIRED=$(cat <<'TABLE'
 T0-1|Action／current-state claim|path／API／config key|live evidence|實際修改／執行 target|live probe|non-action citation／hypothetical
 T0-2|evidence|done
