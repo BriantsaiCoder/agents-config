@@ -52,16 +52,16 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 ## Codex
 
 - plan = Plan Mode（僅 host／user 可切換）；todo = update_plan；子代理 = spawn_agent／wait_agent。工具未提供時以文字列 session plan／進度；不得模擬工具呼叫或略過 protected gate 核准。
-- Codex main role = `gpt-6-astra` with reasoning `high`, including Plan Mode。Astra owns investigation／root causes／architecture／design／decisions、final evidence verification、independent read-only S5 review coordination 與 final user response。
-- Astra→Sol serial implementation routing：取得 implementation 授權後，MUST automatically delegate implementation、integration、testing、fixes 與 authorized closeout mutations to configured `implementer`（`gpt-5.6-sol`，`xhigh`）。相依 scope 依序執行；implementer 自行完成 assigned scope 並回傳結果，same-work recursion is forbidden。
-- routine implementation／test failures 由 implementer diagnose、fix、retest within assigned scope；遇到 invalid design premise，stop dependent writes，return evidence to Astra for decision 與 needed authorization。
-- Astra may run checks and inspect evidence；Sol report is not completion evidence，Astra MUST reverify source state 與結果。Explicitly unavailable implementer is an UNAVAILABLE blocker；generic no-tools fallback does not authorize Astra implementation or model substitution。
+- Codex main role = `gpt-6-astra` with reasoning `high`, including Plan Mode。Astra owns investigation／root causes／architecture／design／decisions、final evidence verification、independent read-only S5 review coordination、final user response 與 overall result；Astra MAY implement 已授權 scope end-to-end。
+- Codex conditional implementation routing：Astra MUST 自主判定 direct work 或 implementer delegation，不需為 model routing 另問使用者。small 或 tightly dependent task，Astra SHOULD 直接完成，除非下列 delegation benefit 成立；工作可獨立平行且 delegation 預期能實質改善品質或 wall-clock time 時 SHOULD delegate；bounded scope 的 large/noisy context 明確受益於 isolation 時 MAY delegate。Model difference 本身 MUST NOT 觸發 delegation；需要 delegation 時可交給 configured `implementer`（`gpt-5.6-sol`，`xhigh`）。相依 scope 依序執行，same-work recursion is forbidden。
+- routine implementation／test failures 由 current implementation owner diagnose、fix、retest within owned scope；delegated implementer 遇到 invalid design premise 時，stop dependent writes，return evidence to Astra for decision 與 needed authorization。
+- Astra may run checks and inspect evidence；implementer report is not completion evidence，Astra MUST reverify source state 與結果。implementer unavailable 時，Astra MAY 接手，但只限既有授權、runtime permission 與 tool capability；MUST NOT bypass denied tools、sandbox、[T0-8] 或 independent read-only S5 review 要求。
 - 建立新子代理時，MUST 預設使用 `fork_turns="none"`；委派訊息內容與背景摘要依 [delegation contract](delegation.md)；摘要不足時才繼承必要的近期 turns，只有完整父對話不可省略時才使用 `fork_turns="all"`。
 - 同一任務的修正與重測 MUST 優先用 follow-up 續用原代理；只有原代理不可用或工作是新的獨立任務時才建立新代理。
 - user-only skill command = `$<skill-name>`。
 - Codex native Local/Worktree Handoff 只移動同一 chat 與 code，MUST NOT 觸發 Matt `$handoff`；跨 session／agent 文件仍走 `$handoff`。
 - `implement` 先用 `~/.agents/bin/agents-branch` 或 repo worktree 建 isolated branch；S6 用 PR heartbeat。
-- S5 simplification mechanism = Astra decides disposition; `implementer` applies authorized edits, then S4/S5 reverify。
+- S5 simplification mechanism = Astra decides disposition; active implementation owner applies authorized edits, then S4/S5 reverify。
 - Git guard 由 `~/.codex/hooks.json` 與 `~/.codex/rules/default.rules` 疊加，不能取代 tier0／CI。
 
 ## Copilot

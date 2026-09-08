@@ -32,6 +32,12 @@ ok()   { printf '  PASS  %s\n' "$1"; pass=$((pass + 1)); }
 ng()   { printf '  FAIL  %s\n' "$1" >&2; fail=$((fail + 1)); }
 na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 
+# shellcheck source=tests/lib/scan.sh
+. "$AGENTS/tests/lib/scan.sh" ||
+  { printf 'FAIL: scan helper missing: %s\n' "$AGENTS/tests/lib/scan.sh" >&2; exit 1; }
+command -v scan_miss_f >/dev/null 2>&1 ||
+  { printf 'FAIL: scan_miss_f unavailable after loading tests/lib/scan.sh\n' >&2; exit 1; }
+
 # 固定數量／時機限制不得回流。host/runtime 的非數值容量敘述是技術事實，不屬於此類。
 COUNT_RE='([0-9一二兩三四五六七八九十]+|[Oo]ne|[Tt]wo|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix|[Ss]even|[Ee]ight|[Nn]ine|[Tt]en)'
 FIXED_LIMIT_RE="((併發(數)?|累計 delegation|單一 S 階段|同一 S 階段|parallel[[:space:]]+agents?|sub-?agents?([[:space:]]+(數量|count))?)[^。]{0,50}(≤|≥|<=|>=|<|>|最多|上限(為)?)[[:space:]]*${COUNT_RE}|(最多(使用)?|不得超過|上限(為)?)[^。]{0,20}${COUNT_RE}[[:space:]]*(個)?[[:space:]]*(sub-?agents?|agents?|tasks?)|(sub-?agents?|agents?|tasks?)(數量)?[^。]{0,20}(上限(為)?|最多|≤|≥|<=|>=|<|>)[[:space:]]*${COUNT_RE}|恰好[[:space:]]*${COUNT_RE}[[:space:]]*個[^。]{0,30}(agent|subagent)|每批[[:space:]]*${COUNT_RE}[[:space:]]*個|直接開[[:space:]]*${COUNT_RE}[[:space:]]*個|at[[:space:]]+most[[:space:]]+${COUNT_RE}[[:space:]]+(sub-?agents?|agents?|tasks?)|(S[0-9]+|每次|任何實質任務|所有實質任務)[^。]{0,60}(一律|必須|MUST|直接)[^。]{0,40}(spawn|啟動|委派|開啟|使用[^。]{0,12}(subagent|agent|task)))"
@@ -164,6 +170,19 @@ selftest() {
   printf 'Delegation 依 [INT-4]。\n' > "$scratch/thin.md"
   has_autonomy "$scratch/thin.md" && ng '正向語彙：只提 [INT-4] 就算過（太寬）' || ok '正向語彙：只提 [INT-4] 不足'
 
+  printf 'Codex conditional implementation routing\n' > "$scratch/routing-clean.md"
+  printf 'Astra→Sol serial implementation routing\n' > "$scratch/routing-bad.md"
+  scan_miss_f 'Astra→Sol serial implementation routing' "$scratch/routing-clean.md" \
+    && ok 'forced serial absence：clean positive control 通過' \
+    || ng 'forced serial absence：clean positive control 被拒'
+  scan_miss_f 'Astra→Sol serial implementation routing' "$scratch/routing-bad.md" \
+    && ng 'forced serial absence：known-bad marker 未被拒' \
+    || ok 'forced serial absence：known-bad negative control 被拒'
+  for _scan_shim_rc in 2 0; do
+    assert_fails_closed forced_serial_absence rg "$_scan_shim_rc" scan_verdict scan_miss_f \
+      'Astra→Sol serial implementation routing' "$scratch/routing-clean.md"
+  done
+
   rm -rf "$scratch"
 }
 
@@ -260,23 +279,31 @@ for cond in '無條件約束' '可獨立平行' '寫入 ownership MUST 不重疊
     || ng "[INT-4] 缺核心片段：$cond"
 done
 for exception_clause in \
-  '唯一 eligibility 例外' \
-  '此例外不適用 Copilot' \
+  'Eligibility 例外只有' \
+  'Codex context-isolation 例外不適用其他 host' \
   'same-work recursion is forbidden'; do
   grep -Fq "$exception_clause" "$DELEGATION_REF" \
-    && ok "[INT-4] serial exception 含：$exception_clause" \
-    || ng "[INT-4] serial exception 缺：$exception_clause"
+    && ok "[INT-4] eligibility exception 含：$exception_clause" \
+    || ng "[INT-4] eligibility exception 缺：$exception_clause"
 done
-# 每個 host 的 routing 片語只寫一次：delegation.md 要列出它，host-adapters.md 要定義它。
-for pair in 'Codex Astra→Sol' 'Claude Fable→Opus'; do
-  routing_clause="${pair#* } serial implementation routing"
+# 每個例外 routing 片語只寫一次：delegation.md 要列出它，host-adapters.md 要定義它。
+for routing_clause in 'Codex conditional implementation routing' 'Fable→Opus serial implementation routing'; do
   grep -Fq "$routing_clause" "$DELEGATION_REF" \
-    && ok "[INT-4] serial exception 含：$routing_clause" \
-    || ng "[INT-4] serial exception 缺：$routing_clause"
+    && ok "[INT-4] eligibility exception 含：$routing_clause" \
+    || ng "[INT-4] eligibility exception 缺：$routing_clause"
   grep -Fq "$routing_clause" "$HOST_ADAPTERS_REF" \
-    && ok "[INT-4] ${pair%% *} serial exception 指向 host adapter choreography" \
-    || ng "[INT-4] ${pair%% *} serial exception 缺 host adapter choreography"
+    && ok "[INT-4] host adapter 定義：$routing_clause" \
+    || ng "[INT-4] host adapter 缺少：$routing_clause"
 done
+if scan_miss_f 'Astra→Sol serial implementation routing' "$DELEGATION_REF" &&
+   scan_miss_f 'Astra→Sol serial implementation routing' "$HOST_ADAPTERS_REF"; then
+  ok '[INT-4] Codex 已移除 forced serial routing'
+else
+  ng '[INT-4] Codex 仍強制 Astra→Sol serial routing，或掃描不可信'
+fi
+grep -Fq 'bounded scope 的 large/noisy context 明確受益於 isolation' "$DELEGATION_REF" \
+  && ok '[INT-4] Codex context isolation 限定為 bounded clear-benefit scope' \
+  || ng '[INT-4] Codex context isolation 缺 bounded clear-benefit 限定'
 grep -Fq '無條件約束不在可授權範圍內' "$policy_file" \
   && ok '[INT-4] 明示無條件約束不可被授權繞過' \
   || ng '[INT-4] 未擋住「取得授權就能寫入重疊／序列相依」的路徑'
