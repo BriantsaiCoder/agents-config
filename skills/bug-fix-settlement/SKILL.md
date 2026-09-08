@@ -11,7 +11,7 @@ description: 修復 bug、測試或 build 失敗、非預期行為、效能退�
 
 逐一檢查：compiler／lint 能抓嗎、`grep`／`deps-check` 能找到嗎、regression test 能守住嗎？答「是」就選該 mechanical guard，不複製成易腐化文件。只有工具看不出的 runtime 時序、外部 API 陷阱、隱性資料／業務契約或 architecture why 才考慮沉澱。
 
-評估 Cookbook、Memory、Workflow 各自是否需要保存及理由；不寫 Cookbook 時確認替代 guard（type、lint、test 或 deps-check）。依 Step 3 決定回覆詳略；需要分類例或輸出格式時讀 [settlement guide](references/settlement-guide.md)。
+評估 Cookbook、Memory、Workflow 各自是否需要保存及理由；不寫 Cookbook 時確認替代 guard（type、lint、test 或 deps-check）。依 Step 3 決定回覆詳略；有知識保存建議，或需要分類例／輸出格式時，必讀 [settlement guide](references/settlement-guide.md)。
 
 **完成條件：**三個目標皆有 verdict、理由與可執行的替代 guard（若適用）。這個評估是強制步驟；`建議` 不等於寫入授權。
 
