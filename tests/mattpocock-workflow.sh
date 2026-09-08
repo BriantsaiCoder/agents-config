@@ -141,10 +141,10 @@ evidence_integrity_ref=skills/dev-workflow/references/evidence-integrity.md
 host_ownership_test=tests/three-host-global-config-ownership.sh
 delivery_int6_pattern='預計納入 VCS.*新增／修改.*首次寫入前.*MUST.*branch／worktree.*非 main／master'
 delivery_s2_pattern='寫入前.*MUST.*記.*Delivery Scope: Local-only／PR-closeout.*後者須核准.*否則.*Local-only'
+delivery_s6_pattern='PR-closeout.*MUST.*commit.*push.*Ready PR.*current-head CI／bot gate PASS.*ledgers.*merge strategy.*branch cleanup.*才 final.*Local-only.*禁 external write'
 model_difference_not_trigger='Model difference 本身 MUST NOT 觸發 delegation'
 same_work_recursion_forbidden='same-work recursion is forbidden'
 routine_failures_with_owner='routine implementation／test failures.*current implementation owner.*diagnose.*fix.*retest.*owned scope'
-delivery_s6_pattern='PR-closeout.*MUST.*commit.*push.*Ready PR.*current-head CI／bot gate PASS.*ledgers.*merge strategy.*branch cleanup.*才 final.*Local-only.*禁 external write'
 
 # 這支維持 grep -E（POSIX ERE）而非 rg_hits：它本來就有正確的 rc 三態（見下方 case），
 # 換掉只會多一次方言轉換而不增加保護。全檔僅此一處與 rg 的 Rust regex 不同 dialect，

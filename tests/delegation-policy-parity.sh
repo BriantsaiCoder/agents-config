@@ -170,6 +170,7 @@ selftest() {
   printf 'Delegation 依 [INT-4]。\n' > "$scratch/thin.md"
   has_autonomy "$scratch/thin.md" && ng '正向語彙：只提 [INT-4] 就算過（太寬）' || ok '正向語彙：只提 [INT-4] 不足'
 
+  local _retired _host _rest _clean_marker _bad_marker _fx _prefix
   for _retired in \
     'Codex|Codex conditional implementation routing|Astra→Sol serial implementation routing|routing|forced_serial_absence' \
     'Claude|Claude conditional implementation routing|Fable→Opus serial implementation routing|routing-claude|claude_forced_serial_absence'; do
