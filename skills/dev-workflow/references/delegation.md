@@ -16,7 +16,7 @@ Delegation 的**約束**不變，改變的只有**誰決定**。Host adapter 明
 
 ## Eligibility 與約束
 
-Eligibility 例外只有 [host adapter](host-adapters.md) 明定的 Codex [Codex conditional implementation routing](host-adapters.md#codex)，允許 bounded scope 的 large/noisy context 明確受益於 isolation 時委派，以及 Claude [Fable→Opus serial implementation routing](host-adapters.md#claude)；已授權的 Claude serial work 依 adapter 自動交由 implementer 執行。Codex context-isolation 例外不適用其他 host，Claude serial 例外不適用 Codex／Copilot；兩者都不放寬 sequencing、non-overlap ownership、authorization、parent evidence verification 或 read-only S5 review，same-work recursion is forbidden。
+Eligibility 例外只有 [host adapter](host-adapters.md) 明定的 Codex [Codex conditional implementation routing](host-adapters.md#codex)，允許 bounded scope 的 large/noisy context 明確受益於 isolation 時委派，以及 Claude [Claude conditional implementation routing](host-adapters.md#claude)，允許已完整規範且驗收可機械判定的 packet 交由 implementer 執行。Codex context-isolation 例外不適用其他 host，Claude packet 例外不適用 Codex／Copilot；兩者都不放寬 sequencing、non-overlap ownership、authorization、parent evidence verification 或 read-only S5 review，same-work recursion is forbidden。
 
 無條件約束（不因任何授權而放寬）：序列相依工作 MUST 序列化或合併；併發 subagent 的寫入 ownership MUST 不重疊；main context MUST 重驗其回報，subagent 回報不是完成證據。無條件約束不在可授權範圍內，即使取得授權也 MUST NOT 執行衝突工作。
 

@@ -188,6 +188,24 @@ selftest() {
       'Astra→Sol serial implementation routing' "$scratch/routing-clean.md"
   done
 
+  printf 'Claude conditional implementation routing\n' > "$scratch/routing-claude-clean.md"
+  printf 'Fable→Opus serial implementation routing\n' > "$scratch/routing-claude-bad.md"
+  scan_miss_f 'Fable→Opus serial implementation routing' "$scratch/routing-claude-clean.md" \
+    && ok 'Claude forced serial absence：clean positive control 通過' \
+    || ng 'Claude forced serial absence：clean positive control 被拒'
+  if scan_hit_f 'Fable→Opus serial implementation routing' "$scratch/routing-claude-bad.md"; then
+    ok 'Claude forced serial absence：known-bad marker 已可信驗證'
+    scan_miss_f 'Fable→Opus serial implementation routing' "$scratch/routing-claude-bad.md" \
+      && ng 'Claude forced serial absence：known-bad marker 未被拒' \
+      || ok 'Claude forced serial absence：known-bad negative control 被拒'
+  else
+    ng 'Claude forced serial absence：known-bad marker 缺失或掃描不可信'
+  fi
+  for _scan_shim_rc in 2 0; do
+    assert_fails_closed claude_forced_serial_absence rg "$_scan_shim_rc" scan_verdict scan_miss_f \
+      'Fable→Opus serial implementation routing' "$scratch/routing-claude-clean.md"
+  done
+
   rm -rf "$scratch"
 }
 
@@ -292,7 +310,7 @@ for exception_clause in \
     || ng "[INT-4] eligibility exception 缺：$exception_clause"
 done
 # 每個例外 routing 片語只寫一次：delegation.md 要列出它，host-adapters.md 要定義它。
-for routing_clause in 'Codex conditional implementation routing' 'Fable→Opus serial implementation routing'; do
+for routing_clause in 'Codex conditional implementation routing' 'Claude conditional implementation routing'; do
   grep -Fq "$routing_clause" "$DELEGATION_REF" \
     && ok "[INT-4] eligibility exception 含：$routing_clause" \
     || ng "[INT-4] eligibility exception 缺：$routing_clause"
@@ -306,9 +324,18 @@ if scan_miss_f 'Astra→Sol serial implementation routing' "$DELEGATION_REF" &&
 else
   ng '[INT-4] Codex 仍強制 Astra→Sol serial routing，或掃描不可信'
 fi
+if scan_miss_f 'Fable→Opus serial implementation routing' "$DELEGATION_REF" &&
+   scan_miss_f 'Fable→Opus serial implementation routing' "$HOST_ADAPTERS_REF"; then
+  ok '[INT-4] Claude 已移除 forced serial routing'
+else
+  ng '[INT-4] Claude 仍強制 Fable→Opus serial routing，或掃描不可信'
+fi
 grep -Fq 'bounded scope 的 large/noisy context 明確受益於 isolation' "$DELEGATION_REF" \
   && ok '[INT-4] Codex context isolation 限定為 bounded clear-benefit scope' \
   || ng '[INT-4] Codex context isolation 缺 bounded clear-benefit 限定'
+grep -Fq '已完整規範且驗收可機械判定的 packet' "$DELEGATION_REF" \
+  && ok '[INT-4] Claude packet routing 限定為完整規範且可機械驗收' \
+  || ng '[INT-4] Claude packet routing 缺完整規範／可機械驗收限定'
 grep -Fq '無條件約束不在可授權範圍內' "$policy_file" \
   && ok '[INT-4] 明示無條件約束不可被授權繞過' \
   || ng '[INT-4] 未擋住「取得授權就能寫入重疊／序列相依」的路徑'
