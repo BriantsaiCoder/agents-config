@@ -333,7 +333,7 @@ fi
 grep -Fq 'bounded scope 的 large/noisy context 明確受益於 isolation' "$DELEGATION_REF" \
   && ok '[INT-4] Codex context isolation 限定為 bounded clear-benefit scope' \
   || ng '[INT-4] Codex context isolation 缺 bounded clear-benefit 限定'
-grep -Fq '已完整規範且驗收可機械判定的 packet' "$DELEGATION_REF" \
+grep -Fq '已完整規範、驗收可機械判定且預期不需回頭問設計的 packet' "$DELEGATION_REF" \
   && ok '[INT-4] Claude packet routing 限定為完整規範且可機械驗收' \
   || ng '[INT-4] Claude packet routing 缺完整規範／可機械驗收限定'
 grep -Fq '無條件約束不在可授權範圍內' "$policy_file" \
