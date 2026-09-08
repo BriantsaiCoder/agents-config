@@ -39,7 +39,7 @@ T0-1|Action／current-state claim|path／API／config key|live evidence|實際�
 T0-2|evidence|done
 T0-3|force-push|force-with-lease
 T0-4|secret|set
-T0-5|先查證|outcome／scope／risk|發問|假設／影響|僅停相依步驟|低風險|default|明示
+T0-5|先查證|outcome／scope／risk|發問|假設／影響|僅停相依步驟|低風險可逆|default|明示
 T0-6|auth|payment|migration|大量刪除|crypto|multi-tenant|rate-limit|pipeline|rollback
 T0-7|Online DB migration|compatibility／destructive risk|expand→dual-write→backfill→switch-reads→remove-legacy|destructive schema|additive／new-object|SKIPPED|consumer boundary
 T0-8|plan-first|架構性|High-risk|external write|destructive／costly／credential／payment／deployment／migration|material scope expansion|風險未變即沿用|in-scope|local|reversible|Low／Medium-risk|session plan|第二次確認
