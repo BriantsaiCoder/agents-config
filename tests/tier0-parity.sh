@@ -121,7 +121,7 @@ FIX
     "$scratch/good.md" > "$scratch/blanket-t01.md"
   sed 's/例外：non-action citation／hypothetical。/例外：無。/' \
     "$scratch/good.md" > "$scratch/no-t01-exception.md"
-  sed 's/；同 session 目標／狀態未變可重用，實際修改／執行 target 或可能外部變更時仍須 live probe。/；實際修改／執行 target 仍須 live probe。/' \
+  sed 's/；同 session 目標／狀態未變可重用，/；/' \
     "$scratch/good.md" > "$scratch/no-t01-reuse.md"
   sed 's/ 或可能外部變更時仍須/ 仍須/' \
     "$scratch/good.md" > "$scratch/no-t01-external-change.md"
