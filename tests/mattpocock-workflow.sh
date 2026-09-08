@@ -141,6 +141,9 @@ evidence_integrity_ref=skills/dev-workflow/references/evidence-integrity.md
 host_ownership_test=tests/three-host-global-config-ownership.sh
 delivery_int6_pattern='預計納入 VCS.*新增／修改.*首次寫入前.*MUST.*branch／worktree.*非 main／master'
 delivery_s2_pattern='寫入前.*MUST.*記.*Delivery Scope: Local-only／PR-closeout.*後者須核准.*否則.*Local-only'
+model_difference_not_trigger='Model difference 本身 MUST NOT 觸發 delegation'
+same_work_recursion_forbidden='same-work recursion is forbidden'
+routine_failures_with_owner='routine implementation／test failures.*current implementation owner.*diagnose.*fix.*retest.*owned scope'
 delivery_s6_pattern='PR-closeout.*MUST.*commit.*push.*Ready PR.*current-head CI／bot gate PASS.*ledgers.*merge strategy.*branch cleanup.*才 final.*Local-only.*禁 external write'
 
 # 這支維持 grep -E（POSIX ERE）而非 rg_hits：它本來就有正確的 rc 三態（見下方 case），
@@ -451,7 +454,7 @@ has "delegation scopes packet routing to Claude" 'Claude conditional implementat
 has "delegation keeps Codex context isolation out of other hosts" 'Codex context-isolation 例外不適用其他 host' "$delegation_ref"
 lacks "delegation removes retired Codex forced serial routing" 'Astra→Sol serial implementation routing' "$delegation_ref" "$host_adapters_ref"
 lacks "delegation removes retired Claude forced serial routing" 'Fable→Opus serial implementation routing' "$delegation_ref" "$host_adapters_ref"
-has "delegation forbids same-work recursion" 'same-work recursion is forbidden' "$delegation_ref"
+has "delegation forbids same-work recursion" "$same_work_recursion_forbidden" "$delegation_ref"
 has "delegation keeps its unconditional constraints" '無條件約束（不因任何授權而放寬）.*序列相依.*寫入 ownership MUST 不重疊.*MUST 重驗其回報' "$delegation_ref"
 has "unconditional constraints are not purchasable with authorization" '無條件約束不在可授權範圍內.*即使取得授權也 MUST NOT 執行' "$delegation_ref"
 has "AI decides delegation timing and count" '是否委派、何時委派、subagent 數量與是否平行 MUST 由 AI 自主判定' "$delegation_ref"
@@ -532,12 +535,12 @@ section_has "Codex autonomously selects direct work or implementer delegation" C
 section_has "Codex defaults small or tightly dependent work to Astra unless delegation helps" Codex 'small 或 tightly dependent task.*Astra SHOULD 直接完成.*除非下列 delegation benefit 成立' "$host_adapters_ref"
 section_has "Codex delegates materially beneficial parallel work" Codex '工作可獨立平行.*實質改善品質或 wall-clock time.*SHOULD delegate' "$host_adapters_ref"
 section_has "Codex permits bounded context isolation" Codex 'bounded scope.*large/noisy context.*isolation.*MAY delegate' "$host_adapters_ref"
-section_has "Codex does not delegate solely for a model difference" Codex 'Model difference 本身 MUST NOT 觸發 delegation' "$host_adapters_ref"
+section_has "Codex does not delegate solely for a model difference" Codex "$model_difference_not_trigger" "$host_adapters_ref"
 section_has "Codex retains Sol xhigh as an optional implementation role" Codex '需要 delegation 時.*configured `implementer`.*gpt-5\.6-sol.*xhigh' "$host_adapters_ref"
-section_has "Codex forbids implementer recursion" Codex 'same-work recursion is forbidden' "$host_adapters_ref"
+section_has "Codex forbids implementer recursion" Codex "$same_work_recursion_forbidden" "$host_adapters_ref"
 section_has "Codex constrains unavailable-implementer takeover" Codex 'implementer unavailable.*Astra MAY 接手.*既有授權.*runtime permission.*tool capability.*MUST NOT bypass denied tools.*sandbox.*\[T0-8\].*independent read-only S5 review' "$host_adapters_ref"
 section_has "Codex requires Astra to reverify implementer evidence" Codex 'implementer report is not completion evidence.*Astra MUST reverify' "$host_adapters_ref"
-section_has "Codex keeps routine failures with the implementation owner" Codex 'routine implementation／test failures.*current implementation owner.*diagnose.*fix.*retest.*owned scope' "$host_adapters_ref"
+section_has "Codex keeps routine failures with the implementation owner" Codex "$routine_failures_with_owner" "$host_adapters_ref"
 section_has "Codex returns delegated invalid design premises to Astra" Codex 'delegated implementer.*invalid design premise.*stop dependent writes.*return evidence to Astra.*decision.*authorization' "$host_adapters_ref"
 section_has "Codex defaults new subagents to no inherited turns" Codex '建立新子代理時.*MUST 預設.*`fork_turns="none"`' "$host_adapters_ref"
 section_has "Codex delegation messages defer to the shared contract" Codex '委派訊息內容與背景摘要依.*delegation\.md' "$host_adapters_ref"
@@ -551,13 +554,13 @@ section_has "Claude permits Fable to implement authorized scope end to end" Clau
 section_has "Claude autonomously selects direct work or implementer delegation" Claude 'Fable MUST 自主判定 direct work 或 implementer delegation.*不需為 model routing 另問使用者' "$host_adapters_ref"
 section_has "Claude defaults small or tightly dependent work to Fable unless delegation helps" Claude 'small 或 tightly dependent task.*Fable SHOULD 直接完成.*除非下列 delegation benefit 成立' "$host_adapters_ref"
 section_has "Claude may delegate fully specified mechanically verifiable packets" Claude 'packet 已完整規範.*委派訊息已滿足 delegation\.md 的訊息契約.*驗收可機械判定.*不需回頭問設計.*MAY delegate' "$host_adapters_ref"
-section_has "Claude does not delegate solely for a model difference" Claude 'Model difference 本身 MUST NOT 觸發 delegation' "$host_adapters_ref"
+section_has "Claude does not delegate solely for a model difference" Claude "$model_difference_not_trigger" "$host_adapters_ref"
 section_has "Claude retains the Opus implementer as an optional implementation role" Claude '需要 delegation 時交給 configured `implementer` agent.*claude-opus-5.*effort `high`' "$host_adapters_ref"
-section_has "Claude forbids implementer recursion" Claude 'same-work recursion is forbidden' "$host_adapters_ref"
+section_has "Claude forbids implementer recursion" Claude "$same_work_recursion_forbidden" "$host_adapters_ref"
 section_has "Claude constrains unavailable-implementer takeover" Claude 'implementer unavailable.*Fable MAY 接手.*既有授權.*runtime permission.*tool capability.*MUST NOT bypass denied tools.*sandbox.*\[T0-8\].*independent read-only S5 review' "$host_adapters_ref"
 section_has "Claude requires Fable to reverify implementer evidence" Claude 'implementer report is not completion evidence.*Fable MUST reverify' "$host_adapters_ref"
-section_has "Claude keeps routine failures with the implementation owner" Claude 'routine implementation／test failures.*current implementation owner.*diagnose.*fix.*retest.*owned scope' "$host_adapters_ref"
-section_has "Claude returns invalid design premises to Fable" Claude 'invalid design premise.*stop dependent writes.*return evidence to Fable.*decision.*authorization' "$host_adapters_ref"
+section_has "Claude keeps routine failures with the implementation owner" Claude "$routine_failures_with_owner" "$host_adapters_ref"
+section_has "Claude returns delegated invalid design premises to Fable" Claude 'delegated implementer.*invalid design premise.*stop dependent writes.*return evidence to Fable.*decision.*authorization' "$host_adapters_ref"
 section_has "Claude reuses the original implementer for same-scope follow-up" Claude 'SendMessage.*續用原 implementer.*只有原代理不可用.*新的獨立任務.*建立新代理' "$host_adapters_ref"
 section_has "Claude maps simplification edits to the active implementation owner" Claude '^\- S5 simplification mechanism = Fable decides disposition; active implementation owner applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
 section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot '^\- S5 simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"

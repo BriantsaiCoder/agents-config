@@ -170,40 +170,30 @@ selftest() {
   printf 'Delegation 依 [INT-4]。\n' > "$scratch/thin.md"
   has_autonomy "$scratch/thin.md" && ng '正向語彙：只提 [INT-4] 就算過（太寬）' || ok '正向語彙：只提 [INT-4] 不足'
 
-  printf 'Codex conditional implementation routing\n' > "$scratch/routing-clean.md"
-  printf 'Astra→Sol serial implementation routing\n' > "$scratch/routing-bad.md"
-  scan_miss_f 'Astra→Sol serial implementation routing' "$scratch/routing-clean.md" \
-    && ok 'forced serial absence：clean positive control 通過' \
-    || ng 'forced serial absence：clean positive control 被拒'
-  if scan_hit_f 'Astra→Sol serial implementation routing' "$scratch/routing-bad.md"; then
-    ok 'forced serial absence：known-bad marker 已可信驗證'
-    scan_miss_f 'Astra→Sol serial implementation routing' "$scratch/routing-bad.md" \
-      && ng 'forced serial absence：known-bad marker 未被拒' \
-      || ok 'forced serial absence：known-bad negative control 被拒'
-  else
-    ng 'forced serial absence：known-bad marker 缺失或掃描不可信'
-  fi
-  for _scan_shim_rc in 2 0; do
-    assert_fails_closed forced_serial_absence rg "$_scan_shim_rc" scan_verdict scan_miss_f \
-      'Astra→Sol serial implementation routing' "$scratch/routing-clean.md"
-  done
-
-  printf 'Claude conditional implementation routing\n' > "$scratch/routing-claude-clean.md"
-  printf 'Fable→Opus serial implementation routing\n' > "$scratch/routing-claude-bad.md"
-  scan_miss_f 'Fable→Opus serial implementation routing' "$scratch/routing-claude-clean.md" \
-    && ok 'Claude forced serial absence：clean positive control 通過' \
-    || ng 'Claude forced serial absence：clean positive control 被拒'
-  if scan_hit_f 'Fable→Opus serial implementation routing' "$scratch/routing-claude-bad.md"; then
-    ok 'Claude forced serial absence：known-bad marker 已可信驗證'
-    scan_miss_f 'Fable→Opus serial implementation routing' "$scratch/routing-claude-bad.md" \
-      && ng 'Claude forced serial absence：known-bad marker 未被拒' \
-      || ok 'Claude forced serial absence：known-bad negative control 被拒'
-  else
-    ng 'Claude forced serial absence：known-bad marker 缺失或掃描不可信'
-  fi
-  for _scan_shim_rc in 2 0; do
-    assert_fails_closed claude_forced_serial_absence rg "$_scan_shim_rc" scan_verdict scan_miss_f \
-      'Fable→Opus serial implementation routing' "$scratch/routing-claude-clean.md"
+  for _retired in \
+    'Codex|Codex conditional implementation routing|Astra→Sol serial implementation routing|routing|forced_serial_absence' \
+    'Claude|Claude conditional implementation routing|Fable→Opus serial implementation routing|routing-claude|claude_forced_serial_absence'; do
+    _host=${_retired%%|*}; _rest=${_retired#*|}
+    _clean_marker=${_rest%%|*}; _rest=${_rest#*|}
+    _bad_marker=${_rest%%|*}; _rest=${_rest#*|}
+    _fx=${_rest%%|*}; _prefix=${_rest#*|}
+    printf '%s\n' "$_clean_marker" > "$scratch/$_fx-clean.md"
+    printf '%s\n' "$_bad_marker" > "$scratch/$_fx-bad.md"
+    scan_miss_f "$_bad_marker" "$scratch/$_fx-clean.md" \
+      && ok "$_host forced serial absence：clean positive control 通過" \
+      || ng "$_host forced serial absence：clean positive control 被拒"
+    if scan_hit_f "$_bad_marker" "$scratch/$_fx-bad.md"; then
+      ok "$_host forced serial absence：known-bad marker 已可信驗證"
+      scan_miss_f "$_bad_marker" "$scratch/$_fx-bad.md" \
+        && ng "$_host forced serial absence：known-bad marker 未被拒" \
+        || ok "$_host forced serial absence：known-bad negative control 被拒"
+    else
+      ng "$_host forced serial absence：known-bad marker 缺失或掃描不可信"
+    fi
+    for _scan_shim_rc in 2 0; do
+      assert_fails_closed "$_prefix" rg "$_scan_shim_rc" scan_verdict scan_miss_f \
+        "$_bad_marker" "$scratch/$_fx-clean.md"
+    done
   done
 
   rm -rf "$scratch"
@@ -318,18 +308,15 @@ for routing_clause in 'Codex conditional implementation routing' 'Claude conditi
     && ok "[INT-4] host adapter 定義：$routing_clause" \
     || ng "[INT-4] host adapter 缺少：$routing_clause"
 done
-if scan_miss_f 'Astra→Sol serial implementation routing' "$DELEGATION_REF" &&
-   scan_miss_f 'Astra→Sol serial implementation routing' "$HOST_ADAPTERS_REF"; then
-  ok '[INT-4] Codex 已移除 forced serial routing'
-else
-  ng '[INT-4] Codex 仍強制 Astra→Sol serial routing，或掃描不可信'
-fi
-if scan_miss_f 'Fable→Opus serial implementation routing' "$DELEGATION_REF" &&
-   scan_miss_f 'Fable→Opus serial implementation routing' "$HOST_ADAPTERS_REF"; then
-  ok '[INT-4] Claude 已移除 forced serial routing'
-else
-  ng '[INT-4] Claude 仍強制 Fable→Opus serial routing，或掃描不可信'
-fi
+# 退役的 forced serial 片語不得回流：delegation.md 與 host-adapters.md 都不能再出現。
+for _retired in 'Codex|Astra→Sol serial implementation routing' 'Claude|Fable→Opus serial implementation routing'; do
+  _host=${_retired%%|*}; _marker=${_retired#*|}
+  if scan_miss_f "$_marker" "$DELEGATION_REF" && scan_miss_f "$_marker" "$HOST_ADAPTERS_REF"; then
+    ok "[INT-4] $_host 已移除 forced serial routing"
+  else
+    ng "[INT-4] $_host 仍強制 ${_marker}，或掃描不可信"
+  fi
+done
 grep -Fq 'bounded scope 的 large/noisy context 明確受益於 isolation' "$DELEGATION_REF" \
   && ok '[INT-4] Codex context isolation 限定為 bounded clear-benefit scope' \
   || ng '[INT-4] Codex context isolation 缺 bounded clear-benefit 限定'
