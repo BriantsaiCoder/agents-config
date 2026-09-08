@@ -32,12 +32,14 @@ na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 
 # 每列：規則 ID|完整 clause|完整 clause|...
 # clause 以 grep -i -F 在規則行內比對；空白是 clause 的一部分，不得拆成鬆散 token。
+# T0-5 的 material／實質 trigger 三家無共同子串（Claude／Copilot 用 Material、Codex 用 實質），
+# grep -F 表達不了 OR，只靠 outcome／scope／risk 間接守住；別以為這個方向仍有 guard（2026-09-08）。
 REQUIRED=$(cat <<'TABLE'
 T0-1|Action／current-state claim|path／API／config key|live evidence|實際修改／執行 target|live probe|non-action citation／hypothetical
 T0-2|evidence|done
 T0-3|force-push|force-with-lease
 T0-4|secret|set
-T0-5|先查證|outcome／scope／risk|假設／影響|僅停相依步驟|低風險|default|明示
+T0-5|先查證|outcome／scope／risk|發問|假設／影響|僅停相依步驟|低風險|default|明示
 T0-6|auth|payment|migration|大量刪除|crypto|multi-tenant|rate-limit|pipeline|rollback
 T0-7|Online DB migration|compatibility／destructive risk|expand→dual-write→backfill→switch-reads→remove-legacy|destructive schema|additive／new-object|SKIPPED|consumer boundary
 T0-8|plan-first|架構性|High-risk|external write|destructive／costly／credential／payment／deployment／migration|material scope expansion|風險未變即沿用|in-scope|local|reversible|Low／Medium-risk|session plan|第二次確認
@@ -120,6 +122,8 @@ FIX
     "$scratch/good.md" > "$scratch/blanket-t05.md"
   sed 's/發問前先查證並做完/發問前做完/' \
     "$scratch/good.md" > "$scratch/no-t05-verify.md"
+  sed 's/停下發問並列假設／影響；發問前/列假設／影響；/' \
+    "$scratch/good.md" > "$scratch/no-t05-ask.md"
   sed 's/，plan／核准涵蓋 exact action／scope 且風險未變即沿用//' \
     "$scratch/good.md" > "$scratch/no-t08-reuse.md"
   sed 's/Online DB migration with compatibility／destructive risk/任何 DB migration/' \
@@ -158,6 +162,7 @@ FIX
   probe "$scratch/no-t01-exception.md" fail "[T0-1] 掉 non-action/hypothetical 例外"
   probe "$scratch/blanket-t05.md"      fail "[T0-5] 退回全停等答案（掉僅停相依步驟）"
   probe "$scratch/no-t05-verify.md"    fail "[T0-5] 掉發問前先查證"
+  probe "$scratch/no-t05-ask.md"       fail "[T0-5] 掉發問本身"
   probe "$scratch/no-t08-reuse.md"     fail "[T0-8] 掉核准沿用（風險未變即沿用）"
   probe "$scratch/blanket-t07.md"      fail "[T0-7] 退回任何 migration 都跑五階段"
   probe "$scratch/no-t07-skip.md"      fail "[T0-7] 掉 additive/offline SKIPPED"
