@@ -145,6 +145,7 @@ delivery_s6_pattern='PR-closeout.*MUST.*commit.*push.*Ready PR.*current-head CI�
 model_difference_not_trigger='Model difference 本身 MUST NOT 觸發 delegation'
 same_work_recursion_forbidden='same-work recursion is forbidden'
 routine_failures_with_owner='routine implementation／test failures.*current implementation owner.*diagnose.*fix.*retest.*owned scope'
+split_reannounce_on_owner_change='實作者或委派範圍變更時 MUST 更新通報'
 
 # 這支維持 grep -E（POSIX ERE）而非 rg_hits：它本來就有正確的 rc 三態（見下方 case），
 # 換掉只會多一次方言轉換而不增加保護。全檔僅此一處與 rg 的 Rust regex 不同 dialect，
@@ -539,6 +540,8 @@ section_has "Codex permits bounded context isolation" Codex 'bounded scope.*larg
 section_has "Codex does not delegate solely for a model difference" Codex "$model_difference_not_trigger" "$host_adapters_ref"
 section_has "Codex retains Sol xhigh as an optional implementation role" Codex '需要 delegation 時.*configured `implementer`.*gpt-5\.6-sol.*xhigh' "$host_adapters_ref"
 section_has "Codex forbids implementer recursion" Codex "$same_work_recursion_forbidden" "$host_adapters_ref"
+section_has "Codex announces the implementation split before starting" Codex '實作分工通報.*Astra MUST 在開始.*已授權實作前.*告知實作者.*負責範圍與選擇原因' "$host_adapters_ref"
+section_has "Codex re-announces when the implementation owner changes" Codex "$split_reannounce_on_owner_change" "$host_adapters_ref"
 section_has "Codex constrains unavailable-implementer takeover" Codex 'implementer unavailable.*Astra MAY 接手.*既有授權.*runtime permission.*tool capability.*MUST NOT bypass denied tools.*sandbox.*\[T0-8\].*independent read-only S5 review' "$host_adapters_ref"
 section_has "Codex requires Astra to reverify implementer evidence" Codex 'implementer report is not completion evidence.*Astra MUST reverify' "$host_adapters_ref"
 section_has "Codex keeps routine failures with the implementation owner" Codex "$routine_failures_with_owner" "$host_adapters_ref"
@@ -568,7 +571,7 @@ section_has "Claude defaults new subagents to no inherited parent context" Claud
 section_has "Claude forbids fork as a substitute for implementer delegation" Claude 'MUST NOT 用 fork 取代委派給 configured `implementer`' "$host_adapters_ref"
 section_has "Claude confines fork to indispensable full parent context" Claude '只有完整父對話不可省略時才用 fork' "$host_adapters_ref"
 section_has "Claude announces the implementation split before starting" Claude '實作分工通報.*MUST 在開始.*已授權實作前.*告知實作者.*負責範圍與選擇原因' "$host_adapters_ref"
-section_has "Claude re-announces when the implementation owner changes" Claude '實作者或委派範圍變更時 MUST 更新通報' "$host_adapters_ref"
+section_has "Claude re-announces when the implementation owner changes" Claude "$split_reannounce_on_owner_change" "$host_adapters_ref"
 section_has "Claude maps simplification edits to the active implementation owner" Claude '^\- S5 simplification mechanism = Fable decides disposition; active implementation owner applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
 section_has "Copilot maps the simplification outcome to an explicit apply pass" Copilot '^\- S5 simplification mechanism = main-context explicit apply pass。$' "$host_adapters_ref"
 common_simplification="$(sed -n '/^## S5 simplification apply outcome$/,/^## Claude$/p' "$ROOT/$host_adapters_ref" | sed '$d')"
