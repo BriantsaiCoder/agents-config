@@ -347,6 +347,7 @@ has "S2 stops before High or protected boundaries" 'High.*protected boundary.*ma
 has "S2 reuses exact approval without reopening the same gate" 'exact action／scope.*既有.*核准.*不.*重問' "$authorization_matrix_ref"
 rule_has "in-scope necessary findings are completed" INT-8 'scope 內必要修正.*直接完成'
 rule_has "only expanded findings wait for authorization" INT-8 '超出.*scope.*follow-up.*未核准不得做'
+rule_has "skill-caused stops carry provenance" INT-8 '因 skill 而確認／暫停／未完成時 MUST 附已讀 SKILL.md 連結、原句、適用理由，區分明文／推論'
 has "S2 asks only for material ambiguity" '只有會改變 outcome／scope／risk 的 material ambiguity 才停下發問' "$authorization_matrix_ref"
 has "S2 keeps reversible defaults autonomous" '低風險.*可逆.*無 material impact.*sensible default.*default／impact' "$authorization_matrix_ref"
 lacks "S2 does not restore blanket ask-before-edit" '有多種合理解讀且會改檔時.*停下發問' skills/dev-workflow/SKILL.md "$authorization_matrix_ref"
