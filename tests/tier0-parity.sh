@@ -8,7 +8,7 @@
 # 2026-07-07 blueprint 描述的 dist/codex-AGENTS.md 生成流程從未實作。指紋成了假保證。
 #
 # 2026-08-04 的第二次 RED 顯示，單靠寬鬆 token 表會同時漏掉語意漂移與製造誤報：
-#   [T0-1]/[T0-5]/[T0-7] Claude/Copilot 保留舊 blanket gate，Codex 已採 risk-based contract；
+#   [T0-1]/[T0-5]/[T0-7] Claude/Copilot 保留舊 blanket gate，Codex 已採 risk-based contract（[T0-5] 於 2026-09-08 三家對齊）；
 #   [T0-9] 三家未承接 shared review-triage 的 bot UNAVAILABLE fallback；
 #   [T0-1] checker 把「file path」按空白拆成兩個 token，Codex 的合法「path」因此被誤報。
 #
