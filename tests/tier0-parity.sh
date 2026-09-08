@@ -8,7 +8,7 @@
 # 2026-07-07 blueprint 描述的 dist/codex-AGENTS.md 生成流程從未實作。指紋成了假保證。
 #
 # 2026-08-04 的第二次 RED 顯示，單靠寬鬆 token 表會同時漏掉語意漂移與製造誤報：
-#   [T0-1]/[T0-5]/[T0-7] Claude/Copilot 保留舊 blanket gate，Codex 已採 risk-based contract；
+#   [T0-1]/[T0-5]/[T0-7] Claude/Copilot 保留舊 blanket gate，Codex 已採 risk-based contract（[T0-5] 於 2026-09-08 三家對齊）；
 #   [T0-9] 三家未承接 shared review-triage 的 bot UNAVAILABLE fallback；
 #   [T0-1] checker 把「file path」按空白拆成兩個 token，Codex 的合法「path」因此被誤報。
 #
@@ -32,15 +32,17 @@ na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 
 # 每列：規則 ID|完整 clause|完整 clause|...
 # clause 以 grep -i -F 在規則行內比對；空白是 clause 的一部分，不得拆成鬆散 token。
+# T0-5 的 material／實質 trigger 三家無共同子串（Claude／Copilot 用 Material、Codex 用 實質），
+# grep -F 表達不了 OR，只靠 outcome／scope／risk 間接守住；別以為這個方向仍有 guard（2026-09-08）。
 REQUIRED=$(cat <<'TABLE'
 T0-1|Action／current-state claim|path／API／config key|live evidence|實際修改／執行 target|live probe|non-action citation／hypothetical
 T0-2|evidence|done
 T0-3|force-push|force-with-lease
 T0-4|secret|set
-T0-5|Material ambiguity|停下發問|低風險可逆細節|sensible default|outcome／scope／risk|無 material impact
+T0-5|先查證|outcome／scope／risk|發問|假設／影響|僅停相依步驟|低風險可逆|default|明示
 T0-6|auth|payment|migration|大量刪除|crypto|multi-tenant|rate-limit|pipeline|rollback
 T0-7|Online DB migration|compatibility／destructive risk|expand→dual-write→backfill→switch-reads→remove-legacy|destructive schema|additive／new-object|SKIPPED|consumer boundary
-T0-8|plan-first|架構性|High-risk|external write|destructive／costly／credential／payment／deployment／migration|material scope expansion|in-scope|local|reversible|Low／Medium-risk|session plan|第二次確認
+T0-8|plan-first|架構性|High-risk|external write|destructive／costly／credential／payment／deployment／migration|material scope expansion|風險未變即沿用|in-scope|local|reversible|Low／Medium-risk|session plan|第二次確認
 T0-9|current HEAD|applicable CI PASS|0 unresolved actionable findings|UNAVAILABLE|independent read-only reviewer|review-triage
 TABLE
 )
@@ -104,10 +106,10 @@ selftest() {
 [T0-2] MUST NOT 無 evidence 宣稱 done。觸發：完成宣稱。例外：無。驗證：命令與 exit code。
 [T0-3] MUST NOT force-push main／master；非保護分支只用 --force-with-lease。觸發：force push。例外：無。驗證：hook。
 [T0-4] MUST NOT 把 token／secret 印明文；遮罩為 set／unset。觸發：credential 輸出。例外：非敏感值。驗證：gitleaks。
-[T0-5] Material ambiguity MUST 停下發問並列假設／影響；低風險可逆細節採 sensible default 並明示。觸發：多種合理解讀會改變 outcome／scope／risk。例外：低風險、可逆、無 material impact。驗證：default／impact 紀錄。
+[T0-5] Material ambiguity MUST 停下發問並列假設／影響；發問前先查證並做完不依賴答案的部分，僅停相依步驟；低風險可逆細節採 sensible default 並明示。觸發：多種合理解讀會改變 outcome／scope／risk。例外：低風險、可逆、無 material impact。驗證：default／impact 紀錄。
 [T0-6] auth／payment／migration／大量刪除／crypto／multi-tenant／rate-limit／deployment pipeline 變更 MUST 附 rollback。觸發：diff 命中。例外：無。驗證：plan。
 [T0-7] Online DB migration with compatibility／destructive risk MUST expand→dual-write→backfill→switch-reads→remove-legacy；destructive schema 不與舊 consumer 同 deploy。觸發：schema／data-contract risk。例外：additive／new-object 或停機 batch 可標 SKIPPED（理由）。驗證：phases／consumer boundary／rollback。
-[T0-8] 使用者明示 plan-first、架構性／High-risk change，或 external write、destructive／costly／credential／payment／deployment／migration side effect 與 material scope expansion 未獲授權時 MUST 先出 plan 並取得確認；scope 清楚、in-scope、local、reversible 的 Low／Medium-risk change／build／fix 可直接實作並做 non-destructive verification，Medium 先留 session plan，不需第二次確認。觸發：將改檔或執行 side effect 且命中前述 protected gate。例外：無。驗證：protected gate 有 plan + 核准原句；direct path 有 user 原句 + risk／reversibility，Medium 另有 session plan。
+[T0-8] 使用者明示 plan-first、架構性／High-risk change，或 external write、destructive／costly／credential／payment／deployment／migration side effect 與 material scope expansion 未獲授權時 MUST 先出 plan 並取得確認，plan／核准涵蓋 exact action／scope 且風險未變即沿用；scope 清楚、in-scope、local、reversible 的 Low／Medium-risk change／build／fix 可直接實作並做 non-destructive verification，Medium 先留 session plan，不需第二次確認。觸發：將改檔或執行 side effect 且命中前述 protected gate。例外：無。驗證：protected gate 有 plan + 核准原句；direct path 有 user 原句 + risk／reversibility，Medium 另有 session plan。
 [T0-9] Merge 前 MUST 在 current HEAD 有 applicable CI PASS 且 0 unresolved actionable findings；bot UNAVAILABLE 時依 review-triage 由 independent read-only reviewer fallback。觸發：merge。例外：無。驗證：current-head CI + review gate PASS。
 FIX
 
@@ -116,8 +118,14 @@ FIX
     "$scratch/good.md" > "$scratch/blanket-t01.md"
   sed 's/例外：non-action citation／hypothetical。/例外：無。/' \
     "$scratch/good.md" > "$scratch/no-t01-exception.md"
-  sed 's/Material ambiguity/任何 ambiguity/' \
+  sed 's/，僅停相依步驟//' \
     "$scratch/good.md" > "$scratch/blanket-t05.md"
+  sed 's/發問前先查證並做完/發問前做完/' \
+    "$scratch/good.md" > "$scratch/no-t05-verify.md"
+  sed 's/停下發問並列假設／影響；發問前/列假設／影響；/' \
+    "$scratch/good.md" > "$scratch/no-t05-ask.md"
+  sed 's/，plan／核准涵蓋 exact action／scope 且風險未變即沿用//' \
+    "$scratch/good.md" > "$scratch/no-t08-reuse.md"
   sed 's/Online DB migration with compatibility／destructive risk/任何 DB migration/' \
     "$scratch/good.md" > "$scratch/blanket-t07.md"
   sed 's/例外：additive／new-object 或停機 batch 可標 SKIPPED（理由）。/例外：無。/' \
@@ -152,7 +160,10 @@ FIX
   probe "$scratch/good.md"             pass "完整 tier0"
   probe "$scratch/blanket-t01.md"      fail "[T0-1] 退回 blanket path probe"
   probe "$scratch/no-t01-exception.md" fail "[T0-1] 掉 non-action/hypothetical 例外"
-  probe "$scratch/blanket-t05.md"      fail "[T0-5] 退回任何 ambiguity 都停問"
+  probe "$scratch/blanket-t05.md"      fail "[T0-5] 退回全停等答案（掉僅停相依步驟）"
+  probe "$scratch/no-t05-verify.md"    fail "[T0-5] 掉發問前先查證"
+  probe "$scratch/no-t05-ask.md"       fail "[T0-5] 掉發問本身"
+  probe "$scratch/no-t08-reuse.md"     fail "[T0-8] 掉核准沿用（風險未變即沿用）"
   probe "$scratch/blanket-t07.md"      fail "[T0-7] 退回任何 migration 都跑五階段"
   probe "$scratch/no-t07-skip.md"      fail "[T0-7] 掉 additive/offline SKIPPED"
   probe "$scratch/drift-t08.md"        fail "[T0-8] 掉 in-scope"
