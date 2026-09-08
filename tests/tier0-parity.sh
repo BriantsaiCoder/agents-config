@@ -49,6 +49,13 @@ T0-8|plan-first|架構性|High-risk|external write|destructive／costly／creden
 T0-9|current HEAD|applicable CI PASS|0 unresolved actionable findings|UNAVAILABLE|independent read-only reviewer|review-triage
 TABLE
 )
+# heredoc 要建 temp file；Claude Code 的 Bash 工具沙箱曾把它擋成 Operation not permitted（2026-09-08 實測），
+# 本檔沒有 set -e，於是 REQUIRED 空表、check_host 一條 clause 都不比就回 PASS——三家全假綠。空表就是檢查沒跑，
+# 不是 PASS；這裡直接紅並退出，selftest 以空表 mutation 釘住。
+if [ -z "$REQUIRED" ]; then
+  ng "REQUIRED 表為空：heredoc temp file 建不起來（沙箱？），檢查完全未執行"
+  exit 1
+fi
 
 # 抽出某檔案中某條規則的定義行（tier0 三份都是一條一行、規則 ID 在行首）。
 # 必須錨定行首：正本的裁決鏈段落有「衝突條文引用一律用規則 ID（如 [T0-3]）」這種
@@ -184,6 +191,18 @@ FIX
   probe "$scratch/drop-t06.md"         fail "[T0-6] 整條消失"
   probe "$scratch/no-trigger.md"       fail "規則掉觸發要素"
   probe "$scratch/no-fp.md"            fail "FP 指紋被拔"
+
+  # 空表守衛：把本檔的 heredoc 表整段換成空字串做成 scratch 副本，對完整 fixture 跑 --one 也必須紅並退出 1。
+  # 這是 heredoc 失敗（沙箱擋 temp file）的確定性替身——真正的失敗依 bash 版本與沙箱設定才重現得了。
+  sed '/^REQUIRED=\$(cat <<'"'"'TABLE'"'"'$/,/^)$/c\
+REQUIRED=""' "${BASH_SOURCE[0]:-$0}" > "$scratch/empty-table.sh"
+  local et_out et_rc
+  et_out=$(CLAUDE_TIER0="$scratch/good.md" CODEX_TIER0="" COPILOT_TIER0="" bash "$scratch/empty-table.sh" --one 2>&1); et_rc=$?
+  if [[ $et_rc -ne 0 && $et_out == *'REQUIRED 表為空'* ]]; then
+    printf '  PASS  selftest 反向確實觸發: REQUIRED 空表 → FAIL 並 exit 1（不再假綠）\n'
+  else
+    printf '  FAIL  selftest 反向未觸發: REQUIRED 空表仍回 rc=%s «%s»\n' "$et_rc" "${et_out:0:80}" >&2; rc=1
+  fi
 
   rm -rf "$scratch"
   return $rc
