@@ -21,6 +21,20 @@
 - 有正式 spec artifact、明列 acceptance criteria 或 behavior change 時，將每個 acceptance criterion 與 negative invariant 對到一個 test／probe／gate 及四態結果；不適用時標 `SKIPPED` 並附理由。
 - High-risk change 先列具體 failure model，再把每個 failure mode 對到 task-specific catching layer 或理由化的 `SKIPPED`／`UNAVAILABLE`。Mutation、changed-line coverage、property 或 adversarial testing 只在能增加 evidence 時使用，不作 blanket requirement。
 
+## Agent／workflow 效果比較
+
+只有要宣稱模型、skill 或 workflow 調整改善品質／效率時才啟用；一般程式修改與純規則符合性檢查不因此新增 A/B gate。
+
+- 執行前固定代表性任務、起始 source state、驗收標準、host／model／effort 與其他設定；baseline／candidate 每次只改一項，並記錄可重播的 prompt、commands 與兩組設定。模型本身為比較項時，其餘條件仍固定。
+- 每次使用 fresh session 與獨立 fixture／worktree，避免前次答案、修改或記憶污染；worktree 只隔離檔案，不保證 host memory／global config 隔離，未能隔離的因素要明列。
+- 優先重用目前適用的 runner、tests 與 artifact probes；task-specific 舊 harness 不硬套，也不為本契約新增平台或 dependency。Invocation canary 只證明有被呼叫，不等於任務品質。
+- 分開記錄任務成功次數／執行次數、規則違反、人工介入、耗時，以及可取得的 token／成本。缺資料標 `UNAVAILABLE`（probe），不得當成零；失敗／重試不自動計為規則違反或人工介入。工具或環境失敗另列，不能靜默丟棄以提高成功率。
+- 首輪只做小規模篩選（例如 bugfix、read-only 分析、review 各一例，A/B 各一次），有增益跡象才依預先列出的 runs／timeout／用量預算增加重複次數。所有失敗與重試都保留；首次成功與重試成功分開，禁止只報最好一次。
+- 以實際行為測試／artifact 或事先定義的 review rubric 判成功；代理自評或 keyword 命中不能單獨證明品質。已知缺陷與規則違反另行裁決，較快或較省不得掩蓋它們。
+- 小樣本僅支持初步結論；無可比 baseline 或未執行比較時，只能報有實際 probe 支持的符合性結果與預期效益；未驗證不得標符合性 PASS，也不能宣稱已改善。各 consuming host 分別記結果，不把單一 host 的證據外推。
+
+方法參考：[ECC agent-eval](https://github.com/affaan-m/ECC/blob/5064474d4d762dc9640234a41617cccb79185cec/skills/agent-eval/SKILL.md) 與 [eval-harness](https://github.com/affaan-m/ECC/blob/5064474d4d762dc9640234a41617cccb79185cec/skills/eval-harness/SKILL.md)；僅吸收比較方法，授權與驗證 gates 仍由本 workflow 管理。
+
 ## Custom gate and new-test integrity
 
 主詞是「新增或修改的 custom gate」與「新增的測試」；兩者失效模式相同——一個永遠不會紅的檢查跟沒有檢查等價，但看起來像有。

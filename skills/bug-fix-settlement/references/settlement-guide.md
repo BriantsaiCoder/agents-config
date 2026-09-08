@@ -1,6 +1,6 @@
 # Settlement decision guide
 
-只在 `SKILL.md` Step 1 需要分類例、持久化格式或摘要範例時讀取。
+在 `SKILL.md` Step 1 有知識保存建議，或需要分類例、持久化格式、摘要範例時讀取。
 
 ## 目標分類
 
@@ -11,6 +11,15 @@
 | Workflow | 流程缺口本身造成錯誤 | 某階段缺少 completion check |
 
 Cookbook 的位置與格式以目前 host 的 `rules/cookbook.md` 為準。先搜尋既有 `docs/cookbook/**/*.md`；有合適檔就增量更新，沒有才依核准 path 建立。建議格式：問題 → 根因 → 正確做法／錯誤做法。
+
+## 知識範圍與升格
+
+- 建議保存時，附適用 repo／版本／條件、支持證據與已知例外；版本限定的 workaround 不得寫成通用規則。
+- 單一專案的觀察預設留在該專案。只有跨情境證據支持，或使用者明示為通用偏好，才建議升格為跨專案知識；重複次數本身不等於普遍適用。
+- 新證據推翻舊結論時，指明被取代的條目與原因，優先修訂或取代，避免矛盾規則並存。實際寫入沿用 `SKILL.md` Step 2 與 host memory contract；append-only memory 以授權的修訂 note 指向舊條目，不直接改寫底層記憶。
+- 未授權時只列待授權建議，不自動觀察 session、寫入記憶或生成 skills；不以未校準的數值 confidence 代替證據。
+
+方法參考：[ECC continuous-learning-v2](https://github.com/affaan-m/ECC/blob/5064474d4d762dc9640234a41617cccb79185cec/skills/continuous-learning-v2/SKILL.md) 的 project scope／promotion 思路；不引入背景 observer 或自動升格。
 
 ## 常見裁決
 
