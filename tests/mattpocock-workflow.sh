@@ -550,7 +550,7 @@ section_has "Claude keeps decisions and final evidence with Fable" Claude 'Fable
 section_has "Claude permits Fable to implement authorized scope end to end" Claude 'Fable MAY implement 已授權 scope end-to-end' "$host_adapters_ref"
 section_has "Claude autonomously selects direct work or implementer delegation" Claude 'Fable MUST 自主判定 direct work 或 implementer delegation.*不需為 model routing 另問使用者' "$host_adapters_ref"
 section_has "Claude defaults small or tightly dependent work to Fable unless delegation helps" Claude 'small 或 tightly dependent task.*Fable SHOULD 直接完成.*除非下列 delegation benefit 成立' "$host_adapters_ref"
-section_has "Claude delegates fully specified mechanically verifiable packets" Claude 'packet 已完整規範.*驗收可機械判定.*不需回頭問設計.*SHOULD delegate' "$host_adapters_ref"
+section_has "Claude may delegate fully specified mechanically verifiable packets" Claude 'packet 已完整規範.*委派訊息已滿足 delegation\.md 的訊息契約.*驗收可機械判定.*不需回頭問設計.*MAY delegate' "$host_adapters_ref"
 section_has "Claude does not delegate solely for a model difference" Claude 'Model difference 本身 MUST NOT 觸發 delegation' "$host_adapters_ref"
 section_has "Claude retains the Opus implementer as an optional implementation role" Claude '需要 delegation 時交給 configured `implementer` agent.*claude-opus-5.*effort `high`' "$host_adapters_ref"
 section_has "Claude forbids implementer recursion" Claude 'same-work recursion is forbidden' "$host_adapters_ref"
