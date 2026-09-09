@@ -319,7 +319,10 @@ if [ -d "$AGENTS/skills" ]; then
     expect_vnd="$expect_vnd $(printf '%s\n' "$locked" | tr '\n' ' ' | sed 's/ $//')"
   fi
   if [ -r "$AGENTS/vendored-skills.lock" ]; then
-    generic_count=$(grep -vc '^#' "$AGENTS/vendored-skills.lock")
+    # 與下面的 while 迴圈同語意（該迴圈以 `case "$skill" in \#*|"") continue` 跳過註解與空行）。
+    # 用 grep -vc '^#' 會把空行也算成一列，於是「斷言的列數」與「實際迭代的列數」在有空行時
+    # 各說各話——本檔現在 0 空行所以兩者相等，但那是巧合不是保證。
+    generic_count=$(awk -F '\t' '$0 !~ /^#/ && $1 != "" { n++ } END { print n+0 }' "$AGENTS/vendored-skills.lock")
     check "generic provenance lock 的 skill 數量" "9" "$generic_count"
     while IFS=$'\t' read -r skill source revision expected_payload_sha expected_tree_sha; do
       case "$skill" in \#*|"") continue ;; esac
