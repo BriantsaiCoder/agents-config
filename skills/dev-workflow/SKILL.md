@@ -46,8 +46,9 @@ description: 開發任務必讀：三 host S0/S2/S4–S6 kernel。
 | 高扇入共用介面變更 | MUST 先用 `deps-check` 列出完整 callers |
 | Security | focused code／diff／path → `shared-security-review`；明示 whole-codebase audit／pen-test 且接受 artifacts → `security-audit`；SBOM／CI gate → `dependency-security-scan` |
 | 架構、deep module、seam 設計 | `codebase-design`；另命中上列明示 trigger 時才組合 `grilling` |
-| 陌生 repo | `acquire-codebase-knowledge` |
-| repo docs／host-native AI 指令的初始化或整體 refresh | `init-project-docs`；探索地圖另走 `acquire-codebase-knowledge` |
+| local code: system map | `mp-zoom-out` |
+| Explicit repo-level map/docs/onboarding | `acquire-codebase-knowledge` |
+| repo docs 初始化或整體 refresh | `init-project-docs` |
 | primary-source background research／citable Markdown evidence | `research` |
 | Microsoft concepts／tutorial／config；API signature／SDK sample | 前者 `microsoft-docs`；後者 `microsoft-code-reference` |
 | third-party library／SDK／API／CLI current lookup | provider-native official docs；absent／`UNAVAILABLE` 才 Context7 fallback（`context7-mcp`） |

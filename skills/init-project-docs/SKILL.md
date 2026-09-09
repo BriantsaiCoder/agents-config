@@ -11,9 +11,9 @@ description: Use when initializing or refreshing project docs and native AI inst
 
 檢查 manifests、versions、source/tests、commands、CI 與既有 docs；可跑 `bash scripts/detect-stack.sh`。以 runtime self-knowledge 判定 host，再用 `bash scripts/detect-host.sh` 佐證。
 
-回報 `detected_host`、`suggested`、`ambiguous`、`other_homes`、`target_hosts`。若 host 不明、ambiguous，或有未指定的 other homes，停止並確認 scope。Codex full refresh 寫檔前須展示 Phase 4–6 catalogs，除非本輪已限縮 output。
+回報 `detected_host`、`suggested`、`ambiguous`、`other_homes`、`target_hosts`。Host scope gate 僅適用 host-specific instructions、config、hooks、agents；host-neutral README／architecture 記 `N/A`。若 host-specific output scope 的 host 不明、ambiguous，或有未指定的 other homes，停止並確認該 scope；已由 user/session 明確授權的 target hosts 直接沿用，不重問。Codex full refresh 寫檔前須展示 Phase 4–6 catalogs，除非本輪已限縮 output。
 
-**完成條件：**stack／commands 有路徑 evidence，target hosts 有 confirmation，不確定推論已標記。
+**完成條件：**stack／commands 有路徑 evidence，target hosts 有 confirmation 或 host-neutral `N/A`，不確定推論已標記，既有授權 scope 已保留。
 
 ## Step 2：選擇 outputs 與 references
 

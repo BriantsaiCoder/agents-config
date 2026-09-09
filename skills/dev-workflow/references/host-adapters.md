@@ -4,6 +4,8 @@
 
 Host adapter 對本 kernel 只可加嚴，MUST NOT 放鬆其 MUST 或無條件約束；放鬆需 user 當下明示。Matt skill body 的 `/skill-name` 只表示 skill routing；需要顯式 invocation 時，實際 command 前綴與啟動權限以本 reference 對應 host adapter 為準。
 
+載入時先讀本檔共用條款與 active host section；一般 single-host work 可停在該 section。只有 cross-host audit／parity 才讀 full document。
+
 ## Capability parity
 
 三家等價以 capability 與各自 semantic anchors 判定，不要求 prose、檔案結構或 hash 相同。`^` 分隔同一 capability 必備的 clauses；此表是三家 parity 的 canonical mapping（測試的失敗訊息用的就是這個詞）。

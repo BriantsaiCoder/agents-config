@@ -471,6 +471,12 @@ printf '%s\n' "$ADAPTER_SECTION" | rg -q 'MUST NOT 放鬆.*(MUST|無條件約束
   fail 'add-only contract does not forbid loosening kernel MUSTs'
 printf '%s\n' "$ADAPTER_SECTION" | rg -q '放鬆.*user 當下明示' ||
   fail 'add-only contract does not route loosening back to explicit user instruction'
+# Failure direction: if either load boundary disappears, normal runs can silently over-read every
+# host or cross-host audits can silently under-read one. Both clauses therefore fail closed here.
+printf '%s\n' "$ADAPTER_SECTION" | rg -q '共用條款.*active host section' ||
+  fail 'host adapter normal-read contract does not include shared clauses and active host'
+printf '%s\n' "$ADAPTER_SECTION" | rg -q 'cross-host audit.*full document' ||
+  fail 'host adapter cross-host audit does not require the full document'
 
 # init-project-docs 的兩個掛載點。
 #
@@ -483,6 +489,10 @@ sed -n '/^| Need | Route |$/,/^$/p' "$KERNEL" | rg -q 'init-project-docs' ||
   fail 'S0 routing table does not route init-project-docs'
 rg -q '架構變更.*`init-project-docs`.*architecture docs' "$KERNEL" ||
   fail 'S6 architecture-docs obligation does not name init-project-docs'
+sed -n '/^| Need | Route |$/,/^$/p' "$KERNEL" | rg -q 'local code.*system map.*`mp-zoom-out`' ||
+  fail 'S0 does not route unfamiliar local code mapping to mp-zoom-out'
+sed -n '/^| Need | Route |$/,/^$/p' "$KERNEL" | rg -q 'repo-level map.*docs.*onboarding.*`acquire-codebase-knowledge`' ||
+  fail 'S0 does not reserve acquire-codebase-knowledge for explicit repo onboarding docs'
 
 # S0 路由的反向缺口。
 #
@@ -516,7 +526,6 @@ ef-core-best-practices
 ef6-best-practices
 grill-me
 jest-best-practices
-mp-zoom-out
 mysql-best-practices
 next-best-practices
 nodejs-best-practices
@@ -699,8 +708,22 @@ rg -q 'stack skills own implementation.*web-design-reviewer owns rendered-page Q
   fail 'ui-ux-pro-max ownership boundary drifted'
 ! rg -q 'reviewing UI|implementing navigation|creating/refactoring UI components' "$uiux_skill" ||
   fail 'ui-ux-pro-max broad implementation/review triggers returned'
+rg -q 'exactly three visual directions' "$uiux_skill" &&
+  rg -q 'Wait for the user.*unless.*explicitly delegated.*already accepted' "$uiux_skill" ||
+  fail 'ui-ux-pro-max lost the three-direction choice gate or its authorization exceptions'
+rg -q 'explicitly delegated.*select a concrete direction.*brief assumptions.*continue' "$uiux_skill" ||
+  fail 'ui-ux-pro-max delegated choice does not produce a concrete assumed direction'
+rg -q 'UNAVAILABLE.*probe.*dependent work' "$uiux_skill" &&
+  rg -q 'Never invent a successful lookup' "$uiux_skill" ||
+  fail 'ui-ux-pro-max search failures are not scoped and evidence-labelled'
 rg -q '新 UI.*ui-ux-pro-max' "$AGENTS/skills/dev-workflow/SKILL.md" ||
   fail 'dev-workflow lost UI design routing'
+
+jest_skill="$AGENTS/skills/jest-best-practices/SKILL.md"
+rg -q 'Targeted first.*relevant package/suite.*repo-required CI' "$jest_skill" ||
+  fail 'Jest validation scope does not match the targeted-to-affected contract'
+! rg -q 'full suite after' "$jest_skill" ||
+  fail 'Jest validation still mandates a blanket full suite'
 while IFS=$'\t' read -r skill expected_tree_sha; do
   case "$skill" in \#*|"") continue ;; esac
   actual_tree_sha="$(vendored_tree_sha256 "$AGENTS/skills/$skill")"
@@ -865,6 +888,7 @@ while IFS= read -r changed; do
     skills/init-project-docs/references/hooks/protect-files.sh | \
     skills/init-project-docs/references/host-matrix.md | \
     skills/init-project-docs/references/settings-templates/copilot/README.md | \
+    skills/jest-best-practices/SKILL.md | \
     skills/make-skill-template/* | \
     skills/mp-diagnose/* | \
     skills/mp-grill-with-docs/* | \

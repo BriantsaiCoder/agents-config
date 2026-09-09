@@ -622,6 +622,19 @@ else
   ng "init-project-docs new workflow prose is not zh-TW"
 fi
 
+# Failure direction: a missing scope distinction makes host-neutral docs silently inherit a
+# confirmation gate, or makes an already-authorized host scope ask again. Pin both owners.
+if scan_hit_f 'Host scope gate 僅適用 host-specific instructions、config、hooks、agents' "$init_docs" &&
+   scan_hit_f 'host-neutral README／architecture 記 `N/A`' "$init_docs" &&
+   scan_hit_f '已由 user/session 明確授權的 target hosts 直接沿用' "$init_docs" &&
+   scan_hit_f 'host-specific output scope' "$host_matrix" &&
+   scan_hit_f 'host-neutral README／architecture' "$host_matrix" &&
+   scan_hit_f '已授權的 target hosts' "$host_matrix"; then
+  ok "init-project-docs scopes host confirmation without re-asking authorized work"
+else
+  ng "init-project-docs host confirmation scope is over-broad or drops prior authorization"
+fi
+
 claimed="$(sed -n '1p' "$AGENTS/CONVENTIONS.md" | grep -oE '[0-9]+ 條' | grep -oE '[0-9]+' | head -1)"
 actual="$(grep -c '^## [0-9]' "$AGENTS/CONVENTIONS.md")"
 [ -n "$claimed" ] && [ "$claimed" = "$actual" ] &&

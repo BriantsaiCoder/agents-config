@@ -25,7 +25,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Retired to `attic/` 2026-08-02** |
 | `vueuse-functions` | github.com/serkodev (MIT, Copyright (c) 2026 SerKo) | LICENSE.md only; no upstream revision was ever recorded | 2026-08-02 — **user-authorized override**: the 11-row requirement map and the 6-entry high-frequency index both merged into `vue-best-practices/references/vueuse/INDEX.md`; the use-vs-hand-roll judgment and the SSR/PII guardrails merged into the same file; MIT notice carried with the payload and retained in the archive. Archived tree SHA-256 `95db99f6a5082d25b311154bf6410cf9e7cd3be306417005caf730fc986f8913`（`vendored_tree_sha256 attic/vueuse-functions`，與其他列同公式） | **Retired to `attic/` 2026-08-02** |
 | `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
-| `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; tree SHA-256 `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21` | **Active** |
+| `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; 2026-09-09 — preserve the three-direction choice gate while honoring delegated or accepted targets, briefly state assumptions for a delegated choice, and scope failed lookups to dependent work with an `UNAVAILABLE` probe; tree SHA-256 `d86dc3d84856b2bff0b2ae8fa2c9f4824f9cf3934e27ec28e0b05db1d2132aee` | **Active** |
 | `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
 | `grilling` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — narrow the trigger to an explicit interview request, adopt design-tree/frontier dependency sequencing, retain the canaried one-question HITL default, add re-estimated progress headers, and keep delegated decisions behind a separate action gate; payload SHA-256 `dcbdd6b8968b8ea2f35a56ce4d1be62a90d4421ac0228e379d24d8e9bbb9802f` | **Active** |
 | `handoff` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session; 2026-09-07 — drop the four-line cap on that prompt (prompt-audit rule 1f, numeric output ceiling); payload SHA-256 `73f75e10b33ca3058b69dab7f95a2f0c35c3a46de9dd4fab68d3b46a4572b639` | **Active** |
@@ -166,13 +166,15 @@ BenchmarkDotNet baseline/statistics procedure. The full local payload and tree a
 
 ## ui-ux-pro-max
 
+**Decision (2026-09-09, user-authorized audit remediation):** Keep the three-direction selection gate for unresolved visual direction, while allowing implementation to proceed when the user explicitly delegates that choice or has already accepted a target. A delegated choice selects a concrete direction, states brief assumptions, and continues. Record failed searches as `UNAVAILABLE` with their probe and stop only dependent work; never claim the lookup succeeded.
+
 **Decision (2026-08-02): vendor the complete offline core as a recorded portability and security fork.**
 
 The core keeps the upstream data, search engine, references, tests, and MIT license. The full plugin
 suite is deliberately excluded: its six sibling skills overlap existing shared/host capabilities,
 and its global installer would create additional trigger owners outside this repository's routing.
 
-Five local changes are intentionally small:
+Six local changes are intentionally small:
 
 1. Replace the 1,805-word Claude-specific entrypoint with a 383-word shared router using
    `$HOME/.agents/skills/ui-ux-pro-max`; stack skills own implementation and
@@ -185,19 +187,24 @@ Five local changes are intentionally small:
    `../MASTER.md`.
 5. Suppress Python bytecode in shipped entrypoints and documented commands so normal use cannot
    mutate the pinned vendored tree or invalidate its fingerprints.
+6. Preserve the three-direction choice gate without re-asking after explicit delegation or target
+   acceptance; for delegated choices select a concrete direction and state brief assumptions before
+   continuing. Scope failed lookups to dependent work with `UNAVAILABLE` probe evidence.
 
 Upstream-only trailing whitespace in `design_system.py` is normalized mechanically so the shared
 repository's diff check remains clean.
 
-Approved tree SHA-256: `83f5bceecfb9539f780fae0e611fd5627b6cf785f8226afc03bb9ca550f9fa21`.
+Approved payload SHA-256: `2662c8f0b242bda08ce6777e443c965ff09e6fffe72715e0bc16f4627772a2a7`;
+approved tree SHA-256: `d86dc3d84856b2bff0b2ae8fa2c9f4824f9cf3934e27ec28e0b05db1d2132aee`.
 
 ### Re-merge procedure (when upstream moves)
 
 1. Fetch the new `.claude/skills/ui-ux-pro-max` tree and verify its license and runtime dependency
    boundary before replacing the pinned payload.
-2. Reapply only the thin shared router, fail-loud search/limit validation, persistence safety,
-   relative-link corrections, and bytecode suppression that upstream still lacks; never run the
-   global installer or import sibling skills as part of this update.
+2. Reapply only the thin shared router, scoped `UNAVAILABLE` lookup handling, selection authorization
+   boundary, fail-loud search/limit validation, persistence safety, relative-link corrections, and
+   bytecode suppression that upstream still lacks; never run the global installer or import sibling
+   skills as part of this update.
 3. Run `validate_data.py`, the bundled unittest suite, relative-reference checks,
    `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, and `bin/ci-local`.
 4. Recompute payload/tree fingerprints and update this section plus `vendored-skills.lock`.

@@ -16,7 +16,7 @@ Read before changing:
 - `setupFiles` / `setupFilesAfterEnv`, custom env, resolver, transform, `moduleNameMapper`.
 - Module system: CJS, Babel-transformed ESM, native ESM, mixed.
 
-Use repo test script. Targeted first (`-t "name"`), full suite after.
+Use repo test script. Targeted first (`-t "name"`); then run the relevant package/suite when scope or shared config warrants it, plus repo-required CI checks.
 
 ## Decision Map
 
