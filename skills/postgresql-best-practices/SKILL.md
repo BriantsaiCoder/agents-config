@@ -11,7 +11,7 @@ Performance tuning (EXPLAIN, index/operator, JSONB pattern, FTS, partition) → 
 
 ## Mode
 
-1. **Writing** — apply rules proactively. Don't ask before parameterization / `timestamptz` / `RETURNING`.
+1. **Writing** — make minimal authorized query changes while preserving result/data semantics. Schema, time semantics, or transaction-boundary changes require matching S2/migration authorization. Review-only work produces findings.
 2. **Reviewing** — checklist. Priority: security (SQLi) → correctness (type / tz / tx) → perf (indexes, N+1, pagination).
 
 ## Golden Rules
@@ -22,10 +22,10 @@ Why + patterns → `references/rules-expanded.md`.
 2. **Richest type** — UUID, arrays, JSONB, enums, ranges, `inet`. DB-side validation + indexing.
 3. **JSONB > JSON; never structured data as TEXT.** GIN / `@>` / `?` / path only on JSONB.
 4. **Parameterize all queries** (`@param` / `$1`). Dynamic identifiers → `pg-format`. SQLi defense + plan cache.
-5. **Right index type** — B-tree / GIN / GiST / BRIN. Wrong = no win or pure overhead.
-6. **Partial + expression indexes aggressively.** Smaller, faster, lower write cost.
-7. **Tune autovacuum.** High-churn → `autovacuum_vacuum_scale_factor 0.01–0.05`. Watch `n_dead_tup`. Bloat + stale stats wreck plans.
-8. **`EXPLAIN (ANALYZE, BUFFERS)` for complex queries.** Only ground truth.
+5. **Index suitability** — record workload evidence for B-tree/GIN/GiST/BRIN choices; route tuning to `postgresql-optimization`.
+6. **Partial/expression indexes** — evaluate query match and write overhead with that tuning owner.
+7. **Autovacuum** — inspect existing bloat/stats evidence; configuration changes need matching authorization.
+8. **Plan evidence** — prefer existing plans. `ANALYZE` executes the query; check actual effects and environment before running it.
 9. **Pool connections** — Npgsql built-in / multiplexing; PgBouncer transaction mode for Node / multi-service. ~10 MB per conn.
 10. **Retry SQLSTATE 40001** on SERIALIZABLE / RR. SSI aborts conflicts; no retry = random fails.
 11. **`RETURNING`** vs separate SELECT after INSERT/UPDATE. Atomic, race-free.
@@ -41,4 +41,4 @@ Why + patterns → `references/rules-expanded.md`.
 - `references/advanced-features.md` — RLS multi-tenant, MVs, extensions (pg_trgm, PostGIS, pgcrypto), partitioning vs inheritance, postgresql.conf
 - `references/backup-restore.md` — pg_dump / pg_basebackup, parallel dumps, WAL, PITR, retention, restore validation
 
-Open one at a time.
+Load only task-relevant references; batch independent reads and reuse unchanged content already in context.

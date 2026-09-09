@@ -10,7 +10,7 @@ Most flakiness comes from fighting Playwright's auto-waiting model: CSS locators
 ## Default Workflow
 
 1. Read existing `playwright.config.*`, fixtures, projects, and test style. Match conventions before adding abstractions.
-2. Pick the narrowest test type and run: API/component/E2E/visual, then `npx playwright test <file> -g "title"`.
+2. For review-only work, inspect config/tests/evidence; run a targeted check only when needed and safe for the authorized fixtures/environment. For writing/fixing, select the narrowest API/component/E2E/visual test and follow the validation loop.
 3. Prefer role/label/text locators, then `getByTestId`; use DOM/CSS selectors only with a maintenance reason.
 4. Use web-first assertions (`toBeVisible`, `toHaveText`, `toHaveURL`) instead of fixed sleeps.
 5. On failure, inspect trace/screenshot/console/network/locator state before changing waits.
@@ -38,7 +38,6 @@ Most flakiness comes from fighting Playwright's auto-waiting model: CSS locators
 
 ## Validation Loop
 
-1. Run targeted: `npx playwright test <file> --reporter=list`.
-2. Debug with trace / screenshot / console / network evidence.
-3. Fix root cause; rerun targeted.
-4. For formerly flaky critical tests, rerun with `--repeat-each=10` when practical.
+1. Reuse the latest targeted result if source/fixtures are unchanged; otherwise run the repository's targeted Playwright command.
+2. Inspect trace / screenshot / console / network evidence on failure. Review-only work reports findings; authorized fix work changes the cause and reruns affected checks.
+3. Use `--repeat-each` only for a demonstrated flaky critical case when repetition will test stability.

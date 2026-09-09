@@ -1,6 +1,6 @@
 ---
 name: test-gap-analysis
-description: "Assess whether existing tests would catch plausible production-code mutations when test effectiveness or missed edge cases are questioned. Default to static analysis; test authoring and mutation-tool execution use their own workflows."
+description: "Statically assess whether tests catch plausible code mutations when test effectiveness or missed cases are questioned; empirical mutation runs require explicit authorization."
 license: MIT
 ---
 

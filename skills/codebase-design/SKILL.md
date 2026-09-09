@@ -1,6 +1,6 @@
 ---
 name: codebase-design
-description: "Design module interfaces and test seams when evaluating module depth, responsibility boundaries, or a proposed structural refactor. Whole-codebase candidate survey uses /improve-codebase-architecture."
+description: "Evaluate module depth, interfaces, and test seams when designing a structural refactor; whole-codebase surveys use /improve-codebase-architecture."
 ---
 
 # Codebase Design
@@ -11,15 +11,15 @@ Design **deep modules**: a lot of behaviour behind a small interface, placed at 
 
 Use these definitions for this design model; preserve the repository's established domain names and distinguish an API signature from the wider caller-facing contract.
 
-**Module** — anything with an interface and an implementation. Deliberately scale-agnostic: a function, class, package, or tier-spanning slice. _Avoid_: unit, component, service.
+**Module** — anything with an interface and an implementation. Deliberately scale-agnostic: a function, class, package, or tier-spanning slice.
 
-**Interface** — everything a caller must know to use the module correctly: the type signature, but also invariants, ordering constraints, error modes, required configuration, and performance characteristics. _Avoid_: API, signature (too narrow — they refer only to the type-level surface).
+**Interface** — everything a caller must know to use the module correctly: the type signature, but also invariants, ordering constraints, error modes, required configuration, and performance characteristics. An API signature is only the type-level part of this contract.
 
 **Implementation** — what's inside a module, its body of code. Distinct from **Adapter**: a thing can be a small adapter with a large implementation (a Postgres repo) or a large adapter with a small implementation (an in-memory fake). Reach for "adapter" when the seam is the topic; "implementation" otherwise.
 
 **Depth** — leverage at the interface: the amount of behaviour a caller (or test) can exercise per unit of interface they have to learn. A module is **deep** when a large amount of behaviour sits behind a small interface, **shallow** when the interface is nearly as complex as the implementation.
 
-**Seam** _(Michael Feathers)_ — a place where you can alter behaviour without editing in that place; the *location* at which a module's interface lives. Where to put the seam is its own design decision, distinct from what goes behind it. _Avoid_: boundary (overloaded with DDD's bounded context).
+**Seam** _(Michael Feathers)_ — a place where you can alter behaviour without editing in that place; the *location* at which a module's interface lives. Where to put the seam is its own design decision, distinct from what goes behind it. Qualify boundary when distinguishing this role from a DDD bounded context.
 
 **Adapter** — a concrete thing that satisfies an interface at a seam. Describes *role* (what slot it fills), not substance (what's inside).
 
@@ -44,17 +44,11 @@ Accept dependencies rather than creating them, return results where possible, an
 
 ## Relationships
 
-- A **Module** has exactly one **Interface** (the surface it presents to callers and tests).
-- **Depth** is a property of a **Module**, measured against its **Interface**.
-- A **Seam** is where a **Module**'s **Interface** lives.
-- An **Adapter** sits at a **Seam** and satisfies the **Interface**.
-- **Depth** produces **Leverage** for callers and **Locality** for maintainers.
+For the relationship model and counterexamples, see [design examples](references/design-examples.md#relationships). Repository names remain unchanged.
 
 ## Rejected framings
 
-- **Depth as ratio of implementation-lines to interface-lines** (Ousterhout): rewards padding the implementation. We use depth-as-leverage instead.
-- **"Interface" as the TypeScript `interface` keyword or a class's public methods**: too narrow — interface here includes every fact a caller must know.
-- **"Boundary" without qualification**: distinguish a test seam, caller-facing interface, or DDD bounded context rather than replacing established domain terminology.
+Depth measures caller capability, not line counts; interface includes the whole caller contract.
 
 ## Going deeper
 

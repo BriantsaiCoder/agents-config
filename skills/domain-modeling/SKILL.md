@@ -1,6 +1,6 @@
 ---
 name: domain-modeling
-description: Build and sharpen a project's domain model. Use when the user wants to pin down domain terminology or a ubiquitous language, record an architectural decision, or when another skill needs to maintain the domain model.
+description: "Define domain terminology and record consequential architectural decisions when maintaining a project’s domain model."
 ---
 
 # Domain Modeling
@@ -11,7 +11,7 @@ Actively build and sharpen the project's domain model as you design. This is the
 
 Use the repository's existing context and ADR locations. A root `CONTEXT-MAP.md` selects a multi-context layout and points to each context; otherwise use the single-context layout. Before creating or relocating domain documents, read [document-layout](references/document-layout.md).
 
-Create files lazily — only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
+Create domain files lazily within the authorized docs path/scope. For read-only or discussion-only work, keep term/ADR proposals in the session; ask only before uncovered writes under `dev-workflow` S2.
 
 ## During the session
 
@@ -33,7 +33,7 @@ When the user states how something works, check whether the code agrees. If you 
 
 ### Update CONTEXT.md inline
 
-When a term is resolved, update `CONTEXT.md` right there. Don't batch these up — capture them as they happen. Use the format in [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
+Capture resolved terms as they arise: update authorized `CONTEXT.md`, or keep a session proposal under the scope rule above. Use [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
 
 `CONTEXT.md` should be totally devoid of implementation details. Do not treat `CONTEXT.md` as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else.
 

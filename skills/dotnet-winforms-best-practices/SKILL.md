@@ -27,7 +27,7 @@ Core boundaries: UI-thread affinity, resource disposal, and Designer code genera
 16. **Handle application-scope exceptions deliberately.** `Application.ThreadException` is recoverable UI handling; `AppDomain.UnhandledException` is log-only. Never route background failures through `Application.OnThreadException` without marshaling.
 
 Review in this order: cross-thread access, GDI+/Designer violations, async/disposal/serialization failures, then DPI/layout/accessibility issues.
-Severity: Critical = cross-thread, GDI+, or Designer corruption; High = async/disposal/serialization failures; Medium = binding/background/DPI/modern-API defects; Low = layout/accessibility.
+Set severity from observed consequences: data loss, crashes, resource exhaustion, Designer corruption, or inability to complete a task. Layout and accessibility can be blocking; category alone does not determine priority.
 
 ## Reference Navigation
 

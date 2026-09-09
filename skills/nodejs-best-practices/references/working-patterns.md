@@ -19,8 +19,9 @@ examples and edge cases live in the references listed.
    ORMs — always use their parameter binding API.
    *(Rule 8. See `references/performance-async.md`.)*
 
-4. **Environment config validated with Zod at startup** — define a `z.object({...})` schema for every
-   required env var, `envSchema.parse(process.env)` once at boot, export the resulting typed `config`.
+4. **Environment config validated at startup with the existing validator** — validate required env
+   vars once at boot and export typed `config`. When Zod is already selected, a `z.object({...})`
+   schema and `envSchema.parse(process.env)` are one example; do not add Zod to follow it.
    Never read `process.env.X` in business logic.
    *(Rule 4. See `references/security-validation.md`.)*
 
@@ -32,8 +33,8 @@ examples and edge cases live in the references listed.
 2. Set up TypeScript strict mode if not already configured.
 3. **Add `helmet()`, `cors()`, and `express.json({ limit: '1mb' })` to app setup** — these are non-negotiable.
 4. Create or locate the feature directory. Add route, service, and validation files; keep services pure where possible, without Express types.
-5. Write input validation schema (Zod/Joi) first — this defines the contract.
-6. **Validate environment config with Zod at startup** (`config = envSchema.parse(process.env)`) — never access `process.env` directly elsewhere.
+5. Define the input validation contract with the existing validator; Zod/Joi examples apply only when already selected.
+6. **Validate environment config at startup with the existing validator** (Critical Pattern 4); `config = envSchema.parse(process.env)` applies when Zod is selected. Never access `process.env` directly elsewhere.
 7. Implement the handler with async/await and the version-aware propagation from Critical Pattern 1. Do not swallow errors.
 8. Add error handling — custom `AppError` for expected errors, let unexpected ones propagate to the four-parameter error middleware registered after routes.
 9. Use **parameterized queries** (`$1`, `?`) for any database access. Get connections from a **pool** (`pg.Pool`), never `new Client()` per request. Use explicit transactions for multi-statement writes.

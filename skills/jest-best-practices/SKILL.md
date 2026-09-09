@@ -52,9 +52,6 @@ Boundaries only — full → `references/jest-deep.md`. Jest-specific:
 
 ## Common Mistakes
 
-- **Babel TS = typecheck.** No. Run `tsc --noEmit`.
-- **Mocking after captured ref.** No-op.
-- **`jest.mock()` in native ESM.** Use `unstable_mockModule` + dynamic.
 - **Migrating to Vitest because config annoying.** Only if user asks.
 
 Flake triage, full mocking, ESM example, validation → `references/jest-deep.md`.

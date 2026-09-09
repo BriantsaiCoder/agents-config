@@ -1,6 +1,6 @@
 ---
 name: frontend-release-verification
-description: "Assess frontend release readiness when preparing deployment, selecting release gates, or verifying user journeys and rendered behavior."
+description: "Assess frontend readiness for a release or deployment using gates matched to the changed behavior; standalone visual reviews use web-design-reviewer."
 ---
 
 # Frontend Release Verification
@@ -37,13 +37,7 @@ Use the package manager and clean-install command configured by the repo or CI. 
 
 ## Deployment Gates Beyond CI
 
-MUST pass three — see `references/deployment-gates.md` for thresholds + config + skip rules.
-
-1. **Bundle Size** — `size-limit` / `bundlewatch`; absolute cap + diff vs base.
-2. **Lighthouse CI** — `@lhci/cli` on PR preview; LCP ≤ 2.5s, CLS ≤ 0.1, INP ≤ 200ms.
-3. **Staging Smoke E2E** — Playwright `staging` project, critical-path subset, blocks prod on red.
-
-Browser smoke acceptance (no blank, journey works, console clean, mobile + desktop) — same reference.
+For release/deployment assessment, load [deployment gates](references/deployment-gates.md). Mark each applicable gate PASS/FAIL/SKIPPED/UNAVAILABLE with evidence; repo or authorized deployment-contract gates block promotion. Report missing infrastructure without installing it merely to run this skill.
 
 ## Skill Routing
 

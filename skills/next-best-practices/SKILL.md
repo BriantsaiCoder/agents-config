@@ -5,6 +5,8 @@ description: "Write, review, or debug Next.js App Router behavior, including ser
 
 # Next.js Best Practices
 
+Next routing/RSC and framework data flow stay here. General component/hook correctness uses `react-best-practices`; explicit performance optimization uses the installed Vercel performance skill (for example `build-web-apps:react-best-practices`).
+
 ## Verification Gate
 
 Check installed Next.js version and existing App Router conventions before applying version-sensitive advice. After material changes, prefer project scripts (`lint`, `typecheck`, `test`, `build`); at minimum run narrowest build/typecheck or explain why not.

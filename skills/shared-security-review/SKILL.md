@@ -16,12 +16,7 @@ AI scanner reasoning like a human researcher — data flow, component interactio
 
 ## How It Works
 
-1. Reads with context, intent, data flow.
-2. Traces across files.
-3. Self-verifies to filter false positives.
-4. Severity: CRITICAL / HIGH / MEDIUM / LOW / INFO.
-5. Proposes targeted patches.
-6. Reviewers stay read-only. For an authorized review-and-fix request, return accepted findings to the implementation owner for scoped fixes and verification under shared S2.
+Reviewers stay read-only. For an authorized review-and-fix request, return accepted findings to the implementation owner for scoped fixes and verification under shared S2.
 
 ## Workflow
 
@@ -32,13 +27,7 @@ Cross-File Flow → Self-Verify → Report → Patches.
 
 ## Severity Guide
 
-| Severity | Meaning | Example |
-|---|---|---|
-| CRITICAL | Immediate exploit; breach likely | SQLi, RCE, auth bypass |
-| HIGH | Exploit path exists | XSS, IDOR, hardcoded secrets |
-| MEDIUM | Conditional / chaining | CSRF, open redirect, weak crypto |
-| LOW | Best-practice violation | Verbose errors, missing headers |
-| INFO | Observation | Outdated dep without CVE |
+Use the impact and exploitability criteria in [workflow](references/workflow.md#step-6--verdict-confidence--severity). Category identifies the attack surface; it does not fix severity. Record attacker prerequisites, reachability, and concrete impact separately from confidence.
 
 ## Output Rules
 

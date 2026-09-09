@@ -111,7 +111,7 @@ findings before reporting drops borderline-but-real ones. Same rationale as `[S5
      do not express it by lowering confidence, and do not delete the finding.
 4. Assign a **Confidence** per the Ratings Guide in `report-format.md` — that table is the single
    definition; do not restate or re-scale it here.
-5. Assign final severity: CRITICAL / HIGH / MEDIUM / LOW / INFO.
+5. Assign final severity (CRITICAL / HIGH / MEDIUM / LOW / INFO) from attacker prerequisites, reachability, and concrete impact. Vulnerability category alone does not determine severity; keep confidence independent. Explain the rating and preserve findings for caller triage.
 
 Report every finding in Step 7 with Verdict, Confidence and severity attached. Filtering, if
 wanted, is the caller's pass — not this one.

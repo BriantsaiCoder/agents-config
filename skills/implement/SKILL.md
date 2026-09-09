@@ -12,4 +12,4 @@ Use [dev-workflow](../dev-workflow/SKILL.md) S4 and [evidence-integrity](../dev-
 
 Once done, use /code-review to review the work.
 
-Commit your work to the current branch.
+Complete S4/S5 and the authorized delivery scope under `dev-workflow` S2/S6. Checkpoint/final commits require existing authorization; otherwise deliver reviewable local changes.

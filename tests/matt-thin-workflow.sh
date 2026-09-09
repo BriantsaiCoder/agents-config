@@ -195,7 +195,7 @@ actual_diagnosing_tree_sha="$(vendored_tree_sha256 "$DIAGNOSING_DIR")"
   fail 'diagnosing-bugs tree differs from the recorded fork fingerprint'
 rg -q '^description: .*Agent Skill.*AGENTS\.md.*CLAUDE\.md.*agent-facing document.*canonical owner' "$WRITING_SKILLS" ||
   fail 'writing-for-agents lacks its generalized document trigger branches'
-rg -q 'Existing-skill invocation edits stay here.*host creator owns new-skill scaffolding.*folder auditor owns directory audits' "$WRITING_SKILLS" ||
+rg -q 'Existing-skill content, trigger, and invocation edits stay here.*host creator owns a new skill package/scaffold and its initial metadata.*subsequent prose edits here.*folder auditor owns directory audits' "$WRITING_SKILLS" ||
   fail 'writing-for-agents lost the local skill-authoring ownership boundary'
 rg -q '^\*\*REQUIRED PRECONDITION:\*\*.*preserved RED trigger canary.*Step 2c RED satisfies this gate' "$WRITING_SKILLS" ||
   fail 'writing-for-agents does not accept a caller-provided Step 2c RED'
@@ -603,7 +603,8 @@ git -C "$AGENTS" diff --quiet --ignore-matching-lines='^description: ' "$WORKFLO
   fail 'mp-zoom-out changed beyond the approved description rewrite'
 
 fork_count=0
-expected_upstream_tree_count=$(grep -c '^upstream_tree_sha256=' "$AGENTS/mattpocock-skills.lock")
+# Zero upstream-identical entries is valid when every pinned skill has a recorded fork.
+expected_upstream_tree_count=$(awk '/^upstream_tree_sha256=/ { n++ } END { print n+0 }' "$AGENTS/mattpocock-skills.lock")
 upstream_tree_count=0
 # Full-tree hashing is deliberate: provenance checks pay this small cost so any
 # file, mode, or symlink drift in an upstream-identical skill fails closed.
@@ -806,6 +807,15 @@ done < "$B2_SKILLS_LOCK"
 #   typescript-best-practices/SKILL.md
 while IFS= read -r changed; do
   case "$changed" in
+    # 2026-09-10 approved shared audit: references must agree with scoped main rules.
+    skills/dotnet-logging-best-practices/references/code-patterns.md | \
+    skills/frontend-release-verification/references/deployment-gates.md | \
+    skills/mysql-best-practices/references/rules-expanded.md | \
+    skills/postgresql-best-practices/references/rules-expanded.md | \
+    skills/react-best-practices/references/performance.md | \
+    skills/react-best-practices/references/rules-expanded.md | \
+    skills/typescript-best-practices/references/working-patterns.md | \
+    skills/typescript-best-practices/references/rules-expanded.md) ;;
     # 2026-09-09 approved audit: exact additional Markdown targets; no wildcard expansion.
     skills/acquire-codebase-knowledge/SKILL.md | \
     skills/c-cpp-best-practices/SKILL.md | \

@@ -32,7 +32,7 @@ name: 'aspnet-api-architect'
    dotnet add <ApiName>.Tests/<ApiName>.Tests.csproj reference <ApiName>/<ApiName>.csproj
    ```
 
-6. **Verify** — build、targeted tests、文件連結與 `tasks.md` acceptance criteria 必須一致；缺少可執行環境時明列 `UNAVAILABLE`，不得宣稱完成。
+6. **Verify** — design-only 核對 endpoint／risk → task → acceptance criteria 與文件連結；有 scaffold／code 變更才跑 build 與 affected tests。環境缺失只將相依驗證標 `UNAVAILABLE`，不得宣稱該驗證通過。
 
 ## 完成條件
 

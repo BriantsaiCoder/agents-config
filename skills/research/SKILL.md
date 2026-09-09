@@ -1,12 +1,10 @@
 ---
 name: research
-description: Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.
+description: "Produce a source-cited research report when substantial research or background reading is requested; single-provider API/docs lookups use the provider documentation skill."
 ---
 
-Spin up a **background agent** to do the research, so you keep working while it reads.
+For substantial research, investigate primary sources — official docs, source code, specs, and first-party APIs — and trace each consequential claim to its owner. Distinguish source statements from inference and unresolved evidence.
 
-Its job:
+Use `dev-workflow` INT-4 to choose delegation when useful and available; a background agent is optional. Single-provider API/docs lookups use the provider documentation skill.
 
-1. Investigate the question against **primary sources** — official docs, source code, specs, first-party APIs — not a secondary write-up of them. Follow every claim back to the source that owns it.
-2. Write the findings to a single Markdown file, citing each claim's source.
-3. Save it where the repo already keeps such notes; match the existing convention, and if there is none, put it somewhere sensible and say where.
+Deliver a source-cited report at the authorized path, following repository conventions. Without file-write scope, deliver it in the conversation or an authorized temporary artifact; do not invent a repository destination. Report missing sources and limitations rather than claiming complete coverage.

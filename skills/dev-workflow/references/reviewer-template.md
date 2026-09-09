@@ -99,3 +99,8 @@
 - 禁表演式同意——不做無理由的「好的我改」；也不做無理由的「不用改」。
 - finding 是 bug → 回 S3；有 stable／valuable seam 時先補 RED，否則用同一 repro 留 before／after 並記錄理由（[INT-2]）。
 - 全部 findings 皆已 resolved（修掉或有據駁回並回覆）才可回 SKILL.md S5 判 EXIT。
+
+## S5 dispatch and output gates
+
+- [S5-3] 非 SKIPPED 的 Standards 軸 prompt MUST 套用 `references/reviewer-template.md` 的 canonical over-engineering contract；專屬 reviewer 也須收到等價完整 contract。觸發：S5 review。例外：無。驗證：prompt evidence。
+- [S5-4] Reviewer output MUST 套用 `references/reviewer-template.md` 的 evidence-first actionable contract 與單軸 aggregate contract；不得用固定字數／條數上限截斷 findings。觸發：任何 review agent prompt。例外：無。驗證：review output evidence。

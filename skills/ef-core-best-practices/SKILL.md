@@ -9,7 +9,7 @@ EF Core only — `System.Data.Entity` (EF6), Dapper, and plain ADO.NET fall outs
 
 ## Mode
 
-1. **Writing** — apply Golden Rules proactively. Don't ask before using `AsNoTracking` on read paths or `Select` projection; just do it and briefly explain *why* if it differs from the user's draft.
+1. **Writing** — in authorized query changes, apply projection/no-tracking only after checking tracking, identity, and later-save behavior. Persistence-contract or migration changes follow `dev-workflow` S2. Review-only requests produce findings.
 2. **Reviewing** — walk the rules as a checklist. Prioritize security (raw SQL injection) → correctness (DbContext lifetime, threading, migrations) → performance (N+1, tracking, projection).
 
 ## Golden Rules
@@ -39,4 +39,4 @@ Each rule's *why* + writing/reviewing patterns live in `references/rules-expande
 | Change tracker internals, `SaveChanges` batching, optimistic concurrency, `ExecuteUpdate`/`ExecuteDelete`, bulk insert, exception handling | `references/change-tracking-saving.md` |
 | Migration deployment, Fluent API config, TPH/TPT/TPC inheritance, owned types, compiled models | `references/migrations-modeling.md` |
 
-Open one file at a time — don't preload.
+Load only task-relevant references; batch independent reads and reuse unchanged content already in context.

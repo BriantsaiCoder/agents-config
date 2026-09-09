@@ -7,11 +7,11 @@ Detailed working patterns extracted from `SKILL.md` to keep the main file compac
 1. Confirm the target environment — Node.js version, bundler (Vite/webpack/esbuild), framework (React/Vue/none). This determines `module`, `moduleResolution`, and `target` in tsconfig.
 2. Define the data shapes first. Use interfaces for object shapes, type aliases for unions/intersections/utilities.
 3. Use discriminated unions for any multi-state domain object (API responses, form state, auth state).
-4. At API boundaries, write a Zod/Valibot schema and derive the type from it.
+4. At API boundaries, validate with existing schemas or narrow runtime guards; follow the [canonical boundary-validation choice](rules-expanded.md#5-zod--valibot-at-runtime-boundaries). Derive types from schemas when the selected library supports it.
 5. Write functions with explicit return type annotations for public APIs; let inference handle internal functions.
 6. Use generics only when the function genuinely operates on a parameterized type.
 7. If you need to narrow an unknown value, write a type guard (`function isUser(x: unknown): x is User`).
-8. For `fetch` calls: always `await res.json()`, check `res.ok` before parsing, validate the result with Zod.
+8. For `fetch` calls: check `res.ok` before parsing and await `res.json()` when a JSON body is expected; validate the result with the existing schema or sufficient runtime guards, using the same boundary-validation criteria.
 9. Run `tsc --noEmit` to verify — zero errors is the goal.
 
 ## Working pattern for *reviewing* TypeScript code
@@ -37,7 +37,7 @@ When the request is to *design* complex type logic — generic helpers, conditio
 1. **Define the invalid states** the type should prevent. If you can't name a real bug class, the type isn't pulling its weight.
 2. **Check for existing utilities** in the project, schema layer (Zod), or framework (React's `ComponentProps`, Vue's `ExtractPropTypes`). Don't reinvent.
 3. **Pick the simplest construct** that enforces the rule, in this order: explicit interface → union → discriminated union → generic with constraint → mapped type → conditional type → template literal type. Stop at the first one that works.
-4. **Keep runtime validation separate.** Compile-time types don't protect untrusted boundaries — Zod/Valibot does.
+4. **Keep runtime validation separate.** Compile-time types don't protect untrusted boundaries; use existing schemas or sufficient runtime guards under the same boundary-validation criteria.
 5. **Add type tests** (`expectTypeOf`, `tsd`, or compile-fail snippets) for reusable utilities so behavior doesn't silently change.
 6. **Watch compiler perf and error readability.** Deeply recursive conditional types kill `tsc` perf and produce unreadable errors. If `hover` shows a multi-line monster, simplify.
 

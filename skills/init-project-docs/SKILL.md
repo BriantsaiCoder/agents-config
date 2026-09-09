@@ -19,8 +19,7 @@ description: "Initialize or refresh repository documentation and host-native AI 
 
 - 單一 output：讀 [README guide](references/docs-examples.md#readmemd)、[standards](references/coding-standards.md)、[Copilot](references/copilot-instructions.md)、[architecture](references/codebase-blueprint.md) 或 [AGENTS](references/agentsmd.md)；只在要求 full variant 時讀 [architecture detailed](references/architecture-blueprint-detailed.md) 或 [Copilot detailed](references/copilot-instructions-detailed.md)。
 - Full docs：讀 [docs examples](references/docs-examples.md)，只保留會影響其他 module／integration 的事實。
-- Settings 與 Phase 4–6：先讀取共用的 stack/template catalog `references/README.md`，再依 [host matrix](references/host-matrix.md) 顯示完整 multi-select catalogs 與 `Recommended`／`Optional`／`Not recommended` 理由。
-- 新專案無等價 baseline 時讀 [new-project defaults](references/new-project-defaults.md)。依 repo evidence 建立 `.gitignore`、`.editorconfig`、key-only `.env.example` 與 CI；忽略 secret-bearing `.env*`／host-local settings，CI command 取自 repo script。
+- Settings／Phase 4–6 或新專案無等價 baseline：讀 [conditional setup routing](references/README.md#conditional-setup-routing)，依該分支選 catalog 與 defaults。
 
 呈現 proposed diff，只建立使用者已選取或明確授權的 outputs；已核准 scope 不重問。新的 host、output 或未授權副作用才確認相依項目。
 

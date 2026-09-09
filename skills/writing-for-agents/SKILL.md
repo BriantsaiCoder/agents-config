@@ -7,7 +7,7 @@ description: "Revise an existing Agent Skill, AGENTS.md, CLAUDE.md, or agent-fac
 
 Write documents that make a stochastic agent follow a predictable process. This skill improves content inside the owner already selected by the host workflow; it does not decide whether policy belongs in a thin host kernel, shared workflow, skill, or repo document.
 
-Existing-skill invocation edits stay here; the host creator owns new-skill scaffolding; the folder auditor owns directory audits.
+Existing-skill content, trigger, and invocation edits stay here after canonical ownership is known. The host creator owns a new skill package/scaffold and its initial metadata; route subsequent prose edits here. The folder auditor owns directory audits.
 
 ## Choose the branch
 

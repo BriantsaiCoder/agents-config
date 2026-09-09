@@ -5,7 +5,7 @@ description: "Write, review, or tune Entity Framework 6 data access identified b
 
 # EF6 Best Practices
 
-Use this skill for Entity Framework 6 code on any supported runtime. EF 6.3+ (Sept 2019) runs on .NET Core 3.0 and later as well as .NET Framework; EF 6.5.2 (April 2026) is .NET 10 compatible. EF6 is not EF Core: APIs, migration tooling, async behavior, lifetime guidance, and Include syntax differ.
+Identify EF6 by package and namespace; its APIs, migrations, async behavior, and Include syntax differ from EF Core.
 
 ## When This Skill Applies
 
@@ -40,7 +40,7 @@ Do not use when code references `Microsoft.EntityFrameworkCore`; use `ef-core-be
 ## Review Checklist
 
 - Critical: raw SQL concatenates user input, hardcoded credentials, shared/static context, or cross-thread context usage.
-- High: lazy loading causes N+1, missing `AsNoTracking`, unbounded table reads, sync-over-async, stale EDMX.
+- Inspect lazy-loading N+1, unbounded reads, sync-over-async, and stale EDMX. For read-only queries, evaluate `AsNoTracking` against tracking/identity needs; assign severity from measured cost or correctness impact, not its absence alone.
 - Medium: long-lived context, oversized change tracker, migration deployment risk, swallowed update exceptions.
 - Low: unclear projections, inconsistent naming, or conventions that differ from the existing EF6 model.
 

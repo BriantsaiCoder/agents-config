@@ -12,11 +12,11 @@ Portable CSS / UI / a11y rules. Apply proactively when writing and as a checklis
 - Match the repository's existing styling system; do not introduce a second one for a local change.
 - Design tokens → CSS custom properties.
 - Native CSS first: nesting, `@layer`, `:has()`, container queries.
-- No `!important`. Manage cascade with `@layer`.
+- Resolve cascade conflicts using the existing layer/specificity model. Use a narrowly scoped `!important` only where that model requires an override; document the reason.
 
 ## Performance (Core Web Vitals)
 
-- Animate only `transform` / `opacity`. Never `width` / `height` / `top` (layout, jank, hurts INP).
+- Prefer `transform` / `opacity`; when layout animation is required, verify frame responsiveness and reduced-motion behavior on the affected UI.
 - Images: `aspect-ratio` (CLS-safe) + `loading="lazy"` (below fold) + `<picture>` WebP/AVIF.
 - Do not add a UI framework for a few components; verify unused CSS from the production build.
 

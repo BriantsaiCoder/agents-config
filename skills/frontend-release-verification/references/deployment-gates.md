@@ -1,13 +1,13 @@
 # Deployment Gate Implementation
 
-CI pass alone is not deploy-ready. For user-facing frontend, enforce these three gates beyond unit/E2E.
+CI pass alone does not establish readiness. Assess the following gates against changed behavior and the repo/authorized deployment contract. Record PASS/FAIL/SKIPPED/UNAVAILABLE and reasons; examples below are not new mandatory infrastructure. Required gates block promotion, while absent optional gates become a documented gap.
 
 ## 1. Bundle Size Budget
 
 - **Tools:** `size-limit` (multi-framework, lockfile-aware) or `bundlewatch`. Framework-native equivalents (`next-bundle-analyzer`, Vite `rollup-plugin-visualizer`) for inspection only.
 - **Thresholds:** absolute cap per chunk (e.g., main bundle ≤ 200 kB gzipped, route chunk ≤ 80 kB) plus relative diff vs base branch (warn +5%, block +10%).
 - **CI step:** PR job runs build, computes size, compares to base; fail if any cap or block-threshold tripped.
-- **Evidence:** bundle report artifact + diff comment on PR.
+- **Evidence:** bundle report artifact and comparison; publish a PR comment only within authorized scope.
 - **Skip rationale (must record):** pure backend/config change with no client output.
 
 ## 2. Lighthouse CI (LHCI)
@@ -23,8 +23,7 @@ CI pass alone is not deploy-ready. For user-facing frontend, enforce these three
         "assertions": {
           "categories:performance": ["error", { "minScore": 0.9 }]
         }
-      },
-      "upload": { "target": "temporary-public-storage" }
+      }
     }
   }
   ```
@@ -38,7 +37,7 @@ CI pass alone is not deploy-ready. For user-facing frontend, enforce these three
 - **Trigger:** deploy-to-staging job's post-deploy hook (GitHub Actions `needs: deploy-staging`), not the PR CI.
 - **Failure handling:** auto-rollback the staging deploy or hold the prod promotion gate. Never auto-promote to prod on red staging smoke.
 - **Evidence:** Playwright trace + screenshot artifacts retained per staging-smoke run; surface in deploy summary.
-- **Skip rationale (must record):** no staging environment exists — escalate as infra gap, do not proceed to prod.
+- **Unavailable/skip rationale (must record):** no staging environment exists. Report the gap; block promotion when staging smoke is required by the deployment contract. Do not provision staging without authorization.
 
 ## Browser Smoke Detail
 

@@ -2,9 +2,9 @@
 
 The Why behind each rule + code examples.
 
-## 1. strict mode always on
+## 1. Respect repository compiler policy
 
-`"strict": true` in `tsconfig.json` enables `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, etc.
+`"strict": true` enables strict checking for new projects. In an existing repo, keep touched code safe under current policy; a repository-wide compiler migration requires matching scope.
 
 **Why**: `strictNullChecks` alone prevents the majority of "cannot read property of undefined" runtime crashes. Turning it off defeats TS's primary value.
 
@@ -53,7 +53,7 @@ type State =
 
 ## 5. Zod / Valibot at runtime boundaries
 
-Validate fetch responses, form input, env vars; infer the type from the schema.
+Validate fetch responses, form input, and env vars using the existing schema library or narrow runtime guards. The Zod example applies when Zod is already selected; do not add it merely to follow the example.
 
 ```typescript
 const UserSchema = z.object({ id: z.string(), name: z.string() });
@@ -85,7 +85,7 @@ const routes = { home: '/', about: '/about' } satisfies Record<string, string>;
 
 **Why**: Get both autocomplete on inferred literals AND compile-time check against target type.
 
-## 9. Branded types for semantically-distinct IDs
+## 9. Consider branded types for demonstrated ID-confusion risks
 
 ```typescript
 type UserId = string & { readonly __brand: unique symbol };
@@ -106,7 +106,7 @@ default: {
 
 **Why**: Adding a new union variant flags every unhandled switch — instant zero-cost coverage.
 
-## 11. Avoid `enum`; use `as const` objects
+## 11. Choose enum or literal representation from repository needs
 
 `const Status = { Active: 'active', Inactive: 'inactive' } as const`.
 
@@ -120,13 +120,13 @@ If you must suppress, `@ts-expect-error // reason`.
 
 ## Working Pattern — Writing
 
-1. Confirm `tsconfig.json` is `strict: true`. If not, fix that first.
-2. Start from data shapes — Zod schema for any external input, then `z.infer` to derive the static type.
+1. Inspect compiler policy; a local fix does not authorize changing repository-wide strict settings.
+2. Start from data shapes and validate external input with existing schemas/guards; infer types where the selected library supports it.
 3. Model state with discriminated unions; never optional flags that allow impossible combinations.
 4. Functions: annotate return + parameters; let body types infer.
 5. `unknown` for dynamic input + narrow with type guards / `in` / `typeof`.
 6. `satisfies` for config objects, route maps, lookup tables.
-7. Brand IDs / values that share a primitive but mean different things.
+7. Consider branded IDs only where domain confusion warrants them; preserve consumers and serialization contracts.
 8. Exhaustive switch with `never` default for unions.
 
 ## Working Pattern — Reviewing
