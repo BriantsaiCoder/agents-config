@@ -216,7 +216,7 @@ Six local changes are intentionally small:
 Upstream-only trailing whitespace in `design_system.py` is normalized mechanically so the shared
 repository's diff check remains clean.
 
-Approved payload SHA-256: `2662c8f0b242bda08ce6777e443c965ff09e6fffe72715e0bc16f4627772a2a7`;
+Approved payload SHA-256: `3fff0dd81f63654f8984d8b08b8e0156af687e80d545062191a261e520251eca`;
 approved tree SHA-256: `20a373233625a27d8118204b18686f9c7b7e30f85f12da36e817e81740fb1d36`.
 
 ### Re-merge procedure (when upstream moves)
@@ -1010,8 +1010,8 @@ humanizer and adds only the missing technical branch:
 - `references/protected-list.md` protects code, paths, APIs, config keys, commands, versions, results, errors, and logs while redacting credential/secret values.
 - `evals/benchmark.md` adds paired SF-28/SNF-16 coverage plus SF-29 secret redaction; `evals/trigger-cases.jsonl` fixes one technical-writing fire and one raw-log-analysis quiet case.
 
-Approved payload SHA-256 `0e2553e2db0e7a4ca7b02c14015a89c47bfbb9d925255e59fc0b4805f64b480d`;
-approved tree SHA-256 `985556baba728ebd05009bcd780045ea074b95e7e48b1509011eee6cfbd053a9`.
+Approved payload SHA-256 `a34245a46b31c89369f708ff0a84c3da5bccc4fc141d157c887f7d21a4893acd`;
+approved tree SHA-256 `5e3e7a4811ff46b811f4b550668564a4cd847abf3df5c5ad4a1fb77753c129d8`.
 
 ### Re-merge procedure (when upstream moves)
 
