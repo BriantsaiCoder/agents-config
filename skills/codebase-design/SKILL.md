@@ -1,6 +1,6 @@
 ---
 name: codebase-design
-description: "Design module interfaces and test seams when evaluating module depth, responsibility boundaries, or a proposed structural refactor."
+description: "Design module interfaces and test seams when evaluating module depth, responsibility boundaries, or a proposed structural refactor. Whole-codebase candidate survey uses /improve-codebase-architecture."
 ---
 
 # Codebase Design

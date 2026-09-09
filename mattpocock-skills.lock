@@ -14,6 +14,7 @@ invocation_manifest_sha256=6e30f32c601ef6473c6895e1e536f87f4ec9a3e179dea19587b5f
 # implement fork baseline (2026-09-07): 08a0cb886cb9474eee27feb13ddb96b9087d90b39a6f9ff913195d9b60728bd0; current tree in vendored-forks.md
 upstream_tree_sha256=research:679ea679b8e4d0381b74dd9dc3fa0d329f8b7134c1151d1c2458824c1c24c016
 # domain-modeling fork baseline (2026-09-09): 1918befd92fd79e48b96698c79bdcea0b925b188d6c70004c077515153750101; current tree in vendored-forks.md
+# improve-codebase-architecture fork baseline (2026-09-09): 78544103d7c78120e6fcdd2aecc2c89a0d403af1810e31c79a8e2feed9559670; current tree in vendored-forks.md
 # codebase-design fork baseline (2026-09-09): 1a383c195d752de7f28a495f5fb3db54eaad06734c57ccd810390fe31eea9579; current tree in vendored-forks.md
 # resolving-merge-conflicts fork baseline (2026-09-09): 52162eecbd8366e1d4b145e0964dfab7fe3cd534773d85e79c750f6e04aa65f5; current tree in vendored-forks.md
 # grill-me fork baseline (2026-09-09): 0da3a0d6c13e90dd18565754376f49c533a8779a6079c88e7a1bbc7d3dab4b10; current tree in vendored-forks.md

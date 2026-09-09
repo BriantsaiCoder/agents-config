@@ -1,6 +1,6 @@
 ---
 name: mp-zoom-out
-description: "Map modules, callers, and change boundaries when unfamiliar code needs local orientation before editing."
+description: "Map modules, callers, and change boundaries when unfamiliar code needs local orientation before editing. Fan-in evidence for one shared file uses deps-check."
 ---
 
 Go up a layer of abstraction before touching this code.

@@ -1,6 +1,23 @@
 # HTML Report Format
 
-架構審查輸出為 OS temp directory 中的一個 self-contained HTML file，並遵循 [SKILL.md](SKILL.md) 的 language contract。Tailwind 與 Mermaid 都從 CDN 載入；Mermaid 負責 graph-shaped diagrams，hand-built divs 與 inline SVG 負責較具編輯感的 visuals（mass diagrams、cross-sections）。混合使用兩者，不要讓所有內容都依賴 Mermaid 而顯得制式。
+## Card contents
+
+The report uses **Tailwind via CDN** for layout and styling, and **Mermaid via CDN** for diagrams where a graph/flow/sequence reliably communicates the structure. Mix Mermaid with hand-crafted CSS/SVG visuals — use Mermaid when relationships are graph-shaped (call graphs, dependencies, sequences), and hand-built divs/SVG when you want something more editorial (mass diagrams, cross-sections, collapse animations). Each candidate gets a **before/after visualisation**. Be visual.
+
+For each candidate, render a card with:
+
+- **檔案** — 涉及哪些 files/modules
+- **問題** — current architecture 為何造成 friction
+- **方案** — 簡潔說明會改變什麼
+- **效益** — 用 locality、leverage 與 tests 的改善來說明
+- **修改前 / 修改後圖** — 並排呈現的 custom diagram，說明 shallow 到 deep 的變化
+- **建議強度** — 以 badge 呈現 `強烈建議`、`值得探索` 或 `推測性`
+
+報告最後加上 **首要建議** section，說明最先處理哪個 candidate 以及原因。
+
+## Format
+
+架構審查輸出為 OS temp directory 中的一個 self-contained HTML file，並遵循 [SKILL.md](../SKILL.md) 的 language contract。Tailwind 與 Mermaid 都從 CDN 載入；Mermaid 負責 graph-shaped diagrams，hand-built divs 與 inline SVG 負責較具編輯感的 visuals（mass diagrams、cross-sections）。混合使用兩者，不要讓所有內容都依賴 Mermaid 而顯得制式。
 
 ## Scaffold
 
@@ -105,7 +122,7 @@ Before: a tree of function calls rendered as nested boxes. After: the same tree 
 
 ## Tone
 
-遵循 [SKILL.md](SKILL.md) 的 `Language` section；本 scaffold 只定義 report tone。文字保持精簡直接，但不得偏離 `/codebase-design` vocabulary。
+遵循 [SKILL.md](../SKILL.md) 的 `Language` section；本 scaffold 只定義 report tone。文字保持精簡直接，但不得偏離 `/codebase-design` vocabulary。
 
 **Use exactly:** module, interface, implementation, depth, deep, shallow, seam, adapter, leverage, locality.
 

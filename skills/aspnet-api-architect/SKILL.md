@@ -1,7 +1,6 @@
 ---
 description: 'Use when turning ASP.NET Core Web API requirements into design.md and tasks.md, or when an approved design authorizes scaffolding the API and MSTest project.'
 name: 'aspnet-api-architect'
-tools: ['read', 'edit', 'execute', 'search', 'agent/runSubagent']
 ---
 
 # ASP.NET API Architect Skill

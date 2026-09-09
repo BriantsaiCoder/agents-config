@@ -44,15 +44,3 @@ skills/exec-briefing/
 
 # Reviewed, redacted model evidence for the approved skill optimization.
 !proposals/2026-09-05-sol-astra-skills/model-evidence.json
-
-# ai-level-check 的產物＝逐字對話的抽取結果與依它寫成的個人報告。scripts/collect.py 的
-# --out 預設是 CWD 相對的 evidence/<起日>_<迄日>，scripts/publish.sh 的報告路徑同樣 CWD
-# 相對；skills/ai-level-check/.gitignore 只覆蓋該子樹，host 以 ~/.agents 為 CWD 呼叫時
-# 產物落在 repo 根，那份管不到。同 profile.md 與 exec-briefing：本 repo 是 PUBLIC，
-# PII 絕不進版控。pre-commit 只擋 *.bak 與 gitleaks，而 gitleaks 比對密鑰格式，對逐字
-# 對話一律不命中，所以這裡是唯一的網。
-# evidence/ 不錨定：任何深度都要擋。/reports/ 錨定 repo 根，否則會蓋掉
-# skills/ai-level-check/.gitignore 的 !reports/.gitkeep（該檔已進版控）。
-evidence/
-*.evidence.json
-/reports/

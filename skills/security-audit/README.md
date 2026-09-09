@@ -21,7 +21,9 @@ Multiple runs against the same repo are additive. Each run explores different co
 
 | File | Purpose |
 |------|---------|
-| `SKILL.md` | Setup, core principles, platform terminology, workflow overview, and audit anti-patterns |
+| `SKILL.md` | Platform terminology, workflow overview, and pointers to setup and principles |
+| `references/setup.md` | Prerequisites, output directory default, and prior-run context |
+| `references/principles.md` | Core principles and audit anti-patterns |
 | `RECONNAISSANCE.md` | Phase 1 reconnaissance prompts and synthesis instructions |
 | `HUNTING.md` | Phase 2 orchestration, hunting methodology, and validation rules |
 | `ATTACK-CLASSES.md` | Core, wildcard, and obvious-things attack prompts |
@@ -64,7 +66,7 @@ find security vulnerabilities in ./src
 do a security review, output to ~/audits/my-project
 ```
 
-The skill activates automatically when the request matches its trigger (security audit, find vulnerabilities, pen-test the code, etc.). It will ask for an output directory if you don't specify one, defaulting to `~/security-audit-skill/<repo-name>/run-<N>`.
+The skill activates automatically when the request matches its trigger (security audit, find vulnerabilities, pen-test the code, etc.). It defaults the output directory to `~/security-audit-skill/<repo-name>/run-<N>` and asks only when that path is not writable.
 
 ## Requirements
 

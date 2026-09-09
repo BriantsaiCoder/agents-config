@@ -22,24 +22,9 @@ compatibility: Requires Microsoft Learn MCP Server (https://learn.microsoft.com/
 - **Limits & quotas** — "Azure OpenAI rate limits", "Service Bus quotas"
 - **Best practices** — "Azure security best practices"
 
-## Query Effectiveness
+## Query tips
 
-Good queries are specific:
-
-```
-# ❌ Too broad
-"Azure Functions"
-
-# ✅ Specific
-"Azure Functions Python v2 programming model"
-"Cosmos DB partition key design best practices"
-"Container Apps scaling rules KEDA"
-```
-
-Include context:
-- **Version** when relevant (`.NET 8`, `EF Core 8`)
-- **Task intent** (`quickstart`, `tutorial`, `overview`, `limits`)
-- **Platform** for multi-platform docs (`Linux`, `Windows`)
+Specific queries with version, task intent, and platform context are in [query-tips.md](references/query-tips.md); load it when a search returns broad or off-target results.
 
 ## When to Fetch Full Page
 
@@ -48,9 +33,3 @@ Fetch after search when:
 - **Configuration guides** — need all options listed
 - **Deep dives** — user wants comprehensive coverage
 - **Search excerpt is cut off** — full context needed
-
-## Why Use This
-
-- **Accuracy** — live docs, not training data that may be outdated
-- **Completeness** — tutorials have all steps, not fragments
-- **Authority** — official Microsoft documentation

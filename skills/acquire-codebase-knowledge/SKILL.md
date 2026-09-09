@@ -1,6 +1,6 @@
 ---
 name: acquire-codebase-knowledge
-description: "Map an existing repository into evidence-backed codebase documents when the user requests repository-level discovery, documentation, or onboarding."
+description: "Map an existing repository into evidence-backed discovery documents under docs/codebase/ when the user requests repository-level discovery or onboarding. README／architecture docs use init-project-docs."
 metadata:
   argument-hint: 'Optional: specific area to focus on, e.g. "architecture only", "testing and concerns"'
 ---

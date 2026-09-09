@@ -1,10 +1,10 @@
 # skill	source_url	assessed_revision	payload_sha256	tree_sha256
 clean-code-dotnet	https://github.com/thangchung/clean-code-dotnet/tree/a604cf99e618de359cf34c5384a16fe72a5db2f4	a604cf99e618de359cf34c5384a16fe72a5db2f4	3160cc9fd66b0e1444bcc0b92f650c55baa7bd77c9f1e1517279e7fdb4345b57	648eafb5e500fd97feecdfc5d59ad02d739bd268f0f2c078e2030bc14028d876
-microsoft-code-reference	https://github.com/github/awesome-copilot/tree/1918e6f868fdce88ad5d848406fe472fa3948b7a/skills/microsoft-code-reference	1918e6f868fdce88ad5d848406fe472fa3948b7a	f9ba43cd599d1ebc35d7cfc78df0c4b3ccbc69984edef4424d642299b01ca517	8d7a68b5608140152957931c96d8700b6a9898032a90e9f72c269cb995be2048
-microsoft-docs	https://github.com/github/awesome-copilot/tree/a3035a6e7cad53ef68ca321d5f5365c0043af519/skills/microsoft-docs	a3035a6e7cad53ef68ca321d5f5365c0043af519	7093319b685293802899e1ecc2782ac36ae55437e602dba7002128f6d4a6e3df	c1cc5bf59d6113fee38facb5bd2fd0cc2cabf28303fa4975220b6f790c9e0d7e
+microsoft-code-reference	https://github.com/github/awesome-copilot/tree/1918e6f868fdce88ad5d848406fe472fa3948b7a/skills/microsoft-code-reference	1918e6f868fdce88ad5d848406fe472fa3948b7a	02760528788e9c3c9d4f6f1e84a0116667a7d46542fe8015eb6467c271a5775d	be249a9695b5390872b4a46ec58240b2e433459ffe79e36ba706d1a6bcd330df
+microsoft-docs	https://github.com/github/awesome-copilot/tree/a3035a6e7cad53ef68ca321d5f5365c0043af519/skills/microsoft-docs	a3035a6e7cad53ef68ca321d5f5365c0043af519	bfd44e89936513eebd9dae7eca65d9dbda40ce9a3f84a05eea2493f76325a150	9becdf0c515f00430ce7027f9224dc0ec114d6ff20923bfa9edc0c4cc5014d77
 playwright-best-practices	https://github.com/currents-dev/playwright-best-practices-skill/tree/283d5cbc5d11aac1abda058b16ad22c317d54dc0/playwright-best-practices	283d5cbc5d11aac1abda058b16ad22c317d54dc0	f0b65aa3533630f9b8398c34ef9b05ebbfb75c10dc73b5b0d23b4ea43298a75e	e2eb395b8cf7435471560fe209cc87ca1e3dce394b6ef6b7c6a9c82cd3558ad0
-web-design-reviewer	https://github.com/github/awesome-copilot/tree/952c4f45a7bba173f32176a2658a03a1a5ad462c/skills/web-design-reviewer	952c4f45a7bba173f32176a2658a03a1a5ad462c	769cc9cbf03a007d6365f54952a82018f071063b7ae2007eec6eb6a7729a79fc	7d343d08b963ce92b8696574dc901ad1f89b4396bf6365b96d82849527ae4f44
-ui-ux-pro-max	https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/14ddef5c05e52d7c253b8f0129de7bcd1045ae5b/.claude/skills/ui-ux-pro-max	14ddef5c05e52d7c253b8f0129de7bcd1045ae5b	4c780b6b7b13e37c2a661884e5ccb40534d3c9f5ea7df1fa73832bdbe5b228ed	3d4961748d14b6f2c86da053dbf9658d8c3e224d51c460c044f6c2a6fa662804
+web-design-reviewer	https://github.com/github/awesome-copilot/tree/952c4f45a7bba173f32176a2658a03a1a5ad462c/skills/web-design-reviewer	952c4f45a7bba173f32176a2658a03a1a5ad462c	7f8893c5b6d83bbc126833cef3ce5c8b73b82fc5677afc6333c36b38bdebb9ba	e02224e287fc99c6ef7ce52e9bb403d250a1b801761a59e2ade850e95c7aec23
+ui-ux-pro-max	https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/tree/14ddef5c05e52d7c253b8f0129de7bcd1045ae5b/.claude/skills/ui-ux-pro-max	14ddef5c05e52d7c253b8f0129de7bcd1045ae5b	a98db4b186dd3554873bd103de783e13fd0d33d73d5a3c079fd0ece43a54275a	5e2180d732f14b1bc7cc185986313f8b4fbdb9126b1d0dfc5eca4025b7e4d707
 test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-test/skills/test-gap-analysis	4d25f171766a9b852b229540bf9b8a6874ef16db	f900f9b46f655ff52e25585ecf77de8a3cb3d371149f394432601095b8bf3b9b	4488dbf0b45a791650f4af4c23380be31fb4274378a3463ef8120ba36fc324a2
 # speak-human-tw 的 source_url 指 repo root，但 payload 只取 upstream 27 個檔中的 10 個。
 # 取捨規則（re-vendor 時照這條重跑，不要照 URL 整包抓）：
@@ -14,20 +14,3 @@ test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-t
 #   本地 fork 另加 evals/trigger-cases.jsonl，並由 evals/run-eval.md 引用，固定 technical fire／quiet 邊界。
 #   兩個方向都不留懸空：既無 dead pointer，也無未被引用的檔。
 speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	1798fc8efd0832c2481de29bcfd31703f79a22612e91b578d56fc7fd3d82dea5	81ad5747bb8442ad452f85d21f4dc1225f05e3980b3e0ce14e2906d431d509f4
-# ai-level-check：upstream 49 個非-.git 檔中取 14 個。取捨照本檔開頭那條規則重跑，不要照 URL 整包抓。
-#   閉包以 fixpoint 求（SKILL.md 出發，逐層納入被引用的檔），故 scripts/{collect,publish}.py|sh 與
-#   reports/.gitkeep 在內；evals/、prompts/、install/、docs/(除下述)、.github/、README*/CHANGELOG/
-#   CONTRIBUTING/ROADMAP 無人引用故丟棄。
-# 本地 fork 兩處，皆為刪引用而非刪內容：
-#   assets/personas/ 共 5 張圖 7.4MB：被 personas.md 引用的 4 張改寫成該圖 alt text 的純文字
-#   型錄（16 型名稱一字未失，且 personas.md 自己就寫「完整定義與判準以本文文字為準」），
-#   第 5 張 four-axes.png 唯一引用者是未 vendor 的 README.md，故直接丟棄而非轉文字；
-#   docs/lv{1,3,4}.html 是虛構示範，SKILL.md 與 report-design.md 只在「禁止拿來借型」的
-#   句子裡點名它們，故刪檔名、留禁令與公開 Demo URL。
-# .gitignore 必須留：references/privacy.md 指著它，且它帶 evidence/ 與 reports/* 排除規則。
-#   但它只覆蓋 skill 子樹——collect.py 的 --out 與 publish.sh 的報告路徑都是 CWD 相對，
-#   CWD=~/.agents 時產物落在 repo 根。root .gitignore 的 evidence/ 與 /reports/ 才是那條
-#   路徑的防線；兩者缺一，含真實對話的 evidence pack 就會進這個 public repo。
-# scripts/publish.sh 的 --yes 旁路掉該腳本唯一的互動確認（:71），而 :108 是 git push。
-#   那是 [T0-8] publication gate：agent 不得自行帶 --yes。
-ai-level-check	https://github.com/Raymondhou0917/ai-level-check/tree/6497ee9e681da0b676322b307f12c4c184b87f42	6497ee9e681da0b676322b307f12c4c184b87f42	f08fa1e2c89491e49a5377544b732348be85588dba8554c3b51a4022780af065	13c97ee25cbb49cd382d6240006180c5fce9c7dee8a1c377fa56208a61960c06

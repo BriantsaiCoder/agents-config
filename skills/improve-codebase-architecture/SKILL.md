@@ -42,24 +42,11 @@ Apply the **deletion test** to anything you suspect is shallow: would deleting i
 
 Write a self-contained HTML file to the OS temp directory so nothing lands in the repo. Resolve the temp dir from `$TMPDIR`, falling back to `/tmp` (or `%TEMP%` on Windows), and write to `<tmpdir>/architecture-review-<timestamp>.html` so each run gets a fresh file. Open it for the user — `xdg-open <path>` on Linux, `open <path>` on macOS, `start <path>` on Windows — and tell them the absolute path.
 
-The report uses **Tailwind via CDN** for layout and styling, and **Mermaid via CDN** for diagrams where a graph/flow/sequence reliably communicates the structure. Mix Mermaid with hand-crafted CSS/SVG visuals — use Mermaid when relationships are graph-shaped (call graphs, dependencies, sequences), and hand-built divs/SVG when you want something more editorial (mass diagrams, cross-sections, collapse animations). Each candidate gets a **before/after visualisation**. Be visual.
-
-For each candidate, render a card with:
-
-- **檔案** — 涉及哪些 files/modules
-- **問題** — current architecture 為何造成 friction
-- **方案** — 簡潔說明會改變什麼
-- **效益** — 用 locality、leverage 與 tests 的改善來說明
-- **修改前 / 修改後圖** — 並排呈現的 custom diagram，說明 shallow 到 deep 的變化
-- **建議強度** — 以 badge 呈現 `強烈建議`、`值得探索` 或 `推測性`
-
-報告最後加上 **首要建議** section，說明最先處理哪個 candidate 以及原因。
+Report format, card fields, badges, and diagram patterns are in [html-report.md](references/html-report.md); load it when writing the file.
 
 **Use CONTEXT.md vocabulary for the domain, and the `/codebase-design` vocabulary for the architecture.** If `CONTEXT.md` defines "Order," talk about "the Order intake module" — not "the FooBarHandler," and not "the Order service."
 
 **ADR conflicts**：candidate 若與既有 ADR 衝突，只在 friction 大到值得重啟討論時提出，並在 card 中清楚標示，例如：_「與 ADR-0007 衝突，但值得重新討論，因為……」_。不要列出 ADR 禁止的所有理論性 refactor。
-
-See [HTML-REPORT.md](HTML-REPORT.md) for the full HTML scaffold, diagram patterns, and styling guidance.
 
 此階段不要提出 interfaces。寫完檔案後，詢問使用者：「這些候選項目中，你想先深入探索哪一個？」
 
