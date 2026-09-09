@@ -103,7 +103,7 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 - Local checkpoint commit 依 [matrix](references/authorization-matrix.md#local-checkpoint-commit)；final commit／push／open PR／merge／final closeout 仍須 [INT-1]。commit／PR 格式與語言依 repo／active host instructions；全域／security config 路徑依 [INT-10]。
 - 已核准 `PR-closeout` MUST 完成 commit→push→Ready PR→current-head CI／bot gate PASS→依 ledgers 選 merge strategy→branch cleanup 才 final；`Local-only` 禁 external write。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更用 `init-project-docs` 的 architecture output 同步 current architecture docs，只跑該 output 不做 full refresh。
-- 「分析 conflict」不得授權 resolve、stage 或 commit；只有使用者明示「解決 conflict」時才可執行 `resolving-merge-conflicts`。
+- 使用者明示「解決 conflict」即執行 `resolving-merge-conflicts`；「分析 conflict」只讀，不得 resolve、stage 或 commit。
 - 執行 `resolving-merge-conflicts` 時只 stage 授權 scope 內已解決檔案，MUST NOT `git add -A`；若必要意圖無法安全保留或沒有解法符合 merge goal，停止並回報 trade-off，取得使用者確認後可 abort，不受上游「always resolve／stage everything」指示約束。
 - 合併後依 repo policy 清理已合併 branch；不得 force-push main／master。
 

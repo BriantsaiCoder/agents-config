@@ -9,7 +9,7 @@ AI scanner reasoning like a human researcher — data flow, component interactio
 
 ## When to Use
 
-- "Scan / audit / review for security"
+- "Review this path / branch / diff for security"
 - Injection, secrets, weak crypto, broken auth, IDOR, SSRF
 - Dependencies CVEs, user input → dangerous sinks
 - `/shared-security-review` or `/shared-security-review <path>`

@@ -1,6 +1,6 @@
 ---
 name: bug-fix-settlement
-description: 修復 bug、測試或 build 失敗、非預期行為、效能退化或 bug 類 issue 之後觸發的知識收尾。評估根因應進 Cookbook、Memory 或 Workflow，並輸出摘要；除錯本身走 `diagnosing-bugs`。純 typo、單純 path／格式錯誤與尚未完成的功能不觸發。
+description: Bug、build 失敗或效能退化修好之後觸發的知識收尾：判定根因該進 Cookbook、Memory 或 Workflow 並輸出摘要。除錯走 `diagnosing-bugs`；typo、路徑／格式錯誤、未完成功能不觸發。
 ---
 
 # Bug Fix Settlement

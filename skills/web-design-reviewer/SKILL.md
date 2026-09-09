@@ -1,6 +1,6 @@
 ---
 name: web-design-reviewer
-description: 'Use when the user asks to visually review a running website in a browser, or trace rendered design defects back to source, repair them, and compare before/after screenshots. Known CSS or accessibility code issues without rendered inspection → css-ui-best-practices. Release-readiness verification of existing changes → frontend-release-verification.'
+description: 'Use when the user asks to visually review a running website in a browser, or trace rendered design defects back to source, repair them, and compare before/after screenshots. Known CSS or accessibility code issues without rendered inspection → css-ui-best-practices. Release-readiness verification of existing changes → frontend-release-verification. Read-only UX report for S5 → uiux-reviewer agent.'
 ---
 
 # Visual web repair
@@ -11,7 +11,8 @@ capability for inspection and the repository's existing styling system.
 ## Boundaries
 
 - Review-only requests stop after evidence-backed findings.
-- Change source only when the user authorized a fix. Treat production as
+- A request containing fix／repair／修 authorizes source changes within the
+  reviewed page's files; a bare review reports only. Treat production as
   read-only unless that authorization is explicit.
 - Known code-only CSS/accessibility work routes to `css-ui-best-practices`.
 - Release gates route to `frontend-release-verification`; committed browser

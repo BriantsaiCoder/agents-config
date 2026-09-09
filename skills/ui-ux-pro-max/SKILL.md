@@ -24,7 +24,7 @@ python3 -B "$HOME/.agents/skills/ui-ux-pro-max/scripts/search.py" \
   "<product> <industry> <tone>" --design-system -p "<project>"
 ```
 
-Use the result to frame materially distinct visual directions only where comparison helps resolve the choice. Wait for the user to select one before implementation unless the user explicitly delegated the choice or already accepted a visual target. When the choice is explicitly delegated, select a concrete direction, state brief assumptions, and continue. If a visual target already exists, skip this ideation step.
+Use the result to frame materially distinct visual directions only where comparison helps resolve the choice. If the request already asks to build, take the recommended direction, state it in one line, and continue. Wait for the user to select a direction only when they asked for options or the directions differ materially in scope, unless the user explicitly delegated the choice or already accepted a visual target. When the choice is explicitly delegated, select a concrete direction, state brief assumptions, and continue. If a visual target already exists, skip this ideation step.
 
 3. Query only the unresolved dimension when more detail is needed:
 

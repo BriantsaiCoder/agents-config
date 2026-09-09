@@ -1,6 +1,6 @@
 ---
 name: deps-check
-description: "修改共用檔或 public/exported contract 前，追蹤 callers 與 runtime wiring，判斷影響範圍。純新增與 private/local 變更可略過。"
+description: "修改共用檔或 public/exported contract 前，追蹤 callers 與 runtime wiring，判斷影響範圍。純新增與 private/local 變更可略過；整體模組地圖用 mp-zoom-out。"
 ---
 
 # deps-check
