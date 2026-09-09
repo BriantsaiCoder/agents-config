@@ -35,7 +35,7 @@ description: "查詢與管理本機 macOS Apple 行事曆事件，或排除呼�
 
 ## 行事曆歸屬
 
-`calx calendars` 會標出可寫性與帳號來源（`iCloud`／`Google`／`Subscribed`／`birthdays`）。訂閱行事曆與生日行事曆為唯讀，寫入會被明確拒絕。
+`cal.sh calendars` 會標出可寫性與帳號來源（`iCloud`／`Google`／`Subscribed`／`birthdays`）。訂閱行事曆與生日行事曆為唯讀，寫入會被明確拒絕。
 
 首次選定目標或帳號／可寫性改變時，查 `cal.sh calendars` 核對歸屬；同 session 目標未變可沿用 evidence。跨裝置同步還取決於裝置帳號設定，不能只由行事曆名稱推論；寫後仍須獨立回讀。
 

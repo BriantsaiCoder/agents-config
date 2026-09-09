@@ -35,7 +35,7 @@ license: MIT
 
 同一任務已授權的模式沿用。裸 command 或要求只寫「檢查」而未指定改寫時，採 Annotation；只有 outcome／範圍存在實質歧義才詢問。改寫授權不包含對外寄送、發布或新增排程。檔案修改前重新讀取現況與 diff，保留他人的異動；聊天改寫不自行寫入檔案。
 
-清單、Annotation 與自動化交付细節見 [delivery-validation](references/delivery-validation.md#模式交付細節)。Check-first 在自動化中仍等待選擇；沉默不算核准。
+清單、Annotation 與自動化交付細節見 [delivery-validation](references/delivery-validation.md#模式交付細節)。Check-first 在自動化中仍等待選擇；沉默不算核准。
 
 ## 執行流程
 
