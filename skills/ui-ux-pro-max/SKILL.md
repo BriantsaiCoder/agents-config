@@ -24,7 +24,7 @@ python3 -B "$HOME/.agents/skills/ui-ux-pro-max/scripts/search.py" \
   "<product> <industry> <tone>" --design-system -p "<project>"
 ```
 
-Use the result to frame exactly three visual directions. The user selects one before implementation begins. If a visual target already exists, skip this ideation step.
+Use the result to frame exactly three visual directions. Wait for the user to select one before implementation unless the user explicitly delegated the choice or already accepted a visual target. When the choice is explicitly delegated, select a concrete direction, state brief assumptions, and continue. If a visual target already exists, skip this ideation step.
 
 3. Query only the unresolved dimension when more detail is needed:
 
@@ -49,6 +49,6 @@ Add `--page "<page>"` for an override. Existing Master and page files are preser
 ## Reliability
 
 - Python 3 standard library only; no network or package install.
-- A search error is a hard stop. Do not replace it with plausible defaults.
+- On a search error, label the lookup `UNAVAILABLE` with the failing probe and stop only dependent work. Never invent a successful lookup or replace it with plausible defaults.
 - On zero results, retry once with broader terms; if still empty, label any general guidance as a fallback.
 - Read [quick-reference.md](references/quick-reference.md) for detailed UX rules and [pro-rules.md](references/pro-rules.md) for native/mobile pre-delivery checks only when relevant.

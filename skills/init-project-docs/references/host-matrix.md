@@ -50,7 +50,7 @@ other_homes=<comma list or none>
 proposed_target_hosts=<host list>
 ```
 
-若 `other_homes` 非空，且使用者本輪沒有明確指定 target hosts，先停止並請使用者確認要只產 detected host，或也產哪些 `other_homes`。這是 output-scope confirmation，不代表 runtime 混淆。
+若 `other_homes` 非空，且使用者本輪沒有明確指定 target hosts，只有涉及 host-specific output scope（instructions、config、hooks、agents）時才停止並請使用者確認要只產 detected host，或也產哪些 `other_homes`。host-neutral README／architecture 不觸發確認，host scope 記 `N/A`；已授權的 target hosts 直接沿用，不重問。這是 output-scope confirmation，不代表 runtime 混淆。
 
 ## skill 呼叫語法（指令檔內提及時依 host 套用）
 
