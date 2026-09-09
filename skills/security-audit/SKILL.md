@@ -1,6 +1,6 @@
 ---
 name: security-audit
-description: Security audit of a codebase — web apps, APIs, services, CLI tools, libraries, daemons, and more. Use when asked to find security bugs, do a security review, audit for vulnerabilities, or pen-test the code. Focuses on exploitable issues with real impact, not theoretical concerns or industry-standard behavior.
+description: "Run a whole-codebase adversarial security audit with persisted evidence and independent validation when the user requests that full audit scope."
 ---
 
 # Security Audit

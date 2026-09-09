@@ -1,6 +1,6 @@
 ---
 name: vitest
-description: 'Use when configuring or debugging the Vitest runner: vitest.config, Vite-shared config, vi.mock/spyOn, mock reset issues, fake timers, coverage wrong, jsdom/happy-dom environment, projects, type testing, browser mode, slow or flaky tests; "tests are slow", "vi.mock not working", "fake timers leaking", "coverage report wrong", why a Jest pattern misbehaves under Vitest. Vite build/plugin/dev-server config → vite.'
+description: "Configure, review, or debug Vitest runner behavior, mocks, timers, coverage, and environments. Vite builds and plugins use vite."
 ---
 
 # Vitest

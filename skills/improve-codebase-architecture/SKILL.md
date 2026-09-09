@@ -1,6 +1,6 @@
 ---
 name: improve-codebase-architecture
-description: Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.
+description: "Survey a codebase for module-deepening opportunities when explicitly requested; present visual candidates and explore the user’s selected design."
 disable-model-invocation: true
 ---
 
@@ -10,15 +10,12 @@ Surface architectural friction and propose **deepening opportunities** — refac
 
 This command is _informed_ by the project's domain model and built on a shared design vocabulary:
 
-- Run the `/codebase-design` skill for the architecture vocabulary (**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**, **locality**) and its principles (the deletion test, "the interface is the test surface", "one adapter = hypothetical seam, two = real"). Use these terms exactly in every suggestion — don't drift into "component," "service," "API," or "boundary."
+- Run the `/codebase-design` skill for the architecture vocabulary (**module**, **interface**, **depth**, **seam**, **adapter**, **leverage**, **locality**) and its principles (the deletion test, "the interface is the test surface", "one adapter = hypothetical seam, two = real"). Use these definitions when discussing this design model, while preserving the repository's established names for components, services, APIs, and domain boundaries.
 - The domain language in `CONTEXT.md` gives names to good seams; ADRs in `docs/adr/` record decisions this command should not re-litigate.
 
 ## Language
 
-- 所有使用者可見的回覆與 generated HTML report prose 預設使用繁體中文（`zh-TW`）；使用者明示其他語言時依其要求。
-- technical terms（包含 `/codebase-design` architecture vocabulary）、code identifiers、file paths 與 `CONTEXT.md` domain terms 一律保留 English 或原文。
-- 其餘使用者可見的 headings、labels、badges 與 explanatory prose 翻譯為 zh-TW。
-- 本 workflow invoke 其他 skill 時，延續相同 language contract。
+The active host/profile owns the default output language. Preserve technical identifiers, paths, and repository domain terms; use that language consistently in the visual report and any routed interview.
 
 ## Process
 

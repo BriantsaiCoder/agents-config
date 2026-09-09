@@ -1,6 +1,6 @@
 ---
 name: testing-library-react-best-practices
-description: 'Use when writing or reviewing React Testing Library tests — query priority (getByRole/getByLabelText/getByText), userEvent vs fireEvent, async findBy/waitFor, accessible-name assertions, forms, hooks (renderHook), context providers, Suspense, or flaky component tests. For Vue component, composable, or Pinia store testing, use vue-best-practices.'
+description: "Write or review React Testing Library tests for observable user behavior, accessible queries, and async interactions; runner configuration uses Jest or Vitest."
 ---
 
 # React Testing Library Best Practices

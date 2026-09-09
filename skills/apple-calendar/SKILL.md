@@ -1,6 +1,6 @@
 ---
 name: apple-calendar
-description: 查詢、新增、修改、刪除 macOS Apple 行事曆（Calendar.app／iCloud）事件，或設定／排除 ChatGPT、Codex 等呼叫端的行事曆完整存取權時使用。使用者說「幫我加個行程」「我明天有什麼會」「把週會改到四點」「取消那個會議」「這週行事曆」「如何讓 ChatGPT 存取 macOS 行事曆」時觸發。僅限本機 macOS 行事曆，Google Calendar 走另外的 MCP connector。
+description: "查詢與管理本機 macOS Apple 行事曆事件，或排除呼叫端的 EventKit 存取問題時使用。Google Calendar connector 操作不在此範圍。"
 ---
 
 <!-- tier: local-tool | consumed-by: claude,codex,copilot | backend: EventKit via JXA | last-verified: 2026-08-31 -->
@@ -27,16 +27,8 @@ $S/cal.sh selftest     # 純函式自檢，不碰資料也不需權限
 
 主入口是 `scripts/cal.sh`（`cal.sh list`／`cal.sh add`／…）；`scripts/cal-list.sh`、`scripts/cal-add.sh`、`scripts/cal-edit.sh`、`scripts/cal-delete.sh` 是等價包裝，JXA 本體在 `scripts/cal.js`。
 
-**選用：裝成短指令。** 本機已裝（`calx`／`cal-list`／`cal-add`／`cal-edit`／`cal-delete`），換機器要重跑：
+短指令安裝與 host/TCC 排錯由 [install-and-host-access.md](references/install-and-host-access.md) 管理；首次設定、換 host 或權限失敗時載入。
 
-```bash
-ln -sfn ~/.agents/skills/apple-calendar/scripts/cal.sh ~/bin/calx
-for s in add edit list delete; do
-  ln -sfn ~/.agents/skills/apple-calendar/scripts/cal-$s.sh ~/bin/cal-$s
-done
-```
-
-**短指令不可叫 `cal`** —— 那是 macOS 內建的月曆指令，`/usr/bin/cal` 在 PATH 中排在 `~/bin` 之前，取這個名字會讓所有子命令被系統指令攔截（症狀是 `year 'selftest' not in range 1..9999`，且刪除指令會靜默不執行）。磁碟檔名帶 `.sh` 是 repo 的 conformance 要求（`skills/` 下的可執行檔必須有腳本副檔名），與指令名無關。
 
 時間格式只吃 `YYYY-MM-DD` 或 `YYYY-MM-DDTHH:MM`（不含秒）；相對日期（「明天」「下週一」）由呼叫端換算成絕對日期後再傳入。
 
@@ -103,27 +95,15 @@ cal-delete "$ID" --on 2026-09-07 --span future                                  
 
 ## 重複排程
 
-```bash
-cal-add 2026-09-07T10:00 60 "部門週會" --repeat weekly --count 12
-cal-add 2026-09-08T14:00 90 "雙週檢討" --repeat weekly --interval 2 --count 4
-cal-add 2026-09-09T08:00 30 "每日站會" --repeat daily --until 2026-09-13
-```
+等間隔規則與月底日期語意見 [recurrence.md](references/recurrence.md)。新增重複事件或判讀 recurrence 時載入；編輯既有規則不受支援。
 
-`--interval` 是間隔倍數（每 N 週／月）。結束條件 `--count`（場次數）與 `--until`（截止日）擇一，都不給就是無限重複。`--until` 只給純日期時內部取當日 23:59:59，因此**包含**當天的場次 —— 直接用 00:00 會把當天排除。
 
-**月底起始的 monthly 採 clamp（夾到當月最後一天），不是跳過也不是溢位。** 實測 10-31 起每月 5 場 → `10-31, 11-30, 12-31, 01-31, 02-28`。要排「每月最後一天結帳」這種行程，從月底日期起始即可，行為符合直覺。
+## 操作前提
 
-只支援「每 N 天／週／月／年」這種等間隔規則。要「每週一三五」或「每月第二個星期二」得用 `EKRecurrenceRule` 的 `daysOfTheWeek`／`setPositions`，目前未實作。`cal-edit` 也不能修改既有事件的重複規則 —— 只能改該場次的標題／時間／地點；要換規則得刪掉整個系列重建。
+除 authorize/selftest 外，CRUD 要求 fullAccess；權限不足或沙箱攔截不能解讀成「没有事件」。呼叫端/TCC 與 EventKit 執行條件由 [host access](references/install-and-host-access.md) 管理。
 
-## 三個必須知道的前提
+重複事件共用 id，edit/delete 必須指定 --on；預設僅該場次，--span future 才影響之後場次。所有寫入都要獨立回讀，刪單場查該日期，不以系列仍存在判斷失敗。
 
-**1. 權限不足會靜默回空，不會報錯。** EventKit 的 `writeOnly` 權限下，查詢回傳空集合而非錯誤 —— 呼叫端會誤判「當天沒事」而排入衝突行程。因此除 `authorize`／`selftest` 外，查詢與 CRUD 子命令都硬性要求 `fullAccess`，不足即非零退出。
-
-TCC 授權掛在 **responsible process**（也就是呼叫的 AI host）上，不是掛在腳本上。Claude Code 已授權不代表 Codex CLI 或 Copilot CLI 也有。換 host 第一次使用時，在沙箱外執行 `calx authorize`，再於 macOS 提示中允許完整存取；系統設定的清單不能手動用「+」加入 app。若先前拒絕，才到「系統設定 → 隱私權與安全性 → 行事曆」重新開啟。實測 `swift script.swift` 直譯會被拒（無 bundle id），`osascript` 才通。
-
-**2. 沙箱擋 EventKit，每次操作都需要停用沙箱。** 最常見的症狀是**授權狀態變成 `status=0 (notDetermined)`** —— 同一台機器、同一個 host，沙箱外回 3、沙箱內回 0，看起來像沒授權其實是沙箱攔截（工具會在 status=0 時提示這點，別急著去改系統設定）。其他症狀：`-600「應用程式不在執行中」`、`open` 回 `procNotFound`、`pgrep` 回 `sysmond service not found`。這代表**每個 `cal-*`／`calx` 指令都會產生一次核准提示** —— 要做多步操作（查詢後修改、建立後確認）時把它們合併成單一 Bash 指令，不要拆成多次呼叫。
-
-**3. 重複事件的所有場次共用同一個 id。** `cal-edit <id>` 不指定場次會動到**第一場**，不是使用者想改的那場。因此重複事件未給 `--on` 一律拒絕執行。指定 `--on` 後預設只影響該場次（`EKSpanThisEvent`）；`--span future` 才會動到該場次及之後所有場次。單獨改過的場次（detached occurrence）id 會多出 `/RID=…` 後綴，仍可直接餵回 `edit`／`delete`。
 
 ## 行事曆歸屬
 
@@ -131,14 +111,6 @@ TCC 授權掛在 **responsible process**（也就是呼叫的 AI host）上，�
 
 **帳號來源決定會不會同步到手機。** 同一台機器上常常混著 iCloud 與 Google 的行事曆，名稱看不出差別 —— 只有寫進 iCloud 的事件才會出現在 iPhone 上。寫入前先跑一次 `calx calendars` 確認目標行事曆的歸屬，別靠名字猜。
 
-## 設計約束（修改本工具前先讀）
+## 維護本工具
 
-- 日期一律走 `parseISO` → `NSDateComponents`，並回查確認未被靜默 normalize（`2026-02-30` 必須拒絕，不得推成 3/2）。格式化固定 `en_US_POSIX`，避開 zh-TW locale。
-- 所有寫入後都要回讀驗證，不以 `saveEvent` 回 `true` 當作已寫入。
-- 刪除的回讀驗證：指定 `--on` 時要查「那一天還有沒有這個事件」；重複事件刪一場後系列仍在，直接用 `eventWithIdentifier` 會誤判成刪除失敗。
-- JXA 陷阱：`authorizationStatus` 回傳的是**字串**，`=== 3` 永遠 false，須 `Number()`；全天旗標的 setter 是 `allDay`，寫 `isAllDay` 會靜默不生效；讀 `NSError` out-param 用 `$()` + `isNil()`，用 `ObjC.castRefToObject` 會 segfault。
-- 跨 store 實例操作會靜默失敗：用 store A 刪除從 store B 取得的事件不會生效也不報錯。
-
-改動後跑 `tests/apple-calendar.sh`（會驗 `scripts/` 下的 payload 完整性並執行 selftest），
-以及一輪 建立 → 用 `cal-list` 獨立回讀 → 刪除 → 全年掃描確認無殘留。
-`bin/ci-local` 會把這支測試當 local-only gate 自動跑（GitHub runner 沒有 osascript）。
+修改 scripts 時載入 [maintainer-guide.md](references/maintainer-guide.md)：parseISO、JXA/store traps 與必要測試；一般行事曆操作不載入。

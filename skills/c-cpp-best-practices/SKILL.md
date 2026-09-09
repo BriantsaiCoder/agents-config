@@ -1,6 +1,6 @@
 ---
 name: c-cpp-best-practices
-description: 'Use when writing or reviewing C/C++: .c/.h/.cpp/.hpp/.cc/.cxx, ownership/malloc-free, errno/return codes, goto cleanup, C ABI, RAII/smart pointers, std::move/rule of 0/5, templates, threading, CMake/toolchains, vcpkg/Conan, MSVC/MinGW, unsafe C APIs, sanitizers ASan/UBSan/TSan. Symptoms: segfault/SIGSEGV, use-after-free, double-free, memory leak, undefined behavior, stack overflow, heap corruption, linker/unresolved symbol, dangling pointer, data race.'
+description: "Apply C/C++ safety, ownership, concurrency, and toolchain guidance when writing, reviewing, or debugging C/C++ code."
 ---
 
 # C / C++ Best Practices

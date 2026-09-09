@@ -133,9 +133,9 @@ LIVE="$AGENTS/skills"
 if [ -d "$LIVE" ] && [ -r "$LIVE/dev-workflow/SKILL.md" ]; then
   echo "── 真實語料：4 個 key live descriptions ──"
   OUT=$(bash "$SCRIPT" "$LIVE" 2>/dev/null)
-  check "live dev-workflow: S0…S6 phase 列舉 -> YES"      "YES" "$(flag_of dev-workflow)"
+  check "live dev-workflow: 時使用 trigger -> -"      "-" "$(flag_of dev-workflow)"
   check "live aspnet-api-architect: requirements trigger -> -"  "-" "$(flag_of aspnet-api-architect)"
-  check "live deps-check: 當使用者…觸發關鍵字 -> -"        "-"   "$(flag_of deps-check)"
+  check "live deps-check: 未命中 heuristic -> ?"        "?"   "$(flag_of deps-check)"
   check "live bug-fix-settlement: …之後觸發 -> -"          "-"   "$(flag_of bug-fix-settlement)"
 else
   echo "── 真實語料：SKIP（$LIVE 不存在，CI runner 無 live ~/.agents） ──"

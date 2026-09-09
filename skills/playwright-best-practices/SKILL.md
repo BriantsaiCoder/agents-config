@@ -1,6 +1,6 @@
 ---
 name: playwright-best-practices
-description: 'Use when writing, reviewing, or debugging Playwright tests (E2E, component, API, visual, auth, mobile, CI, mocks, iframes, flaky tests) or driving Playwright MCP to explore a site / generate tests from observed steps / fill forms. Apply when user says "test is flaky", "selector keeps breaking", "auth state lost", "CI too long", "explore this site", "generate e2e test for X", or "fill this form for me".'
+description: "Write, review, or debug Playwright tests; use its MCP branch only when Playwright is the chosen browser tool."
 ---
 
 # Playwright Best Practices

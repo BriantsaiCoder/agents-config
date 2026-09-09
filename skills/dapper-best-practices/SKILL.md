@@ -1,6 +1,6 @@
 ---
 name: dapper-best-practices
-description: 'Use when writing or reviewing C#/.NET data access with Dapper — IDbConnection, SQL connections, QueryAsync/Execute/ExecuteAsync, DynamicParameters, QueryMultiple, splitOn, Dapper.Contrib, raw SQL inside a Dapper repository, or query performance.'
+description: "Write, review, or tune Dapper data access, including queries, mapping, connection ownership, and transactions."
 ---
 
 # Dapper Best Practices

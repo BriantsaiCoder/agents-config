@@ -17,11 +17,11 @@ description: 修復 bug、測試或 build 失敗、非預期行為、效能退�
 
 ## Step 2：跨 authorization boundary
 
-- Cookbook 與 Workflow 都需使用者核准 exact target/path；本輪已明示該目標才視為授權。
+- Cookbook 與 Workflow 寫入依 shared `dev-workflow` S2：既有核准已涵蓋 exact target/path、內容範圍與副作用時直接完成；新 target、全域 policy 或 scope expansion 未涵蓋時才確認相依寫入。
 - Memory 只有使用者明示「記住」或「保存到 memory」才可寫入，並遵守目前 host 的 memory contract。
 - 未授權時保持 read-only，記錄 `待授權` 與預計 path。
 
-**完成條件：**每個建議寫入都有當輪授權 evidence，或明確維持待授權；不得以 assessment 取代 authorization。
+**完成條件：**每個實際寫入都有可追溯的既有授權 evidence，未涵蓋項目維持待授權；不得以 assessment 取代 authorization。
 
 ## Step 3：輸出收尾摘要
 

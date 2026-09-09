@@ -1,12 +1,12 @@
 <!-- last-verified: 2026-07-26 -->
 # Security Review Workflow
 
-Follow these steps **in order** for every review.
+Use the applicable stages to cover the requested scope; prior unchanged evidence may be reused. Review completion requires traceable scope, cross-file evidence, and a disposition for every finding.
 
 ## Step 1 — Scope Resolution
 
 - If a path was provided (`/shared-security-review src/auth/`), scan only that scope.
-- If no path given, scan the **entire project** starting from the root.
+- Use the stated path, diff, or attack surface. If scope is materially unclear, inspect repository context and clarify only the missing boundary; a full adversarial audit with persisted artifacts routes to `security-audit`.
 - Identify language(s) and framework(s) (`package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pom.xml`, `Gemfile`, `composer.json`, etc.).
 - Read `language-patterns.md` to load language-specific vulnerability patterns.
 
@@ -130,4 +130,4 @@ For every CRITICAL and HIGH finding:
 - Preserve original style, names, structure.
 - Add an inline comment explaining the fix.
 
-State explicitly: **"Review each patch before applying. Nothing has been changed yet."**
+Report the actual mode and state. For review-only work, state that proposed patches were not applied. For an already-authorized review-and-fix request, hand accepted findings to the implementation owner, who completes scoped fixes and applicable verification under shared S2; retain any high-risk or external-effect gate not covered by the authorization.

@@ -1,6 +1,6 @@
 ---
 name: acquire-codebase-knowledge
-description: 'Use when the user explicitly asks to map, document, or onboard into an existing codebase — prompts like "map this codebase", "document this architecture", "onboard me to this repo", "create codebase docs". Do not trigger for routine feature work, bug fixes, or narrow edits unless they ask for repository-level discovery.'
+description: "Map an existing repository into evidence-backed codebase documents when the user requests repository-level discovery, documentation, or onboarding."
 metadata:
   argument-hint: 'Optional: specific area to focus on, e.g. "architecture only", "testing and concerns"'
 ---

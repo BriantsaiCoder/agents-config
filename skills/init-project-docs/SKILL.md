@@ -1,6 +1,6 @@
 ---
 name: init-project-docs
-description: Use when initializing or refreshing project docs and native AI instructions for Claude Code, Codex CLI, or GitHub Copilot CLI. Covers README, architecture, standards, settings, rules, hooks, and agents; use `acquire-codebase-knowledge` for discovery maps.
+description: "Initialize or refresh repository documentation and host-native AI instructions from live evidence. Repository discovery maps use acquire-codebase-knowledge."
 ---
 
 # Init Project Docs
@@ -22,13 +22,13 @@ description: Use when initializing or refreshing project docs and native AI inst
 - Settings 與 Phase 4–6：先讀取共用的 stack/template catalog `references/README.md`，再依 [host matrix](references/host-matrix.md) 顯示完整 multi-select catalogs 與 `Recommended`／`Optional`／`Not recommended` 理由。
 - 新專案無等價 baseline 時讀 [new-project defaults](references/new-project-defaults.md)。依 repo evidence 建立 `.gitignore`、`.editorconfig`、key-only `.env.example` 與 CI；忽略 secret-bearing `.env*`／host-local settings，CI command 取自 repo script。
 
-先顯示 proposed diff，只建立使用者選取的項目。
+呈現 proposed diff，只建立使用者已選取或明確授權的 outputs；已核准 scope 不重問。新的 host、output 或未授權副作用才確認相依項目。
 
 **完成條件：**每個 artifact 都有 target path、evidence、reference 與 selection／authorization。
 
 ## Step 3：增量落盤
 
-Merge user-authored content，不覆寫未知 keys／hooks／rules／agents。每個 host 只用 matrix 當前 schema；不得互換 JSON／TOML／YAML。Secrets 只寫 key names；`.env.example` 不含 values。`git init`、chmod、commit、permission 或 hook registration 先取得授權。
+Merge user-authored content，不覆寫未知 keys／hooks／rules／agents。每個 host 只用 matrix 當前 schema；不得互換 JSON／TOML／YAML。Secrets 只寫 key names；`.env.example` 不含 values。`git init`、chmod、commit、permission 或 hook registration 依 shared S2 的實際 effect 與既有授權判定；核准 scope 內的 local reversible setup 可直接完成，未涵蓋的 VCS 收尾、host policy／capability 變更才確認。
 
 Full core docs 依 catalog 產生 instruction file 與 repo 支援的 `docs/`；`docs/DEVELOPMENT.md` 保留 User Story → Spec → Tasks 與 plan archive 流程。Codex rules 併入 `AGENTS.md`；multi-host 各產 native instruction file。
 

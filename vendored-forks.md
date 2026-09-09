@@ -15,29 +15,46 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
-| `ask-matt` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — keep the router thin and point phase/context transitions to the canonical shared continuation contract instead of vendoring a second authority; tree SHA-256 `beb486c313e815a3381d4fbc1b1a05e935ce6b4d957f7b50dabd0d8c33318d2f` | **Active** |
-| `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-08-02 — re-adjudicated thin fork: narrow Clean Code triggers, retain a 360-word judgment checklist, keep only self-consistent illustrative SOLID snippets, and remove duplicated async/editorconfig payload; tree SHA-256 `3f1cb3c62da34813c63d3d041feb0287044a5df5047f1cf824d95a25ba8f89b0` | **Active** |
+| `ask-matt` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — keep the router thin and point phase/context transitions to the canonical shared continuation contract instead of vendoring a second authority; tree SHA-256 `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-08-02 — re-adjudicated thin fork: narrow Clean Code triggers, retain a 360-word judgment checklist, keep only self-consistent illustrative SOLID snippets, and remove duplicated async/editorconfig payload; tree SHA-256 `648eafb5e500fd97feecdfc5d59ad02d739bd268f0f2c078e2030bc14028d876`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
-| `diagnosing-bugs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-01 — add Agent Skill trigger-failure routing; 2026-09-07 — allow bounded unverified read-only investigation without a repro and evidence-sized hypotheses; tree SHA-256 `84993bd42da0fab491570f8c13d42b21b93286d956afa02047acaf6b8ed15a7c` | **Active** |
-| `implement` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-07 — defer test scope and repetition to shared S4/evidence-integrity; tree SHA-256 `bdf2616dab353cbc48103fb216df721ee52088f30c9e0fbae4897e49d3b3cddf` | **Active** |
-| `improve-codebase-architecture` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-19 — report 與 reply prose 預設使用 zh-TW；technical terms、code identifiers、paths 與 domain terms 保持 English 或原文；tree SHA-256 `5e331195ca420e2ea8258ed32fb054043f6ac521fdce99f520822cc8e254b8fc` | **Active** |
+| `diagnosing-bugs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-01 — add Agent Skill trigger-failure routing; 2026-09-07 — allow bounded unverified read-only investigation without a repro and evidence-sized hypotheses; tree SHA-256 `e18cf293ae5b4d7962c4a80f7a92d1d653fa531fa91d1dd8d338aafa6d1a12fc`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `implement` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-07 — defer test scope and repetition to shared S4/evidence-integrity; tree SHA-256 `7dc10b8ca3a60bfbf7d6da70d8e8f326c51efc4dee2cb4612de0be2a50859e3b` | **Active** |
+| `improve-codebase-architecture` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-19 — report 與 reply prose 預設使用 zh-TW；technical terms、code identifiers、paths 與 domain terms 保持 English 或原文；tree SHA-256 `78544103d7c78120e6fcdd2aecc2c89a0d403af1810e31c79a8e2feed9559670`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Retired to `attic/` 2026-08-02** |
 | `vueuse-functions` | github.com/serkodev (MIT, Copyright (c) 2026 SerKo) | LICENSE.md only; no upstream revision was ever recorded | 2026-08-02 — **user-authorized override**: the 11-row requirement map and the 6-entry high-frequency index both merged into `vue-best-practices/references/vueuse/INDEX.md`; the use-vs-hand-roll judgment and the SSR/PII guardrails merged into the same file; MIT notice carried with the payload and retained in the archive. Archived tree SHA-256 `95db99f6a5082d25b311154bf6410cf9e7cd3be306417005caf730fc986f8913`（`vendored_tree_sha256 attic/vueuse-functions`，與其他列同公式） | **Retired to `attic/` 2026-08-02** |
-| `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `6d62ea8fd597e9fc40475d421f2f98b8c93a5e79b5a8f0ef4339752c24c7fb1f` | **Active** |
-| `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; 2026-09-09 — preserve the three-direction choice gate while honoring delegated or accepted targets, briefly state assumptions for a delegated choice, and scope failed lookups to dependent work with an `UNAVAILABLE` probe; tree SHA-256 `d86dc3d84856b2bff0b2ae8fa2c9f4824f9cf3934e27ec28e0b05db1d2132aee` | **Active** |
-| `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | **Active** |
-| `grilling` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — narrow the trigger to an explicit interview request, adopt design-tree/frontier dependency sequencing, retain the canaried one-question HITL default, add re-estimated progress headers, and keep delegated decisions behind a separate action gate; payload SHA-256 `dcbdd6b8968b8ea2f35a56ce4d1be62a90d4421ac0228e379d24d8e9bbb9802f` | **Active** |
-| `handoff` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session; 2026-09-07 — drop the four-line cap on that prompt (prompt-audit rule 1f, numeric output ceiling); payload SHA-256 `73f75e10b33ca3058b69dab7f95a2f0c35c3a46de9dd4fab68d3b46a4572b639` | **Active** |
+| `playwright-best-practices` | github.com/currents-dev/playwright-best-practices-skill | `283d5cbc5d11aac1abda058b16ad22c317d54dc0` (v1.2) | 2026-08-01 — record the curated 44-line router plus local MCP/common/Python references, and remove 18 dead pointers to omitted upstream-only directories; tree SHA-256 `e2eb395b8cf7435471560fe209cc87ca1e3dce394b6ef6b7c6a9c82cd3558ad0` | **Active** |
+| `ui-ux-pro-max` | github.com/nextlevelbuilder/ui-ux-pro-max-skill | `14ddef5c05e52d7c253b8f0129de7bcd1045ae5b` | 2026-08-02 — vendor only the offline core, port Claude-only paths to the shared root, narrow routing ownership, and harden search/persistence; 2026-09-09 — preserve the material-choice gate while honoring delegated or accepted targets, briefly state assumptions for a delegated choice, and scope failed lookups to dependent work with an `UNAVAILABLE` probe; tree SHA-256 `3d4961748d14b6f2c86da053dbf9658d8c3e224d51c460c044f6c2a6fa662804` | **Active** |
+| `web-design-reviewer` | github.com/github/awesome-copilot | `952c4f45a7bba173f32176a2658a03a1a5ad462c` | 2026-08-02 — replace 3,586 words of duplicated framework/checklist material with a thin rendered-page → source → authorized repair → same-viewport verification loop; tree SHA-256 `7d343d08b963ce92b8696574dc901ad1f89b4396bf6365b96d82849527ae4f44`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `grilling` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — narrow the trigger to an explicit interview request, adopt design-tree/frontier dependency sequencing, retain the canaried one-question HITL default, add re-estimated progress headers, and keep delegated decisions behind a separate action gate; payload SHA-256 `29f894e289a2969488d5e4ebba6e1ecf0e0ee96d9d3d5ca7c196615ec7dff85b`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `handoff` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-07-31 — interactively-triggered runs end the reply with a copy-pasteable start prompt for the next session; 2026-09-07 — drop the four-line cap on that prompt (prompt-audit rule 1f, numeric output ceiling); payload SHA-256 `b8ecbfb0706efc72b859f3387c741fe2d116df07f76ae0cab96be46bedcb9761`; 2026-09-09 supplement — complete approved disclosure/description changes; tree SHA-256 `bf149c42a210d0ecdd4f7c1a1914a842e369688f0db4e094adc4583a51e584db` | **Active** |
 | `qa-tester` | github.com/finos/morphir-dotnet | Stage B2 subset of `90670e94ea038ba5cc453110f2cdc938c578614d` | 2026-07-31 — preserve the four runtime skill files and omit upstream `README.md`; tree SHA-256 `eeadca3b6b0246f3350d908ba8cb2d461aef4c667a12fa494325270f375c2624` | **Removed 2026-08-01** |
-| `prototype` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — adopt the self-contained HTML logic demo and add the local offline/synthetic-data/no-secret/no-production-build boundary; tree SHA-256 `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a` | **Active** |
-| `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | **Active** |
-| `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46` | **Active** |
-| `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; 2026-09-05 preserve factual tool use separately from unsupported benefits; tree SHA-256 `e51d4b63b2ec7934f55cc0d239e73febd1214cb45cfc6ba3fab7db20d9a80384` | **Active** |
+| `prototype` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — adopt the self-contained HTML logic demo and add the local offline/synthetic-data/no-secret/no-production-build boundary; tree SHA-256 `bba188786b02d904821b549b20c110286f59115f21dc7ffea099557df1d29097`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `a6bd17ced740043523c08822bd21b9d93cfcf08890baa167b7f9bdd2e9640bc2`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `e6473c2b453526a712dcf053a12b32f6faa4ed7519ad5c7c57ff7d1615cc37ff`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; 2026-09-05 preserve factual tool use separately from unsupported benefits; tree SHA-256 `81ad5747bb8442ad452f85d21f4dc1225f05e3980b3e0ce14e2906d431d509f4`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
 | `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md` | **Active** |
-| `tdd` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-05 — canonical workflow seam/authorization and GREEN refactor; tree SHA-256 `331550f33e18c8938c55facb6470f6298ce7525605c2aa1986582571b430e461` | **Active** |
-| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); 2026-09-05 — align both axes with the canonical evidence-first actionable contract while retaining no output cap and axis separation; tree SHA-256 `13c0fc08ad0b0d26be7229a16e9328ccfc40dd5c763d85079b5433646bbb2272` | **Active** |
-| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37` | **Active** |
+| `tdd` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-05 — canonical workflow seam/authorization and GREEN refactor; tree SHA-256 `d761f702fff6cfcfbba1bfe153b55055f62d667a831eb2cf3d7b230a50714df5`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); 2026-09-05 — align both axes with the canonical evidence-first actionable contract while retaining no output cap and axis separation; tree SHA-256 `0554f1e9fa58138e5e692977d5b1d2ba97f446c5a9ae93e0d96cf1dc2e02e5ab`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `4488dbf0b45a791650f4af4c23380be31fb4274378a3463ef8120ba36fc324a2`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+
+| `agent-browser` | installed agent-browser CLI bundled core | local wrapper baseline `60c840b`; no CLI revision pinned | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `8916f6658118cd35fb4db907128334782c6a984c809781cadba1555d651e8a32`; tree SHA-256 `677fcd1b5b89c9fbc42e2b1699332af58d55567ce63a184f1f33a1908cdffc42` | **Active** |
+| `codebase-design` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `1a383c195d752de7f28a495f5fb3db54eaad06734c57ccd810390fe31eea9579`; tree SHA-256 `261b3b7c67fd41342fb83c3d0aa34d4a0637d26dc9b18fab7e975c50bc71d5c8` | **Active** |
+| `microsoft-code-reference` | https://github.com/github/awesome-copilot/tree/1918e6f868fdce88ad5d848406fe472fa3948b7a/skills/microsoft-code-reference | `1918e6f868fdce88ad5d848406fe472fa3948b7a` | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `8ee7c32860e0b751aeedcde1c84b725235ec1d2ac63ab9be5d3799ae26417a1c`; tree SHA-256 `8d7a68b5608140152957931c96d8700b6a9898032a90e9f72c269cb995be2048` | **Active** |
+| `microsoft-docs` | https://github.com/github/awesome-copilot/tree/a3035a6e7cad53ef68ca321d5f5365c0043af519/skills/microsoft-docs | `a3035a6e7cad53ef68ca321d5f5365c0043af519` | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `e656618a3bc63d9d8d5bdc381f3eb1bf4327b9ef4bb22ff399c301551f421acf`; tree SHA-256 `c1cc5bf59d6113fee38facb5bd2fd0cc2cabf28303fa4975220b6f790c9e0d7e` | **Active** |
+| `resolving-merge-conflicts` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `52162eecbd8366e1d4b145e0964dfab7fe3cd534773d85e79c750f6e04aa65f5`; tree SHA-256 `b442690537b7375f2ea50da67aee174769b27dec9455ea62779f542340d51f60` | **Active** |
+| `setup-matt-pocock-skills` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `20fabc63fdb530037748eaf9b1a62a53ea91ac5a18cecc0fb001c3002b2673fc`; tree SHA-256 `04e5bd5e851a78da279cc7833cc15e43e3cc3f498502154710a0426777036389` | **Active** |
+| `teach` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `10707673896f85135ada4425709be25a349ec85f576b5f9a7926615971db19b1`; tree SHA-256 `c9870a3a77cedfdd69a0812b37ed5c2394e073eff39d1c9d29c41a1dabaeae78` | **Active** |
+| `to-spec` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `7fe9db6b276a87383996b138efa07e7e20fb5fbec8bd6027e084733b48efba60`; tree SHA-256 `245203535a0dba3bd4c4925b5f76b60367d814b620f8506bc68d648a0831a202` | **Active** |
+| `to-tickets` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `030ff9a692ff972061b8fa98caf5fd2cafd5c3b64d1f78480ba8c37bc6d5e454`; tree SHA-256 `3c510a1963e7a711ceb25f3c5747c0c5678f084349e59d319ae396062d05e52a` | **Active** |
+| `wayfinder` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `8c91f90c7129883d2c4cd1f7c255873e215c292801ecf4ed47af995a752b81dd`; tree SHA-256 `779de7ed2a2888676853f613560da7703cc38ec4b52d6005104dc4117122afed` | **Active** |
+
+| `domain-modeling` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `1918befd92fd79e48b96698c79bdcea0b925b188d6c70004c077515153750101`; tree SHA-256 `1489186bdfdac8a94f7a5479fd737580d00132ba3a11eb7d5b8b872f36a6b262` | **Active** |
+
+| `grill-me` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `0da3a0d6c13e90dd18565754376f49c533a8779a6079c88e7a1bbc7d3dab4b10`; tree SHA-256 `102f60886284e139d580a2b4ad321e2470aa5d838edd5bc424b11649d7fde513` | **Active** |
+
+| `grill-with-docs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b`; tree SHA-256 `9e44d8a8d61d7561ed646054743b170792e06ec06491d1836053d46ab971db1a` | **Active** |
 
 <!-- fork-index:end -->
 
@@ -166,7 +183,7 @@ BenchmarkDotNet baseline/statistics procedure. The full local payload and tree a
 
 ## ui-ux-pro-max
 
-**Decision (2026-09-09, user-authorized audit remediation):** Keep the three-direction selection gate for unresolved visual direction, while allowing implementation to proceed when the user explicitly delegates that choice or has already accepted a target. A delegated choice selects a concrete direction, states brief assumptions, and continues. Record failed searches as `UNAVAILABLE` with their probe and stop only dependent work; never claim the lookup succeeded.
+**Decision (2026-09-09, user-authorized audit remediation):** Keep the material-choice selection gate for unresolved visual direction, while allowing implementation to proceed when the user explicitly delegates that choice or has already accepted a target. A delegated choice selects a concrete direction, states brief assumptions, and continues. Record failed searches as `UNAVAILABLE` with their probe and stop only dependent work; never claim the lookup succeeded.
 
 **Decision (2026-08-02): vendor the complete offline core as a recorded portability and security fork.**
 
@@ -294,7 +311,7 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 
 ---
 
-## Pinned Matt set — 11 unmodified + 11 recorded forks
+## Pinned Matt set — 1 unmodified + 21 recorded forks
 
 **`mattpocock/skills` selected 22 — active, rebased to v1.2.2 on 2026-08-06.**
 
@@ -302,7 +319,7 @@ The local skill omits only upstream `README.md`; payload and tree are pinned in
 - Upstream manifest: `.claude-plugin/plugin.json` SHA-256 `85a5f2ad87b1070c13a97a9379887fc43e5e786a0ab7a3c0f0281d2b30f523b2` (25 published skills).
 - Machine-readable inventory: `mattpocock-skills.lock`; only its 22 `skill=` entries are active.
 - Excluded from the 25 published skills: `wizard` (credential/migration side-effect generator overlaps protected house gates), `wait-what` (personal communication modifier, not engineering workflow), and `to-questionnaire` (unneeded outward async-document flow overlapping existing clarification routes). Re-entry requires a new decision record and canary.
-- The `upstream_tree_sha256` entries in the lock remain byte-for-byte upstream and immutable; the fork index above identifies the exceptions, including `tdd` and `implement`.
+- Active `upstream_tree_sha256` entries in the lock identify only byte-for-byte upstream trees. Baselines for newly recorded forks remain historical provenance; the fork index owns each current fork fingerprint.
 - Recorded forks have exact payload fingerprints and re-merge procedures below.
 - Update by replacing the full pinned set after lock/hash verification, then reapply only recorded forks. Any additional local payload edit requires a new decision and fingerprint.
 
@@ -460,7 +477,7 @@ routing does not grant implementation authorization.
 The router retains `/handoff` in its standalone index while leaving phase-boundary behavior with the
 canonical continuation owner.
 
-Approved tree SHA-256: `beb486c313e815a3381d4fbc1b1a05e935ce6b4d957f7b50dabd0d8c33318d2f`.
+Approved tree SHA-256: `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5`.
 
 On upstream update, start from the new `ask-matt/`, omit any duplicate phase-boundary body, keep the
 canonical continuation pointer, update renamed selected skills, then recompute the tree fingerprint.
@@ -477,7 +494,7 @@ the artifact offline, excluding CDN, external network requests, remote assets, s
 production build-path dependencies. Existing prototype branch capture and non-production rules
 remain unchanged.
 
-Approved tree SHA-256: `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a`.
+Approved tree SHA-256: `bba188786b02d904821b549b20c110286f59115f21dc7ffea099557df1d29097`.
 
 On upstream update, replace the directory, reapply the single offline boundary only if absent, run
 relative-reference checks and `tests/mattpocock-workflow.sh`, then recompute the tree fingerprint.
@@ -492,7 +509,7 @@ relative-reference checks and `tests/mattpocock-workflow.sh`, then recompute the
 questions are asked singly or in independent rounds. This prevents callers from drifting whenever
 the interview cadence changes.
 
-Approved tree SHA-256: `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4`.
+Approved tree SHA-256: `a6bd17ced740043523c08822bd21b9d93cfcf08890baa167b7f9bdd2e9640bc2`.
 
 On upstream update, keep the cadence-neutral pointer unless upstream has equivalent wording, then
 recompute the tree fingerprint and run the Matt workflow tests.
@@ -561,7 +578,7 @@ mechanism because it exits 0 on a bad ref and leaves an empty directory — both
 review nothing and both return PASS. Reapply on upstream update: without the pin, a review that
 runs for tens of minutes silently retargets whenever the branch moves.
 
-Approved tree SHA-256: `13c0fc08ad0b0d26be7229a16e9328ccfc40dd5c763d85079b5433646bbb2272`.
+Approved tree SHA-256: `0554f1e9fa58138e5e692977d5b1d2ba97f446c5a9ae93e0d96cf1dc2e02e5ab`.
 Driving rules: `[S5-4]` and `[S5-3]` in `skills/dev-workflow/SKILL.md`.
 
 Current re-merge procedure (2026-09-05): compare upstream against the pinned revision. Preserve the immutable snapshot/dirty package and independent axis contracts; use the canonical reviewer-template as the sole house-five and reviewer-output owner. Reapply only missing behavior, retaining the full canonical prompt in the actual Standards dispatch and the common output/hygiene contract in Spec. Do not restore duplicate inlined baselines. Recompute the tree fingerprint, run workflow/reference guards and the recorded model canaries. Historical step numbers above are evidence of prior fixes, not the current dispatch API.
@@ -579,7 +596,7 @@ only that missing description branch; the body is untouched.
 
 The v1.1→v1.2.2 upstream comparison is empty: `git diff --exit-code ed37663cc5fbef691ddfecd080dff42f7e7e350d 8b36d4fb2635b3c21998dcd8144439c9e5ba7302 -- skills/diagnosing-bugs` returned 0.
 
-Approved tree SHA-256: `84993bd42da0fab491570f8c13d42b21b93286d956afa02047acaf6b8ed15a7c`.
+Approved tree SHA-256: `e18cf293ae5b4d7962c4a80f7a92d1d653fa531fa91d1dd8d338aafa6d1a12fc`.
 Evidence and the 21:00 control are recorded in
 `proposals/2026-08-01-two-skill-tuning-audit/02-writing-great-skills.md`.
 
@@ -769,7 +786,7 @@ two rejected prompt-contaminated attempts, resolution limits, and host-canary ev
 `proposals/2026-08-01-two-skill-tuning-audit/05-post-landing-review.md`. This does not validate or
 restore the 28 removed `_Avoid_:` aliases.
 
-Approved tree SHA-256: `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46`.
+Approved tree SHA-256: `e6473c2b453526a712dcf053a12b32f6faa4ed7519ad5c7c57ff7d1615cc37ff`.
 
 ### Local changes
 
@@ -988,8 +1005,8 @@ humanizer and adds only the missing technical branch:
 - `references/protected-list.md` protects code, paths, APIs, config keys, commands, versions, results, errors, and logs while redacting credential/secret values.
 - `evals/benchmark.md` adds paired SF-28/SNF-16 coverage plus SF-29 secret redaction; `evals/trigger-cases.jsonl` fixes one technical-writing fire and one raw-log-analysis quiet case.
 
-Approved payload SHA-256 `17122db8cd16ae253ebcf4a3e1a40d368350fdda780f23b7a8a912a00de2a648`;
-approved tree SHA-256 `e51d4b63b2ec7934f55cc0d239e73febd1214cb45cfc6ba3fab7db20d9a80384`.
+Approved payload SHA-256 `0e2553e2db0e7a4ca7b02c14015a89c47bfbb9d925255e59fc0b4805f64b480d`;
+approved tree SHA-256 `985556baba728ebd05009bcd780045ea074b95e7e48b1509011eee6cfbd053a9`.
 
 ### Re-merge procedure (when upstream moves)
 
@@ -1045,7 +1062,7 @@ Baseline before the fork: upstream `SKILL.md` SHA-256
 Local `SKILL.md` SHA-256 `61bc459dd039726ec6f42adedc2e8569743da00c69aafe52f336a1548b0f9f9a`.
 Lock `payload_sha256` (hash-of-hashes over every file in the directory, the column's convention)
 `4b95660dc88bde2ce3ba1bf301a48991603feae10dbf26eed02249b640437ff0`;
-approved tree SHA-256 `cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37`.
+approved tree SHA-256 `4488dbf0b45a791650f4af4c23380be31fb4274378a3463ef8120ba36fc324a2`.
 Upstream `LICENSE` (MIT, .NET Foundation and Contributors) is carried with the payload.
 
 The polyglot mutation catalog is deliberately **not** trimmed to .NET. It is the bulk of the file and the
@@ -1106,6 +1123,74 @@ Regression coverage: `tests/vendored-detection.sh`, 58 cases — every provenanc
 
 **Decision (2026-09-05):** user approved the Sol/Astra optimization plan. Replace repeated seam confirmation and the blanket no-refactor rule with dev-workflow INT-2/INT-9 and S2 ownership. Independent behavior oracles, public seams and RED-before-GREEN remain.
 
-Approved tree SHA-256: `331550f33e18c8938c55facb6470f6298ce7525605c2aa1986582571b430e461`. Upstream baseline tree remains `807b29b3f7d1ae9c14d8970ad981b697ad908af932b8aa74cf095f671038f346` in mattpocock-skills.lock.
+Approved tree SHA-256: `adb945d6b36b9a54fb49817e76458ddffc4a0a275db91828f40e5d4bb4b39c42`. Upstream baseline tree remains `807b29b3f7d1ae9c14d8970ad981b697ad908af932b8aa74cf095f671038f346` in mattpocock-skills.lock.
 
 On re-vendor compare the pinned Matt revision, preserve canonical authorization and GREEN micro-refactoring if upstream lacks them, then recompute this tree fingerprint and rerun workflow/caller/model canaries. Rollback: revert this local fork and its index entry together; leave the upstream pin unchanged.
+
+
+## 2026-09-09 shared prompt optimization
+
+User authorization: 「全部依照建議優化調整」 after the complete global/skill audit report. Delivery scope is an isolated local candidate; this record does not claim live-host cutover, PR, or model-canary success.
+
+The reviewed source baseline is local commit `60c840b9cbb9933c2b943508b8d534c43910bcf9`. Every targeted SKILL.md matched the audit SHA-256 before modification; machine-local exec-briefing was prepared separately rather than silently added to this tracked corpus. Pinned upstream revisions and licenses are retained. For newly forked Matt trees, the unchanged local baseline was checked against the upstream-tree fingerprints in the lock; previously recorded forks are compared against their accepted local baseline, retaining their earlier upstream comparison record. The agent-browser wrapper has no pinned CLI revision; its live bundled core remains the syntax authority.
+
+Changes shorten redundant description lists, split independently loaded setup/operation/empirical/report branches, align downstream setup/merge/review rules with shared authorization, and allow scope-preserving local disposable checks/fixes/retries. Explicit plan-first, reviewer read-only, protected action-time gates, unknown fixture isolation, production data preservation, and external-write authorization remain binding. No invocation visibility keys or implicit-invocation flags changed; the invocation manifest remains unchanged.
+
+Current changed vendored payloads:
+
+| Skill | Baseline tree SHA-256 | Current tree SHA-256 | Current SKILL.md SHA-256 |
+|---|---|---|---|
+| agent-browser | `8916f6658118cd35fb4db907128334782c6a984c809781cadba1555d651e8a32` | `677fcd1b5b89c9fbc42e2b1699332af58d55567ce63a184f1f33a1908cdffc42` | `439fa8c8a549f6e51fb6325c51e82a397179cddf47717fa87ef55a6abcd33f08` |
+| ask-matt | `beb486c313e815a3381d4fbc1b1a05e935ce6b4d957f7b50dabd0d8c33318d2f` | `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` |
+| clean-code-dotnet | `3f1cb3c62da34813c63d3d041feb0287044a5df5047f1cf824d95a25ba8f89b0` | `648eafb5e500fd97feecdfc5d59ad02d739bd268f0f2c078e2030bc14028d876` | `4253e2e6ba4b7a381a894f2d8c7ff0725f042a61ed46b93306f8ecbf0141b729` |
+| code-review | `13c0fc08ad0b0d26be7229a16e9328ccfc40dd5c763d85079b5433646bbb2272` | `0554f1e9fa58138e5e692977d5b1d2ba97f446c5a9ae93e0d96cf1dc2e02e5ab` | `ac678b0e9de6363446c009939ca4e1b42cec5f19db8702e7c7e3fa6b5d4af52e` |
+| codebase-design | `1a383c195d752de7f28a495f5fb3db54eaad06734c57ccd810390fe31eea9579` | `261b3b7c67fd41342fb83c3d0aa34d4a0637d26dc9b18fab7e975c50bc71d5c8` | `e06021f5798900e9cfaae4f6fcaf4aa2114d4e441336c5344e2561c15a4b4958` |
+| diagnosing-bugs | `84993bd42da0fab491570f8c13d42b21b93286d956afa02047acaf6b8ed15a7c` | `e18cf293ae5b4d7962c4a80f7a92d1d653fa531fa91d1dd8d338aafa6d1a12fc` | `46bac7c608763dcb556979b9ab61f4857c3ec0f38581e5986667d26370f8f984` |
+| grilling | `0595aaade00510aa08374ec337f1b926889595af83124deb84771d9f095cd4c7` | `686579e9cde62b7b4e993385e0b72d0292b5c3bc039b71ea0158834a4618dfc6` | `29f894e289a2969488d5e4ebba6e1ecf0e0ee96d9d3d5ca7c196615ec7dff85b` |
+| improve-codebase-architecture | `5e331195ca420e2ea8258ed32fb054043f6ac521fdce99f520822cc8e254b8fc` | `78544103d7c78120e6fcdd2aecc2c89a0d403af1810e31c79a8e2feed9559670` | `f41ec6fd7e512946c4b513fba235f8742e64cab6eb9586fe619169b207a12937` |
+| microsoft-code-reference | `8ee7c32860e0b751aeedcde1c84b725235ec1d2ac63ab9be5d3799ae26417a1c` | `8d7a68b5608140152957931c96d8700b6a9898032a90e9f72c269cb995be2048` | `d111de4973499376d87c7ba07026e749f7ff089350384ac4f3b2f6f3cbc0e6a9` |
+| microsoft-docs | `e656618a3bc63d9d8d5bdc381f3eb1bf4327b9ef4bb22ff399c301551f421acf` | `c1cc5bf59d6113fee38facb5bd2fd0cc2cabf28303fa4975220b6f790c9e0d7e` | `70e57ed9ab0a2ec2c1bcaed7ff735886441248501d20128a0dd0f41481c48806` |
+| prototype | `b58e8a09e2630c9ef3fd009562c33f1cc5770881854550be2767809b631fce4a` | `bba188786b02d904821b549b20c110286f59115f21dc7ffea099557df1d29097` | `35a7ad3d5597835ae75a02b90272bd540cc4e7a4ea45ac5e73726b00840631f5` |
+| resolving-merge-conflicts | `52162eecbd8366e1d4b145e0964dfab7fe3cd534773d85e79c750f6e04aa65f5` | `b442690537b7375f2ea50da67aee174769b27dec9455ea62779f542340d51f60` | `ed21a7b205bdcd5d174c8591a1ba648dacb7b9e5d1114a3fcf9d2c2a21d316ef` |
+| setup-matt-pocock-skills | `20fabc63fdb530037748eaf9b1a62a53ea91ac5a18cecc0fb001c3002b2673fc` | `04e5bd5e851a78da279cc7833cc15e43e3cc3f498502154710a0426777036389` | `efc377ed6804df4838a2594154b6e7507a328203418570ea33a5230cb3bcc658` |
+| speak-human-tw | `e51d4b63b2ec7934f55cc0d239e73febd1214cb45cfc6ba3fab7db20d9a80384` | `81ad5747bb8442ad452f85d21f4dc1225f05e3980b3e0ce14e2906d431d509f4` | `306f441f8f4b851b102d33f89fd65830237e979ee888eab2b93e310a7153477b` |
+| tdd | `331550f33e18c8938c55facb6470f6298ce7525605c2aa1986582571b430e461` | `d761f702fff6cfcfbba1bfe153b55055f62d667a831eb2cf3d7b230a50714df5` | `1df665fb821febb4ef110dbaee473bdf74183d3996e5465840ac778fb882e6ac` |
+| teach | `10707673896f85135ada4425709be25a349ec85f576b5f9a7926615971db19b1` | `c9870a3a77cedfdd69a0812b37ed5c2394e073eff39d1c9d29c41a1dabaeae78` | `40b6e0c97d74dadfa41c3a26650ed88ff5a8cf50a9c2a918789b6cc31c970881` |
+| test-gap-analysis | `cb642c4dc5b6fc0011144b08d5fdbd40a8e98e8e4cfddb6c45c3dcd275a42a37` | `4488dbf0b45a791650f4af4c23380be31fb4274378a3463ef8120ba36fc324a2` | `7420b0c0e3446348db4900f5c73c36a904dd256d87ad8a1c3dd066cc6ec6c06e` |
+| to-spec | `7fe9db6b276a87383996b138efa07e7e20fb5fbec8bd6027e084733b48efba60` | `245203535a0dba3bd4c4925b5f76b60367d814b620f8506bc68d648a0831a202` | `dfc0ae7333a103a32ee9233e81372799104d5716e5183698987c22226c44b535` |
+| to-tickets | `030ff9a692ff972061b8fa98caf5fd2cafd5c3b64d1f78480ba8c37bc6d5e454` | `3c510a1963e7a711ceb25f3c5747c0c5678f084349e59d319ae396062d05e52a` | `167daa43089ee030cd1ee9962bf4cea96cd8efb57d7ffd71c0d7baf35de8b037` |
+| triage | `f627c556c9ced84f0f8cb529011655b28e85d77c8804bbb9c1cbfe0fdfe73be4` | `a6bd17ced740043523c08822bd21b9d93cfcf08890baa167b7f9bdd2e9640bc2` | `5a22f48927e28dcb9721721e592dc5c5f9c844f1be2d77a950f521fb0245c183` |
+| wayfinder | `8c91f90c7129883d2c4cd1f7c255873e215c292801ecf4ed47af995a752b81dd` | `779de7ed2a2888676853f613560da7703cc38ec4b52d6005104dc4117122afed` | `2ed4b7faed29da939d6ccc7efaf9de1906cb3bed23d9b9a37053c703cd4ebda2` |
+| web-design-reviewer | `f7fa17f95793aebd5ce22009d0354ea1e6dd778c227a83077b89832863dde48b` | `7d343d08b963ce92b8696574dc901ad1f89b4396bf6365b96d82849527ae4f44` | `4b61fab18888d2fa761f97b512fb59d9c29e741becc6346262271c608573424b` |
+| writing-for-agents | `9374753ea57c4512799632b8a2568cebb70e66c017e2ebffaefa691a65767e46` | `e6473c2b453526a712dcf053a12b32f6faa4ed7519ad5c7c57ff7d1615cc37ff` | `4b7c5b26ab5125fe35bfc1890c2014fccfb59bff7f5720d077d968a5bee0e348` |
+
+### Verification and re-merge
+
+1. Compare the next upstream revision with its pinned source and the baseline above. Preserve only still-needed local behavior; do not drop downstream guards while moving prose into references.
+2. Reapply the specific description boundary, owner pointer, and branch-only attachment changes approved in this batch. Keep existing licenses, user-only metadata, higher-priority authorization, and cross-host invariants.
+3. Recompute `vendored_tree_sha256` and SKILL.md payload hashes; update this index, current approved annotations, and applicable lock entries together. Invocation manifest changes require an explicit separate decision.
+4. Run relative-reference/frontmatter validation, `tests/conformance.sh`, `tests/vendored-detection.sh`, `tests/matt-thin-workflow.sh`, and affected workflow/skill tests. Wording-bound tests must continue checking the same behavioral constraint after its canonical owner or attachment changes.
+5. Preserve real model before/after routing evidence for unreliable-trigger changes. An unavailable or rejected runner is UNAVAILABLE, never quiet/PASS; static checks are not model invocation evidence. Each consuming host/model remains separately reported before cutover.
+
+Rollback: restore this batch’s changed payloads, new attachments, current fingerprint/index annotations and corresponding lock changes from the reviewed local baseline as one scoped reversal; retain earlier forks. Do not revert unrelated concurrent work or force-push protected branches.
+
+
+### 2026-09-09 disclosure and description supplement
+
+The same approved audit explicitly requires the five outstanding disclosure changes: codebase-design examples, diagnosing-bugs feedback/instrumentation branches, domain-modeling file-layout examples, React Router examples already covered by its existing references, and speak-human-tw rewrite/delivery details. Entry points preserve glossary/principles, red-capable diagnosis and cleanup, lazy domain-document creation, version checks, mode/faithfulness/secret boundaries. Six ordinary descriptions (grill-me, grill-with-docs, handoff, implement, mp-zoom-out, ui-ux-pro-max) now match the approved matrix; user-only and caller contracts are unchanged. ui-ux-pro-max offers materially distinct choices instead of a fixed count, retaining explicit delegated-choice and existing-target exceptions.
+
+New Matt forks were compared against their locked upstream tree before the supplement; pins and licenses remain unchanged. On re-vendor, compare the pinned source, preserve only these still-needed routing/description changes, then refresh tree/payload fingerprints and consuming-host validation. Rollback restores these 11 skill payloads and six new attachments with the related index and lock changes as one scoped reversal, without reverting concurrent work.
+
+| Skill | Baseline tree SHA-256 | Current tree SHA-256 | Current SKILL.md SHA-256 |
+|---|---|---|---|
+| codebase-design | `1a383c195d752de7f28a495f5fb3db54eaad06734c57ccd810390fe31eea9579` | `261b3b7c67fd41342fb83c3d0aa34d4a0637d26dc9b18fab7e975c50bc71d5c8` | `e06021f5798900e9cfaae4f6fcaf4aa2114d4e441336c5344e2561c15a4b4958` |
+| diagnosing-bugs | `84993bd42da0fab491570f8c13d42b21b93286d956afa02047acaf6b8ed15a7c` | `e18cf293ae5b4d7962c4a80f7a92d1d653fa531fa91d1dd8d338aafa6d1a12fc` | `46bac7c608763dcb556979b9ab61f4857c3ec0f38581e5986667d26370f8f984` |
+| domain-modeling | `1918befd92fd79e48b96698c79bdcea0b925b188d6c70004c077515153750101` | `1489186bdfdac8a94f7a5479fd737580d00132ba3a11eb7d5b8b872f36a6b262` | `89936c726bec0f8460b2325958c433df64f0e759d3f17ac31be664226192e102` |
+| react-router-framework-mode | `80ff71ee21b3c8aadebefd7d59765f0b3b9f385f39b06bfc502d9f6b81f7ed48` | `3a1e41af471c0e86e9580dc8fe6d47eb290adaefb29aa2197dfcde76d28574a8` | `30455aaf9ff77c7581fe1efd8156497ff433cebef1e3f02335e81fffc692d491` |
+| speak-human-tw | `e51d4b63b2ec7934f55cc0d239e73febd1214cb45cfc6ba3fab7db20d9a80384` | `81ad5747bb8442ad452f85d21f4dc1225f05e3980b3e0ce14e2906d431d509f4` | `306f441f8f4b851b102d33f89fd65830237e979ee888eab2b93e310a7153477b` |
+| grill-me | `0da3a0d6c13e90dd18565754376f49c533a8779a6079c88e7a1bbc7d3dab4b10` | `102f60886284e139d580a2b4ad321e2470aa5d838edd5bc424b11649d7fde513` | `d54e4da99fd4bc4a1a21cb8ad371c67e18543825af0b2288deda8265501d3911` |
+| grill-with-docs | `2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b` | `9e44d8a8d61d7561ed646054743b170792e06ec06491d1836053d46ab971db1a` | `efbddba4c9d22f4e05e37e9fb85ee0c0ef7ecb1e904c2c214f7b4f751ecfd69f` |
+| handoff | `08e750e3c46431783cd5d54bc183d0f7383de404b3a9fdfb7e7f91b91c068413` | `bf149c42a210d0ecdd4f7c1a1914a842e369688f0db4e094adc4583a51e584db` | `b8ecbfb0706efc72b859f3387c741fe2d116df07f76ae0cab96be46bedcb9761` |
+| implement | `bdf2616dab353cbc48103fb216df721ee52088f30c9e0fbae4897e49d3b3cddf` | `7dc10b8ca3a60bfbf7d6da70d8e8f326c51efc4dee2cb4612de0be2a50859e3b` | `c8af4bc392edae614c2c173bbee30534ee1ddec19226a6781ccfd08181395e66` |
+| mp-zoom-out | `6865bea2ffaf170eb03060c631a8f8b9841c796a3ee9f0bf0ed1ef41a1ade4c5` | `92fc2574df79565b57ff030bbfc76412f43ebe3a9e00f98aeb50bcd994348f35` | `301816da5e996e61f17688aca4c6b1baa3d7efbb4c299290664fa1d2efba08e5` |
+| ui-ux-pro-max | `d86dc3d84856b2bff0b2ae8fa2c9f4824f9cf3934e27ec28e0b05db1d2132aee` | `3d4961748d14b6f2c86da053dbf9658d8c3e224d51c460c044f6c2a6fa662804` | `f47a60591fae653545474aaf9c505cf3b869c2f603a5386e5791951b27906a3f` |

@@ -1,6 +1,6 @@
 ---
 name: nodejs-best-practices
-description: 'Use when writing, reviewing, or testing Node.js JS/TS backend server code — Express/Fastify/Koa/NestJS/Hono routes/middleware, req/res, ESM/CJS interop, tsconfig, request validation, auth, DB clients, background jobs, async error propagation, supertest, testcontainers, nock, API review, API tests, scaffold Express API, unhandled-rejecting, wire up middleware, mock outbound call.'
+description: "Write, review, or test Node.js backend services, covering request handling, async behavior, validation, and integration boundaries."
 ---
 
 # Node.js & Express Best Practices

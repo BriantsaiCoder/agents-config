@@ -1,6 +1,6 @@
 ---
 name: vite
-description: 'Use when configuring, debugging, or reviewing Vite projects — `vite.config.*`, plugins, dev server behavior, library builds, SSR, env vars, asset handling, HMR weirdness, Rolldown migration; "build is slow", "HMR broken", "env not loading", "library export missing types". Test runner config → vitest.'
+description: "Configure, review, or debug Vite builds, dev-server behavior, plugins, assets, and SSR. Test-runner concerns use vitest."
 ---
 
 # Vite
@@ -9,7 +9,7 @@ description: 'Use when configuring, debugging, or reviewing Vite projects — `v
 
 ## Workflow
 
-1. Read `package.json`, lockfile, `vite.config.*`, `.env*`, `tsconfig` aliases.
+1. Identify package/version, Vite config, and aliases relevant to the change; inspect environment key definitions through safe examples or schemas. Access secret-bearing `.env*` only when authorized and keep values out of output.
 2. Identify **target mode**: dev / `vite build` / `build.lib` / SSR / test.
 3. Prefer `vite.config.ts` + ESM unless project uses `.js` / `.mjs`.
 4. Only `VITE_`-prefixed env vars reach client.

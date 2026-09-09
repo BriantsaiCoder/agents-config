@@ -1,6 +1,6 @@
 ---
 name: dotnet-framework-best-practices
-description: 'Use when writing or maintaining .NET Framework 4.x — System.Web, Web.config, Web API 2, OWIN/Katana, Global.asax, Windows Services, packages.config/NuGet, HttpClient lifetime, NLog/log4net. Symptoms: socket exhaustion/TIME_WAIT, IIS 502/503, ConfigurationManager null, AppDomain unload, web.config transform not applied. Also "fix this MVC 5 controller", "update a packages.config dependency", "patch WCF service".'
+description: "Write, review, or diagnose .NET Framework 4.x applications, including classic ASP.NET, Windows Services, and WCF."
 ---
 
 # .NET Framework 4.x Best Practices
@@ -9,7 +9,7 @@ No built-in DI, `System.Web` pipeline, `Global.asax`, XML transforms. Not for `M
 
 ## 12 Golden Rules
 
-1. **Composition Root for DI — never `new` deps.** No built-in container; pick Autofac/Unity/Ninject, register in `Global.asax` or OWIN `Startup`, inject via constructors.
+1. **Keep dependency creation at the Composition Root.** Reuse the existing container or manual constructor wiring. Do not add Autofac/Unity/Ninject merely to patch an existing application.
 2. **Never use Service Locator.** `container.Resolve<T>()` hides deps, fails at runtime, drags container into tests. Constructors only; resolve at Composition Root.
 3. **Async all the way — never `.Result` or `.Wait()`.** ASP.NET `SynchronizationContext` marshals continuations to request thread; blocking deadlocks.
 4. **`ConfigureAwait(false)` in library code, not controllers.** Library without `HttpContext` skips marshaling. Controllers needing `HttpContext` do NOT.
@@ -20,7 +20,7 @@ No built-in DI, `System.Web` pipeline, `Global.asax`, XML transforms. Not for `M
 9. **Anti-Forgery on state-changing MVC actions.** `@Html.AntiForgeryToken()` + `[ValidateAntiForgeryToken]`. Web API 2 + cookie auth needs custom CSRF.
 10. **`HttpClient` shared static or factory, never per-request `using`.** Causes socket exhaustion (TIME_WAIT).
 11. **Output caching + bundling for MVC.** `[OutputCache]` (`Duration` + `VaryByParam`) + `BundleConfig` for CSS/JS minify.
-12. **Keep Global.asax lean.** Move init to OWIN `Startup.Configuration(IAppBuilder app)` — testable, eases ASP.NET Core migration.
+12. **Keep startup ownership clear.** Preserve the existing Global.asax/OWIN initialization model; moving to OWIN belongs to an authorized migration, not a routine patch.
 
 ## Review Severity Checklist
 

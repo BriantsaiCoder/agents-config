@@ -1,6 +1,6 @@
 ---
 name: dotnet-core-best-practices
-description: 'Use when writing or reviewing .NET 8+ or ASP.NET Core: APIs, DI, middleware, HttpClient, ProblemDetails, ASP.NET Core OpenTelemetry/OTLP, Clean Architecture/CQRS/MediatR, SDK-style NuGet/CPM, AOT, runtime diagnostics (dotnet-counters/trace/dump). Symptoms: scope mismatch, middleware misorder, socket exhaustion, high CPU, memory leak, crash, or hang. .NET Framework 4.x → dotnet-framework-best-practices.'
+description: "Write, review, or diagnose .NET 8+ and ASP.NET Core behavior. For .NET Framework 4.x, use dotnet-framework-best-practices."
 ---
 
 # .NET 8/10 & ASP.NET Core Best Practices

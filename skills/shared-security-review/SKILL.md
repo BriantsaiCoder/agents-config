@@ -1,6 +1,6 @@
 ---
 name: shared-security-review
-description: 'Use when asked for a focused code security review — "check this repo for SQL injection or XSS", "is my code secure", "map the attack surface" — or to scan a path, branch, or every changed file for injection, exposed secrets, weak crypto, broken auth/access control, insecure dependencies, or business-logic flaws. Uses cross-file data-flow reasoning across common languages including C#/.NET. CI/CD gates, SBOM, or container scans → dependency-security-scan. Whole-codebase adversarial audit that persists artifacts → security-audit.'
+description: "Review security of a specified code path, diff, or focused attack surface; propose evidence-backed fixes. Whole-codebase adversarial audits use security-audit."
 ---
 
 # Security Review
@@ -21,7 +21,7 @@ AI scanner reasoning like a human researcher — data flow, component interactio
 3. Self-verifies to filter false positives.
 4. Severity: CRITICAL / HIGH / MEDIUM / LOW / INFO.
 5. Proposes targeted patches.
-6. Requires human approval; nothing auto-applied.
+6. Reviewers stay read-only. For an authorized review-and-fix request, return accepted findings to the implementation owner for scoped fixes and verification under shared S2.
 
 ## Workflow
 
@@ -43,7 +43,7 @@ Cross-File Flow → Self-Verify → Report → Patches.
 ## Output Rules
 
 - Findings summary table first (counts by severity).
-- Never auto-apply patches; human review only.
+- A review-only request produces findings. Existing authorization for specific fixes permits the implementation owner to apply them under S2; it does not authorize reviewer writes or unrelated side effects.
 - Confidence rating per finding (High / Medium / Low).
 - Group by category, not file.
 - Specific: file path, line, snippet.

@@ -16,9 +16,9 @@ Use Context7 as the third-party fallback after any provider-native official-docs
 After provider-native official docs are absent or report `UNAVAILABLE`, activate this skill when the user:
 
 - Asks setup or configuration questions ("How do I configure Next.js middleware?")
-- Requests code involving libraries ("Write a Prisma query for...")
+- Needs a current API or version detail while implementing a library ("Which Prisma API supports this version?")
 - Needs API references ("What are the Supabase auth methods?")
-- Mentions specific frameworks (React, Vue, Svelte, Express, Tailwind, etc.)
+A framework name or ordinary code edit alone does not trigger a docs lookup. The provider-first boundary above applies to every branch; use already verified, unchanged version evidence when available.
 
 ## How to Fetch Documentation
 

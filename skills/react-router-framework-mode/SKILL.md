@@ -1,6 +1,6 @@
 ---
 name: react-router-framework-mode
-description: Use when building or reviewing React Router framework-mode apps — routes and nested layouts, route module exports, loaders/actions, redirects, Forms/fetchers, revalidation, navigation and link prefetching, pending or optimistic UI, error boundaries, sessions and protected routes, and SSR/SPA/prerender config in react-router.config.ts.
+description: "Build or review React Router framework-mode routing, loaders/actions, forms, sessions, and rendering configuration."
 ---
 
 # React Router Framework Mode
@@ -44,65 +44,9 @@ On 8.x, delete every `future.v8_*` key from `react-router.config.ts`: those flag
 
 These are the most important patterns to follow. Load the relevant reference for full details.
 
-### Forms & Mutations
-
-**Search forms** - use `<Form method="get">`, NOT `onSubmit` with `setSearchParams`:
-
-```tsx
-// ✅ Correct
-<Form method="get">
-  <input name="q" />
-</Form>
-
-// ❌ Wrong - don't manually handle search params
-<form onSubmit={(e) => { e.preventDefault(); setSearchParams(...) }}>
-```
-
-**Inline mutations** - use `useFetcher`, NOT `<Form>` (which causes page navigation):
-
-```tsx
-const fetcher = useFetcher();
-const optimistic = fetcher.formData?.get("favorite") === "true" ?? isFavorite;
-
-<fetcher.Form method="post" action={`/favorites/${id}`}>
-  <button>{optimistic ? "★" : "☆"}</button>
-</fetcher.Form>;
-```
-
-See `references/actions.md` for complete patterns.
-
-### Layouts
-
-**Global UI belongs in `root.tsx`** - don't create separate layout files for nav/footer:
-
-```tsx
-// app/root.tsx - add navigation, footer, providers here
-export default function App() {
-  return (
-    <div>
-      <nav>...</nav>
-      <Outlet />
-      <footer>...</footer>
-    </div>
-  );
-}
-```
-
-**Use nested routes** for section-specific layouts. See `references/routing.md`.
-
-### Route Module Exports
-
-**`meta` uses `loaderData`**, not deprecated `data`:
-
-```tsx
-// ✅ Correct
-export function meta({ loaderData }: Route.MetaArgs) { ... }
-
-// ❌ Wrong - `data` is deprecated
-export function meta({ data }: Route.MetaArgs) { ... }
-```
-
-See `references/route-modules.md` for all exports.
+- **Forms and mutations:** use `<Form method="get">` for search and `useFetcher` for inline mutations without navigation. The complete examples already live in [actions](references/actions.md#choosing-the-right-pattern).
+- **Layouts:** put global navigation, footer and providers in `root.tsx`; use nested routes for section layouts. Follow [routing](references/routing.md) and its linked root-file examples.
+- **Route exports:** `meta` consumes `loaderData`, not the deprecated `data` parameter. Follow [route-modules](references/route-modules.md#meta).
 
 ## Further Documentation
 
