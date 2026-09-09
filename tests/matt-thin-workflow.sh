@@ -514,6 +514,7 @@ sed -n '/^| Need | Route |$/,/^$/p' "$KERNEL" | rg -q 'repo-level map.*docs.*onb
 # 路徑（implement／handoff／to-spec 都只在那裡出現）。
 UNROUTED_BY_DESIGN=$(cat <<'LIST'
 agent-browser
+ai-level-check
 apple-calendar
 aspnet-api-architect
 auth-implementation-patterns
@@ -556,8 +557,11 @@ LIST
 )
 # 五類：stack skill、kernel 自身、由 upstream／使用者明示進入的 Matt skill、由
 # ui-ux-pro-max own continuation 的 web-design-reviewer，以及靠精準 description model-invoke
-# 的 specialist（test-gap-analysis；speak-human-tw 同類，但它的 description 精準度未經
-# skills/auditing-skill-folder/evals/cases.jsonl 量測，分類是判斷不是實證）。
+# 的 specialist。test-gap-analysis 之外，speak-human-tw 的 description 精準度未經
+# skills/auditing-skill-folder/evals/cases.jsonl 量測，分類是判斷不是實證；ai-level-check
+# 是本次新增、從未進過該 corpus，兩者的未量測狀態不同源，補 eval case 時要分別處理。
+# ai-level-check 評的是「使用者用 AI 的成熟度」，不是任何開發階段的方法，放進 S0 會讓
+# kernel 多背一條與交付無關的路由。
 # 用純 bash glob 迭代，對齊 tests/vendored-detection.sh:306 的既有寫法：
 # `ls | xargs basename` 配 `for s in $(...)` 會經過 word splitting，目錄名含空白或
 # 換行時拆壞，且 glob 未命中時會把字面 pattern 當成一個項目。`[ -f "$sd/SKILL.md" ]`
