@@ -936,9 +936,9 @@ done
 
 # 2026-09-09: moved contracts must remain discoverable from the skill entrypoints.
 # Failure bias is false-green if only the reference is checked; require each live route too.
-has "setup routes its options" 'references/setup-options.md' skills/setup-matt-pocock-skills/SKILL.md
-has "triage routes issue cadence" 'references/issue-triage.md' skills/triage/SKILL.md
-has "code review routes dispatch contract" 'references/review-dispatch.md' skills/code-review/SKILL.md
+has "setup routes its options" 'references/setup-options\.md' skills/setup-matt-pocock-skills/SKILL.md
+has "triage routes issue cadence" 'references/issue-triage\.md' skills/triage/SKILL.md
+has "code review routes dispatch contract" 'references/review-dispatch\.md' skills/code-review/SKILL.md
 
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，

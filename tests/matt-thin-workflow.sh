@@ -86,7 +86,7 @@ rg -q 'skill audit／VND.*continuations' "$KERNEL" ||
 
 [ -r "$TEST_GAP" ] || fail 'test-gap-analysis skill is missing'
 TEST_GAP_EMPIRICAL="$AGENTS/skills/test-gap-analysis/references/empirical-confirmation.md"
-rg -q 'user explicitly authorizes empirical confirmation.*references/empirical-confirmation.md' "$TEST_GAP" ||
+rg -q 'user explicitly authorizes empirical confirmation.*references/empirical-confirmation\.md' "$TEST_GAP" ||
   fail 'empirical confirmation must stay explicitly authorized and reachable'
 [ -r "$TEST_GAP_EMPIRICAL" ] || fail 'empirical confirmation reference missing'
 rg -q 'explicit mutation authorization' "$TEST_GAP_EMPIRICAL" ||
@@ -434,7 +434,7 @@ actual_code_review_tree_sha="$(vendored_tree_sha256 "$CODE_REVIEW_DIR")"
   fail 'code-review tree differs from the recorded fork fingerprint'
 # 這兩條刻意用 POSIX grep 而非 rg：本檔 73 條 rg 斷言都是 `|| fail`，缺 rg 會響亮失敗；反向斷言
 # 寫成 `rg -q … && fail` 時缺 rg 反而靜默通過（CI 曾因此假綠）。負向檢查一律用必然存在的 grep。
-rg -q 'references/review-dispatch.md' "$CODE_REVIEW_DIR/SKILL.md" ||
+rg -q 'references/review-dispatch\.md' "$CODE_REVIEW_DIR/SKILL.md" ||
   fail 'code-review entry must route the required dispatch contract'
 rg -q 'Read the entire.*canonical reviewer-template' "$CODE_REVIEW_DIR/references/review-dispatch.md" ||
   fail 'code-review does not load the canonical reviewer contract'
