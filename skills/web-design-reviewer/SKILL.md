@@ -14,7 +14,7 @@ Own visual assessment of a rendered page and explicitly authorized visual repair
   reviewed page's files; a bare review reports only. Treat production as
   read-only unless that authorization is explicit.
 - Known code-only CSS/accessibility work routes to `css-ui-best-practices`.
-- Behavioral, console, and responsive bug debugging uses the installed frontend testing/debugging capability (for example `build-web-apps:frontend-testing-debugging`). Product-flow critique uses `product-design:audit`; visual assessment stays here.
+- Behavioral, console, and responsive bug debugging uses the installed frontend testing/debugging capability (for example `build-web-apps:frontend-testing-debugging`). Product-flow critique uses a product-audit capability available on the active host (for example `product-design:audit`); if none is available, report that limitation and continue a source-backed critique directly. Visual assessment stays here.
 - Release gates route to `frontend-release-verification`; committed browser
   tests route to `playwright-best-practices`.
 
