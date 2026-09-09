@@ -552,7 +552,7 @@ section_has "Codex escalates inherited context only when summaries are insuffici
 section_has "Codex reuses the original agent for same-task follow-up" Codex '同一任務的修正與重測 MUST 優先.*follow-up.*原代理.*只有原代理不可用.*新的獨立任務.*建立新代理' "$host_adapters_ref"
 section_has "Codex maps simplification edits to the active implementation owner" Codex '^\- S5 simplification mechanism = Astra decides disposition; active implementation owner applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
 section_has "Claude maps uiux-reviewer as the visual review agent" Claude '前端視覺 review agent = `uiux-reviewer`（Claude-only）' "$host_adapters_ref"
-section_has "Claude derives the coordinator role from configured settings" Claude 'Claude main role = `~/\.claude/settings\.json` 的 configured `model` with effort `high`.*plan mode' "$host_adapters_ref"
+section_has "Claude derives the coordinator role from configured settings" Claude 'Claude main role = `~/\.claude/settings\.json` 的 configured `model` 與 `effortLevel`.*plan mode' "$host_adapters_ref"
 section_has "Claude keeps decisions and final evidence with the main agent" Claude 'Claude main owns investigation.*architecture.*decisions.*final evidence.*independent read-only S5 review.*final user response' "$host_adapters_ref"
 section_has "Claude permits the main agent to implement authorized scope end to end" Claude 'Claude main MAY implement 已授權 scope end-to-end' "$host_adapters_ref"
 section_has "Claude autonomously selects direct work or implementer delegation" Claude 'Claude main MUST 自主判定 direct work 或 implementer delegation.*不需為 model routing 另問使用者' "$host_adapters_ref"
