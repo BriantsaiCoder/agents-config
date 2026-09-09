@@ -172,11 +172,11 @@ while IFS='=' read -r key skill; do
 done < "$AGENTS/mattpocock-skills.lock"
 
 rg -q 'active host/profile owns the default output language' "$IMPROVE_ARCH" ||
-  fail 'improve-codebase-architecture lost its default zh-TW output contract'
+  fail 'improve-codebase-architecture lost its host/profile-owned output language contract'
 rg -q 'use that language consistently in the visual report and any routed interview' "$IMPROVE_ARCH" ||
-  fail 'improve-codebase-architecture lost its explicit language override'
+  fail 'improve-codebase-architecture lost consistent report/interview language'
 rg -q 'Preserve technical identifiers, paths, and repository domain terms' "$IMPROVE_ARCH" ||
-  fail 'improve-codebase-architecture lost its English technical-term contract'
+  fail 'improve-codebase-architecture lost technical identifier, path, and domain-term preservation'
 
 ! rg -q '^disable-model-invocation:[[:space:]]*true$' "$WRITING_SKILLS" ||
   fail 'writing-for-agents is not model-invoked'
