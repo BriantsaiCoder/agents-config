@@ -14,3 +14,15 @@ test-gap-analysis	https://github.com/dotnet/skills/tree/4d25f17/plugins/dotnet-t
 #   本地 fork 另加 evals/trigger-cases.jsonl，並由 evals/run-eval.md 引用，固定 technical fire／quiet 邊界。
 #   兩個方向都不留懸空：既無 dead pointer，也無未被引用的檔。
 speak-human-tw	https://github.com/Raymondhou0917/speak-human-tw/tree/ee860be6fb190cbc53dc1d45a2a47c9c9c680243	ee860be6fb190cbc53dc1d45a2a47c9c9c680243	1798fc8efd0832c2481de29bcfd31703f79a22612e91b578d56fc7fd3d82dea5	81ad5747bb8442ad452f85d21f4dc1225f05e3980b3e0ce14e2906d431d509f4
+# ai-level-check：upstream 49 個非-.git 檔中取 14 個。取捨照本檔開頭那條規則重跑，不要照 URL 整包抓。
+#   閉包以 fixpoint 求（SKILL.md 出發，逐層納入被引用的檔），故 scripts/{collect,publish}.py|sh 與
+#   reports/.gitkeep 在內；evals/、prompts/、install/、docs/(除下述)、.github/、README*/CHANGELOG/
+#   CONTRIBUTING/ROADMAP 無人引用故丟棄。
+# 本地 fork 兩處，皆為刪引用而非刪內容：
+#   assets/personas/*.png（7.4MB）改寫成該圖 alt text 的純文字型錄——16 型名稱一字未失，
+#   且 personas.md 自己就寫「完整定義與判準以本文文字為準」；
+#   docs/lv{1,3,4}.html 是虛構示範，SKILL.md 與 report-design.md 只在「禁止拿來借型」的
+#   句子裡點名它們，故刪檔名、留禁令與公開 Demo URL。
+# .gitignore 必須留：references/privacy.md 指著它，且它帶 evidence/ 與 reports/* 排除規則。
+#   這個 skill 會產出含真實對話的 evidence pack，而本 repo 是 public——少了它就是 PII 外洩路徑。
+ai-level-check	https://github.com/Raymondhou0917/ai-level-check/tree/6497ee9e681da0b676322b307f12c4c184b87f42	6497ee9e681da0b676322b307f12c4c184b87f42	f08fa1e2c89491e49a5377544b732348be85588dba8554c3b51a4022780af065	13c97ee25cbb49cd382d6240006180c5fce9c7dee8a1c377fa56208a61960c06

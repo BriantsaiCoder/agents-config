@@ -308,7 +308,7 @@ if [ -d "$AGENTS/skills" ]; then
   # 這是刻意的 tripwire,不是待維護的清單:新增或退役任何 skill 都會讓這條紅燈,直到有人
   # 回來更新它。那正是要的行為——「悄悄多了一個 vendored skill」本來就該被攔下來人工確認。
   # 與 CI 的「skill-index 與 skills/ 一致」不同:那條比對兩個生成產物,這條釘死已知事實。
-  expect_vnd="agent-browser playwright-best-practices security-audit speak-human-tw tailwind-v4-shadcn test-gap-analysis ui-ux-pro-max"
+  expect_vnd="agent-browser ai-level-check playwright-best-practices security-audit speak-human-tw tailwind-v4-shadcn test-gap-analysis ui-ux-pro-max"
   if [ -r "$AGENTS/stage-b2-skills.lock" ]; then
     stage_b2_vnd="$(awk -F '\t' '$0 !~ /^#/ { print $1 }' "$AGENTS/stage-b2-skills.lock" | paste -sd ' ' -)"
     expect_vnd="$expect_vnd $stage_b2_vnd"
@@ -320,7 +320,7 @@ if [ -d "$AGENTS/skills" ]; then
   fi
   if [ -r "$AGENTS/vendored-skills.lock" ]; then
     generic_count=$(grep -vc '^#' "$AGENTS/vendored-skills.lock")
-    check "generic provenance lock 的 skill 數量" "8" "$generic_count"
+    check "generic provenance lock 的 skill 數量" "9" "$generic_count"
     while IFS=$'\t' read -r skill source revision expected_payload_sha expected_tree_sha; do
       case "$skill" in \#*|"") continue ;; esac
       # 前面的 test-only shasum override 僅存在於該 subshell。
