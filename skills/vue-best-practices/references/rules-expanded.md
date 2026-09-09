@@ -107,11 +107,11 @@ When the existing stack is headless, preserve its ARIA/keyboard behavior while s
 
 **Why**: mixing component systems duplicates tokens, interaction conventions, CSS reset assumptions, and bundle cost.
 
-## 13. VueUse for common composables
+## 13. Reuse installed composables
 
 Reuse an installed composable when it matches the need. If VueUse is absent, evaluate native/existing tools before adding it; never persist tokens or PII in its storage composables.
 
-**Why**: Well-tested, tree-shakable, maintained by Vue core contributors.
+**Why**: Reusing suitable installed composables avoids duplicate logic and unnecessary dependencies.
 
 ## 14. `<style scoped>` default; CSS Modules only when stricter isolation needed
 
