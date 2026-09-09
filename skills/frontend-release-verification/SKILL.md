@@ -1,6 +1,6 @@
 ---
 name: frontend-release-verification
-description: Use when finishing, reviewing, or preparing to deploy frontend user-facing changes, especially release readiness, smoke tests, CI gates, lint/typecheck/test/build selection, visual/RWD evidence, a11y checks, or console/page-error review.
+description: "Assess frontend release readiness when preparing deployment, selecting release gates, or verifying user journeys and rendered behavior."
 ---
 
 # Frontend Release Verification

@@ -1,6 +1,6 @@
 ---
 name: react-best-practices
-description: 'Use when writing or reviewing React 18+/19 JSX/TSX: components, hooks, Context, Suspense, Server Components semantics, shadcn/ui, TanStack Query, keys, memoization, controlled and uncontrolled inputs, DOM effects and cleanup, React-specific state patterns, excess re-renders, stale closures, and ref vs state.'
+description: "Write, review, or diagnose React components, hooks, state, and rendering behavior; framework routing and build concerns use their stack skills."
 ---
 
 # React Best Practices
@@ -23,10 +23,10 @@ Why + code + patterns → `references/rules-expanded.md`.
 5. **State at lowest needed level.** Lifting too high → subtree re-renders.
 6. **Evaluate React Compiler first; without it, `memo` / `useMemo` / `useCallback` need measured reason.** Compiler on → manual memo mostly redundant, delete it; off → premature = complexity + memory cost.
 7. **Stable unique `key`, never index for dynamic lists.** Wrong keys → state bleeds, UI corruption.
-8. **RSC default; `"use client"` only for hooks / interactivity / browser APIs.**
-9. **No runtime CSS-in-JS in new projects** — Tailwind or CSS Modules.
-10. **shadcn/ui default UI primitive.** Owned code > black-box dep.
-11. **TanStack Query for server state, separate from client.** Mixing → stale data, cache invalidation spaghetti.
+8. **Follow the selected framework’s server/client model.** In an RSC-capable framework, use `"use client"` for client boundaries; ordinary React applications do not gain server components from this rule.
+9. **Use the repository's styling system.** New-project stack choices belong to the host/repo design workflow; do not introduce or replace a styling dependency for a local change.
+10. **Reuse the existing UI primitives.** When shadcn/ui is selected, its integration skill owns token and component configuration.
+11. **Keep server state separate from local UI state.** Reuse the existing framework/data cache; evaluate TanStack Query only when the selected stack needs that capability.
 12. **ErrorBoundary for render errors.** Uncaught error crashes whole tree.
 13. **Lazy + Suspense** for route splitting. Smaller initial bundle.
 14. **TS: `interface` for Props, no `any`.** Self-doc; compile-time breaking-change catch.

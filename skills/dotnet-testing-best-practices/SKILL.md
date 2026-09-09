@@ -1,6 +1,6 @@
 ---
 name: dotnet-testing-best-practices
-description: 'Use when writing, running, or reviewing .NET tests — xUnit [Fact]/[Theory], fixtures, IAsyncLifetime, NUnit/MSTest, Moq/NSubstitute mocks, AutoFixture/Bogus data, WebApplicationFactory integration tests, Testcontainers, code coverage, BenchmarkDotNet micro-benchmarks, or flaky test diagnosis.'
+description: "Write, run, review, or diagnose .NET tests and benchmarks using the project’s existing framework and test infrastructure."
 ---
 
 # .NET Testing Best Practices

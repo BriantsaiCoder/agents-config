@@ -1,6 +1,6 @@
 ---
 name: postgresql-optimization
-description: 'Use when tuning PostgreSQL performance with evidence — EXPLAIN ANALYZE plans, index/operator selection, JSONB vs jsonb_path_ops, partitioning, full-text search (tsvector/GIN), window functions, planner behavior. Trigger on "speed up this PG query", "optimize JSONB access", "is GIN/GIST right here". For schema, migration, RLS, DAL, or general PG correctness, use postgresql-best-practices.'
+description: "Tune PostgreSQL query plans, indexes, partitioning, and search with workload evidence; general schema and DAL correctness use postgresql-best-practices."
 ---
 
 # PostgreSQL Optimization

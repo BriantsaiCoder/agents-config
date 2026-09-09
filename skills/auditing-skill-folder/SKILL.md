@@ -1,6 +1,6 @@
 ---
 name: auditing-skill-folder
-description: Use when auditing a skill folder (~/.agents/skills/, ~/.claude/skills/) for keep/trim/delete/migrate decisions. Apply when a prior audit kept everything (suspicious uniform-keep), when only "built-in knowledge sufficient?" was used as criterion, or when skill trigger rate feels low.
+description: "Audit a skill directory for trigger clarity, routing overlap, content placement, and evidence-backed keep/trim/split decisions."
 ---
 
 # 稽核 Skill 資料夾

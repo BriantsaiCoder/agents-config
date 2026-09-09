@@ -1,6 +1,6 @@
 ---
 name: ui-ux-pro-max
-description: "Use when a frontend or mobile task needs design-system direction before implementation or a targeted lookup for style, palette, typography, spacing, layout, motion, charts, or UX guidance. Provides an offline searchable recommendation database; stack skills own implementation and web-design-reviewer owns rendered-page QA."
+description: "Use the offline design database when a UI needs design-system direction or a specific style, palette, typography, layout, or UX lookup."
 ---
 
 # UI/UX Pro Max — Design Intelligence
@@ -24,7 +24,7 @@ python3 -B "$HOME/.agents/skills/ui-ux-pro-max/scripts/search.py" \
   "<product> <industry> <tone>" --design-system -p "<project>"
 ```
 
-Use the result to frame exactly three visual directions. Wait for the user to select one before implementation unless the user explicitly delegated the choice or already accepted a visual target. When the choice is explicitly delegated, select a concrete direction, state brief assumptions, and continue. If a visual target already exists, skip this ideation step.
+Use the result to frame materially distinct visual directions only where comparison helps resolve the choice. Wait for the user to select one before implementation unless the user explicitly delegated the choice or already accepted a visual target. When the choice is explicitly delegated, select a concrete direction, state brief assumptions, and continue. If a visual target already exists, skip this ideation step.
 
 3. Query only the unresolved dimension when more detail is needed:
 

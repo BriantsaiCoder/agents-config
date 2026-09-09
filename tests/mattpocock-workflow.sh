@@ -270,16 +270,16 @@ has "backend release rollout routes to shared authorization gate" '`dev-workflow
 has "container rollout routes to shared authorization gate" '`dev-workflow`.*\[T0-8\].*S2' skills/containerization/SKILL.md
 lacks "backend release has no dead CLAUDE.md plan pointer" 'CLAUDE\.md.*Plan first' skills/backend-release-verification/SKILL.md
 lacks "containerization has no dead CLAUDE.md plan pointer" 'CLAUDE\.md.*Plan first' skills/containerization/SKILL.md
-has "single-skill behavioral authoring routes to writing-for-agents" '單一 skill.*behavior.*invocation.*description.*pruning.*`writing-for-agents`' skills/dev-workflow/SKILL.md
-has "existing agent documents route to writing-for-agents" '既有 AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc.*`writing-for-agents`' skills/dev-workflow/SKILL.md
+has "single-skill behavioral authoring routes to writing-for-agents" '既有 skill.*behavior.*trigger.*authoring.*`writing-for-agents`' skills/dev-workflow/SKILL.md
+has "existing agent documents route to writing-for-agents" 'AGENTS\.md.*CLAUDE\.md.*agent doc.*`writing-for-agents`' skills/dev-workflow/SKILL.md
 has "project-doc initialization stays with init-project-docs" '初始化或整體 refresh.*`init-project-docs`' skills/dev-workflow/SKILL.md
-has "skill scaffolding stays with the host creator" 'skill scaffolding.*host creator' skills/dev-workflow/SKILL.md
+has "skill scaffolding stays with the host creator" '新 skill.*host creator' skills/dev-workflow/SKILL.md
 has "skill-folder lifecycle audit routes to auditing-skill-folder" 'skill folder.*keep.*trim.*delete.*migrate.*`auditing-skill-folder`' skills/dev-workflow/SKILL.md
 has "skill audit loads VND continuation" 'skill audit／VND.*continuations' skills/dev-workflow/SKILL.md
 has "single-skill trigger failure requires caller-compatible RED" '單一 skill.*trigger failure.*MUST.*preserved RED.*caller.*`diagnosing-bugs`.*Step 2c RED.*`writing-for-agents`' skills/dev-workflow/SKILL.md
 lacks "audit no longer requests explicit writing-skill invocation" 'explicitly invoke `writing-for-agents`|明示.*`writing-for-agents`' skills/auditing-skill-folder/SKILL.md
-has "writing-for-agents covers host and pointed-at instructions" 'AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc' skills/writing-for-agents/SKILL.md
-has "writing-for-agents requires canonical placement first" 'canonical placement is chosen' skills/writing-for-agents/SKILL.md
+has "writing-for-agents covers host and pointed-at instructions" 'AGENTS\.md.*CLAUDE\.md.*agent-facing document' skills/writing-for-agents/SKILL.md
+has "writing-for-agents requires canonical placement first" 'canonical owner is known' skills/writing-for-agents/SKILL.md
 has "host policy writing returns to the shared authorization gate" 'Before writing a host policy file.*dev-workflow.*S2.*T0-8' skills/writing-for-agents/SKILL.md
 # cd 進 $ROOT 再用相對路徑掃：`rg <absolute-path> --glob '!proposals/**'` 的 glob 只在 cwd
 # 位於 $ROOT 之上時比得到，換個 cwd 執行同一支腳本，排除失效、proposals/ 的歷史命中會讓
@@ -301,7 +301,7 @@ fi
 [ ! -e "$ROOT/skills/writing-great-skills" ] && ok "retired writing skill directory is absent" || ng "retired writing skill directory is absent"
 has "Codex metadata uses the new writing name" 'display_name: "Writing for Agents"' skills/writing-for-agents/agents/openai.yaml
 has "Codex metadata covers generalized writing scope" 'short_description:.*skills.*agent-facing documents' skills/writing-for-agents/agents/openai.yaml
-has "setup no longer names retired qa" 'Skills like `to-tickets`, `triage`, and `to-spec`' skills/setup-matt-pocock-skills/SKILL.md
+has "setup no longer names retired qa" 'Skills like `to-tickets`, `triage`, and `to-spec`' skills/setup-matt-pocock-skills/references/setup-options.md
 lacks "setup has no retired qa dependency" '`qa`' skills/setup-matt-pocock-skills/SKILL.md
 lacks "code-review uses spec terminology" 'PRD' skills/code-review/SKILL.md
 lacks "to-spec uses spec terminology" 'PRD' skills/to-spec/SKILL.md
@@ -311,7 +311,7 @@ has "logic prototype stays offline" 'no CDN.*network.*secret|offline.*CDN.*secre
 has "logic prototype uses synthetic non-sensitive fixtures" 'Fixture state uses synthetic, non-sensitive data' skills/prototype/LOGIC.md
 has "logic prototype translates validated shape for non-JavaScript hosts" 'another language.*validated states.*transitions.*invariants.*native implementation' skills/prototype/LOGIC.md
 has "prototype delivery returns to the shared authorization gate" 'delivery outside the local session.*dev-workflow.*authorization gate' skills/prototype/LOGIC.md
-has "triage delegates cadence to grilling" 'canonical `/grilling` contract own question cadence' skills/triage/SKILL.md
+has "triage delegates cadence to grilling" 'canonical `/grilling` contract own question cadence' skills/triage/references/issue-triage.md
 lacks "triage does not duplicate grilling cadence" 'one question at a time|round of questions at a time' skills/triage/SKILL.md
 lacks "wayfinder does not duplicate grilling cadence" 'one question at a time|round of questions at a time' skills/wayfinder/SKILL.md
 lacks "grill-with-docs does not duplicate grilling cadence" 'one question at a time|round of questions at a time' skills/grill-with-docs/SKILL.md
@@ -335,7 +335,7 @@ lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|impr
 
 has "external issue or PR routes to triage" '外部.*issue.*PR.*`triage`' skills/dev-workflow/SKILL.md
 has "grill-with-docs stays explicit" '明示.*`grill-with-docs`' skills/dev-workflow/SKILL.md
-has "S2 routes mutations through the authorization matrix" 'mutation.*side effect.*authorization.*matrix|變更.*side effect.*authorization.*matrix' skills/dev-workflow/SKILL.md
+has "S2 routes mutations through the authorization matrix" 'Matrix.*mutation.*side effect.*mechanical trigger.*risk floor' skills/dev-workflow/SKILL.md
 section_has "S2 requires an explicit authorized delivery scope" "S2 AUTHORIZE" "$delivery_s2_pattern" skills/dev-workflow/SKILL.md
 has "read-only requests stay outside implementation" 'Read-only.*不得擴成 implementation' "$authorization_matrix_ref"
 has "clear change build fix directly authorizes local implementation" '明確.*change／build／fix.*in-scope local implementation.*non-destructive verification' "$authorization_matrix_ref"
@@ -470,7 +470,7 @@ rule_has "stable valuable seam requires RED" INT-2 'stable.*valuable.*seam.*fail
 rule_has "unstable seam keeps same repro before after" INT-2 '否則.*同一.*repro.*before／after.*理由'
 rule_has "INT-2 keeps the five-element rule contract" INT-2 '觸發：.*例外：.*驗證：'
 lacks "bugfix no longer has unconditional RED" 'MUST 在 fix 前先有 failing regression test.*例外：無' skills/dev-workflow/SKILL.md
-rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 'stable.*valuable.*\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新增 seam.*micro-refactor.*重跑.*覆寫'
+rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 'stable.*valuable.*\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新 seam.*micro-refactor.*重跑.*覆寫'
 # Static instruction contracts only; Sol/Astra behavior is measured separately.
 lacks "small tasks no longer route to retired sdd" '^\|.*`sdd`' skills/dev-workflow/SKILL.md
 has "small tasks keep session acceptance criteria" '單檔.*≤3.*session.*情境式驗收條件' skills/dev-workflow/SKILL.md
@@ -488,9 +488,9 @@ has "optional SDD archive does not invent missing artifacts" '沒有持久化產
 lacks "trigger corpus has no retired sdd target" '"skill"[[:space:]]*:[[:space:]]*"sdd"' skills/auditing-skill-folder/evals/cases.jsonl
 rule_has "S5 medium and PR reviews run both axes" S5-1 '中高風險.*PR.*Standards.*Spec'
 rule_has "S5 low-risk non-PR reviews may be skipped" S5-1 '低風險.*不進 PR.*SKIPPED'
-has "code-review loads canonical reviewer contract" 'Read the entire.*canonical reviewer-template.*reviewer-template.md' skills/code-review/SKILL.md
-has "code-review Standards receives the full canonical prompt" 'Standards.*complete canonical marked reviewer prompt block.*performance/correctness' skills/code-review/SKILL.md
-has "code-review both axes receive the common finding contract" 'Both axes.*actionable/no-word-or-count-cap/caller-side-triage' skills/code-review/SKILL.md
+has "code-review loads canonical reviewer contract" 'Read the entire.*canonical reviewer-template.*reviewer-template.md' skills/code-review/references/review-dispatch.md
+has "code-review Standards receives the full canonical prompt" 'Standards.*complete canonical marked reviewer prompt block.*performance/correctness' skills/code-review/references/review-dispatch.md
+has "code-review both axes receive the common finding contract" 'Both axes.*actionable/no-word-or-count-cap/caller-side-triage' skills/code-review/references/review-dispatch.md
 has "reviewer template owns actionable severity and confidence" 'evidence-first actionable review.*確信度' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template keeps axes separate" '單一 review 軸內.*跨軸不合併、不重排' skills/dev-workflow/references/reviewer-template.md
 has "reviewer template rejects output caps and style-only noise" '不設字數或條數上限.*不為湊數加入純 style preference' skills/dev-workflow/references/reviewer-template.md
@@ -932,6 +932,13 @@ for active in skills/dev-workflow/SKILL.md \
   lacks "no active Superpowers workflow ref: $active" \
     'superpowers:|finishing-a-development-branch|systematic-debugging|receiving-code-review' "$active"
 done
+
+
+# 2026-09-09: moved contracts must remain discoverable from the skill entrypoints.
+# Failure bias is false-green if only the reference is checked; require each live route too.
+has "setup routes its options" 'references/setup-options\.md' skills/setup-matt-pocock-skills/SKILL.md
+has "triage routes issue cadence" 'references/issue-triage\.md' skills/triage/SKILL.md
+has "code review routes dispatch contract" 'references/review-dispatch\.md' skills/code-review/SKILL.md
 
 printf '\n%d PASS / %d FAIL\n' "$pass" "$fail"
 # 「至少跑到了」自證：probe 全數提前 return 時上面會印 0 PASS / 0 FAIL 卻 exit 0，

@@ -1,6 +1,6 @@
 ---
 name: containerization
-description: Use when writing or reviewing Dockerfiles for any stack — multi-stage builds, .dockerignore, Linux/Windows containers, image size, build caching, non-root users, ASP.NET Core, .NET Framework + IIS, Node.js, Python, Go, Java.
+description: "Write or review Dockerfiles and .dockerignore for the target runtime and OS; deployment orchestration is outside this skill."
 ---
 
 # Containerization

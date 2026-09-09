@@ -1,6 +1,6 @@
 ---
 name: postgresql-best-practices
-description: 'Use when writing or reviewing PostgreSQL SQL, schema, migrations, RLS policies, DAL code — Npgsql, node-postgres/pg, DDL, jsonb, timestamptz, uuid, arrays, query hygiene, PgBouncer pooling, COPY bulk-load, partitioning basics, "design this PG schema", "review this PG migration", "set up RLS". Deep perf tuning (EXPLAIN, index/operator, JSONB, FTS, partition strategy) → postgresql-optimization.'
+description: "Write or review PostgreSQL SQL, schema, migrations, RLS, and data-access correctness. Evidence-driven performance tuning uses postgresql-optimization."
 ---
 
 # PostgreSQL Best Practices

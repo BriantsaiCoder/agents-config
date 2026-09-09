@@ -1,6 +1,6 @@
 ---
 name: dotnet-logging-best-practices
-description: 'Use when adding or reviewing application logging in .NET 6+ or .NET Framework — Microsoft.Extensions.Logging ILogger, Serilog/NLog/log4net, LoggerMessage, structured logs, sinks, levels, correlation IDs, scopes, appsettings. Also "add logging here", "wire up Serilog". ASP.NET Core on .NET 8+ OpenTelemetry/OTLP traces, metrics, or log export → dotnet-core-best-practices.'
+description: "Implement or review application logging in .NET and .NET Framework. ASP.NET Core OpenTelemetry/OTLP export routes to dotnet-core-best-practices."
 ---
 
 <!-- last-verified: 2026-07-26 -->

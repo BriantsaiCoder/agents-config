@@ -38,8 +38,10 @@ classification after live evidence is captured.
 6. Reload/HMR and capture the same viewport. Compare before/after; for shared
    CSS, check both mobile and desktop for regressions. Record console/page
    errors.
-7. After three failed attempts on the same finding, stop and ask with the
-   selector, source candidates, screenshots, errors, and attempts made.
+7. Repeated failure calls for diagnosis using the selector, source candidates,
+   screenshots, errors, and attempts made. Continue authorized checks and fixes;
+   ask only when a missing fact, access, or action authorization blocks the next
+   dependent repair.
 
 ## Completion evidence
 

@@ -1,6 +1,6 @@
 ---
 name: jest-best-practices
-description: 'Use when configuring, reviewing, or debugging Jest — jest.config, babel/ts-jest, ESM/CJS mocking, jsdom, fake timers, snapshots, flaky tests. Symptoms: ESM transform error, jest.mock not hoisting, mock leaks, timer leaks, snapshot drift, coverage gaps, ts-jest deprecation, "jest config broken", "mock not working", "passes alone fails in suite". RTL queries/userEvent → testing-library-react-best-practices.'
+description: "Configure, review, or debug the Jest runner, transforms, mocks, timers, snapshots, and coverage. React Testing Library queries use its own skill."
 ---
 
 # Jest Best Practices

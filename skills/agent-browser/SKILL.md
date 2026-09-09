@@ -1,6 +1,6 @@
 ---
 name: agent-browser
-description: 'Use when interacting with a website or automating any browser task via the agent-browser CLI — snapshot-and-ref workflow, navigating pages, click/fill/type/select, extracting text and data, screenshots, tabs, forms, auth and logging into a site, waiting for content, parallel browser sessions, testing a web app, troubleshooting failures. Read before running any agent-browser command.'
+description: "Automate websites with the agent-browser CLI when navigation, interaction, extraction, or browser verification is needed."
 allowed-tools: Bash(agent-browser:*), Bash(npx agent-browser:*)
 ---
 
@@ -12,13 +12,13 @@ Chrome/Chromium 自動化 CLI（CDP，無 Playwright/Puppeteer 依賴）。無�
 
 ## 權威來源：指令說明從 CLI 取，不從本檔
 
-上游的 `agent-browser skills --help` 明示 bundled content 會匹配已安裝的 CLI 版本。執行前先取 current core：
+已安裝 CLI 的 bundled core 管指令語法與版本相容性。首次使用或 CLI 版本改變時取得 current core；同 session 已讀且版本未變可重用：
 
 ```bash
 agent-browser skills get core
 ```
 
-可用 bundles、references/templates 與 flags 以 `agent-browser skills --help` 為準。**先取版本相符的內容再動手，不要憑記憶或本檔湊指令。**
+可用 bundles、references/templates 與 flags 以 `agent-browser skills --help` 為準。使用已核對的版本相符內容；語法未知或行為不符時再查，不憑記憶補造指令。
 
 本目錄的 `references/` 與 `templates/` 是同一份上游內容的快取副本，只在 CLI 不可用時當離線退路；兩者衝突時以 CLI 輸出為準。
 
@@ -48,6 +48,6 @@ Electron 桌面 app（VS Code / Slack / Discord / Figma）、Slack 工作區、�
 
 ## 裝不起來或指令行為異常
 
-目前診斷／修復 flags：`agent-browser doctor --help`；`--fix` 需破壞性操作授權。
+目前診斷／修復 flags：`agent-browser doctor --help`。已授權的本機可逆修復可依實際 effect 執行；`--fix` 若包含未授權的破壞性操作或能力變更，先呈現 exact action，再確認該步驟。
 
 `Unknown command`、`Failed to connect`、升級後版本不符、找不到 Chrome —— 先跑 `doctor` 再查其他。

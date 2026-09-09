@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: A relentless interview to sharpen a plan or design.
+description: "Interview the user to sharpen a plan or design without persisting repository domain documents."
 disable-model-invocation: true
 ---
 

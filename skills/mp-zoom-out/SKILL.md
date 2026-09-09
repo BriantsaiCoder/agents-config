@@ -1,6 +1,6 @@
 ---
 name: mp-zoom-out
-description: Use when entering an unfamiliar area of code and you need a system map before editing — how the code fits the bigger picture, which modules and callers surround it. Also available as `/mp-zoom-out`.
+description: "Map modules, callers, and change boundaries when unfamiliar code needs local orientation before editing."
 ---
 
 Go up a layer of abstraction before touching this code.

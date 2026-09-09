@@ -11,7 +11,7 @@ For each decision question, provide 2–3 mutually exclusive options, put your r
 
 Prefix every question with a progress header of the form **Question N of ~M — \\<topic\\>**, where M is your running estimate of the total number of questions. Re-estimate M as you go; it's fine for it to drift as new branches of the design tree surface.
 
-By default, work interactively one frontier decision at a time. Ask one eligible question, wait for feedback, then recompute the frontier; a question that depends on another unresolved decision belongs to a later turn. Keep dependent decisions recorded off the frontier until their prerequisites settle. When the frontier is empty, summarize every decision and wait for explicit confirmation before acting.
+By default, work interactively one frontier decision at a time. Ask one eligible question, wait for feedback, then recompute the frontier; a question that depends on another unresolved decision belongs to a later turn. Keep dependent decisions recorded off the frontier until their prerequisites settle. When the frontier is empty, summarize every decision. Proceed when existing implementation authorization covers those decisions and the scope/risk is unchanged; otherwise wait for the missing action authorization. An explicit interview-only or plan-first request still stops before implementation.
 
 If the user explicitly authorizes you to answer every decision you can and ask only when blocked, enter delegated-decision mode: process decisions in dependency order, adopt your recommended option without pausing, and record each adopted decision. When the calling workflow requires live HITL feedback, keep the default interactive mode unless the user explicitly overrides that requirement.
 

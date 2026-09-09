@@ -1,6 +1,6 @@
 ---
 name: backend-release-verification
-description: Use when finishing, reviewing, or deploying backend / API / worker / service changes to production — release readiness, staging smoke, migration gates, artifact traceability, security scans, observability, rollback, go/no-go.
+description: "Assess production readiness of backend, API, worker, or service changes when preparing a release or deployment."
 ---
 
 # Backend Release Verification

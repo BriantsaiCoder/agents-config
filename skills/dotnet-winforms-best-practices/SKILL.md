@@ -1,6 +1,6 @@
 ---
 name: dotnet-winforms-best-practices
-description: 'Use when writing or reviewing WinForms/VB.NET — System.Windows.Forms Form/UserControl, Designer.cs/InitializeComponent, custom control serialization (DefaultValue/ShouldSerialize), BindingSource/DataGridView, MVVM DataContext/Command binding, BackgroundWorker/Task UI-thread marshaling, InvokeAsync, GDI+ disposal, TableLayoutPanel, dark mode, high-DPI scaling, "add a form", "hangs the UI thread".'
+description: "Write or review Windows Forms code on .NET or .NET Framework, including Designer serialization, UI threading, resources, and layout."
 ---
 
 # Windows Forms (WinForms) Best Practices

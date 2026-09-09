@@ -1,6 +1,6 @@
 ---
 name: nuxt
-description: 'Nuxt 3/4 app/server framework work: file routing, Nitro/server routes, useFetch/useAsyncData/$fetch, middleware, runtime config, modules/layers, or SSR/SSG/hybrid rendering. Exclude component patterns, Pinia stores, VueUse composables, and runtime reactivity/hydration debugging → vue-best-practices.'
+description: "Write or review Nuxt 3/4 routing, Nitro, data fetching, configuration, and rendering modes. Vue component/reactivity work uses vue-best-practices."
 ---
 
 # Nuxt
@@ -11,12 +11,12 @@ Top-3 bug sources: (1) where code runs (SSR / client / Nitro / build-time), (2) 
 
 ## Workflow
 
-1. Read `nuxt.config.*`, `[app/]pages/` / `[app/]composables/` / `[app/]layouts/` / `[app/]middleware/` + `server/`, `.env*`.
+1. Identify the relevant Nuxt config, app/server paths, and environment key definitions from safe examples or schemas. Access secret-bearing `.env*` only when authorized and keep values out of output.
 2. Rendering: SSR / SSG (`nitro.prerender`) / SPA (`ssr: false`) / Hybrid (`routeRules`).
 3. For any code — SSR / hydration / Nitro / build?
 4. Data fetching → decision tree below.
 5. State → `useState(key, init)` or Pinia. Module-scope `let x = ...` leaks across requests.
-6. Verify `npm run build && npm run preview` (catches Nitro-only bugs `dev` hides) + `npx nuxt typecheck`.
+6. Use project scripts for affected type/build checks. Rendering or Nitro changes need a production-preview smoke because development mode can hide those failures; shared S4 owns broader verification.
 
 ## Data Fetching
 

@@ -1,6 +1,6 @@
 ---
 name: clean-code-dotnet
-description: Use when a C#/.NET change is explicitly about readability, naming, responsibility boundaries, code smells, or SOLID refactoring. Routine framework, data-access, logging, UI, or test guidance belongs to its stack skill; fixed formatting and style belong to repository analyzers and .editorconfig.
+description: "Review or refactor C#/.NET readability, naming, responsibility boundaries, and SOLID when explicitly requested; stack behavior and fixed formatting belong to their existing owners."
 ---
 
 # Clean Code .NET

@@ -60,7 +60,7 @@ for heading in \
   rg -q "$heading" "$KERNEL" || fail "thin kernel heading missing: $heading"
 done
 
-rg -q '^description: .*開發任務必讀.*三 host.*S0.*S2.*S4.*S6' "$KERNEL" ||
+rg -q '^description: .*管理開發路由.*授權.*驗證.*review.*交付' "$KERNEL" ||
   fail 'dev-workflow description lost its all-development-task trigger'
 grep -Fqx '[R-1 DEPRECATED→INT-1 2026-07] [R-2 DEPRECATED→INT-2 2026-07]' "$AGENTS/CONVENTIONS.md" ||
   fail 'retired workflow ID shells must stay registered in CONVENTIONS.md §3'
@@ -85,33 +85,37 @@ rg -q 'skill audit／VND.*continuations' "$KERNEL" ||
   fail 'kernel still duplicates ui-ux-pro-max continuation'
 
 [ -r "$TEST_GAP" ] || fail 'test-gap-analysis skill is missing'
-rg -q 'explicit mutation authorization' "$TEST_GAP" ||
+TEST_GAP_EMPIRICAL="$AGENTS/skills/test-gap-analysis/references/empirical-confirmation.md"
+rg -q 'user explicitly authorizes empirical confirmation.*references/empirical-confirmation\.md' "$TEST_GAP" ||
+  fail 'empirical confirmation must stay explicitly authorized and reachable'
+[ -r "$TEST_GAP_EMPIRICAL" ] || fail 'empirical confirmation reference missing'
+rg -q 'explicit mutation authorization' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis can mutate production code without explicit authorization'
-rg -q 'isolated temporary (copy|worktree)' "$TEST_GAP" ||
+rg -q 'isolated temporary (copy|worktree)' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis does not isolate empirical mutations'
-rg -q 'full affected test (project|suite)' "$TEST_GAP" ||
+rg -q 'full affected test (project|suite)' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis can certify a survivor from only narrow tests'
-rg -q 'Record the original production-file hashes and package manifest' "$TEST_GAP" ||
+rg -q 'Record the original production-file hashes and package manifest' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis does not fingerprint empirical-mutation inputs'
-rg -qi 'apply the inverse edit' "$TEST_GAP" ||
+rg -qi 'apply the inverse edit' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis does not require an inverse edit'
-rg -Fq 'After green, red, error, or timeout, apply the inverse edit' "$TEST_GAP" ||
+rg -Fq 'After green, red, error, or timeout, apply the inverse edit' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis cleanup is not mandatory after every mutant outcome'
-rg -q 'hashes to match the baseline before the next mutation' "$TEST_GAP" ||
+rg -q 'hashes to match the baseline before the next mutation' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis does not prove per-mutant cleanup'
-rg -q 'package manifest has no unexpected diff' "$TEST_GAP" ||
+rg -q 'package manifest has no unexpected diff' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis does not prove final package cleanup'
-rg -q 'finite runner/host timeout' "$TEST_GAP" ||
+rg -q 'finite runner/host timeout' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis empirical mutations have no bounded timeout'
-rg -q 'terminate the spawned test process tree' "$TEST_GAP" ||
+rg -q 'terminate the spawned test process tree' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis timeouts do not terminate the mutant test process tree'
-rg -Fq 'Mutation score = (Killed + TimedOut) / (Killed + TimedOut + Survived + No coverage)' "$TEST_GAP" ||
+rg -Fq 'Mutation score = (Killed + TimedOut) / (Killed + TimedOut + Survived + No coverage)' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis empirical score has no canonical denominator'
-rg -Fq 'duration × 2 + 30 seconds' "$TEST_GAP" ||
+rg -Fq 'duration × 2 + 30 seconds' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis mutant timeouts are not calibrated from an unmutated run'
-rg -Fq 'separately calibrated full-suite timeout' "$TEST_GAP" ||
+rg -Fq 'separately calibrated full-suite timeout' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis incorrectly reuses the narrow-test timeout for the full suite'
-rg -Fq 'If that denominator is zero, report `Mutation score: N/A`' "$TEST_GAP" ||
+rg -Fq 'If that denominator is zero, report `Mutation score: N/A`' "$TEST_GAP_EMPIRICAL" ||
   fail 'test-gap-analysis does not define the zero-mutant score'
 rg -q 'Static mode reports unverified candidate counts without percentages or a mutation score' "$TEST_GAP" ||
   fail 'test-gap-analysis static report can still look empirical'
@@ -167,16 +171,16 @@ while IFS='=' read -r key skill; do
     fail "Codex user-only policy permits implicit invocation: $skill"
 done < "$AGENTS/mattpocock-skills.lock"
 
-rg -q '所有使用者可見的回覆.*generated HTML report prose.*預設使用繁體中文.*zh-TW' "$IMPROVE_ARCH" ||
-  fail 'improve-codebase-architecture lost its default zh-TW output contract'
-rg -q '使用者明示其他語言時依其要求' "$IMPROVE_ARCH" ||
-  fail 'improve-codebase-architecture lost its explicit language override'
-rg -q 'technical terms.*architecture vocabulary.*code identifiers.*file paths.*domain terms.*保留 English 或原文' "$IMPROVE_ARCH" ||
-  fail 'improve-codebase-architecture lost its English technical-term contract'
+rg -q 'active host/profile owns the default output language' "$IMPROVE_ARCH" ||
+  fail 'improve-codebase-architecture lost its host/profile-owned output language contract'
+rg -q 'use that language consistently in the visual report and any routed interview' "$IMPROVE_ARCH" ||
+  fail 'improve-codebase-architecture lost consistent report/interview language'
+rg -q 'Preserve technical identifiers, paths, and repository domain terms' "$IMPROVE_ARCH" ||
+  fail 'improve-codebase-architecture lost technical identifier, path, and domain-term preservation'
 
 ! rg -q '^disable-model-invocation:[[:space:]]*true$' "$WRITING_SKILLS" ||
   fail 'writing-for-agents is not model-invoked'
-rg -q '^description: .*Agent Skill fires unreliably.*RED trigger canary before rewrite' "$DIAGNOSING" ||
+rg -q '^description: .*Diagnose.*unreliable skill triggers' "$DIAGNOSING" ||
   fail 'diagnosing-bugs lacks the skill-trigger failure branch'
 fork_recorded diagnosing-bugs ||
   fail 'diagnosing-bugs fork is not recorded inside the fork index'
@@ -189,7 +193,7 @@ expected_diagnosing_tree_sha="$(
 actual_diagnosing_tree_sha="$(vendored_tree_sha256 "$DIAGNOSING_DIR")"
 [ "$actual_diagnosing_tree_sha" = "$expected_diagnosing_tree_sha" ] ||
   fail 'diagnosing-bugs tree differs from the recorded fork fingerprint'
-rg -q '^description: Writing documents for agents\..*Agent Skill.*AGENTS\.md.*CLAUDE\.md.*pointed-at agent doc' "$WRITING_SKILLS" ||
+rg -q '^description: .*Agent Skill.*AGENTS\.md.*CLAUDE\.md.*agent-facing document.*canonical owner' "$WRITING_SKILLS" ||
   fail 'writing-for-agents lacks its generalized document trigger branches'
 rg -q 'Existing-skill invocation edits stay here.*host creator owns new-skill scaffolding.*folder auditor owns directory audits' "$WRITING_SKILLS" ||
   fail 'writing-for-agents lost the local skill-authoring ownership boundary'
@@ -365,7 +369,7 @@ rg -q 'Prefix every question with a progress header.*Question N of ~M.*running e
   fail 'grilling does not show a re-estimated question progress header'
 rg -q 'Map decisions as a design tree.*frontier.*prerequisites.*settled' "$GRILLING" ||
   fail 'grilling does not define the design tree frontier'
-rg -q 'By default, work interactively one frontier decision at a time.*Ask one eligible question.*wait for feedback.*wait for explicit confirmation before acting' "$GRILLING" ||
+rg -q 'By default, work interactively one frontier decision at a time.*Ask one eligible question.*wait for feedback.*existing implementation authorization.*scope/risk is unchanged.*wait for the missing action authorization.*interview-only or plan-first' "$GRILLING" ||
   fail 'grilling does not preserve one-question HITL on the current frontier'
 rg -q 'depends on another unresolved decision.*later turn' "$GRILLING" ||
   fail 'grilling does not defer dependent questions'
@@ -430,15 +434,17 @@ actual_code_review_tree_sha="$(vendored_tree_sha256 "$CODE_REVIEW_DIR")"
   fail 'code-review tree differs from the recorded fork fingerprint'
 # 這兩條刻意用 POSIX grep 而非 rg：本檔 73 條 rg 斷言都是 `|| fail`，缺 rg 會響亮失敗；反向斷言
 # 寫成 `rg -q … && fail` 時缺 rg 反而靜默通過（CI 曾因此假綠）。負向檢查一律用必然存在的 grep。
-rg -q 'Read the entire.*canonical reviewer-template' "$CODE_REVIEW_DIR/SKILL.md" ||
+rg -q 'references/review-dispatch\.md' "$CODE_REVIEW_DIR/SKILL.md" ||
+  fail 'code-review entry must route the required dispatch contract'
+rg -q 'Read the entire.*canonical reviewer-template' "$CODE_REVIEW_DIR/references/review-dispatch.md" ||
   fail 'code-review does not load the canonical reviewer contract'
-rg -q 'Paste the required text into each actual reviewer input' "$CODE_REVIEW_DIR/SKILL.md" ||
+rg -q 'Paste the required text into each actual reviewer input' "$CODE_REVIEW_DIR/references/review-dispatch.md" ||
   fail 'code-review dispatch can substitute a pointer for the full contract'
-rg -q 'Both axes.*actionable/no-word-or-count-cap/caller-side-triage' "$CODE_REVIEW_DIR/SKILL.md" ||
+rg -q 'Both axes.*actionable/no-word-or-count-cap/caller-side-triage' "$CODE_REVIEW_DIR/references/review-dispatch.md" ||
   fail 'code-review: both axes must receive the canonical output contract ([S5-4])'
-rg -q 'Standards.*complete canonical marked reviewer prompt block.*all five house items.*performance/correctness' "$CODE_REVIEW_DIR/SKILL.md" ||
+rg -q 'Standards.*complete canonical marked reviewer prompt block.*all five house items.*performance/correctness' "$CODE_REVIEW_DIR/references/review-dispatch.md" ||
   fail 'code-review: Standards dispatch omits required review coverage'
-rg -q 'Spec.*common material.*missing or partial requirements.*scope creep.*incorrectly' "$CODE_REVIEW_DIR/SKILL.md" ||
+rg -q 'Spec.*common material.*missing or partial requirements.*scope creep.*incorrectly' "$CODE_REVIEW_DIR/references/review-dispatch.md" ||
   fail 'code-review: Spec dispatch omits requirements or common contract'
 rg -q 'Do not merge or rerank across axes' "$CODE_REVIEW_DIR/SKILL.md" ||
   fail 'code-review aggregate merges independent axes'
@@ -590,11 +596,11 @@ fi
 
 [ -f "$AGENTS/skills/mp-zoom-out/SKILL.md" ] ||
   fail 'mp-zoom-out missing'
-rg -q 'unfamiliar area.*system map|system map.*unfamiliar area' \
+rg -q '^description: .*Map modules, callers, and change boundaries.*unfamiliar code.*before editing' \
   "$AGENTS/skills/mp-zoom-out/SKILL.md" ||
   fail 'mp-zoom-out scope drifted'
-git -C "$AGENTS" diff --quiet "$WORKFLOW_BASE" -- skills/mp-zoom-out ||
-  fail 'mp-zoom-out changed'
+git -C "$AGENTS" diff --quiet --ignore-matching-lines='^description: ' "$WORKFLOW_BASE" -- skills/mp-zoom-out ||
+  fail 'mp-zoom-out changed beyond the approved description rewrite'
 
 fork_count=0
 expected_upstream_tree_count=$(grep -c '^upstream_tree_sha256=' "$AGENTS/mattpocock-skills.lock")
@@ -704,13 +710,13 @@ uiux_words="$(wc -w < "$uiux_skill" | tr -d ' ')"
   fail 'ui-ux-pro-max still contains a Claude-only runtime path'
 rg -Fq '$HOME/.agents/skills/ui-ux-pro-max/scripts/search.py' "$uiux_skill" ||
   fail 'ui-ux-pro-max shared runtime path is missing'
-rg -q 'stack skills own implementation.*web-design-reviewer owns rendered-page QA' "$uiux_skill" ||
+rg -q 'Do not use for implementation, CSS/responsive fixes, or rendered-page review.*Stack skills,.*css-ui-best-practices.*web-design-reviewer.*own those layers' "$uiux_skill" ||
   fail 'ui-ux-pro-max ownership boundary drifted'
 ! rg -q 'reviewing UI|implementing navigation|creating/refactoring UI components' "$uiux_skill" ||
   fail 'ui-ux-pro-max broad implementation/review triggers returned'
-rg -q 'exactly three visual directions' "$uiux_skill" &&
+rg -q 'materially distinct visual directions.*comparison helps resolve the choice' "$uiux_skill" &&
   rg -q 'Wait for the user.*unless.*explicitly delegated.*already accepted' "$uiux_skill" ||
-  fail 'ui-ux-pro-max lost the three-direction choice gate or its authorization exceptions'
+  fail 'ui-ux-pro-max lost the visual choice gate or its authorization exceptions'
 rg -q 'explicitly delegated.*select a concrete direction.*brief assumptions.*continue' "$uiux_skill" ||
   fail 'ui-ux-pro-max delegated choice does not produce a concrete assumed direction'
 rg -q 'UNAVAILABLE.*probe.*dependent work' "$uiux_skill" &&
@@ -800,6 +806,14 @@ done < "$B2_SKILLS_LOCK"
 #   typescript-best-practices/SKILL.md
 while IFS= read -r changed; do
   case "$changed" in
+    # 2026-09-09 approved audit: exact additional Markdown targets; no wildcard expansion.
+    skills/acquire-codebase-knowledge/SKILL.md | \
+    skills/c-cpp-best-practices/SKILL.md | \
+    skills/mp-zoom-out/SKILL.md | \
+    skills/security-audit/SKILL.md | \
+    skills/postgresql-best-practices/SKILL.md | \
+    skills/vite/SKILL.md | \
+    skills/vitest/SKILL.md) ;;
     skills/agent-browser/SKILL.md | \
     skills/apple-calendar/* | \
     skills/dotnet-find-bugs/* | \

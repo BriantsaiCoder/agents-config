@@ -1,6 +1,6 @@
 ---
 name: css-ui-best-practices
-description: 'Use when writing or reviewing CSS, UI, a11y — SCSS, CSS Modules, native nesting, container queries, @layer, :has(), responsive/flex/grid, semantic HTML, alt text, focus states, CLS spike, mobile overflow, z-index war, missing focus ring, contrast fail, animation jank, "fix this layout", "make it responsive", "broken on mobile", "tab skips button". Tailwind v4 + shadcn tokens → tailwind-v4-shadcn.'
+description: "Write or review CSS, responsive layout, semantic HTML, and accessibility. Tailwind v4/shadcn token integration routes to tailwind-v4-shadcn."
 ---
 
 # CSS / UI / Accessibility Best Practices
@@ -38,7 +38,7 @@ Target WCAG 2.2 AA by default; verify the applicable legal standard for the prod
 5. Keyboard: Tab / Enter / Space / Escape.
 6. `alt` on images; `aria-label` only where semantic HTML insufficient.
 7. Resize 320 → 1440 px; container queries for reusable.
-8. Lighthouse a11y → 100.
+8. Run the existing accessibility check when applicable; use keyboard/focus/label/contrast evidence for the changed UI. A tool score alone does not prove accessibility.
 
 ## Reviewing (severity)
 

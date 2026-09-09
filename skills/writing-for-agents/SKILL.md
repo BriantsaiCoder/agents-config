@@ -1,11 +1,13 @@
 ---
 name: writing-for-agents
-description: Writing documents for agents. Use when editing one existing Agent Skill, AGENTS.md, CLAUDE.md, or pointed-at agent doc after its canonical placement is chosen; also when another skill routes an already-red single-target behavior rewrite here. Existing-skill invocation edits stay here; the host creator owns new-skill scaffolding; the folder auditor owns directory audits.
+description: "Revise an existing Agent Skill, AGENTS.md, CLAUDE.md, or agent-facing document once its canonical owner is known; directory audits use auditing-skill-folder."
 ---
 
 # Writing for agents
 
 Write documents that make a stochastic agent follow a predictable process. This skill improves content inside the owner already selected by the host workflow; it does not decide whether policy belongs in a thin host kernel, shared workflow, skill, or repo document.
+
+Existing-skill invocation edits stay here; the host creator owns new-skill scaffolding; the folder auditor owns directory audits.
 
 ## Choose the branch
 

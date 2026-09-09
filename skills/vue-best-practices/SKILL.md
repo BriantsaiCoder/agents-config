@@ -1,6 +1,6 @@
 ---
 name: vue-best-practices
-description: 'Use for Vue 3 component, state, composable, and runtime-debugging work — Composition API, script setup, ref/reactive, computed/watch, defineProps/emits, slots, Pinia stores and store testing, VueUse composables, hydration mismatch, watcher loops; "add a Vue component", "share state across components", "mock this store", "I need a debounce", "this isn''t reactive", "I get a hydration warning". SSR, Nitro, file routing → nuxt.'
+description: "Write, review, or diagnose Vue 3 components, reactivity, composables, and Pinia state/tests. Nuxt routing, Nitro, and server rendering use nuxt."
 ---
 
 # Vue 3 Best Practices

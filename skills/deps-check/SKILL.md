@@ -1,6 +1,6 @@
 ---
 name: deps-check
-description: 修改高扇入共用檔、public/exported API 或 signature 前，用 deps-check 列出 callers。重構、refactor、改名、rename、刪除、remove、搬移、move 或 extract 時觸發；支援 TypeScript／JavaScript 與 C#／.NET。純新增檔、private/local symbol、樣式文案或測試檔本身可跳過。
+description: "修改共用檔或 public/exported contract 前，追蹤 callers 與 runtime wiring，判斷影響範圍。純新增與 private/local 變更可略過。"
 ---
 
 # deps-check

@@ -1,6 +1,6 @@
 ---
 name: typescript-best-practices
-description: 'Use when writing or reviewing TypeScript: .ts/.tsx, generics and inference, conditional/mapped/template-literal types, discriminated unions and narrowing, type guards, assertion functions, Zod schemas, tsconfig strictness, any/as cleanup, API typing, tightening types, or unexpected widening.'
+description: "Write or review TypeScript types, narrowing, runtime boundaries, and compiler configuration; framework-specific behavior uses its own stack skill."
 ---
 
 # TypeScript Best Practices
@@ -16,7 +16,7 @@ If the code is primarily React- or Vue-specific, those skills apply too — but 
 
 Each rule's *why* + code examples + writing/reviewing patterns live in `references/rules-expanded.md`.
 
-1. **`"strict": true` always.** *Why:* `strictNullChecks` alone prevents the majority of "cannot read property of undefined" crashes.
+1. **Follow repository compiler policy and keep changed code type-safe.** Use strict checks for new projects; enabling `"strict": true` across an existing repo is a separate change when it expands scope.
 2. **Prefer inference; annotate signatures + exports only.** *Why:* over-annotation = maintenance burden; masks inference improvements.
 3. **`unknown` over `any`** + narrow before use. *Why:* `any` is a viral escape hatch that silently disables the checker.
 4. **Discriminated unions for state**, not optional flags. *Why:* optional fields allow impossible states; literal discriminant = exhaustive-checkable.
