@@ -4,7 +4,7 @@ The Why behind each rule + code examples.
 
 ## 1. `<script setup>` + Composition API
 
-No Options API for new code.
+Use the repository's existing component convention. Options-to-Composition migration requires matching scope; a local patch does not authorize it.
 
 **Why**: Better TS inference, less boilerplate, better tree-shaking. Recommended by Vue core team.
 
@@ -107,11 +107,11 @@ When the existing stack is headless, preserve its ARIA/keyboard behavior while s
 
 **Why**: mixing component systems duplicates tokens, interaction conventions, CSS reset assumptions, and bundle cost.
 
-## 13. VueUse for common composables
+## 13. Reuse installed composables
 
-Don't reinvent `useFetch`, `useLocalStorage`, `useIntersectionObserver`, etc.
+Reuse an installed composable when it matches the need. If VueUse is absent, evaluate native/existing tools before adding it; never persist tokens or PII in its storage composables.
 
-**Why**: Well-tested, tree-shakable, maintained by Vue core contributors.
+**Why**: Reusing suitable installed composables avoids duplicate logic and unnecessary dependencies.
 
 ## 14. `<style scoped>` default; CSS Modules only when stricter isolation needed
 
@@ -122,7 +122,7 @@ Don't reinvent `useFetch`, `useLocalStorage`, `useIntersectionObserver`, etc.
 1. `.vue` SFC with `<script setup lang="ts">`.
 2. `defineProps<T>()` + `defineEmits<T>()`.
 3. `ref()` for state. Extract shared logic into composables.
-4. Global state → Pinia setup store. Server data → VueUse `useFetch` or dedicated data layer; wrap async actions in try/catch + expose `error`/`loading` refs.
+4. Preserve existing state/data-layer ownership. Use installed Pinia/VueUse only for matching needs; expose appropriate async error/loading state without introducing a dependency for a local change.
 5. Unique IDs from `crypto.randomUUID()` or counter — never array index.
 6. Forms: `@submit.prevent`, `v-model`, clear inputs after success.
 7. UI: reuse the installed component system and its tokens.

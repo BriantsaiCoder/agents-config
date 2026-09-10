@@ -1,12 +1,11 @@
 ---
 name: web-design-reviewer
-description: 'Use when the user asks to visually review a running website in a browser, or trace rendered design defects back to source, repair them, and compare before/after screenshots. Known CSS or accessibility code issues without rendered inspection → css-ui-best-practices. Release-readiness verification of existing changes → frontend-release-verification. Read-only UX report for S5 → uiux-reviewer agent.'
+description: "Use when visually reviewing a running website or repairing a rendered defect with browser evidence. Review-only requests produce findings; release gates use frontend-release-verification."
 ---
 
 # Visual web repair
 
-Own the rendered-page-to-source repair loop. Reuse the available browser
-capability for inspection and the repository's existing styling system.
+Own visual assessment of a rendered page and explicitly authorized visual repairs. Reuse the available browser and repository styling system.
 
 ## Boundaries
 
@@ -15,6 +14,7 @@ capability for inspection and the repository's existing styling system.
   reviewed page's files; a bare review reports only. Treat production as
   read-only unless that authorization is explicit.
 - Known code-only CSS/accessibility work routes to `css-ui-best-practices`.
+- Behavioral, console, and responsive bug debugging uses the installed frontend testing/debugging capability (for example `build-web-apps:frontend-testing-debugging`). Product-flow critique uses a product-audit capability available on the active host (for example `product-design:audit`); if none is available, report that limitation and continue a source-backed critique directly. Visual assessment stays here.
 - Release gates route to `frontend-release-verification`; committed browser
   tests route to `playwright-best-practices`.
 

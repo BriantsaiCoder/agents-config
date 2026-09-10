@@ -49,7 +49,7 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 | local code: system map | `mp-zoom-out` |
 | Explicit repo-level map/docs/onboarding | `acquire-codebase-knowledge` |
 | repo docs 初始化或整體 refresh | `init-project-docs` |
-| primary-source background research／citable Markdown evidence | `research` |
+| substantial／background research report | `research`；單一 provider API/docs 查詢走下列 docs owner |
 | Microsoft concepts／tutorial／config；API signature／SDK sample | 前者 `microsoft-docs`；後者 `microsoft-code-reference` |
 | third-party library／SDK／API／CLI current lookup | provider-native official docs；absent／`UNAVAILABLE` 才 Context7 fallback（`context7-mcp`） |
 | 新 UI／redesign／缺 visual direction | `ui-ux-pro-max`；host ideation capability 接續 |
@@ -59,7 +59,7 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 | 單一 skill trigger failure | MUST 有 preserved RED；caller 無則 `diagnosing-bugs` 建；Step 2c RED／diagnosis 後接 `writing-for-agents` |
 | 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
-先驗 path/frontmatter；route≠invoke。Intake、skill audit／VND、跨 session／ticket、research、handoff MUST 讀 [continuations](references/routing-continuations.md)。
+先驗 path/frontmatter；route≠invoke。Intake、skill audit／VND、跨 session／ticket、research、handoff 首次進入且同版不在 context 時 MUST 讀 [continuations](references/routing-continuations.md)；來源或狀態改變只更新相依 evidence。
 
 ## S2 AUTHORIZE
 
@@ -92,8 +92,8 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 
 - [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
 - [S5-2] Working tree dirty review MUST 在讀任何 raw diff 前完成 `references/dirty-review-package.md`；任一 finding 即 FAIL。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
-- [S5-3] 非 SKIPPED 的 Standards 軸 prompt MUST 套用 `references/reviewer-template.md` 的 canonical over-engineering contract；專屬 reviewer 也須收到等價完整 contract。觸發：S5 review。例外：無。驗證：prompt evidence。
-- [S5-4] Reviewer output MUST 套用 `references/reviewer-template.md` 的 evidence-first actionable contract 與單軸 aggregate contract；不得用固定字數／條數上限截斷 findings。觸發：任何 review agent prompt。例外：無。驗證：review output evidence。
+- [S5-3] Standards prompt MUST 套用 [reviewer contract](references/reviewer-template.md#s5-dispatch-and-output-gates) 的完整 canonical over-engineering contract。
+- [S5-4] Reviewer output MUST 套同一 reference 的 evidence-first actionable／單軸 aggregate contract，不得以字數／條數截斷 findings。
 - 各軸只能標 `PASS`／`FAIL`／`SKIPPED`／`UNAVAILABLE`。
 - Spec 不存在可標 SKIPPED；缺 reviewer capability 必須附 UNAVAILABLE probe，不得假裝自審等價。
 - Actionable finding 回 implementation；bug finding 依 [INT-2] 在 stable／valuable seam 補 RED，否則留同一 repro before／after 與理由。Delegation 依 [INT-4]。
@@ -103,9 +103,7 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 - Local checkpoint commit 依 [matrix](references/authorization-matrix.md#local-checkpoint-commit)；final commit／push／open PR／merge／final closeout 仍須 [INT-1]。commit／PR 格式與語言依 repo／active host instructions；全域／security config 路徑依 [INT-10]。
 - 已核准 `PR-closeout` MUST 完成 commit→push→Ready PR→current-head CI／bot gate PASS→依 ledgers 選 merge strategy→branch cleanup 才 final；`Local-only` 禁 external write。
 - BUGFIX 跑 `bug-fix-settlement`；架構變更用 `init-project-docs` 的 architecture output 同步 current architecture docs，只跑該 output 不做 full refresh。
-- 使用者明示「解決 conflict」即執行 `resolving-merge-conflicts`；「分析 conflict」只讀，不得 resolve、stage 或 commit。
-- 執行 `resolving-merge-conflicts` 時只 stage 授權 scope 內已解決檔案，MUST NOT `git add -A`；若必要意圖無法安全保留或沒有解法符合 merge goal，停止並回報 trade-off，取得使用者確認後可 abort，不受上游「always resolve／stage everything」指示約束。
-- 合併後依 repo policy 清理已合併 branch；不得 force-push main／master。
+- `resolving-merge-conflicts`、scoped staging／abort 與 branch cleanup MUST 依 [closeout operations](references/ledgers.md#closeout-operations)；分析不授權 mutation。
 
 ## References
 

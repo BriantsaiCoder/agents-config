@@ -31,7 +31,7 @@ UUID, arrays, JSONB, enums, range types, `inet`, etc.
 
 **Why**: B-tree on JSONB does nothing useful. GIN on a high-write column is overhead. Match index to query → fast vs full scan.
 
-## 6. Partial + expression indexes aggressively
+## 6. Evaluate partial/expression indexes with the tuning owner
 
 `CREATE INDEX … WHERE is_active = true` / `CREATE INDEX ON t(lower(email))`.
 
@@ -39,13 +39,13 @@ UUID, arrays, JSONB, enums, range types, `inet`, etc.
 
 ## 7. VACUUM / ANALYZE — understand autovacuum
 
-Large high-churn → lower `autovacuum_vacuum_scale_factor` to 0.01–0.05. Watch `n_dead_tup` in `pg_stat_user_tables`.
+Inspect existing `n_dead_tup` and workload evidence; autovacuum tuning belongs to `postgresql-optimization`. Changing settings needs matching configuration authorization.
 
 **Why**: MVCC leaves dead tuples after UPDATE/DELETE. No timely VACUUM = bloat + slow scans. No ANALYZE = stale stats = bad plans.
 
 ## 8. `EXPLAIN (ANALYZE, BUFFERS)` for complex queries
 
-Check actual vs estimated rows (stale stats?), node types (Seq Scan on large table?), buffer hits vs reads (cache miss?).
+Prefer existing plans and route planner decisions to `postgresql-optimization`. Before a fresh ANALYZE probe, check query side effects and authorized environment; then compare actual/estimated rows and buffers against workload goals.
 
 **Why**: Cost-based planner. Wrong estimates → catastrophic plans. EXPLAIN ANALYZE is the only ground truth.
 

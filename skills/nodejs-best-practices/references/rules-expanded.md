@@ -16,7 +16,7 @@ Check the Express major version before choosing error propagation; see [async er
 
 ## 3. Validate inputs at the boundary
 
-Zod / Joi for `req.body`, `req.params`, `req.query` at route entry. 400 + structured errors on failure. Never raw input → DB / FS / shell.
+Validate `req.body`, `req.params`, and `req.query` with the installed validator; Zod/Joi are examples. Preserve the application error contract. Never pass unvalidated input to DB / FS / shell sinks.
 
 **Why**: Boundary validation = inner code can trust inputs. Fewer defensive checks, no injection slipping through.
 
@@ -52,7 +52,7 @@ No `fs.readFileSync` / `crypto.pbkdf2Sync` / CPU loops on request paths. `fs.pro
 
 ## 9. Structured logging with correlation IDs
 
-Pino (perf-recommended) / Winston. JSON format. Request ID from `X-Request-Id` or `crypto.randomUUID()` on every log line. `AsyncLocalStorage` to propagate context.
+Reuse the repository logger and request-ID contract; compare Pino/Winston only if required capability is missing. Use structured fields and the existing propagation mechanism (`AsyncLocalStorage` where appropriate).
 
 **Why**: Structured logs = searchable. Correlation IDs trace one request across services + log entries.
 

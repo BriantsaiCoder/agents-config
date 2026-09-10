@@ -1,6 +1,6 @@
 ---
 name: grilling
-description: Use when the user explicitly asks to be interviewed, grilled, or stress-tested about an under-specified plan, decision, or idea before implementation. The explicit request for the interview is what triggers this; a vague or under-specified request on its own routes to plan mode instead. Not when grilling itself is the topic of discussion.
+description: "Interview the user about an unresolved plan, decision, or idea only when an interview or stress-test is explicitly requested; vague tasks and discussion of interviewing do not trigger this skill."
 ---
 
 Interview me relentlessly about every aspect of this until we reach a shared understanding. Map decisions as a design tree; the frontier is every decision whose prerequisites are already settled and can be answered without guessing.

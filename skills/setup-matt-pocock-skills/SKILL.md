@@ -43,6 +43,10 @@ Load [setup-options.md](references/setup-options.md) for tracker, triage label, 
 The [write contract](references/write-contract.md) owns host-file selection, draft shape, merge behavior, and templates. Present the concrete selected artifacts; once covered by existing authorization, write them without repeating the selection gate. New host/policy scope still follows shared S2.
 
 
+### 4. Verify selected artifacts
+
+Apply the [write contract verification](references/write-contract.md#verification): check selected artifacts exist, parse where applicable, resolve links, and are readable by their intended consumer. Do not add checks for unselected hooks/config.
+
 ### 5. Done
 
-Tell the user the setup is complete and which engineering skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later — re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.
+After applicable checks pass, report the selected setup, evidence, and which engineering skills read these files. Mark unavailable checks explicitly. Mention they can edit `docs/agents/*.md` directly later — re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.

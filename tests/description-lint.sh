@@ -136,7 +136,9 @@ if [ -d "$LIVE" ] && [ -r "$LIVE/dev-workflow/SKILL.md" ]; then
   check "live dev-workflow: 開發任務時使用 trigger -> -"      "-" "$(flag_of dev-workflow)"
   check "live aspnet-api-architect: requirements trigger -> -"  "-" "$(flag_of aspnet-api-architect)"
   check "live deps-check: 未命中 heuristic -> ?"        "?"   "$(flag_of deps-check)"
-  check "live bug-fix-settlement: …之後觸發 -> -"          "-"   "$(flag_of bug-fix-settlement)"
+  # The approved concise trigger uses 後 rather than the heuristic's 之後觸發.
+  # '?' requests semantic assessment; zh-good-after above still guards the original pattern.
+  check "live bug-fix-settlement: concise trigger outside heuristic -> ?" "?" "$(flag_of bug-fix-settlement)"
 else
   echo "── 真實語料：SKIP（$LIVE 不存在，CI runner 無 live ~/.agents） ──"
 fi

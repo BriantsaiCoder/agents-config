@@ -1,6 +1,6 @@
 ---
 name: to-spec
-description: "Synthesize an agreed conversation into a feature specification when requested, then publish only within the authorized tracker scope."
+description: "Synthesize an agreed conversation into a feature specification when the user requests a spec."
 disable-model-invocation: true
 ---
 

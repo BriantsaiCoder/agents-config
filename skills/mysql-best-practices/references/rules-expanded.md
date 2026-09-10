@@ -4,7 +4,7 @@ The Why behind each rule. Read this when you need to judge an edge case, justify
 
 ## 1. utf8mb4 with the correct collation
 
-Use `utf8mb4` for charset and `utf8mb4_0900_ai_ci` (8.0) or `utf8mb4_unicode_ci` (5.7) for collation — on the server, every table, and the connection string. **Never** use MySQL's `utf8`.
+For new text columns, select compatible utf8mb4/collation from repository semantics and installed version. Existing server/table/connection changes can alter comparison and uniqueness behavior; execute them only under authorized migration/config scope with compatibility and rollback.
 
 **Why**: MySQL's `utf8` is a 3-byte alias for `utf8mb3` and silently truncates emoji and many CJK characters. Every other system's "utf8" is 4-byte; MySQL's is the exception.
 
@@ -26,9 +26,9 @@ Auto-increment `BIGINT UNSIGNED` is optimal for InnoDB's clustered index (sequen
 
 **Why**: Only reliable defense against SQL injection. Also enables server-side prepared statement caching.
 
-## 5. EXPLAIN before shipping queries touching > 1 table or > 1K expected rows
+## 5. Inspect plan evidence for performance-relevant queries
 
-Check `type` (avoid `ALL`), `key` (should not be NULL), `Extra` (watch for `Using filesort` / `Using temporary`). Use `EXPLAIN ANALYZE` (8.0.18+) for actual vs estimated.
+Prefer existing plans; inspect `type`, `key`, and `Extra` against the workload rather than banning scans. A fresh probe requires the authorized query/environment; `EXPLAIN ANALYZE` executes the query, so check effects and installed-version support first.
 
 **Why**: A missing index on a JOIN column or a full table scan is invisible without EXPLAIN and only surfaces in production under load.
 
@@ -68,8 +68,8 @@ Prefer `ALGORITHM=INPLACE` (or `INSTANT` in 8.0.12+) over default `COPY`. For hu
 
 **Why**: `COPY` creates a full table copy and holds a metadata lock for the entire duration, blocking all DML. On a 10GB table = minutes of downtime. `INPLACE` allows concurrent reads/writes; `INSTANT` completes in constant time for supported changes.
 
-## 12. Enable and monitor the slow query log
+## 12. Inspect slow-query evidence
 
-Set `long_query_time` to 1s (or lower, e.g. 0.5s). Use `pt-query-digest` to aggregate by *total time*, not just per-execution time.
+Use existing logs and aggregate by total time. Enabling logging or changing `long_query_time` requires matching configuration authorization; a performance review alone does not grant it.
 
 **Why**: A 200ms query running 10K times/hour costs more than one 5-second query. Without the log, performance problems are invisible until they become outages.

@@ -5,7 +5,7 @@ description: "Develop requested behavior through red–green–refactor when tes
 
 # Test-Driven Development
 
-TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. The selected behavior boundary and loop rules govern each cycle. Load a reference when that branch is needed; reuse unchanged context rather than rereading every section each cycle.
+Use the red → green loop at the selected behavior boundary. Load branch-relevant references and reuse unchanged context each cycle.
 
 When exploring the codebase, read `CONTEXT.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
 
@@ -16,8 +16,6 @@ Tests verify behavior through public interfaces, not implementation details. Cod
 See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
 
 ## Seams — where tests go
-
-A **seam** is the public boundary you test at: the interface where you observe behavior without reaching inside. Tests live at seams, never against internals.
 
 Record the public behavior boundary under test. Follow [dev-workflow](../dev-workflow/SKILL.md) [INT-2] and [INT-9] for seam selection and confirmation; S2 owns authorization. Spend test effort on valuable behavior rather than private implementation details.
 

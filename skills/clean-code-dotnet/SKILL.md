@@ -11,10 +11,10 @@ Apply judgment-heavy Clean Code review to C#/.NET without changing observable be
 
 1. Read the target code, callers, and tests. State the behavior that must remain stable.
 2. Identify concrete readability or responsibility problems using the review lens below. Tie every finding to a symbol or line; do not report personal style as a defect.
-3. Make the smallest cohesive refactor. Prefer deletion, clearer names, guard clauses, and explicit boundaries over new abstractions.
-4. Run the narrowest relevant tests, then the repository's required verification.
+3. For review-only requests, deliver findings with locations, rationale, and suggested changes. For an authorized refactor, make the smallest cohesive change; prefer deletion, clearer names, and guard clauses over new abstractions.
+4. After changes, run affected checks and repository-required verification.
 
-Complete when every accepted finding has a concrete location and rationale, observable behavior is preserved, and verification passes.
+Review completes with evidence-backed findings. A refactor also requires preserved observable behavior and passing applicable verification.
 
 ## Review lens
 

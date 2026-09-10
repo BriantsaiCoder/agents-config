@@ -28,7 +28,7 @@ The active host/profile owns the default output language. Preserve technical ide
 
 Read the project's domain glossary (`CONTEXT.md`) and any ADRs in the area you're touching first.
 
-Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
+Use the active host's available exploration capability. Delegate read-only exploration when useful and available under `dev-workflow` INT-4; otherwise explore in the main context. Note concrete friction:
 
 - Where does understanding one concept require bouncing between many small modules?
 - Where are modules **shallow** — interface nearly as complex as the implementation?
@@ -44,7 +44,7 @@ Write a self-contained HTML file to the OS temp directory so nothing lands in th
 
 Report format, card fields, badges, and diagram patterns are in [html-report.md](references/html-report.md); load it when writing the file.
 
-**Use CONTEXT.md vocabulary for the domain, and the `/codebase-design` vocabulary for the architecture.** If `CONTEXT.md` defines "Order," talk about "the Order intake module" — not "the FooBarHandler," and not "the Order service."
+**Preserve CONTEXT.md terms and actual repository symbols**, including service/component/API names. Add module/interface/seam roles when they help explain depth; do not rename domain symbols to fit the glossary.
 
 **ADR conflicts**：candidate 若與既有 ADR 衝突，只在 friction 大到值得重啟討論時提出，並在 card 中清楚標示，例如：_「與 ADR-0007 衝突，但值得重新討論，因為……」_。不要列出 ADR 禁止的所有理論性 refactor。
 
@@ -54,7 +54,7 @@ Report format, card fields, badges, and diagram patterns are in [html-report.md]
 
 Once the user picks a candidate, run the `/grilling` skill to walk the decision tree with them — constraints, dependencies, the shape of the deepened module, what sits behind the seam, what tests survive.
 
-Side effects happen inline as decisions crystallize — run the `/domain-modeling` skill to keep the domain model current as you go:
+Use `/domain-modeling` as decisions crystallize. Update only an already authorized docs path/scope; a read-only survey delivers term/ADR proposals in the session. Selecting a candidate and clarifying its design do not authorize implementation. Within that docs boundary:
 
 - **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md`. Create the file lazily if it doesn't exist.
 - **Sharpening a fuzzy term during the conversation?** Update `CONTEXT.md` right there.

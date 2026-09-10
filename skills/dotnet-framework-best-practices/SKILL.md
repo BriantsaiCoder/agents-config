@@ -35,7 +35,7 @@ No built-in DI, `System.Web` pipeline, `Global.asax`, XML transforms. Not for `M
 | Medium | `ModelState.IsValid` unchecked? | R5 |
 | Medium | Cross-cutting duplicated instead of filters? | R7 |
 | Medium | `ConfigureAwait(false)` missing in library async? | R4 |
-| Low | Global.asax bloated with init that could move to OWIN? | R12 |
+| Impact-based | Duplicate initialization or unclear startup ownership? Preserve Global.asax/OWIN; migration requires separate scope. | R12 |
 
 ## Reference Navigation
 

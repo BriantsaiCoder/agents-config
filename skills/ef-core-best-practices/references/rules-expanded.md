@@ -10,7 +10,7 @@ The Why behind each rule.
 
 ## 2. `AsNoTracking()` for read-only queries
 
-Or `UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)` on read-heavy contexts.
+Check later `SaveChanges`, identity resolution, and relationship behavior before changing tracking. Use query-local no-tracking when appropriate; changing a context-wide default requires corresponding scope.
 
 **Why**: Tracking snapshots every loaded entity. Read-only path → 20–35% slower + memory pressure for nothing. NoTracking also prevents accidental persistence of stale state.
 
@@ -79,7 +79,7 @@ Specific catch blocks around `SaveChangesAsync`. For optimistic concurrency, ins
 1. Confirm the database provider and EF Core version (7+ for `ExecuteUpdate`/`ExecuteDelete`; 8+ for primitive collections, complex types, `EF.Constant`, `SqlQuery<T>`; 9+ for `EnableThreadSafetyChecks` and experimental precompiled queries; 10+ for non-expression `ExecuteUpdateAsync` setters, multi-parameter collection translation, and named default-value constraints via `HasConstraintName`).
 2. DI: `AddDbContext` (scoped) or `AddDbContextFactory` (manual lifetime). High-throughput → `AddDbContextPool`.
 3. Model: Fluent API for column types, lengths, precision, indexes. Navigation properties for every FK.
-4. Read paths: `AsNoTracking()` + `Select` projection. Eager-load with `Include`/`ThenInclude`; deep loads → `AsSplitQuery()`.
+4. Read paths: apply no-tracking/projection after checking tracking, identity, and later-save behavior. Select eager/split loading from actual query needs and installed provider support.
 5. Write paths: async `SaveChangesAsync` with CT. Return generated IDs, affected rows, or a domain result. Bulk → `ExecuteUpdateAsync`/`ExecuteDeleteAsync`. Optimistic concurrency → `[Timestamp]` row version + concurrency exception handler.
 6. Migrations: `dotnet ef migrations add`, review generated SQL, apply via deployment pipeline (never at runtime).
 

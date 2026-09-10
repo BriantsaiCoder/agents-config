@@ -7,7 +7,7 @@ description: "Set up or assess secret, dependency, container, and SBOM scanning 
 
 ## Core Principle
 
-Security scanning is a deployment gate, not a nice-to-have. A scan without a CI block threshold is decoration. Secret leakage is non-downgradable — any positive finding blocks merge regardless of severity. Dependency / container CVEs are downgradable only when threshold and rationale are explicit.
+For release/setup scope, define explicit CI thresholds. A scan-only baseline supplies evidence and recommendations without changing hooks or CI policy. Secret leakage is non-downgradable — any positive finding blocks merge regardless of severity. Dependency / container CVEs are downgradable only when threshold and rationale are explicit.
 
 ## Tool & Threshold References
 
@@ -16,7 +16,7 @@ Security scanning is a deployment gate, not a nice-to-have. A scan without a CI 
 
 ## Workflow
 
-### New project setup
+### Authorized new project setup
 
 1. Add `gitleaks` pre-commit hook (catch secrets before they touch the repo).
 2. Add CI workflow with one tool per layer per `tool-matrix.md`.
@@ -25,9 +25,9 @@ Security scanning is a deployment gate, not a nice-to-have. A scan without a CI 
 
 ### Existing project audit (one-shot baseline)
 
-1. Run all four scans without CI gate to enumerate baseline findings.
-2. Triage: fix critical → high → schedule medium → accept low with rationale.
-3. Once baseline at zero critical/high, **then** turn on CI gate. Don't ship a CI gate that fails day-one — nobody will look.
+1. Run applicable scans in the authorized environment and enumerate findings; do not upload source or findings to a new external scanner without authorization.
+2. For scan-only scope, report severity, remediation priorities, and proposed CI thresholds.
+3. Implement fixes or gate setup only within existing exact authorization. Prepare concrete hook/CI-policy changes and confirm uncovered effects before enabling them. Preserve secret blocking and documented CVE exceptions.
 
 ### Failure response
 

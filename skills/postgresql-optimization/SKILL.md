@@ -11,10 +11,10 @@ This skill is the deep tuning companion to `postgresql-best-practices`. Use `pos
 
 ## Default Workflow
 
-1. Get evidence: `EXPLAIN (ANALYZE, BUFFERS)` on a representative dataset; check `pg_stat_statements` for offending queries; check `pg_stat_user_indexes` for unused / missing indexes.
+1. Prefer existing plans/workload evidence and authorized statistics reads. Before `EXPLAIN (ANALYZE, BUFFERS)`, check whether the query writes or invokes side effects and whether the environment/effects are authorized; otherwise continue static analysis and pause only that probe.
 2. Identify the feature category (data shape, query pattern, scale).
 3. Pick using the table below; read the matching reference for indexing/anti-pattern detail.
-4. Verify with `EXPLAIN` again — confirm the plan changed and the cost dropped on real data.
+4. Compare representative latency, throughput, resource use, and correctness against the task goal; use plans to explain results, without requiring a changed plan shape.
 
 ## Feature Decision Table
 
@@ -39,7 +39,7 @@ This skill is the deep tuning companion to `postgresql-best-practices`. Use `pos
 
 ## Validation Checklist
 
-- `EXPLAIN ANALYZE` plan changed (no more `Seq Scan` on the hot path / sort no longer spills).
+- Representative workload meets the agreed performance goal without correctness regression. A sequential scan can be appropriate; investigate actual bottlenecks and spills.
 - Row estimate vs actual within ~10×; if not, `ANALYZE` and consider raising stats target.
 - New indexes show non-zero `idx_scan` after a representative workload.
 - For migration / index changes on hot tables: `CREATE INDEX CONCURRENTLY`, `DETACH PARTITION ... CONCURRENTLY` (PG 14+). `ATTACH PARTITION` has no `CONCURRENTLY` form — it already takes only SHARE UPDATE EXCLUSIVE on the parent.

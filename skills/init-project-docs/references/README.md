@@ -137,3 +137,8 @@
 - **模板內容應為「通用、不含專案特定路徑」**：路徑、技術棧細節由 skill 在套用時注入，模板本身保持可重用。
 - **避免重複全域 settings 已提供的規則**：見 SKILL.md Phase 2「與全域 settings 的關係」段落；專案模板只放本專案特有項目。
 - **rules 模板的規則條目應為「標的明確、可驗證」**：避免 "寫好 code" 之類無法對照的陳述，保持每條規則可作為 review checklist 使用。
+
+## Conditional setup routing
+
+- Settings 與 Phase 4–6：先讀取共用的 stack/template catalog 本索引，再依 [host matrix](host-matrix.md) 顯示完整 multi-select catalogs 與 `Recommended`／`Optional`／`Not recommended` 理由。
+- 新專案無等價 baseline 時讀 [new-project defaults](new-project-defaults.md)。依 repo evidence 建立 `.gitignore`、`.editorconfig`、key-only `.env.example` 與 CI；忽略 secret-bearing `.env*`／host-local settings，CI command 取自 repo script。

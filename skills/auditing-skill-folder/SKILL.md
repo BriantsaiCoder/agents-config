@@ -9,7 +9,7 @@ description: "Audit a skill directory for trigger clarity, routing overlap, cont
 
 ## 必要流程
 
-完成條件：Step 0 → Portable structural gate；每個 skill 完成 Steps 1–6；每個資料夾完成一次 Step 2b。缺任一結果即重跑。
+完成條件：Step 0 → Portable structural gate；每個 skill 完成 Steps 1–6；每個資料夾完成一次 Step 2b。缺項只補跑該 check 或該 skill 的缺項；來源、工具版本及相依狀態未變，可沿用已完成 evidence。
 
 ### Step 0 — Vendored gate
 

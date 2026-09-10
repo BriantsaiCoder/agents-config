@@ -236,7 +236,7 @@ has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' skills
 has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.md
 has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md
 has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
-has "primary-source research routes to research" 'primary-source.*citable Markdown.*`research`' skills/dev-workflow/SKILL.md
+has "substantial research reports route to research" 'substantial.*background research report.*`research`.*provider API/docs.*docs owner' skills/dev-workflow/SKILL.md
 has "provider-native official docs route before fallback" 'provider-native official docs.*Context7 fallback' skills/dev-workflow/SKILL.md
 has "third-party current docs fall back to context7" 'third-party.*current.*`context7-mcp`' skills/dev-workflow/SKILL.md
 has "context7 activation preserves provider-first gate" 'provider-native official docs.*(absent|UNAVAILABLE).*activate this skill' skills/context7-mcp/SKILL.md
@@ -289,7 +289,8 @@ has "host policy writing returns to the shared authorization gate" 'Before writi
 # 的情況下落進 ok 分支。回 3 讓下方的 `*) ng` 接住。
 if (cd "$ROOT" || exit 3; rg --hidden -n 'writing-great-skills' . \
      --glob '!attic/**' --glob '!proposals/**' --glob '!tests/**' \
-     --glob '!vendored-forks.md' --glob '!.git/**') >/dev/null 2>&1; then
+     --glob '!vendored-forks.md' --glob '!.git/**' \
+     --glob '!docs/skill-overrides/2026-09-10-shared/**') >/dev/null 2>&1; then
   ng "active writing surfaces no longer use the retired name"
 else
   active_retired_name_rc=$?
@@ -891,10 +892,11 @@ rm -r -- "$resolver_fixture"
 has "same-conversation compact is not a Matt handoff" 'same-conversation `/compact`.*MUST NOT.*`handoff`' "$routing_continuations_ref"
 has "Codex native handoff does not invoke Matt handoff" 'Local/Worktree Handoff.*MUST NOT.*Matt `\$handoff`' "$host_adapters_ref"
 has "Matt command prefix defers to the host adapter" 'Matt skill body.*`/skill-name`.*實際.*host adapter' "$host_adapters_ref"
-has "conflict analysis does not authorize mutation" '分析.*conflict.*不得.*resolve.*stage.*commit' skills/dev-workflow/SKILL.md
-has "conflict resolution requires explicit user authorization" '明示.*解決 conflict.*`resolving-merge-conflicts`' skills/dev-workflow/SKILL.md
-has "conflict staging stays within authorized resolved files" '`resolving-merge-conflicts`.*只 stage.*授權 scope.*MUST NOT `git add -A`' skills/dev-workflow/SKILL.md
-has "unsafe conflict resolution may abort after confirmation" '必要意圖.*merge goal.*使用者確認.*abort.*上游' skills/dev-workflow/SKILL.md
+section_has "S6 loads scoped closeout operations" 'S6 CLOSEOUT' 'MUST.*references/ledgers.md#closeout-operations.*分析不授權 mutation' skills/dev-workflow/SKILL.md
+has "conflict analysis does not authorize mutation" '分析.*conflict.*不得.*resolve.*stage.*commit' "$ledgers_ref"
+has "conflict resolution requires explicit user authorization" '明示.*解決 conflict.*`resolving-merge-conflicts`' "$ledgers_ref"
+has "conflict staging stays within authorized resolved files" '`resolving-merge-conflicts`.*只 stage.*授權 scope.*MUST NOT `git add -A`' "$ledgers_ref"
+has "unsafe conflict resolution may abort after confirmation" '必要意圖.*merge goal.*使用者確認.*abort.*上游' "$ledgers_ref"
 lacks "no dangling T1-11" '\[T1-11\]' skills/dev-workflow/SKILL.md
 lacks "kernel does not duplicate PR command" 'pr-review-gate' skills/dev-workflow/SKILL.md
 has "review triage owns exact PR command" '~/\.agents/bin/pr-review-gate' skills/dev-workflow/references/review-triage.md

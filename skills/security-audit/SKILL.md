@@ -20,7 +20,7 @@ Use the platform's equivalent capabilities while preserving the specified roles,
 
 ## Setup and principles
 
-[setup.md](references/setup.md) owns target／output-directory resolution and prior-run coverage; load it before Phase 1. [principles.md](references/principles.md) owns the exploitability bar, dynamic baseline, severity axes, and the anti-pattern list; load it before Phase 2 and again when rating findings.
+[setup.md](references/setup.md) owns target／output-directory resolution and prior-run coverage; load it before Phase 1. [principles.md](references/principles.md) owns the exploitability bar, dynamic baseline, severity axes, and the anti-pattern list; load it before Phase 2, reuse that version when rating findings, and reload only when missing from context or changed.
 
 ## Workflow overview
 

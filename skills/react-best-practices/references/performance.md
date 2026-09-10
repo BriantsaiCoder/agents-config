@@ -19,9 +19,9 @@ name: React Performance Optimization
 
 ## React Compiler
 
-React 19 起可啟用 React Compiler（build 端的 `babel-plugin-react-compiler`，或框架自帶的 compiler 開關），由它自動處理 memoization。**啟用後多數手動 `useMemo` / `useCallback` / `React.memo` 應直接移除**，而非「量測後保留」。
+Memoization 決策依 [root Golden Rule 6](../SKILL.md#golden-rules)：先確認 compiler 設定與量測結果，保留 identity-sensitive contracts；只有 evidence 或已要求的 modernization 才新增／移除 `memo`、`useMemo`、`useCallback`。啟用 compiler 本身不構成刪除既有 memo 的理由。
 
-搭配 `eslint-plugin-react-hooks` 的 `preserve-manual-memoization`：手動 memo 無法被 compiler 保留時會報錯，官方建議多半是把該手動 memo 刪掉，交給 compiler 最佳化。
+若既有 lint 設定的 `preserve-manual-memoization` 回報問題，先診斷依賴與 identity contract，再依 root 的 evidence 條件修正；不以直接刪除 memo 作預設。下例僅供已選用此 plugin／preset 的專案參考。
 
 ```js
 // eslint.config.js（eslint-plugin-react-hooks v6+，recommended 預設走 flat config）
@@ -32,7 +32,7 @@ export default defineConfig([reactHooks.configs.flat.recommended]);
 // 舊版 .eslintrc 走 recommended-legacy preset
 ```
 
-未啟用 compiler 的專案（含 React 18）才適用以下「量測後再手動 memo」路線。
+以下手動 memo 範例只在量測或 identity contract 需要時採用；有無啟用 compiler，都沿用 root 的判斷條件。
 
 ---
 

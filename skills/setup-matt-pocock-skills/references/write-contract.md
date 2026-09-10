@@ -52,3 +52,7 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - [domain.md](../domain.md) — domain doc consumer rules + layout
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
+
+## Verification
+
+Before declaring setup complete, verify each selected artifact exists at its authorized path, parses where applicable, has valid links, and can be read by the intended consumer. Run relevant existing checks and record command/exit evidence; mark unavailable checks explicitly. Do not add hooks/config checks when those artifacts were not selected.

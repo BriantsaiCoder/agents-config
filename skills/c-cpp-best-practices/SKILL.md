@@ -21,28 +21,28 @@ Match existing legacy style for old code unless the user asks for modernization.
 
 ## Reviewing — Severity Checklist
 
-Walk top-down. Flag rule ID (A1 / B7 / C3 …) + concrete fix from that rule. Critical = block merge; High = needs deferral justification; Medium/Low = tracked follow-up.
+Use rule IDs to locate memory-safety, ABI, ownership, and concurrency risks. Severity follows reachable consequences and repository policy; raw `new`, casts, `shared_ptr`, or `std::thread` alone are not Critical/High defects. Treat style/tool alternatives as suggestions unless evidence establishes a defect.
 
-| Severity | Check | Rule |
+| Review | Check | Rule |
 |---|---|---|
-| Critical | `strcpy` / `sprintf` / `gets` / `scanf %s` | A6 |
-| Critical | Mismatched `malloc`/`free`, double-free, use-after-free | A1 + ASan |
-| Critical | Raw `new`/`delete` in C++ (outside lib internals) | B1 |
-| Critical | Atomic memory order without justification | B7 |
-| Critical | C++ class crossing C ABI without `extern "C"` + opaque handle | A5 |
-| High | `shared_ptr` without genuinely shared ownership | B1 |
-| High | `std::thread` instead of `std::jthread` on C++20 | B7 |
-| High | C-style cast `(T)x` instead of `static_cast` / `reinterpret_cast` | B10 |
-| High | `errno` + return code mixed in same API | A2 |
-| High | `target_link_libraries` without `PUBLIC`/`PRIVATE`/`INTERFACE` | C1 |
-| Medium | Custom dtor / copy without Rule of 5 | B3 |
-| Medium | Public C++ header includes impl (no PIMPL / fwd decl) | B8 |
-| Medium | `return std::move(local);` defeats RVO | B9 |
-| Medium | CMake global `link_libraries` / `include_directories` | C1 |
-| Medium | No `CMakePresets.json` despite multi-toolchain | C2 |
-| Medium | `FetchContent` for prod dep instead of vcpkg / Conan | C3 |
-| Medium | Sanitizer not enabled in any CI job | C4 |
-| Medium | `noexcept` missing on move ctor / dtor | B4 |
-| Low | clang-tidy / clang-format not committed | C5 |
-| Low | C/C++ standard not pinned in CMake | A8/B5 |
-| Low | `dllexport` / `__declspec` scattered | C6 |
+| Inspect | `strcpy` / `sprintf` / `gets` / `scanf %s` | A6 |
+| Inspect | Mismatched `malloc`/`free`, double-free, use-after-free | A1 + ASan |
+| Inspect | Raw `new`/`delete` in C++ (outside lib internals) | B1 |
+| Inspect | Atomic memory order without justification | B7 |
+| Inspect | C++ class crossing C ABI without `extern "C"` + opaque handle | A5 |
+| Inspect | `shared_ptr` without genuinely shared ownership | B1 |
+| Inspect | `std::thread` instead of `std::jthread` on C++20 | B7 |
+| Inspect | C-style cast `(T)x` instead of `static_cast` / `reinterpret_cast` | B10 |
+| Inspect | `errno` + return code mixed in same API | A2 |
+| Inspect | `target_link_libraries` without `PUBLIC`/`PRIVATE`/`INTERFACE` | C1 |
+| Inspect | Custom dtor / copy without Rule of 5 | B3 |
+| Inspect | Public C++ header includes impl (no PIMPL / fwd decl) | B8 |
+| Inspect | `return std::move(local);` defeats RVO | B9 |
+| Inspect | CMake global `link_libraries` / `include_directories` | C1 |
+| Inspect | No `CMakePresets.json` despite multi-toolchain | C2 |
+| Inspect | `FetchContent` for prod dep instead of vcpkg / Conan | C3 |
+| Inspect | Sanitizer not enabled in any CI job | C4 |
+| Inspect | `noexcept` missing on move ctor / dtor | B4 |
+| Inspect | clang-tidy / clang-format not committed | C5 |
+| Inspect | C/C++ standard not pinned in CMake | A8/B5 |
+| Inspect | `dllexport` / `__declspec` scattered | C6 |

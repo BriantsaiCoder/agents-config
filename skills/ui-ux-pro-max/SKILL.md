@@ -44,7 +44,7 @@ python3 -B "$HOME/.agents/skills/ui-ux-pro-max/scripts/search.py" \
 
 Add `--page "<page>"` for an override. Existing Master and page files are preserved independently unless `--force` is explicit. Read `design-system/<project>/MASTER.md`, then apply `pages/<page>.md` when present.
 
-5. Hand the selected direction to the host's stack implementation workflow. Finish with browser evidence and `web-design-reviewer`.
+5. For lookup-only work, deliver the query result and source-backed design guidance. For an authorized UI build/repair, hand the selected direction to the host stack workflow and verify the changed UI with browser evidence.
 
 ## Reliability
 

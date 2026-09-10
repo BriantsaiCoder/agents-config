@@ -9,7 +9,7 @@ Frontend-only components / Deno / Bun-exclusive runtimes out of scope.
 
 ## Mode
 
-1. **Writing** — apply rules proactively. Don't ask before validation / error handling / tests.
+1. **Writing** — complete boundary validation, error handling, and necessary tests within authorized changes. Reuse installed libraries; new architecture/dependencies or external effects follow S2. Review-only work produces findings.
 2. **Reviewing** — checklist. Priority: security (injection, auth) → correctness (errors, async) → tests → perf.
 
 ## Golden Rules
@@ -18,13 +18,13 @@ Rule explanations → `references/rules-expanded.md`; writing/reviewing workflow
 
 1. **Structure by feature, not technical role.**
 2. **Propagate async errors.** Express 4 needs explicit rejection forwarding; Express 5 forwards returned Promise rejections. Never empty `catch {}`.
-3. **Validate inputs at boundary** (Zod / Joi).
+3. **Validate inputs at boundaries with the existing validator**; Zod/Joi are options when already selected.
 4. **Env config validated at startup.**
 5. **TS strict; `unknown` not `any`.**
 6. **Express error middleware: 4 params `(err, req, res, next)`.**
 7. **Never block event loop.** No sync I/O / CPU loops on request paths.
 8. **Connection pooling + parameterized queries.**
-9. **Structured logging (Pino) + correlation IDs via `AsyncLocalStorage`.**
+9. **Structured logging with the repo logger** and existing correlation mechanism; use `AsyncLocalStorage` when context propagation requires it.
 10. **Test at right level.** Unit pure logic; `supertest` for HTTP without port; testcontainers for real DBs.
 11. **Lockfiles committed, `npm ci` in CI, audit dependencies.**
 12. **Multi-stage Docker, non-root, signal handling.**
@@ -57,4 +57,4 @@ Rule explanations → `references/rules-expanded.md`; writing/reviewing workflow
 - `references/deployment-docker.md` — multi-stage Dockerfile, lockfile + audit
 - `references/working-patterns.md` — writing/reviewing workflow
 
-Open one at a time.
+Load only task-relevant references; batch independent reads and reuse unchanged content already in context.

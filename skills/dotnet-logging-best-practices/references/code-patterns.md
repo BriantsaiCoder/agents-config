@@ -21,7 +21,9 @@ _logger.LogInformation("Order {OrderId} created for {CustomerName}",
 
 ## Rule 2 — Log level matrix
 
-| Level | Use For | Production Default |
+Use this matrix to explain level meanings; the repo owns production thresholds. The defaults shown are examples, not instructions to replace existing configuration.
+
+| Level | Use For | Example Production Default |
 |-------|---------|-------------------|
 | **Critical** | Application crash, data corruption, unrecoverable state | Always on |
 | **Error** | Operation failed, needs attention (exception caught, retry exhausted) | Always on |

@@ -615,7 +615,8 @@ else
   ng "init-project-docs Copilot settings boundary is stale"
 fi
 
-if scan_hit_f '先讀取共用的 stack/template catalog' "$init_docs" &&
+if scan_hit_f 'references/README.md#conditional-setup-routing' "$init_docs" &&
+   scan_hit_f '先讀取共用的 stack/template catalog' "$catalog_index" &&
    scan_hit_f '## Phase 4–6 建議標記' "$host_matrix"; then
   ok "init-project-docs new workflow prose is zh-TW"
 else

@@ -1,6 +1,6 @@
 ---
 name: tailwind-v4-shadcn
-description: Use when setting up or fixing Tailwind CSS v4 with shadcn/ui, including @theme inline variables, CSS token architecture, dark mode, components.json, and Vite/React templates.
+description: "Use when setting up, migrating, or fixing Tailwind CSS v4 and shadcn/ui token integration or dark mode."
 ---
 
 # Tailwind v4 + shadcn/ui
@@ -15,12 +15,11 @@ Use this skill for Tailwind CSS v4 and shadcn/ui integration. The fragile part i
 4. Define semantic CSS variables in `:root` and `.dark`.
 5. Map every semantic variable in `@theme inline` so utilities such as `bg-background` and `text-primary` exist.
 6. Apply base body styles with raw CSS variables, not `hsl(var(...))` double-wrapping.
-7. Verify generated UI in light/dark mode and run the project build.
+7. Run the verification checklist below on the changed UI.
 
 ## Critical Rules
 
 - Define color variables with `hsl(...)` in `:root` and `.dark`.
-- Map variables to utilities inside `@theme inline`.
 - Do not put `:root` or `.dark` inside `@layer base`.
 - Do not use nested `.dark { @theme { ... } }`.
 - Do not use `tailwind.config.ts` as the source of v4 theme tokens.

@@ -11,7 +11,7 @@ For React, this skill does **not** apply — say so and stop.
 
 ## Mode
 
-1. **Writing** — apply the rules proactively; don't ask before `<script setup>`, Composition API, or strict typing.
+1. **Writing** — use existing Vue/TS patterns in authorized additions/fixes. Options-to-Composition or repository-wide strict migrations are separate scope; review-only work produces findings.
 2. **Reviewing** — walk them as a checklist: reactivity correctness → performance → patterns.
 3. **Debugging** — a runtime symptom is evidence work: capture the warning text and open `references/debugging/INDEX.md` before editing.
 
@@ -19,7 +19,7 @@ For React, this skill does **not** apply — say so and stop.
 
 Each rule's why, code, and patterns → `references/rules-expanded.md` §1–14.
 
-1. **`<script setup>` + Composition API.** No Options API in new code.
+1. **Preserve repo component style.** Prefer `<script setup>` + Composition API when consistent with new-component conventions; do not migrate existing components for a local patch.
 2. **`ref` default; `reactive` only for complex nested.**
 3. **`defineProps<T>()`** — 3.5+ destructures with native defaults; pre-3.5 destructure silently freezes the value.
 4. **`defineEmits<T>()`** — an undeclared emit is a silent no-op.
@@ -31,17 +31,17 @@ Each rule's why, code, and patterns → `references/rules-expanded.md` §1–14.
 10. **Composables for shared logic, `use` prefix.**
 11. **Provide/Inject with typed `InjectionKey`.**
 12. **Match the repository's component and styling stack.** No new UI library for a local change.
-13. **VueUse for composables.**
+13. **Reuse installed composables** when they satisfy the requirement.
 14. **`<style scoped>` default; CSS Modules for stricter isolation.**
 
 ## Two calls no reference can make for you
 
 - **Where state lives.** Pinia only when shared across non-parent/child components **or** it must survive route changes; `isOpen`/`hover` stay local, server state stays out.
-- **Whether to add VueUse.** Prefer it over hand-rolled cleanup, SSR guards, observers, debounce, or reactive storage — but **never persist tokens or PII** through its storage composables.
+- **Whether to use VueUse.** Check installed dependencies first; use it when an existing composable meets the need. If absent, compare native/existing tools before adding it. **Never persist tokens or PII** through storage composables.
 
 ## Reference Map
 
-Paths under `references/`; open one at a time.
+Paths under `references/`; load relevant files, batch independent reads, and reuse unchanged context.
 
 - `component-patterns.md` — SFC, props/emits, slots, async, Teleport, `defineModel`
 - `state-management.md` — `ref` vs `reactive`, `computed`, `watch`, provide/inject

@@ -2,11 +2,9 @@
 
 The Why behind each rule + code examples.
 
-## 1. Function components + hooks only
+## 1. Existing component patterns
 
-No class components for new code.
-
-**Why**: Hooks compose better, simpler to test. Class components are effectively legacy.
+Use functions/hooks for new components when consistent with repository conventions. Preserve class contracts in local fixes; modernization requires matching scope.
 
 ## 2. `useEffect` deps complete + correct
 
@@ -37,7 +35,7 @@ const chartOptions = useMemo(() => ({ color: 'red' }), []);
 
 ## 4. Custom hooks for shared logic, `use` prefix
 
-**Why**: Hooks encapsulate stateful logic — testable, reusable, no render props / HOCs.
+**Why**: Hooks can encapsulate shared stateful logic. Existing render-prop/HOC contracts can remain; replace them only for an in-scope behavior or maintenance need.
 
 ## 5. State at the lowest needed level
 
@@ -47,27 +45,23 @@ Place state in the closest common ancestor that needs it.
 
 ## 6. Evaluate React Compiler first; without it, `React.memo` / `useMemo` / `useCallback` need a measured reason
 
-**Why**: On React 19 with React Compiler enabled, memoization is automatic — manual memo is mostly redundant and should be deleted (`eslint-plugin-react-hooks` → `preserve-manual-memoization` flags it). Without the compiler, premature memoization = complexity + memory cost; only when profiling shows it matters.
+Check installed compiler configuration, profiling, and identity-sensitive consumers before adding or removing manual memoization. Compiler availability alone does not authorize deletion; preserve behavior and validate the affected path.
 
 ## 7. Stable unique key, never array index for dynamic lists
 
 **Why**: Wrong keys associate state with wrong items → subtle UI corruption on reorder/filter/insert.
 
-## 8. RSC by default; `"use client"` only for hooks / interactivity / browser APIs
+## 8. Follow the selected framework server/client model
 
-**Why**: RSC reduces bundle size, enables direct data access, eliminates client-server waterfalls.
+Use RSC only in a framework that supports it; ordinary React components do not become Server Components by default. Next routing/RSC contracts belong to `next-best-practices`.
 
-## 9. No runtime CSS-in-JS
+## 9. Preserve the repository styling system
 
-No styled-components / Emotion in new projects. Tailwind or CSS Modules.
+Do not introduce or migrate a styling dependency for a local React fix. Framework compatibility and an authorized migration determine when replacement is necessary.
 
-**Why**: Runtime CSS-in-JS incompatible with RSC + adds JS bundle cost for something CSS handles natively.
+## 10. Reuse existing UI primitives
 
-## 10. shadcn/ui as default UI primitive
-
-Copy components into the repo; customize with Tailwind + Radix.
-
-**Why**: Owned code > black-box dependency — readable, modifiable, debuggable. 2026 industry standard.
+Use the selected component system; when shadcn is installed, its integration skill owns component/token configuration.
 
 ## 11. TanStack Query for server state, separate from client state
 
@@ -94,7 +88,7 @@ const theme = useThemeStore((s) => s.theme);
 
 **Why**: Smaller initial bundle = faster first paint.
 
-## 14. TypeScript: `interface` for Props, no `any`
+## 14. TypeScript: typed Props with the repository convention
 
 **Why**: Typed props are self-documenting + catch breaking changes at compile time.
 
@@ -106,17 +100,17 @@ Recommended config on, in the same lint run as everything else.
 
 ## Working Pattern — Writing
 
-1. Server Component or Client? Default to Server unless you need hooks / interactivity.
-2. Define Props interface; include `children` only if needed.
+1. Identify the framework's server/client model; apply RSC rules only where supported.
+2. Define Props using the existing `type`/`interface` convention; include `children` only if needed.
 3. Local `useState` first. Lift / externalize only when multiple components need it.
-4. Server data → TanStack Query (or RSC direct fetch). Client state → `useState` / `useReducer` / Zustand.
-5. UI primitives → check shadcn/ui first.
-6. Style with Tailwind utility classes; `cn()` (clsx + tailwind-merge) for conditional classes.
+4. Keep server data and client state separate using the existing data layer/cache.
+5. Reuse selected UI primitives.
+6. Follow the existing styling/token convention.
 7. ErrorBoundary around data-dependent renders. TanStack Query's `error` state for expected API failures.
 8. Accessibility: semantic HTML (`<button>`, `<table>`, `<nav>`), `alt` on images, keyboard nav. Detailed A11y → `css-ui-best-practices` skill.
 9. Write tests (see `references/testing-and-routing.md`).
 10. Run in dev; check React DevTools Profiler for re-renders.
-11. No Tailwind → CSS Modules; never runtime CSS-in-JS.
+11. Preserve styling dependencies unless a separately authorized migration is necessary.
 
 ## Working Pattern — Reviewing
 
@@ -125,7 +119,7 @@ Recommended config on, in the same lint run as everything else.
 3. **Keys** — `key={index}` on dynamic lists? Missing keys?
 4. **Performance** — inline objects / functions in JSX props of memoized children? Re-renders visible in Profiler? Missing code splitting on heavy routes?
 5. **Patterns** — prop drilling > 2 levels? God components? Business logic mixed into UI?
-6. **Styling** — runtime CSS-in-JS in new code? Inconsistent class naming?
-7. **Server/Client boundary** — `"use client"` on components that don't need it? Client-side fetch when RSC could do it?
+6. **Styling** — an unintended second styling system or broken existing tokens?
+7. **Server/Client boundary** — in an RSC framework, verify framework contracts with their owner; do not impose RSC on ordinary React.
 
 Group findings by severity (correctness → A11y → keys/performance → patterns → style).

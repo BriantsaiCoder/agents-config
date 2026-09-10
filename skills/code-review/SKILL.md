@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Use when reviewing a branch, PR, work-in-progress changes, or changes since a commit, tag, branch, or merge-base against repository standards and the originating request/spec.
+description: "Review a branch, PR, or working changes against repository standards and the originating request, using the specified comparison baseline."
 ---
 
 # Code Review

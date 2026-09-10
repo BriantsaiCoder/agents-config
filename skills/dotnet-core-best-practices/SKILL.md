@@ -10,8 +10,8 @@ Prefer built-ins over third-party workarounds. .NET Framework 4.x → `dotnet-fr
 ## 12 Golden Rules
 
 1. **DI lifetimes** — mismatch = captive deps. `ValidateScopes + ValidateOnBuild` in dev. Keyed services on .NET 8+.
-2. **Options pattern** — bind with `ValidateDataAnnotations()` + `ValidateOnStart()`. Pick `IOptions<T>` / `IOptionsSnapshot<T>` / `IOptionsMonitor<T>` by lifetime. Never read `IConfiguration` in services.
-3. **`IHttpClientFactory`** — never `new HttpClient()` (socket exhaustion). `.AddStandardResilienceHandler()`; `Idempotency-Key` for non-idempotent retries.
+2. **Configuration ownership** — preserve repo extension points; where Options are used, validate required settings and choose `IOptions<T>` / snapshot / monitor by lifetime. Diagnose incorrect configuration behavior before replacing service patterns.
+3. **HTTP lifetime** — reuse the repo factory or long-lived client with appropriate handler lifetime. Investigate socket/DNS behavior; preserve retry and idempotency contracts rather than adding retries to a local patch.
 4. **Middleware order** — ExceptionHandler → HSTS → HttpsRedirection → StaticFiles → Routing → CORS → Auth → Authorization → RateLimiter → OutputCache → MapControllers. Misorder = silent security bug.
 5. **Choose endpoint model by requirements.** Minimal APIs suit focused endpoints; Controllers suit APIs needing filters, binding conventions, or versioning.
 6. **Structured logging** — `ILogger<T>` templates (`"Order {OrderId}"`), not interpolation. Detail → `dotnet-logging-best-practices`.
@@ -24,21 +24,23 @@ Prefer built-ins over third-party workarounds. .NET Framework 4.x → `dotnet-fr
 
 ## Review Severity Checklist
 
-| Severity | Check | Rule |
+Assign severity from demonstrated lifetime, security, or version-behavior impact. Existing library/console patterns and valid alternatives are not defects by themselves.
+
+| Review | Check | Rule |
 |---|---|---|
-| Critical | Secrets in `appsettings.json` | 9 |
-| Critical | User input concat'd into SQL / shell / paths | — |
-| Critical | Scoped (DbContext) into singleton | 1 |
-| High | `new HttpClient()` not factory | 3 |
-| High | Middleware misorder | 4 |
-| High | `CancellationToken` not forwarded | 7 |
-| High | Weak crypto (`MD5`/`SHA1`/`Random` tokens) | sec-perf |
-| Medium | `IConfiguration` magic strings | 2 |
-| Medium | Inline `User.IsInRole` | 11 |
-| Medium | `Console.WriteLine` / interpolated log | 6 |
-| Medium | Health missing for critical deps | 8 |
-| Medium | Vulnerable / deprecated NuGet | config-host |
-| Low | .NET 7+/8+ features reimplemented | 12 |
+| Inspect | Secrets in `appsettings.json` | 9 |
+| Inspect | User input concat'd into SQL / shell / paths | — |
+| Inspect | Scoped (DbContext) into singleton | 1 |
+| Inspect | Per-request client lifetime causes socket/DNS problems | 3 |
+| Inspect | Middleware misorder | 4 |
+| Inspect | `CancellationToken` not forwarded | 7 |
+| Inspect | Weak crypto (`MD5`/`SHA1`/`Random` tokens) | sec-perf |
+| Inspect | `IConfiguration` magic strings | 2 |
+| Inspect | Inline `User.IsInRole` | 11 |
+| Inspect | `Console.WriteLine` / interpolated log | 6 |
+| Inspect | Health missing for critical deps | 8 |
+| Inspect | Vulnerable / deprecated NuGet | config-host |
+| Inspect | .NET 7+/8+ features reimplemented | 12 |
 
 ## Reference Navigation
 
