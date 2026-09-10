@@ -32,6 +32,18 @@ CAP-PONYTAIL	Plan／implement 套用 Ponytail 慣例，適用範圍 host-local�
 
 Tier0 安全內容由 `tests/tier0-parity.sh` 驗；model、effort、permission 與 hook 是 host-local capability，不以跨 host 相同值判定；control-plane materialization 仍由 ownership tests 驗。
 
+## Ponytail approved payloads
+
+CAP-PONYTAIL 的 Accepted divergence 也適用於 skill body。`tests/ponytail-host-parity.sh` 依各 host 下列 pin 驗完整 `skills/ponytail/SKILL.md`；每家必須恰有一列、SHA256 為 64 位小寫十六進位，缺失或不符即拒絕。此檢查保留 enabled、full mode、runtime 選版與 capability anchors；檔案與 inventory 證據不等於 model loader canary。
+
+2026-09-10 核准來源：Claude／Copilot 為已核准的 Ponytail 4.9.0 修改內容；Codex 保留已 review 的 KEEP 內容，來源為 [dotcodex #33](https://github.com/BriantsaiCoder/dotcodex/pull/33) 的 `maintenance/skill-optimization/plugins.json` 對應 target 的 `after_sha256`。更新 payload 須先獨立 review，再更新該 host pin，不可為讓 checker 通過而從未核准的 live 檔自動重算。
+
+```tsv
+PONYTAIL-SHA256	Claude	42167fda5759eb53e2f2f04983785f9a8269ebe438f1a055c296b3667f435eaf
+PONYTAIL-SHA256	Codex	da1324215bea1bbf674f91fd3fb62e35df4bc8128709ec1097593513a52dcd85
+PONYTAIL-SHA256	Copilot	42167fda5759eb53e2f2f04983785f9a8269ebe438f1a055c296b3667f435eaf
+```
+
 ## S5 simplification apply outcome
 
 Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 active host 的 implementation owner 做一次 apply pass，只處理已核准 scope 與 `reviewer-template.md` 五條 over-engineering baseline。結果 MUST 記為 `changed` 或 `no-op`；`changed` 回 S4 並把 affected diff 重新納入 S5，避免 simplify output 繞過 [S5-1]；`no-op` 留明確 evidence。

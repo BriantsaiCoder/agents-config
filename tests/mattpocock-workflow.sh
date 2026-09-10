@@ -851,7 +851,7 @@ has "Ponytail host parity rejects unpaired Codex config override" 'custom CODEX_
 lacks "Ponytail host parity cannot override the runtime-selected Codex root" 'CODEX_PONYTAIL_ROOT' tests/ponytail-host-parity.sh
 has "Ponytail host parity splits multi-clause anchors" 'clause=\$\{rest%%\^\*\}' tests/ponytail-host-parity.sh
 has "Ponytail host parity compares clauses literally" 'parts\[i\] == wanted' tests/ponytail-host-parity.sh
-has "Ponytail host parity compares effective skill bytes" 'cmp -s.*claude.*codex|cmp -s.*CODEX.*COPILOT' tests/ponytail-host-parity.sh
+has "Ponytail host parity checks each approved payload hash" '\[ "\$actual" = "\$expected" \]' tests/ponytail-host-parity.sh
 has "CI exercises Ponytail host parity selftest" 'tests/ponytail-host-parity\.sh --selftest' .github/workflows/ci.yml
 has "CI installs the ripgrep test dependency" \
   '^[[:space:]]*run:[[:space:]]*sudo apt-get update && sudo apt-get install -y ripgrep[[:space:]]*$' \
