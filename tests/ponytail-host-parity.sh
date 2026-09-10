@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 驗三 host 的 Ponytail 入口、啟用狀態、full mode 與 effective skill bytes。
+# 驗三 host 的 Ponytail 入口、啟用狀態、full mode 與各自核准的完整內容 SHA256。
+# 失效可能偏向假綠；selftest 必須拒絕三家相同竄改內容與缺失／畸形 pins。
 # CI 使用 --selftest；本機使用 --check。Codex 依 runtime version 選 cache；無 resolver 時不猜。
 set -uo pipefail
 
@@ -16,7 +17,7 @@ cleanup_selftest() {
 }
 
 load_instruction_anchors() {
-  local mapping row cap intent extra
+  local mapping row cap intent extra pins
   mapping="${PONYTAIL_MAPPING:-${AGENTS_HOME:-$ROOT}/skills/dev-workflow/references/host-adapters.md}"
   [ -r "$mapping" ] || { na "Ponytail capability mapping missing: $mapping"; return 1; }
   if ! row=$(awk -F '\t' '$1 == "CAP-PONYTAIL" { count++; row=$0 } END { if (count == 1) print row; else exit 1 }' "$mapping"); then
@@ -29,6 +30,21 @@ load_instruction_anchors() {
     bad 'Ponytail capability mapping is malformed'
     return 1
   fi
+  if ! pins=$(LC_ALL=C awk -F '\t' '
+    $1 == "PONYTAIL-SHA256" {
+      if (NF != 3 || ($2 != "Claude" && $2 != "Codex" && $2 != "Copilot") ||
+          length($3) != 64 || $3 ~ /[^0-9a-f]/ || seen[$2]++) invalid=1
+      hash[$2]=$3
+    }
+    END {
+      if (invalid || seen["Claude"] != 1 || seen["Codex"] != 1 || seen["Copilot"] != 1) exit 1
+      printf "%s\t%s\t%s\n", hash["Claude"], hash["Codex"], hash["Copilot"]
+    }
+  ' "$mapping"); then
+    bad 'Ponytail approved SHA256 pins malformed, missing or duplicate'
+    return 1
+  fi
+  IFS=$'\t' read -r claude_sha256 codex_sha256 copilot_sha256 <<< "$pins"
 }
 
 check_anchor() { # $1=label $2=file $3=^ separated literal clauses
@@ -121,21 +137,22 @@ check_codex_runtime() { # $1=Codex config root
   fi
 }
 
-check_skill() { # $1=label $2=skill
-  local label="$1" file="$2" missing=0 pattern folded
+check_skill() { # $1=label $2=skill $3=approved SHA256
+  local label="$1" file="$2" expected="$3" actual
   [ -r "$file" ] || { na "$label Ponytail skill missing: $file"; return 1; }
-  folded=$(tr '\n' ' ' < "$file")
-  grep -Eq 'ultra\. Use on ANY[[:space:]]+coding task:' <<< "$folded" || missing=$((missing + 1))
-  for pattern in '^ACTIVE EVERY RESPONSE\.' \
-    '^[0-9]+\. \*\*Does this need to exist at all\?\*\*' \
-    '^[0-9]+\. \*\*Already in this codebase\?\*\*' \
-    '^[0-9]+\. \*\*Stdlib does it\?\*\*'; do
-    grep -Eq -- "$pattern" "$file" || missing=$((missing + 1))
-  done
-  if [ "$missing" -eq 0 ]; then
-    ok "$label Ponytail semantic anchors"
+  if command -v shasum >/dev/null 2>&1; then
+    actual=$(shasum -a 256 "$file") || { bad "$label Ponytail SHA256 probe failed"; return 1; }
+  elif command -v sha256sum >/dev/null 2>&1; then
+    actual=$(sha256sum "$file") || { bad "$label Ponytail SHA256 probe failed"; return 1; }
   else
-    bad "$label Ponytail skill missing $missing semantic anchors"
+    na "$label Ponytail SHA256 probe needs shasum or sha256sum"
+    return 1
+  fi
+  actual=${actual%% *}
+  if [ "$actual" = "$expected" ]; then
+    ok "$label Ponytail approved SHA256"
+  else
+    bad "$label Ponytail approved SHA256 mismatch"
   fi
 }
 
@@ -201,25 +218,15 @@ run_check() {
   copilot_skill=""
   if [ -n "$claude_root" ]; then
     claude_skill="$claude_root/skills/ponytail/SKILL.md"
-    check_skill Claude "$claude_skill"
+    check_skill Claude "$claude_skill" "$claude_sha256"
   fi
   if [ -n "$codex_root" ]; then
     codex_skill="$codex_root/skills/ponytail/SKILL.md"
-    check_skill Codex "$codex_skill"
+    check_skill Codex "$codex_skill" "$codex_sha256"
   fi
   if [ -n "$copilot_root" ]; then
     copilot_skill="$copilot_root/skills/ponytail/SKILL.md"
-    check_skill Copilot "$copilot_skill"
-  fi
-
-  if [ -r "$claude_skill" ] && [ -r "$codex_skill" ] && [ -r "$copilot_skill" ]; then
-    if cmp -s "$claude_skill" "$codex_skill" && cmp -s "$codex_skill" "$copilot_skill"; then
-      ok 'Ponytail effective skill bytes identical'
-    else
-      bad 'Ponytail effective skill bytes differ across hosts'
-    fi
-  else
-    na 'Ponytail effective skill bytes unavailable'
+    check_skill Copilot "$copilot_skill" "$copilot_sha256"
   fi
 
   printf '%d PASS / %d FAIL / %d UNAVAILABLE\n' "$pass" "$fail" "$unavailable"
@@ -228,7 +235,7 @@ run_check() {
 
 fixture_check() { # $1=selftest root
   local base="$1"
-  PONYTAIL_MAPPING="${PONYTAIL_MAPPING:-}" \
+  PONYTAIL_MAPPING="${PONYTAIL_MAPPING:-$base/mapping.tsv}" \
     CLAUDE_CONFIG_ROOT="$base/claude" CODEX_CONFIG_ROOT="$base/codex" \
     COPILOT_CONFIG_ROOT="$base/copilot" CLAUDE_PONYTAIL_ROOT="$base/claude/plugin" \
     COPILOT_PONYTAIL_ROOT="$base/copilot/plugin" \
@@ -247,12 +254,11 @@ expect_fixture_failure() { # $1=root $2=expected output
 }
 
 selftest() {
-  # 三個 anchor 值在本函式共出現 9 次（host fixture ×2 輪、合成 mapping ×1、negative control）。
-  # 集中成變數：改 host-adapters.md 時只動這裡。2026-08-27 就是漏了合成 mapping 那一處，
-  # 而失敗訊息只說 missing N literal clauses，不會指出是哪一份手抄本過期。
-  # 保持手抄而不從 host-adapters.md 衍生是刻意的：第一輪 fixture_check 用的是**真** mapping，
-  # 這三個值是對它的獨立期望；衍生掉就等於把那個檢查刪了。
-  local scratch codex_plugin rc=0 out skill_body host test_rc
+  # 先驗原始 canonical mapping；fixture pins 不得掩蓋真實 pin schema 的損壞。
+  load_instruction_anchors || return 1
+  local PONYTAIL_MAPPING="${PONYTAIL_MAPPING:-}"
+  # 手抄 anchor 是真 mapping 的獨立期望；fixture 只替換 payload pins。
+  local scratch codex_plugin rc=0 out host test_rc skill_file label mapping variant
   local claude_fx='ponytail 等風格注入=通用慣例'
   local codex_fx='[T0-10] dev MUST 採 reuse／YAGNI／最小完整實作'
   local copilot_fx='[T0-10] 開發套用 ponytail=慣例，但只採 reuse／YAGNI 原則'
@@ -276,29 +282,36 @@ selftest() {
   printf 'full\n' > "$scratch/copilot/plugin-data/ponytail/ponytail/.ponytail-active"
   printf '{"name":"ponytail","skills":"./skills/"}\n' > "$codex_plugin/.codex-plugin/plugin.json"
   printf '{"installed":[{"pluginId":"ponytail@ponytail","installed":true,"enabled":true,"version":"test-version"}]}\n' > "$scratch/codex/plugins.json"
-  skill_body='description: Supports intensity levels: lite, full (default), ultra. Use on ANY
-  coding task: writing, fixing, reviewing, or designing.
-ACTIVE EVERY RESPONSE. No drift.
-1. **Does this need to exist at all?**
-2. **Already in this codebase?**
-3. **Stdlib does it?**'
-  printf '%s\n' "$skill_body" > "$scratch/claude/plugin/skills/ponytail/SKILL.md"
-  printf '%s\n' "$skill_body" > "$codex_plugin/skills/ponytail/SKILL.md"
-  printf '%s\n' "$skill_body" > "$scratch/copilot/plugin/skills/ponytail/SKILL.md"
+  printf 'approved Claude fixture\n' > "$scratch/claude/plugin/skills/ponytail/SKILL.md"
+  printf 'approved Codex fixture\n' > "$codex_plugin/skills/ponytail/SKILL.md"
+  printf 'approved Copilot fixture\n' > "$scratch/copilot/plugin/skills/ponytail/SKILL.md"
+  # Pins are independent literals, not calculated from the files under test.
+  cat > "$scratch/pins.tsv" <<'PINS'
+PONYTAIL-SHA256	Claude	f8396b18f294ade4f72b73e8be8ac9e4d83cd876f524678ca3c7a01470e94abb
+PONYTAIL-SHA256	Codex	b70f2af4cf651016e6d336c0362ecf395b20f0ef8ad17e54297437f89e92fe44
+PONYTAIL-SHA256	Copilot	1eeee460c85695b1bfb8a03ccfc075fb5196cc5df52aaf347f861530ffdcac10
+PINS
+  mapping="${PONYTAIL_MAPPING:-${AGENTS_HOME:-$ROOT}/skills/dev-workflow/references/host-adapters.md}"
+  awk -F '\t' '$1 != "PONYTAIL-SHA256"' "$mapping" > "$scratch/mapping.tsv" || return 1
+  cat "$scratch/pins.tsv" >> "$scratch/mapping.tsv"
+  PONYTAIL_MAPPING="$scratch/mapping.tsv"
+  cp "$scratch/mapping.tsv" "$scratch/mapping.good"
   printf 'stale cache must be ignored\n' > "$scratch/codex/plugins/cache/ponytail/ponytail/stale-version/skills/ponytail/SKILL.md"
 
   out=$(fixture_check "$scratch" 2>&1); test_rc=$?
-  if [ "$test_rc" -ne 0 ] || ! grep -q 'Ponytail effective skill bytes identical' <<< "$out"; then
+  if [ "$test_rc" -ne 0 ] ||
+     [ "$(grep -c '^PASS .* Ponytail approved SHA256$' <<< "$out")" -ne 3 ]; then
     printf '%s\n' "$out"
     rc=1
   fi
 
   printf 'CAP-PONYTAIL\tfixture\t%s^literal[clause]\t%s^literal[clause]\t%s^literal[clause]\n' \
-    "$claude_fx" "$codex_fx" "$copilot_fx" > "$scratch/mapping.tsv"
+    "$claude_fx" "$codex_fx" "$copilot_fx" > "$scratch/literal-mapping.tsv"
+  cat "$scratch/pins.tsv" >> "$scratch/literal-mapping.tsv"
   printf 'literal[clause]；\n' >> "$scratch/claude/CLAUDE.md"
   printf 'literal[clause]；\n' >> "$scratch/codex/AGENTS.md"
   printf 'literal[clause]；\n' >> "$scratch/copilot/copilot-instructions.md"
-  out=$(PONYTAIL_MAPPING="$scratch/mapping.tsv" fixture_check "$scratch" 2>&1); test_rc=$?
+  out=$(PONYTAIL_MAPPING="$scratch/literal-mapping.tsv" fixture_check "$scratch" 2>&1); test_rc=$?
   if [ "$test_rc" -ne 0 ]; then
     printf '%s\n' "$out"
     rc=1
@@ -311,7 +324,6 @@ ACTIVE EVERY RESPONSE. No drift.
   out=$(fixture_check "$scratch" 2>&1); test_rc=$?
   if [ "$test_rc" -eq 0 ] ||
      ! grep -Fq 'UNAVAILABLE Codex runtime-selected Ponytail cache missing' <<< "$out" ||
-     ! grep -Fq 'UNAVAILABLE Ponytail effective skill bytes unavailable' <<< "$out" ||
      grep -q '^FAIL ' <<< "$out" ||
      grep -Fq 'Ponytail plugin manifest missing or invalid' <<< "$out" ||
      grep -Fq 'Ponytail skill missing:' <<< "$out"; then
@@ -332,13 +344,52 @@ ACTIVE EVERY RESPONSE. No drift.
   expect_fixture_failure "$scratch" 'FAIL Codex Ponytail instruction anchor missing' || rc=1
   printf '%s\n' "$codex_fx" > "$scratch/codex/AGENTS.md"
 
-  printf '%s\n' "${skill_body/ACTIVE EVERY RESPONSE/INACTIVE EVERY RESPONSE}" > "$codex_plugin/skills/ponytail/SKILL.md"
-  expect_fixture_failure "$scratch" 'FAIL Codex Ponytail skill missing 1 semantic anchors' || rc=1
-  printf '%s\n' "$skill_body" > "$codex_plugin/skills/ponytail/SKILL.md"
+  for host in claude codex copilot; do
+    case "$host" in
+      claude) label=Claude; skill_file="$scratch/claude/plugin/skills/ponytail/SKILL.md" ;;
+      codex) label=Codex; skill_file="$codex_plugin/skills/ponytail/SKILL.md" ;;
+      copilot) label=Copilot; skill_file="$scratch/copilot/plugin/skills/ponytail/SKILL.md" ;;
+    esac
+    cp "$skill_file" "$scratch/$host.good"
+    printf '\nlocal drift\n' >> "$skill_file"
+    expect_fixture_failure "$scratch" "FAIL $label Ponytail approved SHA256 mismatch" || rc=1
+    # A valid body for another host must not satisfy this host's pin.
+    if [ "$host" = claude ]; then
+      cp "$codex_plugin/skills/ponytail/SKILL.md" "$skill_file"
+    else
+      cp "$scratch/claude/plugin/skills/ponytail/SKILL.md" "$skill_file"
+    fi
+    expect_fixture_failure "$scratch" "FAIL $label Ponytail approved SHA256 mismatch" || rc=1
+    rm "$skill_file"
+    expect_fixture_failure "$scratch" "UNAVAILABLE $label Ponytail skill missing" || rc=1
+    cp "$scratch/$host.good" "$skill_file"
 
-  printf '%s\n' "${skill_body/ultra. Use on ANY/ultra. Do not Use on ANY}" > "$codex_plugin/skills/ponytail/SKILL.md"
-  expect_fixture_failure "$scratch" 'FAIL Codex Ponytail skill missing 1 semantic anchors' || rc=1
-  printf '%s\n' "$skill_body" > "$codex_plugin/skills/ponytail/SKILL.md"
+    for variant in absent malformed duplicate; do
+      case "$variant" in
+        absent) awk -F '\t' -v host="$label" '!($1 == "PONYTAIL-SHA256" && $2 == host)' "$scratch/mapping.good" > "$scratch/mapping.tsv" ;;
+        malformed) awk -F '\t' -v host="$label" 'BEGIN { OFS="\t" } $1 == "PONYTAIL-SHA256" && $2 == host { $3="not-a-sha256" } { print }' "$scratch/mapping.good" > "$scratch/mapping.tsv" ;;
+        duplicate) cat "$scratch/mapping.good" > "$scratch/mapping.tsv"
+          awk -F '\t' -v host="$label" '$1 == "PONYTAIL-SHA256" && $2 == host' "$scratch/pins.tsv" >> "$scratch/mapping.tsv" ;;
+      esac
+      expect_fixture_failure "$scratch" 'FAIL Ponytail approved SHA256 pins malformed, missing or duplicate' || rc=1
+    done
+    cp "$scratch/mapping.good" "$scratch/mapping.tsv"
+  done
+
+  # Equal tampered bytes on all hosts must still fail each independently pinned check.
+  for skill_file in "$scratch/claude/plugin/skills/ponytail/SKILL.md" \
+    "$codex_plugin/skills/ponytail/SKILL.md" "$scratch/copilot/plugin/skills/ponytail/SKILL.md"; do
+    printf 'same unapproved body\n' > "$skill_file"
+  done
+  out=$(fixture_check "$scratch" 2>&1); test_rc=$?
+  if [ "$test_rc" -eq 0 ] ||
+     [ "$(grep -c '^FAIL .* Ponytail approved SHA256 mismatch$' <<< "$out")" -ne 3 ]; then
+    printf '%s\n' "$out"
+    rc=1
+  fi
+  cp "$scratch/claude.good" "$scratch/claude/plugin/skills/ponytail/SKILL.md"
+  cp "$scratch/codex.good" "$codex_plugin/skills/ponytail/SKILL.md"
+  cp "$scratch/copilot.good" "$scratch/copilot/plugin/skills/ponytail/SKILL.md"
 
   mv "$scratch/copilot/copilot-instructions.md" "$scratch/copilot/copilot-instructions.md.missing"
   expect_fixture_failure "$scratch" 'UNAVAILABLE Copilot instructions missing' || rc=1
@@ -360,8 +411,6 @@ ACTIVE EVERY RESPONSE. No drift.
   expect_fixture_failure "$scratch" 'FAIL Codex Ponytail runtime is not enabled' || rc=1
   printf '{"installed":[{"pluginId":"ponytail@ponytail","installed":true,"enabled":true,"version":"test-version"}]}\n' > "$scratch/codex/plugins.json"
 
-  printf '\nlocal drift\n' >> "$scratch/copilot/plugin/skills/ponytail/SKILL.md"
-  expect_fixture_failure "$scratch" 'FAIL Ponytail effective skill bytes differ across hosts' || rc=1
 
   [ "$rc" -eq 0 ] && printf 'PASS Ponytail host parity selftest\n'
   return "$rc"
