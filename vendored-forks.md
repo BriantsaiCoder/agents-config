@@ -57,7 +57,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `grill-with-docs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b`; tree SHA-256 `9e44d8a8d61d7561ed646054743b170792e06ec06491d1836053d46ab971db1a` | **Active** |
 | `ai-level-check` | github.com/Raymondhou0917/ai-level-check (v0.4.6) | `6497ee9e681da0b676322b307f12c4c184b87f42` | 2026-09-09 — vendor the SKILL.md fixpoint closure (14 of 49 upstream files) and drop two sets of pointers rather than content: the four persona-quadrant diagrams under `assets/personas/` become the plain-text type catalogue their own alt text carried, and the fifth file there (`four-axes.png`) is dropped outright because only the un-vendored `README.md` referenced it — `assets/` totals 7.4MB, and the `docs/lv{1,3,4}.html` demo files are unnamed in `SKILL.md` / `references/report-design.md` while the do-not-borrow-a-type prohibition and the public demo URL stay; upstream `.gitignore` is retained because `references/privacy.md` points at it and it carries the `evidence/` and `reports/*` exclusions this public repo needs; the approved estimate was 12 files and the fixpoint closure landed 14 — the extra two are upstream `.gitignore` (load-bearing: `references/privacy.md` points at it) and the zero-byte `reports/.gitkeep`, both required by the same closure rule; tree SHA-256 `13c97ee25cbb49cd382d6240006180c5fce9c7dee8a1c377fa56208a61960c06`; 2026-09-09 — removed at user request (unused); no attic copy, restore from the commit before removal | **Removed 2026-09-09** |
 
-| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | original pre-fork tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0`; upstream reassessed at `d24bc269171a9171fac58493e0ffba511d571a4a` on 2026-09-11 | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — route recon/hunting fan-out through shared INT-4, remove the duplicate verifier fleet, and retain one Phase 3 validator that sees every factual and remediation field before Phase 4/5 serialize it; PR review follow-ups narrow delegated context and attack-class splitting, require complete Phase 2 candidate packets, require a fresh validator after substantive correction, retain unavailable candidates outside `findings.json`, bound optional hardening notes, align setup/README output and prior-run loading with retained candidates, define the distinct fresh-context fallback, and redact sensitive candidate literals before they leave source context; tree SHA-256 `0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` | **Active** |
+| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | original pre-fork tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0`; upstream reassessed at `d24bc269171a9171fac58493e0ffba511d571a4a` on 2026-09-11 | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — route recon/hunting fan-out through shared INT-4, remove the duplicate verifier fleet, and retain one Phase 3 validator that sees every factual and remediation field before Phase 4/5 serialize it; PR review follow-ups narrow delegated context and attack-class splitting, require complete Phase 2 candidate packets, require a fresh validator after substantive correction, retain unavailable candidates outside `findings.json`, bound optional hardening notes, align setup/README output and prior-run loading with retained candidates, define the distinct fresh-context fallback, redact sensitive candidate literals before they leave source context, bind both validator paths to the same reviewed source identity, provide exact dirty-diff or non-Git snapshot access, and require each validator to verify the source it reads before confirmation; tree SHA-256 `674f3f63741ff13b2fd23334f90cb4885dd23a2748d4f2e165d2407e180fd269` | **Active** |
 
 | `research` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2); baseline tree `679ea679b8e4d0381b74dd9dc3fa0d329f8b7134c1151d1c2458824c1c24c016` | 2026-09-10 shared audit — substantial-report trigger, optional delegation, authorized output path; tree SHA-256 `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8`; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 
@@ -1234,7 +1234,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 
 | Skill | Candidate tree SHA-256 | Candidate SKILL.md SHA-256 |
 |---|---|---|
-| acquire-codebase-knowledge | `3f85968fcb30997b20649c4af9e633b014f1dbad551331933e62cfa4bedf369d` | `b0ddc523f61abb775f8b9c83e1a3e9d15f01305cd4360e0d845c33b8745106bb` |
+| acquire-codebase-knowledge | `74677240e19e25edfa58f1325b1bae94cbba2c55811d503c2dc8fa1fb1fac9bc` | `b0ddc523f61abb775f8b9c83e1a3e9d15f01305cd4360e0d845c33b8745106bb` |
 | ask-matt | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` |
 | agent-browser | `85cdaedc49a2bc0604de81017422e744fd01ee1b299c64a6e83b9f1a85920c75` | `9fb4dfbebbbaab5358a3e9d969cd42db89546d645f2a4d3f4e34e67912af720a` |
 | apple-calendar | `e74cee7fff041c52cb0848b8cfe3eecc52dded7b64d1fcfd133cc215bbb656c0` | `123152bcbce8bcb07189ef738b13d86da66ebbfe6296f17db96ac1007d724b26` |
@@ -1262,7 +1262,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | grilling | `f9702850e9fa9a2fb264e877eeb5899deac4c09a05c01df0cde526a1d53160c4` | `d3c4cd7caf20eeae2004190c387f09fe80ff06d4f9cea20e90d6fa0745967ca8` |
 | implement | `031b9b743fcaedc0fa57f446712d5730a2c7d5c0f10f99c2f08c93122a2ab206` | `555457452b1f76a58ab516d5ed39fc65f427aa98a052e8df76216639e86a645e` |
 | improve-codebase-architecture | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` |
-| init-project-docs | `a08c0f4d278fb466175eab47f8ebe04f784427df0f70f9d6a92ce549287efb37` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
+| init-project-docs | `47e7b58e33ba2948ce5a2320d91fc8bca6776823c00696a9ccb228f583ce5807` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
 | jest-best-practices | `0e6a053968a416681ebec39b49f3cbb3735201dd68a807f37bdbed9e63431d28` | `3d10acee92e2cdfb8922d546d42da5f6a0ded573b5b9782184ecc02951b8875e` |
 | mysql-best-practices | `c99370462845e06a0b88ecc5b310d623720f5b6c06552b8787547b9fcefe9b94` | `8e660d9eaa6b6461c5e71fc880b73eb475cb551d9cb8b933c6efe9705324f95e` |
 | next-best-practices | `7a96bfb88ddbb38af2830f6df37fc28e0a56075d73af62125701c055683db4ab` | `3d7faa6eacc7266789f72a0ada344e1e014d9378f01981b60601b20c289c1d97` |
@@ -1272,7 +1272,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | postgresql-optimization | `45188feacc55240882eb226e9beae48b50f17fbd367628b4297baaef01fe247c` | `f806f37c63c43193d886fc49ffeaad14dd7e31b424cea5e656fdaf8391a6e178` |
 | react-best-practices | `e3931362133299e10b46ce13f0d7b2b1e5a5bc00b91143837a90141cc490ab31` | `bca124ac6a8ecc306461e9a1af18bc1fcf1697a8c19c709fe9d643f419f35eb5` |
 | research | `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8` | `52945b9041a4ffe93bb380db5e77dc46ac3f1edc7c111dbeb96051a1227c1e01` |
-| security-audit | `0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` |
+| security-audit | `674f3f63741ff13b2fd23334f90cb4885dd23a2748d4f2e165d2407e180fd269` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` |
 | setup-matt-pocock-skills | `8b7884991baff72c74b6773404d13105976c6229d683cafb2a58165370585631` | `f52a7ecb62f61e0b42a75b2937666e80495480b74109802d994fcfb588dffbb5` |
 | shared-security-review | `b035fc8218ad8cea5729f304852482ce2da4b5cf686da00cc619b8c313fe6eb1` | `e7c8f4d4cd61febbfde08b1e44422e1705479fe6860e6bf8f7e0dc1b5f70989a` |
 | speak-human-tw | `5e3e7a4811ff46b811f4b550668564a4cd847abf3df5c5ad4a1fb77753c129d8` | `059d6074a27fcd48684fbbd07270e8a3d9dc4198f69b18baa792cdaf851de1ea` |
@@ -1312,7 +1312,7 @@ remain unchanged.
 | ask-matt | `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5` | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` | Research no longer forces a background agent or repo artifact; shared INT-4/S2 owns those choices. |
 | codebase-design | `5d83418ecbaa7499a43a017780ff2ab5f61d5b613326fcb660a67d04b5b16b1f` | `628d0fbe2aeea1996204f657dabaab1e0ff034830d3585de91e067c3206ff128` | `1871eff971a67944a7204f5b4f0fa4bc4cdd4934d9924e795bdb85ddba1fba04` | Main context owns at least two alternatives; agent use is conditional and has no three-agent floor. |
 | improve-codebase-architecture | `9c57cc581b532e7dbf752d09f15b06dd61e08199f151684da72accbddb96c8c7` | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` | The deepening entrypoint now describes alternatives and leaves delegation to the routed design workflow. |
-| security-audit | `155518fb25be3a8d88566ea7fc051aef82b57bb2b4a11886f63793c40693a82c` | `0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` | Recon/hunting use conditional delegation and scoped Phase 1 context; hunters return complete schema-backed candidate packets; Phase 3 uses a separate validator or the defined fresh-context fallback, redacts sensitive candidate literals before prompts or retained artifacts, and keeps Phase 5 limited to validated content. |
+| security-audit | `155518fb25be3a8d88566ea7fc051aef82b57bb2b4a11886f63793c40693a82c` | `674f3f63741ff13b2fd23334f90cb4885dd23a2748d4f2e165d2407e180fd269` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` | Recon/hunting use conditional delegation and scoped Phase 1 context; hunters return complete schema-backed candidate packets; Phase 3 uses a separate validator or the defined fresh-context fallback, redacts sensitive candidate literals before prompts or retained artifacts, binds both validator paths to the same reviewed source identity, and keeps Phase 5 limited to validated content. |
 | tailwind-v4-shadcn | `bbd4b1098c7ad46d915a8238ec870c787811328b43d9535cdc8f54ee3d78e493` | `7c8ffe8eb2fb601f9e4dadb18ab0efd2091a1292c874d026a510228a01077b95` | `f8513a1704147c9cf3ecf75cc2a991adb4c04864cd3608bcd841ed5efab61c79` | Color guidance preserves valid project-native oklch, hsl, and var formats. |
 | wayfinder | `e9ee62e139a829fbc9cc3d43f6fb5c3a95e201bc5aea54010afe9fc0e78fb2d4` | `1602431050363c55074639577eebbf4dbd5ca887aec80e40d000cbc65b581225` | `5789d703dd028d917ffeebe639f4a2526e6468582fbb3f5b595d2530a56e0cec` | Research tickets follow INT-4 and their authorized output contract instead of spawning one agent and branch per ticket. |
 
@@ -1556,3 +1556,38 @@ Rollback restores the amended-candidate scanner, its prior current fingerprint, 
 carrier assertions together; earlier review records remain historical snapshots.
 Rollback restores the two prior trees, their prior current fingerprints, and the amended fixture
 inputs together; the frozen r8 package and earlier review records remain immutable evidence.
+
+### 2026-09-11 r9 current-head review follow-up
+
+The current-head review identified five corrections and one source-binding gap across three
+existing contracts. `acquire-codebase-knowledge` reports recognized manifest file names without
+emitting raw manifest values in either stdout or authorized output-file mode. This single boundary
+covers ordinary and credential-shaped content across JSON, XML, Gradle, Ruby, Make, and binary
+manifests instead of maintaining format-specific preview regexes. Dotenv summaries read at most
+1,000,001 decoded characters and withhold oversized input while retaining the existing
+key/state/line and quoted-continuation behavior below the limit. Its tree moves from
+`3f85968fcb30997b20649c4af9e633b014f1dbad551331933e62cfa4bedf369d` to
+`74677240e19e25edfa58f1325b1bae94cbba2c55811d503c2dc8fa1fb1fac9bc`.
+
+`init-project-docs` skips `.test` / `.spec` files with the `mts`, `cts`, `mjs`, and `cjs` suffixes.
+The hook uses portable `cksum` for its debounce identity and reports `NOT_RUN` before executing the
+configured command when a valid checksum is unavailable. Its reference index makes registration
+depend on an explicitly provided `AGENT_TEST_COMMAND`. Its tree moves from
+`a08c0f4d278fb466175eab47f8ebe04f784427df0f70f9d6a92ce549287efb37` to
+`47e7b58e33ba2948ce5a2320d91fc8bca6776823c00696a9ccb228f583ce5807`.
+
+`security-audit` binds both the research validator and the distinct fresh-context fallback to the
+same exact clean-Git, dirty-Git, or non-Git reviewed source identity before validation. The S5
+amendment also provides the exact reviewed dirty diff or non-Git snapshot and requires either
+validator to verify the identity it actually reads before confirming; a mismatch refreshes the
+complete candidate and triggers fresh independent validation. Its tree moves from
+`0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` to
+`674f3f63741ff13b2fd23334f90cb4885dd23a2748d4f2e165d2407e180fd269`.
+The report schema remains unchanged because the reviewed producer and Phase 3 validator already
+require complete execution content; the proposed schema minimum lacked a promotion-bypass
+reproduction.
+
+The new controls start at 546 PASS / 6 FAIL on the frozen r8 source. Ten preview-specific cases are
+replaced by one metadata-only carrier, and the resulting suite reaches 542 PASS / 0 FAIL.
+Rollback restores the three prior trees, their previous current fingerprints, and the matching
+regression changes together; the unchanged schema needs no rollback.

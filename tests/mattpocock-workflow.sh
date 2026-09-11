@@ -953,6 +953,10 @@ printf 'python suffix test\n' > "$hook_fixture/user_test.py"
 printf 'python empty prefix test\n' > "$hook_fixture/test_.py"
 printf 'python empty suffix test\n' > "$hook_fixture/_test.py"
 printf 'go test\n' > "$hook_fixture/foo_test.go"
+printf 'typescript module test\n' > "$hook_fixture/feature.test.mts"
+printf 'typescript module spec\n' > "$hook_fixture/feature.spec.cts"
+printf 'javascript module test\n' > "$hook_fixture/feature.test.mjs"
+printf 'javascript module spec\n' > "$hook_fixture/feature.spec.cjs"
 hook_input() { printf '{"tool_input":{"file_path":"%s"}}\n' "$1"; }
 hook_pass="$(hook_input "$hook_fixture/current.cs" | \
   TMPDIR="$hook_fixture/tmp" \
@@ -1027,6 +1031,41 @@ else
   ng "run-tests hook debounce supports GNU and BSD stat output contracts"
 fi
 
+mkdir -p "$hook_fixture/cksum-bin" "$hook_fixture/failing-cksum-bin"
+for cksum_tool in cat jq dirname basename git mkdir cksum date stat touch bash tail; do
+  ln -s "$(command -v "$cksum_tool")" "$hook_fixture/cksum-bin/$cksum_tool"
+done
+for cksum_tool in cat jq dirname basename git mkdir date stat touch bash tail; do
+  ln -s "$(command -v "$cksum_tool")" "$hook_fixture/failing-cksum-bin/$cksum_tool"
+done
+cat > "$hook_fixture/failing-cksum-bin/cksum" <<'SH'
+#!/bin/sh
+exit 23
+SH
+chmod +x "$hook_fixture/failing-cksum-bin/cksum"
+printf 'cksum only\n' > "$hook_fixture/cksum-only.cs"
+printf 'cksum failure\n' > "$hook_fixture/cksum-failure.cs"
+cksum_only_pass="$(hook_input "$hook_fixture/cksum-only.cs" | \
+  PATH="$hook_fixture/cksum-bin" TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND=true \
+  /bin/bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+cksum_only_skip="$(hook_input "$hook_fixture/cksum-only.cs" | \
+  PATH="$hook_fixture/cksum-bin" TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND=true \
+  /bin/bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+cksum_failure_marker="$hook_fixture/cksum-failure-command-ran"
+cksum_failure_output="$(hook_input "$hook_fixture/cksum-failure.cs" | \
+  PATH="$hook_fixture/failing-cksum-bin" TMPDIR="$hook_fixture/tmp" \
+  TEST_SENTINEL="$cksum_failure_marker" AGENT_TEST_COMMAND='touch "$TEST_SENTINEL"' \
+  /bin/bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$cksum_only_pass" == *PASSED* ]] &&
+   [[ "$cksum_only_skip" == *SKIPPED* ]] &&
+   [[ "$cksum_failure_output" == *'NOT_RUN: unable to compute debounce key'* ]] &&
+   [[ "$cksum_failure_output" != *PASSED* ]] &&
+   [ ! -e "$cksum_failure_marker" ]; then
+  ok "run-tests hook uses portable cksum and fails closed when its debounce key is unavailable"
+else
+  ng "run-tests hook uses portable cksum and fails closed when its debounce key is unavailable"
+fi
+
 hook_codex="$(printf '{"tool_input":{"path":"%s"}}\n' "$hook_fixture/codex.cs" | \
   TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = codex' \
   bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
@@ -1090,7 +1129,11 @@ for test_edit_path in \
   "$hook_fixture/user_test.py" \
   "$hook_fixture/test_.py" \
   "$hook_fixture/_test.py" \
-  "$hook_fixture/foo_test.go"; do
+  "$hook_fixture/foo_test.go" \
+  "$hook_fixture/feature.test.mts" \
+  "$hook_fixture/feature.spec.cts" \
+  "$hook_fixture/feature.test.mjs" \
+  "$hook_fixture/feature.spec.cjs"; do
   test_edit_output="$(hook_input "$test_edit_path" | \
     TMPDIR="$hook_fixture/tmp" TEST_SENTINEL="$test_edit_marker" \
     AGENT_TEST_COMMAND='touch "$TEST_SENTINEL"' \
@@ -1098,9 +1141,9 @@ for test_edit_path in \
   [[ "$test_edit_output" == *'SKIPPED: test file edit'* ]] || test_edit_guard_ok=false
 done
 if [[ "$test_edit_guard_ok" == true ]] && [ ! -e "$test_edit_marker" ]; then
-  ok "run-tests hook skips C# Python prefix/suffix and Go test-file conventions"
+  ok "run-tests hook skips C# Python Go and JavaScript module test-file conventions"
 else
-  ng "run-tests hook skips C# Python prefix/suffix and Go test-file conventions"
+  ng "run-tests hook skips C# Python Go and JavaScript module test-file conventions"
 fi
 
 missing_marker="$hook_fixture/should-not-run"
@@ -1130,7 +1173,7 @@ if [[ "$missing_target_output" == *NOT_RUN* ]] &&
 else
   ng "run-tests hook reports unusable missing invalid and unparseable targets"
 fi
-for no_jq_tool in mkdir shasum cut date stat touch dirname basename git bash tail; do
+for no_jq_tool in mkdir cksum date stat touch dirname basename git bash tail; do
   ln -s "$(command -v "$no_jq_tool")" "$hook_fixture/no-jq-bin/$no_jq_tool"
 done
 missing_jq_fallback_output="$(printf '%s\n' '{"event":"PostToolUse"}' | \
@@ -1176,6 +1219,9 @@ has "run-tests hook documents synchronous execution and exit-zero reporting" \
 lacks "run-tests hook does not guess runner or stale assembly" \
   'vitest run|dotnet test.*--no-build' \
   skills/init-project-docs/references/hooks/run-tests.sh
+has "run-tests hook registration depends on an explicit command" \
+  'run-tests\.sh.*只在明確提供 `AGENT_TEST_COMMAND` 時註冊' \
+  skills/init-project-docs/references/README.md
 
 has "Vite documents external outDir warning and ownership gate" \
   'outDir.*root 外.*預設不清空.*warning.*目錄完全由本次 build 擁有.*授權' \
@@ -1295,6 +1341,9 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
       >/dev/null 2>&1) &&
    [[ "$scan_stdout" == *'API_TOKEN: set (line 1)'* ]] &&
    [[ "$scan_stdout" == *'[REDACTED]'* ]] &&
+   [[ "$scan_stdout" == *'Found: package.json'* ]] &&
+   [[ "$scan_stdout" == *'Found: gradle.properties'* ]] &&
+   [[ "$scan_stdout" == *'Found: Gemfile'* ]] &&
    [[ "$scan_stdout" != *S11_ENV* ]] &&
    [[ "$scan_stdout" != *S11_QUOTED* ]] &&
    [[ "$scan_stdout" != *S11_FIRST* ]] &&
@@ -1314,8 +1363,8 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    [[ "$scan_stdout" != *S11_SIGNING_KEY* ]] &&
    [[ "$scan_stdout" != *S11_YAML_BLOCK* ]] &&
    [[ "$scan_stdout" != *S11_XML* ]] &&
-   [[ "$scan_stdout" == *S11_SAFE_YAML_FIELD_VISIBLE* ]] &&
-   [[ "$scan_stdout" == *S11_SAFE_PREVIEW_VISIBLE* ]] &&
+   [[ "$scan_stdout" != *S11_SAFE_YAML_FIELD_VISIBLE* ]] &&
+   [[ "$scan_stdout" != *S11_SAFE_PREVIEW_VISIBLE* ]] &&
    [[ "$scan_stdout" == *'PRIVATE_KEY: set (line 7)'* ]] &&
    [[ "$scan_stdout" == *'UNCLOSED_SECRET: set (line 10)'* ]] &&
    [[ "$scan_stdout" == *'UNTERMINATED quoted value redacted (line 10)'* ]] &&
@@ -1325,379 +1374,20 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    rg -q 'EXPORTED.*set.*line 3' "$scan_fixture/scan.txt" &&
    rg -q 'UNPARSED.*redacted' "$scan_fixture/scan.txt" &&
    rg -q '\[REDACTED\]' "$scan_fixture/scan.txt" &&
-   rg -q 'S11_SAFE_YAML_FIELD_VISIBLE' "$scan_fixture/scan.txt" &&
-   rg -q 'S11_SAFE_PREVIEW_VISIBLE' "$scan_fixture/scan.txt" &&
-   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML|AUTH|CREDENTIALS|SECRET_KEY_BASE|SIGNING_KEY|YAML_BLOCK|XML)' "$scan_fixture/scan.txt"; then
-  ok "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
+   rg -q '^Found: package.json$' "$scan_fixture/scan.txt" &&
+   rg -q '^Found: gradle.properties$' "$scan_fixture/scan.txt" &&
+   rg -q '^Found: Gemfile$' "$scan_fixture/scan.txt" &&
+   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML|AUTH|CREDENTIALS|SECRET_KEY_BASE|SIGNING_KEY|YAML_BLOCK|XML|SAFE)' "$scan_fixture/scan.txt"; then
+  ok "codebase scanner lists manifest locations and redacts env values and TODO summaries"
 else
-  ng "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
+  ng "codebase scanner lists manifest locations and redacts env values and TODO summaries"
 fi
 rm -r -- "$scan_fixture"
 
 if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
 from pathlib import Path
-import subprocess
-import sys
-import tempfile
-
-scanner = Path(sys.argv[1])
-with tempfile.TemporaryDirectory(prefix="codebase-xml-boundaries-") as directory:
-    fixture = Path(directory)
-    (fixture / "element.csproj").write_text(
-        "<Project><password>S11_XML_ELEMENT_COMPLETE_DO_NOT_PRINT</password></Project>\n"
-    )
-    (fixture / "namespace.csproj").write_text(
-        '<Project xmlns:cfg="urn:fixture"><cfg:password>'
-        "S11_XML_NAMESPACE_COMPLETE_DO_NOT_PRINT</cfg:password></Project>\n"
-    )
-    (fixture / "attributes.csproj").write_text(
-        '<Project><Property name="password" value="S11_XML_NAME_COMPLETE_DO_NOT_PRINT"/>'
-        '<cfg:add xmlns:cfg="urn:fixture" key="api_key" '
-        'value="S11_XML_KEY_COMPLETE_DO_NOT_PRINT"/></Project>\n'
-    )
-    (fixture / "malformed.csproj").write_text(
-        "<Project>\n"
-        "<cfg:password>S11_XML_NAMESPACE_TRUNCATED_DO_NOT_PRINT\n"
-        '<Property name="client_secret" value="S11_XML_NAME_TRUNCATED_DO_NOT_PRINT\n'
-        '<cfg:add key="authorization" value="S11_XML_KEY_TRUNCATED_DO_NOT_PRINT\n'
-    )
-    (fixture / "safe.csproj").write_text(
-        '<Project xmlns:cfg="urn:fixture">'
-        "<cfg:passwordPolicy>S11_SAFE_XML_ELEMENT_VISIBLE</cfg:passwordPolicy>"
-        '<Property name="passwordPolicy" value="S11_SAFE_XML_NAME_VISIBLE"/>'
-        '<add key="api_key_hint" value="S11_SAFE_XML_KEY_VISIBLE"/>'
-        "</Project>\n"
-    )
-
-    report = fixture / "scan.txt"
-    sensitive_markers = (
-        "S11_XML_ELEMENT_COMPLETE_DO_NOT_PRINT",
-        "S11_XML_NAMESPACE_COMPLETE_DO_NOT_PRINT",
-        "S11_XML_NAME_COMPLETE_DO_NOT_PRINT",
-        "S11_XML_KEY_COMPLETE_DO_NOT_PRINT",
-        "S11_XML_NAMESPACE_TRUNCATED_DO_NOT_PRINT",
-        "S11_XML_NAME_TRUNCATED_DO_NOT_PRINT",
-        "S11_XML_KEY_TRUNCATED_DO_NOT_PRINT",
-    )
-    safe_markers = (
-        "S11_SAFE_XML_ELEMENT_VISIBLE",
-        "S11_SAFE_XML_NAME_VISIBLE",
-        "S11_SAFE_XML_KEY_VISIBLE",
-    )
-    for options in ([], ["--output", str(report)]):
-        result = subprocess.run(
-            [sys.executable, str(scanner), *options],
-            cwd=fixture,
-            text=True,
-            capture_output=True,
-        )
-        assert result.returncode == 0, "scanner failed"
-        output = report.read_text() if options else result.stdout
-        for marker in sensitive_markers:
-            assert marker not in output, f"XML credential boundary leaked: {marker}"
-        for marker in safe_markers:
-            assert marker in output, f"safe XML near-match was hidden: {marker}"
-PY
-then
-  ok "codebase scanner withholds XML credential elements and name/key attributes"
-else
-  ng "codebase scanner withholds XML credential elements and name/key attributes"
-fi
-
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
-import subprocess
-import sys
-import tempfile
-
-scanner = Path(sys.argv[1])
-with tempfile.TemporaryDirectory(prefix="codebase-xml-compound-elements-") as directory:
-    fixture = Path(directory)
-    (fixture / "compound.csproj").write_text(
-        "<Project>"
-        "<AWS_ACCESS_KEY_ID>S11_XML_COMPOUND_AWS_DO_NOT_PRINT</AWS_ACCESS_KEY_ID>"
-        "<my_password>S11_XML_COMPOUND_PASSWORD_DO_NOT_PRINT</my_password>"
-        "</Project>\n"
-    )
-    (fixture / "safe.csproj").write_text(
-        "<Project><my_passwordPolicy>"
-        "S11_SAFE_XML_COMPOUND_NEAR_MATCH_VISIBLE"
-        "</my_passwordPolicy></Project>\n"
-    )
-
-    report = fixture / "scan.txt"
-    for options in ([], ["--output", str(report)]):
-        result = subprocess.run(
-            [sys.executable, str(scanner), *options],
-            cwd=fixture,
-            text=True,
-            capture_output=True,
-        )
-        assert result.returncode == 0, "scanner failed"
-        output = report.read_text() if options else result.stdout
-        assert "S11_XML_COMPOUND_AWS_DO_NOT_PRINT" not in output
-        assert "S11_XML_COMPOUND_PASSWORD_DO_NOT_PRINT" not in output
-        assert "S11_SAFE_XML_COMPOUND_NEAR_MATCH_VISIBLE" in output
-PY
-then
-  ok "codebase scanner withholds compound XML credential elements"
-else
-  ng "codebase scanner withholds compound XML credential elements"
-fi
-
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
-import subprocess
-import sys
-import tempfile
-
-scanner = Path(sys.argv[1])
-with tempfile.TemporaryDirectory(prefix="codebase-xml-unclosed-attributes-") as directory:
-    fixture = Path(directory)
-    (fixture / "malformed.csproj").write_text(
-        '<Project><Property name="password value="'
-        'S11_XML_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT"></Project>\n'
-    )
-    (fixture / "safe.csproj").write_text(
-        '<Project><Property name="passwordPolicy value="'
-        'S11_SAFE_XML_UNCLOSED_ATTRIBUTE_VISIBLE"></Project>\n'
-    )
-
-    report = fixture / "scan.txt"
-    for options in ([], ["--output", str(report)]):
-        result = subprocess.run(
-            [sys.executable, str(scanner), *options],
-            cwd=fixture,
-            text=True,
-            capture_output=True,
-        )
-        assert result.returncode == 0, "scanner failed"
-        output = report.read_text() if options else result.stdout
-        assert "S11_XML_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT" not in output
-        assert "S11_SAFE_XML_UNCLOSED_ATTRIBUTE_VISIBLE" in output
-PY
-then
-  ok "codebase scanner withholds unclosed XML credential name/key attributes"
-else
-  ng "codebase scanner withholds unclosed XML credential name/key attributes"
-fi
-
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
 import importlib.util
 import subprocess
-import sys
-import tempfile
-import time
-
-scanner = Path(sys.argv[1])
-spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-with tempfile.TemporaryDirectory(prefix="codebase-credential-aliases-") as directory:
-    fixture = Path(directory)
-    (fixture / "settings.gradle").write_text(
-        "pass=S11_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
-    )
-    (fixture / "build.gradle").write_text(
-        "DB_PASS=S11_DB_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
-    )
-    (fixture / "settings.gradle.kts").write_text(
-        "ENCRYPTION_KEY=S11_ENCRYPTION_KEY_ASSIGNMENT_DO_NOT_PRINT\n"
-    )
-    (fixture / "gradle.properties").write_text(
-        "awsAccessKeyId=S11_CAMEL_ACCESS_KEY_DO_NOT_PRINT\n"
-    )
-    (fixture / "build.sbt").write_text(
-        "app_pass=S11_UNDERSCORE_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
-    )
-    (fixture / "Makefile").write_text(
-        "app-pass=S11_HYPHEN_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
-    )
-    (fixture / "pass-element.csproj").write_text(
-        "<Project><pass>S11_PASS_ELEMENT_DO_NOT_PRINT</pass></Project>\n"
-    )
-    (fixture / "db-pass-element.csproj").write_text(
-        "<Project><DB_PASS>S11_DB_PASS_ELEMENT_DO_NOT_PRINT</DB_PASS></Project>\n"
-    )
-    (fixture / "encryption-element.csproj").write_text(
-        "<Project><ENCRYPTION_KEY>S11_ENCRYPTION_KEY_ELEMENT_DO_NOT_PRINT</ENCRYPTION_KEY></Project>\n"
-    )
-    (fixture / "pass-attribute.csproj").write_text(
-        '<Project><Property name="pass" value="S11_PASS_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
-    )
-    (fixture / "db-pass-attribute.csproj").write_text(
-        '<Project><Property name="DB_PASS" value="S11_DB_PASS_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
-    )
-    (fixture / "encryption-attribute.csproj").write_text(
-        '<Project><add key="ENCRYPTION_KEY" value="S11_ENCRYPTION_KEY_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
-    )
-    (fixture / "compound-attribute.csproj").write_text(
-        '<Project><Property key="app-encryption-key" '
-        'value="S11_COMPOUND_ENCRYPTION_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
-    )
-    (fixture / "malformed.csproj").write_text(
-        '<Project><Property name="DB_PASS value="'
-        'S11_DB_PASS_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT"></Project>\n'
-    )
-    (fixture / "Cargo.toml").write_text(
-        "compass=ok\n"
-        "bypass=ok\n"
-        "passPolicy=ok\n"
-        "DB_PASSPHRASE=ok\n"
-        "ENCRYPTION_KEY_HINT=ok\n"
-    )
-    (fixture / "safe-attributes.csproj").write_text(
-        '<Project><Property name="encryption_key_policy" value="VISIBLE_SAFE"/></Project>\n'
-    )
-
-    report = fixture / "scan.txt"
-    sensitive_markers = (
-        "S11_PASS_ASSIGNMENT_DO_NOT_PRINT",
-        "S11_UNDERSCORE_PASS_ASSIGNMENT_DO_NOT_PRINT",
-        "S11_HYPHEN_PASS_ASSIGNMENT_DO_NOT_PRINT",
-        "S11_CAMEL_ACCESS_KEY_DO_NOT_PRINT",
-        "S11_DB_PASS_ASSIGNMENT_DO_NOT_PRINT",
-        "S11_ENCRYPTION_KEY_ASSIGNMENT_DO_NOT_PRINT",
-        "S11_PASS_ELEMENT_DO_NOT_PRINT",
-        "S11_DB_PASS_ELEMENT_DO_NOT_PRINT",
-        "S11_ENCRYPTION_KEY_ELEMENT_DO_NOT_PRINT",
-        "S11_PASS_ATTRIBUTE_DO_NOT_PRINT",
-        "S11_DB_PASS_ATTRIBUTE_DO_NOT_PRINT",
-        "S11_ENCRYPTION_KEY_ATTRIBUTE_DO_NOT_PRINT",
-        "S11_COMPOUND_ENCRYPTION_ATTRIBUTE_DO_NOT_PRINT",
-        "S11_DB_PASS_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT",
-    )
-    safe_markers = (
-        "compass=ok",
-        "bypass=ok",
-        "passPolicy=ok",
-        "DB_PASSPHRASE=ok",
-        "ENCRYPTION_KEY_HINT=ok",
-        'name="encryption_key_policy" value="VISIBLE_SAFE"',
-    )
-    for options in ([], ["--output", str(report)]):
-        result = subprocess.run(
-            [sys.executable, str(scanner), *options],
-            cwd=fixture,
-            text=True,
-            capture_output=True,
-        )
-        assert result.returncode == 0, "scanner failed"
-        output = report.read_text() if options else result.stdout
-        for marker in sensitive_markers:
-            assert marker not in output, f"credential alias leaked: {marker}"
-        for marker in safe_markers:
-            assert marker in output, f"safe credential near-match was hidden: {marker}"
-
-    for length in (4_000, 8_000, 16_000):
-        safe_assignment = ("a-" * ((length + 1) // 2))[:length]
-        started = time.monotonic()
-        assert module.CREDENTIAL_ASSIGNMENT_RE.search(safe_assignment) is None
-        assert time.monotonic() - started < 1.0, (
-            f"safe compound assignment scan exceeded the bound at {length} characters"
-        )
-PY
-then
-  ok "codebase scanner recognizes DB_PASS and ENCRYPTION_KEY in all manifest grammars"
-else
-  ng "codebase scanner recognizes DB_PASS and ENCRYPTION_KEY in all manifest grammars"
-fi
-
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
-import subprocess
-import sys
-import tempfile
-
-scanner = Path(sys.argv[1])
-with tempfile.TemporaryDirectory(prefix="codebase-partial-xml-element-") as directory:
-    fixture = Path(directory)
-    (fixture / "partial.csproj").write_text(
-        "<Project><password S11_PARTIAL_XML_ELEMENT_DO_NOT_PRINT"
-    )
-    (fixture / "safe.csproj").write_text(
-        "<Project><passwordPolicy S11_SAFE_PARTIAL_XML_VISIBLE"
-    )
-    report = fixture / "scan.txt"
-    for options in ([], ["--output", str(report)]):
-        result = subprocess.run(
-            [sys.executable, str(scanner), *options],
-            cwd=fixture,
-            text=True,
-            capture_output=True,
-        )
-        assert result.returncode == 0, "scanner failed"
-        output = report.read_text() if options else result.stdout
-        assert "S11_PARTIAL_XML_ELEMENT_DO_NOT_PRINT" not in output
-        assert "S11_SAFE_PARTIAL_XML_VISIBLE" in output
-PY
-then
-  ok "codebase scanner withholds a credential element before its opening tag closes"
-else
-  ng "codebase scanner withholds a credential element before its opening tag closes"
-fi
-
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
-import importlib.util
-import sys
-import time
-
-scanner = Path(sys.argv[1])
-spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-
-text = "<password " * 4_000 + "S11_REPEATED_XML_OPENINGS_DO_NOT_PRINT"
-started = time.monotonic()
-assert module.manifest_preview_is_sensitive(text)
-assert time.monotonic() - started < 1.0, "repeated partial XML openings exceeded the scan bound"
-PY
-then
-  ok "codebase scanner handles repeated partial credential-element openings in bounded time"
-else
-  ng "codebase scanner handles repeated partial credential-element openings in bounded time"
-fi
-
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
-import importlib.util
-import sys
-import tempfile
-import tracemalloc
-
-scanner = Path(sys.argv[1])
-spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-
-with tempfile.TemporaryDirectory(prefix="codebase-bounded-preview-memory-") as directory:
-    fixture = Path(directory) / "package-lock.json"
-    fixture.write_text("# safe\n" * 100_000)
-    source_size = fixture.stat().st_size
-
-    tracemalloc.start()
-    preview = module.read_file_preview(fixture)
-    _, peak_bytes = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-
-    assert preview.startswith("# safe\n" * module.MANIFEST_PREVIEW_LINES)
-    assert "Showing first 80 of 100000 lines" in preview
-    assert peak_bytes < source_size * 4, (
-        f"bounded preview retained duplicate full-file representations: "
-        f"peak={peak_bytes}, source={source_size}"
-    )
-PY
-then
-  ok "codebase scanner bounds preview-memory overhead for large safe manifests"
-else
-  ng "codebase scanner bounds preview-memory overhead for large safe manifests"
-fi
-
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
-import importlib.util
 import sys
 import tempfile
 
@@ -1706,33 +1396,24 @@ spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-with tempfile.TemporaryDirectory(prefix="codebase-oversized-preview-") as directory:
-    fixture = Path(directory) / "package-lock.json"
-    marker = "S11_OVERSIZED_PREVIEW_DO_NOT_PRINT"
-    fixture.write_text("x" * module.MANIFEST_PREVIEW_SCAN_CHARS + marker)
-    preview = module.read_file_preview(fixture)
-    assert marker not in preview
-    assert "Preview withheld" in preview
-    assert "1,000,000 decoded characters" in preview
-PY
-then
-  ok "codebase scanner withholds manifests beyond the decoded-character scan limit"
-else
-  ng "codebase scanner withholds manifests beyond the decoded-character scan limit"
-fi
+assert not hasattr(module, "manifest_preview_is_sensitive")
+assert not hasattr(module, "read_file_preview")
 
-if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
-from pathlib import Path
-import subprocess
-import sys
-import tempfile
-
-scanner = Path(sys.argv[1])
-with tempfile.TemporaryDirectory(prefix="codebase-aws-access-key-") as directory:
+with tempfile.TemporaryDirectory(prefix="codebase-manifest-names-only-") as directory:
     fixture = Path(directory)
-    (fixture / "settings.gradle").write_text(
-        "AWS_ACCESS_KEY_ID=S11_AWS_ACCESS_KEY_ID_DO_NOT_PRINT\n"
-    )
+    manifests = {
+        "package.json": '{"name":"S11_ORDINARY_JSON_VALUE_DO_NOT_PRINT"}\n',
+        "gradle.properties": "password=S11_GRADLE_SECRET_DO_NOT_PRINT\n",
+        "pom.xml": "<project><name>S11_XML_VALUE_DO_NOT_PRINT</name></project>\n",
+        "Gemfile": "source 'S11_RUBY_VALUE_DO_NOT_PRINT'\n",
+        "Makefile": "PASSWORD ?= S11_MAKE_DEFAULT_DO_NOT_PRINT\nPASSWORD += S11_MAKE_APPEND_DO_NOT_PRINT\n",
+        "attributes.csproj": '<Project dbPassword="S11_CAMEL_XML_DO_NOT_PRINT" apiToken="S11_CAMEL_TOKEN_DO_NOT_PRINT"><add key=authorization value="S11_UNQUOTED_KEY_DO_NOT_PRINT"/></Project>\n',
+        "deno.json": '{"repository":"//user:S11_RELATIVE_URL_DO_NOT_PRINT@example.invalid/repo"}\n',
+    }
+    for name, payload in manifests.items():
+        (fixture / name).write_text(payload)
+    (fixture / "bun.lockb").write_bytes(b"S11_BINARY_VALUE_DO_NOT_PRINT")
+
     report = fixture / "scan.txt"
     for options in ([], ["--output", str(report)]):
         result = subprocess.run(
@@ -1743,46 +1424,71 @@ with tempfile.TemporaryDirectory(prefix="codebase-aws-access-key-") as directory
         )
         assert result.returncode == 0, "scanner failed"
         output = report.read_text() if options else result.stdout
-        assert "S11_AWS_ACCESS_KEY_ID_DO_NOT_PRINT" not in output
+        for name in (*manifests, "bun.lockb"):
+            assert f"Found: {name}" in output, f"manifest location missing: {name}"
+        for marker in (
+            "S11_ORDINARY_JSON_VALUE_DO_NOT_PRINT",
+            "S11_GRADLE_SECRET_DO_NOT_PRINT",
+            "S11_XML_VALUE_DO_NOT_PRINT",
+            "S11_RUBY_VALUE_DO_NOT_PRINT",
+            "S11_BINARY_VALUE_DO_NOT_PRINT",
+            "S11_MAKE_DEFAULT_DO_NOT_PRINT",
+            "S11_MAKE_APPEND_DO_NOT_PRINT",
+            "S11_CAMEL_XML_DO_NOT_PRINT",
+            "S11_CAMEL_TOKEN_DO_NOT_PRINT",
+            "S11_UNQUOTED_KEY_DO_NOT_PRINT",
+            "S11_RELATIVE_URL_DO_NOT_PRINT",
+        ):
+            assert marker not in output, f"manifest value leaked: {marker}"
+        assert "Preview" not in output
+        assert "Error reading file" not in output
 PY
 then
-  ok "codebase scanner withholds AWS_ACCESS_KEY_ID manifest assignments"
+  ok "codebase scanner lists manifest names without emitting manifest values"
 else
-  ng "codebase scanner withholds AWS_ACCESS_KEY_ID manifest assignments"
+  ng "codebase scanner lists manifest names without emitting manifest values"
 fi
 
 if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
 from pathlib import Path
+from unittest.mock import patch
+import importlib.util
 import subprocess
 import sys
 import tempfile
 
 scanner = Path(sys.argv[1])
-with tempfile.TemporaryDirectory(prefix="codebase-url-userinfo-") as directory:
-    fixture = Path(directory)
-    safe_manifest = fixture / "package-lock.json"
-    safe_text = '{"description":"' + "a" * 100_000 + '"}\n'
-    safe_manifest.write_text(safe_text)
-    safe_result = subprocess.run(
-        [sys.executable, str(scanner)],
-        cwd=fixture,
-        text=True,
-        capture_output=True,
-        timeout=2,
-    )
-    assert safe_result.returncode == 0, "safe scanner probe failed"
-    assert safe_text in safe_result.stdout
-    safe_manifest.unlink()
+spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
 
-    (fixture / "deno.json").write_text(
-        '{"repository":"https://user:S11_URL_ONLY_DO_NOT_PRINT@example.invalid/repo"}\n'
-    )
-    (fixture / "package.json").write_text(
-        '{"repository":"git+ssh://user:S11_CUSTOM_URL_DO_NOT_PRINT@example.invalid/repo"}\n'
-    )
-    (fixture / "settings.gradle").write_text(
-        "repository=https://example.invalid/repo\n"
-    )
+payload = "KEY=" + "x" * module.ENV_SUMMARY_SCAN_CHARS + "S11_ENV_OVERSIZE_DO_NOT_PRINT"
+read_sizes = []
+
+class BoundedReader:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self, size=-1):
+        read_sizes.append(size)
+        return payload[:size]
+
+    def readlines(self, *_args, **_kwargs):
+        raise AssertionError("read_env_summary must not use unbounded readlines")
+
+with patch("builtins.open", return_value=BoundedReader()):
+    summary = module.read_env_summary(Path(".env.defaults"))
+
+assert read_sizes == [module.ENV_SUMMARY_SCAN_CHARS + 1]
+assert "Summary withheld" in summary
+assert "S11_ENV_OVERSIZE_DO_NOT_PRINT" not in summary
+
+with tempfile.TemporaryDirectory(prefix="codebase-env-oversize-") as directory:
+    fixture = Path(directory)
+    (fixture / ".env.defaults").write_text(payload)
     report = fixture / "scan.txt"
     for options in ([], ["--output", str(report)]):
         result = subprocess.run(
@@ -1793,14 +1499,13 @@ with tempfile.TemporaryDirectory(prefix="codebase-url-userinfo-") as directory:
         )
         assert result.returncode == 0, "scanner failed"
         output = report.read_text() if options else result.stdout
-        assert "S11_URL_ONLY_DO_NOT_PRINT" not in output
-        assert "S11_CUSTOM_URL_DO_NOT_PRINT" not in output
-        assert "repository=https://example.invalid/repo" in output
+        assert "Summary withheld" in output
+        assert "S11_ENV_OVERSIZE_DO_NOT_PRINT" not in output
 PY
 then
-  ok "codebase scanner independently exercises URL userinfo withholding"
+  ok "codebase scanner bounds environment-template reads and withholds oversized summaries"
 else
-  ng "codebase scanner independently exercises URL userinfo withholding"
+  ng "codebase scanner bounds environment-template reads and withholds oversized summaries"
 fi
 
 if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
@@ -1870,6 +1575,9 @@ lacks "security audit does not defer to an undefined host fallback" \
   skills/security-audit/SKILL.md skills/security-audit/VALIDATION-AND-REPORTING.md
 has "security audit defines a distinct fresh-context fallback" \
   'fresh-context.*read-only.*distinct.*author.*coordinator.*source SHA.*complete candidate.*field.*evidence' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit binds both validator paths to the same reviewed source" \
+  'Before either validation path.*exact reviewed source identity.*both.*research validator.*fresh-context fallback.*same identity.*complete candidate.*access.*corresponding exact source.*reviewed dirty diff.*non-Git snapshot.*either validator.*verify.*identity.*actually reads.*before confirming.*mismatch.*refresh.*complete candidate.*fresh independent validation' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
 lacks "security audit has no unconditional or numeric agent fleet" \
   'Launch \*\*multiple|launch \*\*multiple|3-4 agents|8-12\+|one `research` agent per confirmed finding|YOU CAN SPAWN SUB-AGENTS|fresh agents verify every factual claim' \

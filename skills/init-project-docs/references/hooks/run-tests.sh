@@ -37,7 +37,7 @@ if [[ ! -f "$HOOK_FILE" ]]; then
 fi
 
 # 測試檔本身不 re-run，避免遞迴。
-if [[ "$HOOK_FILE" =~ \.(test|spec)\.(ts|tsx|js|jsx)$ ]] ||
+if [[ "$HOOK_FILE" =~ \.(test|spec)\.(ts|tsx|js|jsx|mts|cts|mjs|cjs)$ ]] ||
    [[ "$HOOK_FILE" =~ (^|/)[^/]*Tests?\.cs$ ]] ||
    [[ "$HOOK_FILE" =~ (^|/)(test_[^/]*|[^/]*_test)\.py$ ]] ||
    [[ "$HOOK_FILE" =~ (^|/)[^/]+_test\.go$ ]] ||
@@ -61,8 +61,17 @@ export AGENT_TEST_FILE AGENT_TEST_ROOT
 # Debounce：5 秒內相同檔案與同一 command 略過。
 DEBOUNCE_DIR="${TMPDIR:-/tmp}/agent-test-debounce"
 mkdir -p "$DEBOUNCE_DIR"
-HASH=$(printf '%s\0%s\0%s' "$AGENT_TEST_ROOT" "$AGENT_TEST_FILE" "$AGENT_TEST_COMMAND" |
-  shasum -a 1 | cut -c1-16)
+HASH_OUTPUT=$(printf '%s\0%s\0%s' "$AGENT_TEST_ROOT" "$AGENT_TEST_FILE" "$AGENT_TEST_COMMAND" |
+  cksum 2>/dev/null)
+HASH_RC=$?
+read -r HASH_CRC HASH_BYTES _ <<< "$HASH_OUTPUT"
+if [[ "$HASH_RC" -ne 0 ]] ||
+   [[ ! "${HASH_CRC:-}" =~ ^[0-9]+$ ]] ||
+   [[ ! "${HASH_BYTES:-}" =~ ^[0-9]+$ ]]; then
+  printf '[run-tests] NOT_RUN: unable to compute debounce key\n'
+  exit 0
+fi
+HASH="${HASH_CRC}-${HASH_BYTES}"
 MARKER="$DEBOUNCE_DIR/$HASH"
 
 if [[ -f "$MARKER" ]]; then

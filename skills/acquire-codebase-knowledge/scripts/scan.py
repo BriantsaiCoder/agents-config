@@ -18,7 +18,6 @@ import os
 import sys
 import argparse
 import subprocess
-import json
 from pathlib import Path
 from typing import List, Set
 import re
@@ -26,8 +25,8 @@ import re
 TREE_LIMIT = 200
 TREE_MAX_DEPTH = 3
 TODO_LIMIT = 60
-MANIFEST_PREVIEW_LINES = 80
-MANIFEST_PREVIEW_SCAN_CHARS = 1_000_000
+ENV_SUMMARY_LINES = 80
+ENV_SUMMARY_SCAN_CHARS = 1_000_000
 RECENT_COMMITS_LIMIT = 20
 CHURN_LIMIT = 20
 
@@ -184,31 +183,6 @@ PERFORMANCE_MARKERS = [
     "k6.js", "locustfile.py", "jmeter.jmx"
 ]
 
-CREDENTIAL_KEY = (
-    r"api[_-]?key|token|secret(?:[_-]?key(?:[_-]?base)?)?|signing[_-]?key|"
-    r"db[_-]?pass|encryption[_-]?key|password|passwd|pwd|client[_-]?secret|"
-    r"private[_-]?key|access[_-]?key(?:[_-]?id)?|connection[_-]?string|"
-    r"auth(?:orization)?|credentials"
-)
-CREDENTIAL_COMPOUND_PREFIX = r"(?:[A-Za-z_][\w.-]*[_-])?"
-CREDENTIAL_ASSIGNMENT_RE = re.compile(
-    rf"(?i)[\"']?(?:{CREDENTIAL_KEY}|(?<![A-Za-z0-9])pass)[\"']?\s*[:=]"
-)
-CREDENTIAL_XML_RE = re.compile(
-    rf"(?is)<(?:[A-Za-z_][\w.-]*:)?"
-    rf"{CREDENTIAL_COMPOUND_PREFIX}(?:{CREDENTIAL_KEY}|pass)\b"
-)
-CREDENTIAL_XML_ATTRIBUTE_RE = re.compile(
-    rf"(?is)<(?:[A-Za-z_][\w.-]*:)?[A-Za-z_][\w.-]*\b[^<>]*?\s"
-    rf"(?:[A-Za-z_][\w.-]*:)?(?:name|key)\s*=\s*"
-    rf"(?P<quote>[\"'])\s*{CREDENTIAL_COMPOUND_PREFIX}(?:{CREDENTIAL_KEY}|pass)"
-    rf"(?:\s*(?P=quote)|(?=\s|/?>))"
-)
-URL_USERINFO_RE = re.compile(
-    r"(?i)(?<![a-z0-9+.-])(?P<scheme>[a-z][a-z0-9+.-]*://)(?P<userinfo>[^/@\s]+)@"
-)
-
-
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
@@ -267,64 +241,6 @@ def find_manifest_files() -> List[str]:
     return sorted(set(found))
 
 
-def manifest_preview_is_sensitive(text: str) -> bool:
-    """Return true when a bounded manifest preview cannot safely expose values."""
-    return bool(
-        CREDENTIAL_ASSIGNMENT_RE.search(text)
-        or CREDENTIAL_XML_RE.search(text)
-        or CREDENTIAL_XML_ATTRIBUTE_RE.search(text)
-        or URL_USERINFO_RE.search(text)
-    )
-
-
-def read_file_preview(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -> str:
-    """Read a bounded preview, withholding it when value boundaries may be sensitive."""
-    try:
-        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-            # ponytail: this fixed cap bounds memory; use a streaming matcher only if
-            # larger manifests must be inspected instead of withholding their preview.
-            full_text = f.read(MANIFEST_PREVIEW_SCAN_CHARS + 1)
-
-        if len(full_text) > MANIFEST_PREVIEW_SCAN_CHARS:
-            return (
-                "[Preview withheld: manifest contains more than 1,000,000 decoded "
-                "characters; preview was not emitted.]"
-            )
-
-        if not full_text:
-            return "None found."
-
-        # A regex replacement cannot safely determine the end of every manifest value
-        # (for example Gradle whitespace values or TOML triple-quoted strings). Inspect
-        # the complete input so a value crossing the preview boundary withholds the
-        # preview instead of exposing a suffix. The manifest header remains available
-        # to stack detection without printing any value.
-        if manifest_preview_is_sensitive(full_text):
-            return (
-                "[Preview withheld: credential-like field or URL userinfo "
-                "detected; values are [REDACTED].]"
-            )
-
-        line_count = full_text.count('\n')
-        if not full_text.endswith('\n'):
-            line_count += 1
-
-        preview_end = 0
-        for _ in range(min(max_lines, line_count)):
-            newline_index = full_text.find('\n', preview_end)
-            if newline_index < 0:
-                preview_end = len(full_text)
-                break
-            preview_end = newline_index + 1
-
-        preview = full_text[:preview_end]
-        if line_count > max_lines:
-            preview += f"\n[TRUNCATED] Showing first {max_lines} of {line_count} lines."
-        return preview
-    except Exception as e:
-        return f"[Error reading file: {e}]"
-
-
 def quoted_value_is_closed(value: str, quote: str) -> bool:
     """Check whether a quoted dotenv value contains an unescaped closing quote."""
     escaped = False
@@ -338,11 +254,24 @@ def quoted_value_is_closed(value: str, quote: str) -> bool:
     return False
 
 
-def read_env_summary(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -> str:
+def read_env_summary(filepath: Path, max_lines: int = ENV_SUMMARY_LINES) -> str:
     """List env keys, set/unset state, and source line without returning values."""
     try:
         with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-            lines = f.readlines()
+            full_text = f.read(ENV_SUMMARY_SCAN_CHARS + 1)
+
+        if len(full_text) > ENV_SUMMARY_SCAN_CHARS:
+            return (
+                "[Summary withheld: environment template contains more than "
+                "1,000,000 decoded characters.]"
+            )
+
+        if not full_text:
+            return "None found."
+
+        lines = full_text.split('\n')
+        if lines[-1] == "":
+            lines.pop()
 
         if not lines:
             return "None found."
@@ -364,7 +293,7 @@ def read_env_summary(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) ->
                 stripped,
             )
             if not match:
-                summary.append(f"UNPARSED redacted (line {source_line})")
+                summary.append(f"UNPARSED redacted [REDACTED] (line {source_line})")
                 continue
 
             key, value = match.groups()
@@ -720,14 +649,7 @@ def main():
         # Stack detection
         manifests = find_manifest_files()
         if manifests:
-            manifest_content = [""]
-            for manifest in manifests:
-                manifest_path = Path(manifest)
-                manifest_content.append(f"--- {manifest} ---")
-                if manifest == "bun.lockb":
-                    manifest_content.append("[Binary lockfile — see package.json for dependency details.]")
-                else:
-                    manifest_content.append(read_file_preview(manifest_path))
+            manifest_content = [f"Found: {manifest}" for manifest in manifests]
             print_section("STACK DETECTION (manifest files)", manifest_content, output_file)
         else:
             print_section("STACK DETECTION (manifest files)", ["No recognized manifest files found in project root."], output_file)
@@ -738,7 +660,7 @@ def main():
             entry_content = [f"Found: {e}" for e in entries]
             print_section("ENTRY POINTS", entry_content, output_file)
         else:
-            print_section("ENTRY POINTS", ["No common entry points found. Check 'main' or 'scripts.start' in manifest files above."], output_file)
+            print_section("ENTRY POINTS", ["No common entry points found. Inspect the listed manifest files for project-defined entry points."], output_file)
 
         # Linting config
         lint = find_lint_config()

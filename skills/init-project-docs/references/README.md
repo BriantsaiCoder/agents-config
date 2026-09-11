@@ -31,7 +31,7 @@
 | [`hooks/codex/`](./hooks/codex/) | Codex CLI | `README.md` → `config.toml` 的 `[hooks.<Event>]` TOML 轉換指南 |
 | [`hooks/copilot/`](./hooks/copilot/) | Copilot CLI | `hooks.json` → 複製為 `.github/hooks/init-project-docs-hooks.json` |
 
-> **註**：`run-tests.sh` 只在 repo 明載 runner、target 與必要 build command 時註冊，不猜測。`auto-api-docs.sh` 不硬產文件 —— 通用環境無法可靠地為任意框架（Swashbuckle / NSwag / swagger-jsdoc / drf-spectacular / FastAPI）產生 API 文件，故改走「專案指令優先」：偵測到 `package.json` script 名含 api/doc/openapi/swagger 才執行，否則僅提醒。`notify.sh` 偏 UX 用途，亦可放各 host 全域目錄使用。
+> **註**：`run-tests.sh` 只在明確提供 `AGENT_TEST_COMMAND` 時註冊，不猜測。`auto-api-docs.sh` 不硬產文件 —— 通用環境無法可靠地為任意框架（Swashbuckle / NSwag / swagger-jsdoc / drf-spectacular / FastAPI）產生 API 文件，故改走「專案指令優先」：偵測到 `package.json` script 名含 api/doc/openapi/swagger 才執行，否則僅提醒。`notify.sh` 偏 UX 用途，亦可放各 host 全域目錄使用。
 
 ### `agents/` — Phase 6 Subagent 範本
 
