@@ -193,12 +193,14 @@ CREDENTIAL_ASSIGNMENT_RE = re.compile(
     rf"(?i)[\"']?(?:{CREDENTIAL_KEY})[\"']?\s*[:=]"
 )
 CREDENTIAL_XML_RE = re.compile(
-    rf"(?is)<(?:[A-Za-z_][\w.-]*:)?(?:{CREDENTIAL_KEY})\b[^>]*>"
+    rf"(?is)<(?:[A-Za-z_][\w.-]*:)?"
+    rf"(?:[A-Za-z_][\w.-]*[_-])?(?:{CREDENTIAL_KEY})\b[^>]*>"
 )
 CREDENTIAL_XML_ATTRIBUTE_RE = re.compile(
     rf"(?is)<(?:[A-Za-z_][\w.-]*:)?[A-Za-z_][\w.-]*\b[^<>]*?\s"
     rf"(?:[A-Za-z_][\w.-]*:)?(?:name|key)\s*=\s*"
-    rf"(?P<quote>[\"'])\s*(?:{CREDENTIAL_KEY})\s*(?P=quote)"
+    rf"(?P<quote>[\"'])\s*(?:{CREDENTIAL_KEY})"
+    rf"(?:\s*(?P=quote)|(?=\s|/?>))"
 )
 URL_USERINFO_RE = re.compile(
     r"(?i)(?P<scheme>[a-z][a-z0-9+.-]*://)(?P<userinfo>[^/@\s]+)@"
@@ -277,9 +279,9 @@ def read_file_preview(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -
     """Read a bounded preview, withholding it when value boundaries may be sensitive."""
     try:
         with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-            lines = f.readlines()
+            full_text = f.read()
 
-        if not lines:
+        if not full_text:
             return "None found."
 
         # A regex replacement cannot safely determine the end of every manifest value
@@ -287,15 +289,27 @@ def read_file_preview(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -
         # the complete input so a value crossing the preview boundary withholds the
         # preview instead of exposing a suffix. The manifest header remains available
         # to stack detection without printing any value.
-        if manifest_preview_is_sensitive(''.join(lines)):
+        if manifest_preview_is_sensitive(full_text):
             return (
                 "[Preview withheld: credential-like field or URL userinfo "
                 "detected; values are [REDACTED].]"
             )
 
-        preview = ''.join(lines[:max_lines])
-        if len(lines) > max_lines:
-            preview += f"\n[TRUNCATED] Showing first {max_lines} of {len(lines)} lines."
+        line_count = full_text.count('\n')
+        if not full_text.endswith('\n'):
+            line_count += 1
+
+        preview_end = 0
+        for _ in range(min(max_lines, line_count)):
+            newline_index = full_text.find('\n', preview_end)
+            if newline_index < 0:
+                preview_end = len(full_text)
+                break
+            preview_end = newline_index + 1
+
+        preview = full_text[:preview_end]
+        if line_count > max_lines:
+            preview += f"\n[TRUNCATED] Showing first {max_lines} of {line_count} lines."
         return preview
     except Exception as e:
         return f"[Error reading file: {e}]"

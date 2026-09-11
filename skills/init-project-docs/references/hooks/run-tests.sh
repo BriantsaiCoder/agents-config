@@ -5,7 +5,7 @@
 # 設計重點：
 #   - 只執行 AGENT_TEST_COMMAND，不猜 runner、target 或 build state
 #   - 匯出 AGENT_TEST_FILE / AGENT_TEST_ROOT 給 repo command 定位
-#   - debounce：同檔連續編輯 5 秒內只跑一次；hook 始終非阻擋
+#   - debounce：同檔連續編輯 5 秒內只跑一次；repo command 同步執行，hook 以 exit 0 回報結果
 
 set -uo pipefail
 
@@ -53,10 +53,16 @@ if [[ -z "${AGENT_TEST_COMMAND:-}" ]]; then
   exit 0
 fi
 
+FILE_DIR=$(cd "$(dirname "$HOOK_FILE")" && pwd -P)
+AGENT_TEST_FILE="$FILE_DIR/$(basename "$HOOK_FILE")"
+AGENT_TEST_ROOT=$(git -C "$FILE_DIR" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$FILE_DIR")
+export AGENT_TEST_FILE AGENT_TEST_ROOT
+
 # Debounce：5 秒內相同檔案與同一 command 略過。
 DEBOUNCE_DIR="${TMPDIR:-/tmp}/agent-test-debounce"
 mkdir -p "$DEBOUNCE_DIR"
-HASH=$(printf '%s\0%s' "$HOOK_FILE" "$AGENT_TEST_COMMAND" | shasum -a 1 | cut -c1-16)
+HASH=$(printf '%s\0%s\0%s' "$AGENT_TEST_ROOT" "$AGENT_TEST_FILE" "$AGENT_TEST_COMMAND" |
+  shasum -a 1 | cut -c1-16)
 MARKER="$DEBOUNCE_DIR/$HASH"
 
 if [[ -f "$MARKER" ]]; then
@@ -67,11 +73,6 @@ if [[ -f "$MARKER" ]]; then
   fi
 fi
 touch "$MARKER"
-
-FILE_DIR=$(cd "$(dirname "$HOOK_FILE")" && pwd -P)
-AGENT_TEST_FILE="$FILE_DIR/$(basename "$HOOK_FILE")"
-AGENT_TEST_ROOT=$(git -C "$FILE_DIR" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$FILE_DIR")
-export AGENT_TEST_FILE AGENT_TEST_ROOT
 
 TEST_OUTPUT=$(cd "$AGENT_TEST_ROOT" && bash -o pipefail -c "$AGENT_TEST_COMMAND" 2>&1 | tail -30)
 TEST_RC=$?

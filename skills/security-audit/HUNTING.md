@@ -104,5 +104,5 @@ respect category boundaries.
 3. Check if another layer already prevents exploitation — if so, it's a hardening note, not a finding
 4. If the baseline comparable has the same pattern, note whether it's been exploited there
 5. If your exploit depends on parser/runtime behavior, verify against the relevant spec or implementation — do not reason from intuition.
-6. For every surviving finding, return candidate packet inputs covering its exact trace, conditions, execution and payloads, proposed remediation and code changes, severity, and confidence; otherwise return "No exploitable vulnerabilities found" if that's honest. Phase 3 owns independent confirmation of the complete record.
+6. For every surviving finding, return one candidate packet with every substantive confirmed-finding field from `report-schema.json`: `title`, `description`, `root_cause`, `intended_behavior`, the complete `trace` and `conditions`, the full `execution` (`attacker_perspective`, `payloads`, `instructions`, and `expected_result`), the proposed `remediation` including every intended `code_changes` entry, `severity`, and `confidence`; otherwise return "No exploitable vulnerabilities found" if that's honest. Phase 3 owns independent confirmation of the complete record.
 ```

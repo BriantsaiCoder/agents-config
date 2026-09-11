@@ -1116,7 +1116,37 @@ if [[ "$missing_jq_fallback_output" == *PASSED* ]]; then
 else
   ng "run-tests hook preserves environment target fallback when jq is unavailable"
 fi
+
+mkdir -p "$hook_fixture/repo-a/src" "$hook_fixture/repo-b/src"
+git -C "$hook_fixture/repo-a" init -q
+git -C "$hook_fixture/repo-b" init -q
+repo_a_root="$(git -C "$hook_fixture/repo-a" rev-parse --show-toplevel)"
+repo_b_root="$(git -C "$hook_fixture/repo-b" rev-parse --show-toplevel)"
+printf 'current\n' > "$hook_fixture/repo-a/src/current.cs"
+printf 'current\n' > "$hook_fixture/repo-b/src/current.cs"
+relative_root_log="$hook_fixture/relative-roots.log"
+relative_hook_a="$(cd "$hook_fixture/repo-a" &&
+  hook_input 'src/current.cs' |
+    TMPDIR="$hook_fixture/tmp" HOOK_ROOT_LOG="$relative_root_log" \
+    AGENT_TEST_COMMAND='printf "%s\n" "$AGENT_TEST_ROOT" >> "$HOOK_ROOT_LOG"' \
+    bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+relative_hook_b="$(cd "$hook_fixture/repo-b" &&
+  hook_input 'src/current.cs' |
+    TMPDIR="$hook_fixture/tmp" HOOK_ROOT_LOG="$relative_root_log" \
+    AGENT_TEST_COMMAND='printf "%s\n" "$AGENT_TEST_ROOT" >> "$HOOK_ROOT_LOG"' \
+    bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$relative_hook_a" == *PASSED* ]] && [[ "$relative_hook_b" == *PASSED* ]] &&
+   [ "$(wc -l < "$relative_root_log" | tr -d ' ')" -eq 2 ] &&
+   rg -Fxq "$repo_a_root" "$relative_root_log" &&
+   rg -Fxq "$repo_b_root" "$relative_root_log"; then
+  ok "run-tests hook isolates relative-path debounce markers by repository root"
+else
+  ng "run-tests hook isolates relative-path debounce markers by repository root"
+fi
 rm -r -- "$hook_fixture"
+has "run-tests hook documents synchronous execution and exit-zero reporting" \
+  'repo command.*同步.*hook.*exit 0' \
+  skills/init-project-docs/references/hooks/run-tests.sh
 lacks "run-tests hook does not guess runner or stale assembly" \
   'vitest run|dotnet test.*--no-build' \
   skills/init-project-docs/references/hooks/run-tests.sh
@@ -1355,6 +1385,119 @@ import sys
 import tempfile
 
 scanner = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="codebase-xml-compound-elements-") as directory:
+    fixture = Path(directory)
+    (fixture / "compound.csproj").write_text(
+        "<Project>"
+        "<AWS_ACCESS_KEY_ID>S11_XML_COMPOUND_AWS_DO_NOT_PRINT</AWS_ACCESS_KEY_ID>"
+        "<my_password>S11_XML_COMPOUND_PASSWORD_DO_NOT_PRINT</my_password>"
+        "</Project>\n"
+    )
+    (fixture / "safe.csproj").write_text(
+        "<Project><my_passwordPolicy>"
+        "S11_SAFE_XML_COMPOUND_NEAR_MATCH_VISIBLE"
+        "</my_passwordPolicy></Project>\n"
+    )
+
+    report = fixture / "scan.txt"
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run(
+            [sys.executable, str(scanner), *options],
+            cwd=fixture,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        assert "S11_XML_COMPOUND_AWS_DO_NOT_PRINT" not in output
+        assert "S11_XML_COMPOUND_PASSWORD_DO_NOT_PRINT" not in output
+        assert "S11_SAFE_XML_COMPOUND_NEAR_MATCH_VISIBLE" in output
+PY
+then
+  ok "codebase scanner withholds compound XML credential elements"
+else
+  ng "codebase scanner withholds compound XML credential elements"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="codebase-xml-unclosed-attributes-") as directory:
+    fixture = Path(directory)
+    (fixture / "malformed.csproj").write_text(
+        '<Project><Property name="password value="'
+        'S11_XML_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT"></Project>\n'
+    )
+    (fixture / "safe.csproj").write_text(
+        '<Project><Property name="passwordPolicy value="'
+        'S11_SAFE_XML_UNCLOSED_ATTRIBUTE_VISIBLE"></Project>\n'
+    )
+
+    report = fixture / "scan.txt"
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run(
+            [sys.executable, str(scanner), *options],
+            cwd=fixture,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        assert "S11_XML_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT" not in output
+        assert "S11_SAFE_XML_UNCLOSED_ATTRIBUTE_VISIBLE" in output
+PY
+then
+  ok "codebase scanner withholds unclosed XML credential name/key attributes"
+else
+  ng "codebase scanner withholds unclosed XML credential name/key attributes"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import importlib.util
+import sys
+import tempfile
+import tracemalloc
+
+scanner = Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+with tempfile.TemporaryDirectory(prefix="codebase-bounded-preview-memory-") as directory:
+    fixture = Path(directory) / "package-lock.json"
+    fixture.write_text("# safe\n" * 200_000)
+    source_size = fixture.stat().st_size
+
+    tracemalloc.start()
+    preview = module.read_file_preview(fixture)
+    _, peak_bytes = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    assert preview.startswith("# safe\n" * module.MANIFEST_PREVIEW_LINES)
+    assert "Showing first 80 of 200000 lines" in preview
+    assert peak_bytes < source_size * 4, (
+        f"bounded preview retained duplicate full-file representations: "
+        f"peak={peak_bytes}, source={source_size}"
+    )
+PY
+then
+  ok "codebase scanner bounds preview-memory overhead for large safe manifests"
+else
+  ng "codebase scanner bounds preview-memory overhead for large safe manifests"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
 with tempfile.TemporaryDirectory(prefix="codebase-aws-access-key-") as directory:
     fixture = Path(directory)
     (fixture / "settings.gradle").write_text(
@@ -1528,7 +1671,7 @@ has "security setup reloads retained candidates at Phase 3" \
   'read their `findings\.json`.*UNCONFIRMED-CANDIDATES\.md.*resume.*Phase 3' \
   skills/security-audit/references/setup.md
 has "security hunters return complete candidate inputs" \
-  'candidate packet.*trace.*conditions.*execution.*remediation.*severity' \
+  'candidate packet.*title.*description.*root_cause.*intended_behavior.*trace.*conditions.*attacker_perspective.*payloads.*instructions.*expected_result.*remediation.*code_changes.*severity.*confidence' \
   skills/security-audit/HUNTING.md
 lacks "security README no longer names removed phases" \
   'Phases 3–6' \
