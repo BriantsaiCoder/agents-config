@@ -111,16 +111,14 @@ Verdict: exploitable / mitigated-upstream / not-exploitable
 🔴 CRITICAL — Hardcoded API Key
   File: src/config/database.js, Line 12
   
-  Found: STRIPE_SECRET_KEY = "sk_live_FAKE_KEY_..."
+  Status: STRIPE_SECRET_KEY is set; value [REDACTED]
   
   Action Required:
   1. Rotate this key IMMEDIATELY at https://dashboard.stripe.com
   2. Remove from source code
   3. Add to .env file and load via process.env.STRIPE_SECRET_KEY
   4. Add .env to .gitignore
-  5. Audit git history — key may be in previous commits:
-     git log --all -p | grep "sk_live_"
-     Use git-filter-repo or BFG to purge from history if found.
+  5. Audit history with a redacting secret scanner; report only commit, path, line, and set/unset or redacted status. Never print credential values from a patch to the terminal or report. History rewriting and rotation require their own authorization check.
 ```
 
 ---
@@ -132,7 +130,8 @@ Only include for CRITICAL and HIGH findings:
 ````
 🛠️  PATCH PROPOSALS
 ══════════════════
-⚠️  REVIEW EACH PATCH BEFORE APPLYING — Nothing has been changed yet.
+State: proposed-only / applied-and-verified / blocked
+Evidence: <actual verification result or blocking probe>
 
 ─────────────────────────────────────────────
 Patch 1/3: SQL Injection in src/routes/users.js
@@ -152,9 +151,11 @@ const query = 'SELECT * FROM users WHERE id = ?';
 db.execute(query, [req.params.id]);
 ```
 
-Apply this patch? (Review first — AI-generated patches may need adjustment)
+Authorization: <already covered / exact remaining write decision>
 ─────────────────────────────────────────────
 ````
+
+Use `proposed-only` for review-only work, `applied-and-verified` only after the scoped change and checks succeed, and `blocked` with the blocking evidence. Ask only for a write decision that the current authorization does not cover; an already-authorized review-and-fix flow continues without asking again.
 
 ---
 

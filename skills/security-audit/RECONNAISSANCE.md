@@ -2,9 +2,9 @@
 
 ### Phase 1: Understand the application
 
-Before looking for bugs, understand what you're auditing. This requires depth, not just a directory listing. Launch **multiple `research` agents in parallel** to map different aspects of the codebase:
+Before looking for bugs, understand what you're auditing. This requires depth, not just a directory listing. Cover the three workstreams below in the main context. Under shared `dev-workflow` INT-4, delegate only workstreams that are substantial, independent, and likely to improve coverage or wall-clock time; combine related work and use the smallest useful number of agents.
 
-**Agent 1a: Overview, tech stack, and comparable baseline**
+**Workstream 1a: Overview, tech stack, and comparable baseline**
 ```
 Explore the codebase at <path>. Answer:
 1. What is this application? What kind of software? (web app, API, CLI tool, library, daemon, desktop app, mobile backend, etc.)
@@ -15,7 +15,7 @@ Explore the codebase at <path>. Answer:
 Return specific file paths for key entry points.
 ```
 
-**Agent 1b: Trust boundaries and access control**
+**Workstream 1b: Trust boundaries and access control**
 ```
 Explore the codebase at <path>. Find and read ALL code related to:
 1. Trust boundaries — where does untrusted input enter the system? (HTTP requests, CLI args, file reads, IPC, message queues, environment variables, config files, etc.)
@@ -26,7 +26,7 @@ Explore the codebase at <path>. Find and read ALL code related to:
 Return the trust model: who are the actors, what can each do by design, and which code enforces it. Include specific file paths and line numbers.
 ```
 
-**Agent 1c: Input surface inventory**
+**Workstream 1c: Input surface inventory**
 ```
 Explore the codebase at <path>. Produce a complete inventory of where external input enters the system:
 1. Network-facing surfaces (HTTP endpoints, gRPC services, WebSocket handlers, TCP/UDP listeners, etc.) — list each with method/verb and purpose
@@ -38,9 +38,9 @@ Explore the codebase at <path>. Produce a complete inventory of where external i
 Return specific file paths. Be exhaustive.
 ```
 
-Collect all three agents' outputs and synthesize them into `<output-dir>/architecture.md`:
-- 1-2 page structured summary covering application type, tech stack, trust model, input surfaces, and baseline comparable
-- Include the key file paths from all agents — these become the starting points for Phase 2
-- This document is injected verbatim into every Phase 2 agent prompt
+Synthesize the three workstreams into `<output-dir>/architecture.md`:
+- Cover the application type, tech stack, trust model, input surfaces, and baseline comparable at the length the codebase needs, without padding or redundant summaries.
+- Include the key file paths from all workstreams — these become the starting points for Phase 2.
+- Include the relevant scoped excerpt in each delegated Phase 2 brief; do not duplicate unrelated context.
 
-If Phase 1 agents reveal the codebase is larger or more complex than expected (e.g., plugin system, multi-tenant architecture, complex auth chains, multiple deployment targets), launch additional `research` agents to map those areas before proceeding. The quality of Phase 2 depends entirely on the quality of Phase 1.
+If Phase 1 reveals a larger or more complex codebase than expected (for example, a plugin system, multi-tenant architecture, complex auth chains, or multiple deployment targets), deepen those areas before proceeding. Apply INT-4 again rather than automatically adding agents.

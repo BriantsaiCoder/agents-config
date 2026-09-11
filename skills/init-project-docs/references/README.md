@@ -18,7 +18,7 @@
 |------|---------------|---------|------|
 | [`hooks/protect-files.sh`](./hooks/protect-files.sh) | PreToolUse | `Edit\|Write` | 阻擋編輯 `.env`、`*.lock`、`*.pem`、`*.key` 等敏感檔案 |
 | [`hooks/auto-format.sh`](./hooks/auto-format.sh) | PostToolUse | `Edit\|Write` | 編輯後依副檔名派發 prettier / eslint / dotnet format / ruff |
-| [`hooks/run-tests.sh`](./hooks/run-tests.sh) | PostToolUse | `Edit\|Write` | 編輯後跑對應檔案的測試，含 5 秒 debounce + 僅跑對應測試 |
+| [`hooks/run-tests.sh`](./hooks/run-tests.sh) | PostToolUse | `Edit\|Write` | 執行 repo-defined `AGENT_TEST_COMMAND`，匯出目標檔，含 5 秒 debounce；無設定時回報 `NOT_RUN` |
 | [`hooks/auto-api-docs.sh`](./hooks/auto-api-docs.sh) | PostToolUse | `Edit\|Write` | 路由 / controller / API 檔變更後，優先執行專案自帶的 API 文件指令；無則提醒手動同步 docs |
 | [`hooks/compact-reminder.sh`](./hooks/compact-reminder.sh) | SessionStart | `compact` | Compact 後抽取指令檔（CLAUDE.md/AGENTS.md/copilot-instructions.md）「關鍵規則」段落重新注入 |
 | [`hooks/notify.sh`](./hooks/notify.sh) | Notification + Stop | — | 等待確認 / 任務完成時發 macOS 通知（osascript + 完成音效）；非 macOS 靜默結束 |
@@ -31,7 +31,7 @@
 | [`hooks/codex/`](./hooks/codex/) | Codex CLI | `README.md` → `config.toml` 的 `[hooks.<Event>]` TOML 轉換指南 |
 | [`hooks/copilot/`](./hooks/copilot/) | Copilot CLI | `hooks.json` → 複製為 `.github/hooks/init-project-docs-hooks.json` |
 
-> **註**：`auto-api-docs.sh` 不硬產文件 —— 通用環境無法可靠地為任意框架（Swashbuckle / NSwag / swagger-jsdoc / drf-spectacular / FastAPI）產生 API 文件，故改走「專案指令優先」：偵測到 `package.json` script 名含 api/doc/openapi/swagger 才執行，否則僅提醒。`notify.sh` 偏 UX 用途，亦可放各 host 全域目錄使用。
+> **註**：`run-tests.sh` 只在 repo 明載 runner、target 與必要 build command 時註冊，不猜測。`auto-api-docs.sh` 不硬產文件 —— 通用環境無法可靠地為任意框架（Swashbuckle / NSwag / swagger-jsdoc / drf-spectacular / FastAPI）產生 API 文件，故改走「專案指令優先」：偵測到 `package.json` script 名含 api/doc/openapi/swagger 才執行，否則僅提醒。`notify.sh` 偏 UX 用途，亦可放各 host 全域目錄使用。
 
 ### `agents/` — Phase 6 Subagent 範本
 

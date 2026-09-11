@@ -81,12 +81,12 @@ Two things not to do with it:
 
 ## Variable Architecture
 
-CSS variables must follow this structure:
+Preserve complete valid project colors such as `oklch(...)` or `hsl(...)`; semantic tokens use `var(...)` mappings. The following HSL values are one valid example, not a required migration target:
 
 ```css
 /* 1. Define at root (NOT inside @layer base) */
 :root {
-  --background: hsl(0 0% 100%);  /* hsl() wrapper required */
+  --background: hsl(0 0% 100%);
   --primary: hsl(221.2 83.2% 53.3%);
 }
 

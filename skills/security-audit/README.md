@@ -1,19 +1,18 @@
 # security-audit
 
-A coding-agent skill that turns your agent into a security auditor. It orchestrates multiple parallel agents through a six-phase pipeline -- recon, hunting, validation, reporting, structured output, and independent verification -- to find exploitable vulnerabilities with real impact.
+A coding-agent skill that turns your agent into a security auditor. It runs a five-phase pipeline -- recon, hunting, independent adversarial validation, reporting, and reconciled structured output -- to find exploitable vulnerabilities with real impact. Delegation is conditional on substantial independent work under the shared workflow.
 
 This is the skill that seeded Cloudflare's vulnerability discovery harness, described in [Build your own vulnerability harness](https://blog.cloudflare.com/build-your-own-vulnerability-harness). The harness grew into a multi-stage, fleet-wide system; this skill is the single-repo starting point it evolved from.
 
 ## What it does
 
-The skill runs a structured audit in six phases:
+The skill runs a structured audit in five phases:
 
-1. **Recon** -- parallel research agents map the application's architecture, trust boundaries, and input surfaces. Produces `architecture.md`.
-2. **Hunt** -- parallel general agents attack the codebase from different angles (injection, access control, business logic, cryptography, feature abuse, chained attacks, and a wildcard). Each agent can spawn sub-agents to dig deeper.
-3. **Validate** -- separate agents try to *disprove* each finding. Adversarial review kills false positives.
-4. **Report** -- produces `REPORT.md` (human-readable) and `FINDINGS-DETAIL.md` (detailed traces for MEDIUM+ findings).
-5. **Structured output** -- writes `findings.json` conforming to `report-schema.json`, validated by `validate-findings.cjs`.
-6. **Independent verification** -- fresh agents verify every factual claim in the structured output against the actual source code.
+1. **Recon** -- map the application's architecture, trust boundaries, and input surfaces. Produces `architecture.md`.
+2. **Hunt** -- attack the codebase from relevant angles (injection, access control, business logic, cryptography, feature abuse, chained attacks, and a wildcard), delegating only substantial independent tracks.
+3. **Validate** -- complete each schema-backed candidate record, then have an independent validator try to *disprove* every factual and remediation field. Adversarial review kills false positives.
+4. **Report** -- derives `REPORT.md` and `FINDINGS-DETAIL.md` from the validated records.
+5. **Structured output and reconciliation** -- serializes those records to `findings.json`, validates structure with `validate-findings.cjs`, and reconciles the prose outputs without adding unvalidated content.
 
 Multiple runs against the same repo are additive. Each run explores different code paths; the skill reads prior `findings.json` files to skip known issues and target gaps.
 
@@ -27,7 +26,7 @@ Multiple runs against the same repo are additive. Each run explores different co
 | `RECONNAISSANCE.md` | Phase 1 reconnaissance prompts and synthesis instructions |
 | `HUNTING.md` | Phase 2 orchestration, hunting methodology, and validation rules |
 | `ATTACK-CLASSES.md` | Core, wildcard, and obvious-things attack prompts |
-| `VALIDATION-AND-REPORTING.md` | Phases 3–6 validation, reporting, and verification |
+| `VALIDATION-AND-REPORTING.md` | Phases 3–5 validation, reporting, and reconciliation |
 | `report-schema.json` | JSON schema for `findings.json` (confirmed and rejected finding structures) |
 | `validate-findings.cjs` | Zero-dependency Node.js validator that checks `findings.json` against the schema |
 
@@ -70,7 +69,7 @@ The skill activates automatically when the request matches its trigger (security
 
 ## Requirements
 
-- A coding agent with a model that supports tool use and parallel sub-agents
+- A coding agent with tool use and an independent validation path; delegation support can parallelize substantial independent tracks
 - Node.js (for `validate-findings.cjs` schema validation in Phase 5)
 
 ## Design principles

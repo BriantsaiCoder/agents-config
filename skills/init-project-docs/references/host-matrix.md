@@ -26,6 +26,7 @@
 | hooks 註冊位置 | `.claude/settings.json` 的 `hooks` 物件（JSON） | `.codex/config.toml` 的 `[[hooks.<Event>]]` inline TOML；也可由 Codex hooks JSON 載入 | `.github/hooks/*.json`（JSON，`version: 1` + `hooks` 物件） |
 | hook 事件名 | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`Notification`、`Stop` | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`UserPromptSubmit`、`Stop`、`PermissionRequest` | camelCase：`preToolUse`、`postToolUse`、`sessionStart`、`preCompact`、`notification`、`agentStop` 等（payload 內 `hook_event_name` 仍 PascalCase） |
 | hook matcher | `matcher` 欄位，正則比對工具名（如 `Edit\|Write`） | `matcher` 欄位，regex；`PreToolUse` / `PostToolUse` / `PermissionRequest` 比對工具名（`Bash`、`apply_patch`、MCP tool 等），`SessionStart` 比對 `startup\|resume\|clear\|compact`；省略則全事件觸發 | `matcher` 欄位，正則比對工具名；Copilot tool id 版本敏感，未實測時優先省略 matcher，讓腳本由 payload 判斷 |
+| hooks merge identity | wrapper metadata（matcher 與其他 wrapper 欄位）全相同才聯集內層 `hooks`；metadata 不同則保留獨立 wrapper | 同 Claude wrapper 規則；TOML 由 agent 增量合併 | flat entry 以完整 object 聯集去重；不以缺省 matcher 當成同一 entry |
 | agents | `.claude/agents/*.md`（MD + YAML frontmatter） | `.codex/agents/*.toml`（project）或 `~/.codex/agents/*.toml`（personal/global） | `.github/agents/*.agent.md`（MD + YAML frontmatter；tools 需轉為 Copilot tool ids） |
 | rules（path-scoped） | `.claude/rules/*.md` + frontmatter `paths:` glob | 無 path-scoping → 併入 `AGENTS.md` 分節 | `.github/instructions/**/*.instructions.md`（`applyTo:` glob）或併入 `copilot-instructions.md` |
 | skill 目錄 | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） |

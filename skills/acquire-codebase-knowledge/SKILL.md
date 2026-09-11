@@ -7,37 +7,43 @@ metadata:
 
 # Acquire Codebase Knowledge
 
-Produces seven docs in `docs/codebase/`. Only document what is verifiable from files or terminal output — never infer.
+Maps the requested codebase scope from verifiable files or terminal output — never infer.
 
 ## Output Contract
 
-1. These files exist in `docs/codebase/`: `STACK.md`, `STRUCTURE.md`, `ARCHITECTURE.md`, `CONVENTIONS.md`, `INTEGRATIONS.md`, `TESTING.md`, `CONCERNS.md`.
-2. Every claim traceable to source / config / terminal output.
-3. Unknowns marked `[TODO]`; intent-dependent marked `[ASK USER]`.
-4. Each doc has an "evidence" list with file paths.
-5. Final response includes numbered `[ASK USER]` questions + intent-vs-reality divergences.
+1. Full map mode 建立並驗證完整七份文件：`docs/codebase/STACK.md`, `STRUCTURE.md`, `ARCHITECTURE.md`, `CONVENTIONS.md`, `INTEGRATIONS.md`, `TESTING.md`, `CONCERNS.md`.
+2. Focus Area Mode 只更新授權的 focus 文件。
+3. Every claim is traceable to source / config / terminal output.
+4. Unknowns are marked `[TODO]`; intent-dependent gaps are marked `[ASK USER]`.
+5. Each changed doc has an "evidence" list with file paths.
+6. Final response includes numbered `[ASK USER]` questions + intent-vs-reality divergences.
 
 ## Workflow
 
 ```
 - [ ] Phase 1: Scan + read intent
 - [ ] Phase 2: Investigate per template
-- [ ] Phase 3: Populate seven docs
+- [ ] Phase 3 (Full map only): Populate seven docs
 - [ ] Phase 4: Validate + present + resolve [ASK USER]
 ```
 
 ## Focus Area Mode
 
-User supplies focus ("architecture only" / "testing and concerns"):
+Determine the focus from the request and existing docs (for example, "architecture only" or "testing and concerns"):
 
-1. Run Phase 1 in full.
-2. Complete focus-area docs first.
-3. Non-focus docs: keep required sections, `[TODO]` unknowns.
-4. Phase 4 validation on all seven.
+1. Run the Phase 1 scan for the requested focus and keep its output in the session. Focus and read-only scans use stdout; pass `--output` only when persistence of that scan artifact is authorized.
+2. 只更新授權的 focus 文件；非 focus 文件保持既有狀態，不補 `[TODO]` stub。
+3. Validate only the changed focus documents in Phase 4.
+
+Read-only mode 只在 session 回傳分析，不建立文件。Full map mode 才擁有完整七份文件的建立與驗證責任。
 
 ### Phase 1: Scan + Intent
 
-1. From project root:
+1. From project root, use stdout for Focus Area and read-only work so the scan creates no documentation artifact:
+   ```bash
+   python3 "$SKILL_ROOT/scripts/scan.py"
+   ```
+   For Full map mode, or when the request explicitly authorizes a persistent scan artifact, write it under the authorized output path:
    ```bash
    python3 "$SKILL_ROOT/scripts/scan.py" --output docs/codebase/.codebase-scan.txt
    ```
@@ -52,7 +58,7 @@ Stack ambiguous (multi-manifest / unfamiliar files / no `package.json`) → [`re
 
 Monorepo / TS aliases / generated output / churn-fragile traps → [`references/discovery-pitfalls.md`](references/discovery-pitfalls.md).
 
-### Phase 3: Populate
+### Phase 3: Populate (Full map only)
 
 Copy `assets/templates/` into `docs/codebase/`. Fill order:
 
@@ -65,6 +71,8 @@ Copy `assets/templates/` into `docs/codebase/`. Fill order:
 7. `CONCERNS.md` — debt, bugs, security, perf
 
 `[TODO]` for code-undeterminable; `[ASK USER]` for team intent.
+
+Focus Area Mode skips this seven-document generation step and updates only the already authorized focus documents from the Phase 2 evidence.
 
 ### Phase 4: Validate
 

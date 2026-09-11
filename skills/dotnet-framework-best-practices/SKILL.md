@@ -24,17 +24,19 @@ No built-in DI, `System.Web` pipeline, `Global.asax`, XML transforms. Not for `M
 
 ## Review Severity Checklist
 
-| Severity | Check | Rule |
+以下是檢查訊號；severity 依實際 caller、可達性、資料、安全與可用性影響決定。樣式選擇本身不構成 High；secret 暴露須說明來源、傳播與攻擊條件，敏感值不回顯。
+
+| Inspect | Check | Rule |
 |---|---|---|
-| Critical | Secrets in plain Web.config? | R8 |
-| Critical | User input concatenated into SQL / commands / paths? | — |
-| Critical | State-changing MVC missing `[ValidateAntiForgeryToken]`? | R9 |
-| High | `.Result` / `.Wait()` in controller/request context? | R3 |
-| High | `HttpClient` per-request `using`? | R10 |
-| High | Deps `new`-ed inside controllers/services? | R1 |
-| Medium | `ModelState.IsValid` unchecked? | R5 |
-| Medium | Cross-cutting duplicated instead of filters? | R7 |
-| Medium | `ConfigureAwait(false)` missing in library async? | R4 |
+| Impact-based | Secrets in plain Web.config? | R8 |
+| Impact-based | User input concatenated into SQL / commands / paths? | — |
+| Impact-based | State-changing MVC missing `[ValidateAntiForgeryToken]`? | R9 |
+| Impact-based | `.Result` / `.Wait()` in controller/request context? | R3 |
+| Impact-based | `HttpClient` per-request `using`? | R10 |
+| Impact-based | Deps `new`-ed inside controllers/services? | R1 |
+| Impact-based | `ModelState.IsValid` unchecked? | R5 |
+| Impact-based | Cross-cutting duplicated instead of filters? | R7 |
+| Impact-based | `ConfigureAwait(false)` missing in library async? | R4 |
 | Impact-based | Duplicate initialization or unclear startup ownership? Preserve Global.asax/OWIN; migration requires separate scope. | R12 |
 
 ## Reference Navigation

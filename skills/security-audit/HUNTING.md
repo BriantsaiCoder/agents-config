@@ -2,13 +2,13 @@
 
 ### Phase 2: Hunt for vulnerabilities
 
-Launch **multiple `general` agents in parallel** via the Task tool. Use `general`, not `research` — general agents can spawn their own sub-agents via the Task tool, so when a hunter finds a rabbit hole that needs deeper investigation (e.g., tracing injection into an auth subsystem it doesn't fully understand), it can spin up a focused `research` sub-agent rather than trying to do everything in one context window.
+Select attack-class and subsystem tracks from Phase 1, then apply shared `dev-workflow` INT-4. Keep small or tightly coupled hunts in the main context. Delegate only substantial independent tracks, use one `general` agent when it can cover the scope, and add another only when a distinct track materially improves coverage or wall-clock time. Hunters return deeper follow-up needs to the coordinator instead of spawning nested agents for context offload.
 
-Each agent gets the architecture summary from Phase 1 injected into its prompt plus the hunting methodology and validation rules. Launch them in a single message so they run concurrently.
+Each delegated track gets the relevant architecture excerpt from Phase 1 plus the hunting methodology and validation rules. Run independent tracks concurrently when INT-4 selects delegation; sequence overlapping tracks.
 
-**How many agents?** Use Phase 1 to decide. More focused agents produce better results than broad ones that run out of context. For a small library, 3-4 agents may suffice. For a large application with distinct subsystems, launch 8-12+ — split by attack class AND by subsystem. If Phase 1 revealed an auth system, a plugin system, a media pipeline, and a comment engine, each of those could warrant its own injection agent, its own logic agent, etc.
+**How many agents?** Use the smallest useful count allowed by the runtime and any user-authored limit. Distinct attack classes do not by themselves require distinct agents; split only when the work is independently substantial.
 
-Every agent prompt MUST include:
+Every delegated track prompt MUST include:
 1. The architecture summary from Phase 1 (copy it in verbatim)
 2. The specific attack class and scope to investigate
 3. Relevant file paths from Phase 1 as starting points
@@ -79,9 +79,9 @@ Think about these angles:
     that reveal whether a record exists. Response size differences. HTTP headers that
     disclose versions. Debug endpoints that survived into production.
 
-YOU CAN SPAWN SUB-AGENTS. If you need to understand a subsystem in depth to evaluate
-a potential finding — use the Task tool to launch a research agent. Don't try to hold
-everything in your own context. Go deep where it matters.
+If a subsystem needs deeper investigation, return the exact gap and relevant paths to the
+coordinator. The coordinator decides whether to investigate directly or delegate a new,
+independent track under shared INT-4.
 
 11. WHAT PARAMETERS OVERRIDE SECURITY-RELEVANT DEFAULTS?
     Where a default is safe but a user-supplied parameter can change it. Look for
@@ -104,5 +104,5 @@ respect category boundaries.
 3. Check if another layer already prevents exploitation — if so, it's a hardening note, not a finding
 4. If the baseline comparable has the same pattern, note whether it's been exploited there
 5. If your exploit depends on parser/runtime behavior, verify against the relevant spec or implementation — do not reason from intuition.
-6. Return ONLY confirmed findings with concrete attacks, or "No exploitable vulnerabilities found" if that's honest.
+6. For every surviving finding, return candidate packet inputs covering its exact trace, conditions, execution and payloads, proposed remediation and code changes, severity, and confidence; otherwise return "No exploitable vulnerabilities found" if that's honest. Phase 3 owns independent confirmation of the complete record.
 ```

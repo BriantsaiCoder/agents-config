@@ -31,18 +31,20 @@ Detail: `references/code-patterns.md` (R8 → `serilog-deep-dive.md`; R9 → `nl
 
 ## Review Severity Checklist
 
-| Severity | Check | Rule |
+以下是檢查訊號；severity 依實際 caller、可達性、資料、安全與可用性影響決定。樣式選擇本身不構成 High；secret 暴露須說明來源、傳播與攻擊條件，敏感值不回顯。
+
+| Inspect | Check | Rule |
 |---|---|---|
-| Critical | Secrets / PII logged? | R5 |
-| Critical | Exceptions swallowed (`catch { }`)? | — |
-| High | Interpolation vs message templates? | R1 |
-| High | Error log missing exception or IDs? | R11 |
-| High | Everything as Information? | R2 |
-| Medium | Noisy framework namespaces unfiltered? | R6 |
-| Medium | Expensive params without `IsEnabled`? | R4 |
-| Medium | Correlation IDs missing? | R7 |
-| Low | Hot paths using `Log*` not `LoggerMessage`? | R3 |
-| Low | Logs only to local files in prod? | R12 |
+| Impact-based | Secrets / PII logged? | R5 |
+| Impact-based | Exceptions swallowed (`catch { }`)? | — |
+| Impact-based | Interpolation vs message templates? | R1 |
+| Impact-based | Error log missing exception or IDs? | R11 |
+| Impact-based | Everything as Information? | R2 |
+| Impact-based | Noisy framework namespaces unfiltered? | R6 |
+| Impact-based | Expensive params without `IsEnabled`? | R4 |
+| Impact-based | Correlation IDs missing? | R7 |
+| Impact-based | Hot paths using `Log*` not `LoggerMessage`? | R3 |
+| Impact-based | Logs only to local files in prod? | R12 |
 
 ## Reference Navigation
 

@@ -14,10 +14,6 @@
       },
       {
         "type": "command",
-        "command": ".github/hooks/scripts/run-tests.sh"
-      },
-      {
-        "type": "command",
         "command": ".github/hooks/scripts/auto-api-docs.sh"
       }
     ],

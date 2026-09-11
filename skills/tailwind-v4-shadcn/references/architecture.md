@@ -22,7 +22,7 @@ Tailwind v4 requires a specific architecture for CSS variable-based theming. Thi
 
 **Critical Rules:**
 - ✅ Define at root level (NOT inside `@layer base`)
-- ✅ Use `hsl()` wrapper on all color values
+- ✅ Preserve complete valid project values such as `oklch(...)` or `hsl(...)`; map them through `var(...)` without wrapping again
 - ✅ Use `.dark` for dark mode overrides (NOT `.dark { @theme { } }`)
 - ❌ Never put `:root` or `.dark` inside `@layer base`
 
@@ -73,7 +73,7 @@ With this architecture:
 ```
 CSS Variable Definition → @theme inline Mapping → Tailwind Utility Class
 --background           → --color-background     → bg-background
-(with hsl() wrapper)     (references variable)    (generated class)
+(complete color value)   (references with var())  (generated class)
 ```
 
 ### Dark Mode Switching

@@ -225,6 +225,8 @@ import { Button } from '@/components/ui/button'
 
 ## Color System Gotchas
 
+Preserve complete valid project colors such as `oklch(...)` or `hsl(...)`; semantic tokens map them through `var(...)` without changing formats.
+
 ### 9. Using `dark:` Variants for Semantic Colors
 
 ❌ **WRONG:**
@@ -460,7 +462,7 @@ Colors look good but fail WCAG
 Before deploying:
 - [ ] No `tailwind.config.ts` file (or it's empty)
 - [ ] `components.json` has `"config": ""`
-- [ ] All colors have `hsl()` wrapper in `:root`
+- [ ] Existing valid `oklch(...)` or `hsl(...)` values are preserved and semantic tokens use `var(...)`
 - [ ] `@theme inline` maps all variables
 - [ ] `@layer base` doesn't wrap `:root`
 - [ ] Theme provider wraps app

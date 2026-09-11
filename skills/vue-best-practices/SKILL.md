@@ -22,7 +22,7 @@ Each rule's why, code, and patterns → `references/rules-expanded.md` §1–14.
 1. **Preserve repo component style.** Prefer `<script setup>` + Composition API when consistent with new-component conventions; do not migrate existing components for a local patch.
 2. **`ref` default; `reactive` only for complex nested.**
 3. **`defineProps<T>()`** — 3.5+ destructures with native defaults; pre-3.5 destructure silently freezes the value.
-4. **`defineEmits<T>()`** — an undeclared emit is a silent no-op.
+4. **`defineEmits<T>()`** — declarations provide type checking and control listener fallthrough; an undeclared event is not a runtime no-op. Trace the typed/runtime declaration and listener registration when warnings or duplicate delivery appear.
 5. **`computed` over complex template expressions.**
 6. **Cleanup `watch` / `watchEffect`** — `onWatcherCleanup()` on 3.5+, `onCleanup` parameter before that.
 7. **Pinia setup stores, single responsibility.**

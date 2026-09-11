@@ -461,7 +461,7 @@ has "delegation forbids same-work recursion" "$same_work_recursion_forbidden" "$
 has "delegation keeps its unconditional constraints" '無條件約束（不因任何授權而放寬）.*序列相依.*寫入 ownership MUST 不重疊.*MUST 重驗其回報' "$delegation_ref"
 has "unconditional constraints are not purchasable with authorization" '無條件約束不在可授權範圍內.*即使取得授權也 MUST NOT 執行' "$delegation_ref"
 has "AI decides delegation timing and count" '是否委派、何時委派、subagent 數量與是否平行 MUST 由 AI 自主判定' "$delegation_ref"
-has "delegation has no user-authored fixed limits" '不得設定 user-authored 的固定數量、併發、累計或 S 階段限制' "$delegation_ref"
+has "delegation has no default fixed limits beyond explicit user limits" '除使用者明示的本次 scope、數量或成本限制外，不預設固定數量、併發、累計或 S 階段 quota' "$delegation_ref"
 has "runtime capacity remains a technical bound" 'host/runtime 可用容量仍是技術上限' "$delegation_ref"
 has "S5 review agents stay read-only while AI chooses usage" 'S5 Standards／Spec outcomes.*如使用 review agents，MUST 為 read-only，數量與批次由 AI 決定' "$delegation_ref"
 has "downstream fixed choreography is advisory" '下游 skill 的固定 spawn 時機／數量一律由本條覆寫為 advisory choreography.*coverage、outcome 與 independence requirements 保留' "$delegation_ref"
@@ -829,6 +829,419 @@ has "preflight compression yields to any row with real content" '任一列非 PA
 has "security review Step 6 records instead of discarding" 'record, do not delete' skills/shared-security-review/references/workflow.md
 has "security review keeps a false-positive disposition" 'not-exploitable' skills/shared-security-review/references/workflow.md
 has "security report card carries a Verdict slot" 'Verdict: exploitable / mitigated-upstream / not-exploitable' skills/shared-security-review/references/report-format.md
+
+# 2026-09-11 approved shared audit remediation. These assertions are intentionally kept in the
+# existing cross-skill contract gate: each one failed against the accepted baseline before its
+# owner document/script was changed, so the dangerous direction is false-green regression.
+has "delegation preserves user-authored run limits" \
+  '除使用者明示的本次 scope、數量或成本限制外' \
+  skills/dev-workflow/references/delegation.md
+has "codebase focus mode changes only authorized focus docs" \
+  '只更新授權的 focus 文件.*非 focus 文件保持既有狀態.*不補.*TODO' \
+  skills/acquire-codebase-knowledge/SKILL.md
+has "codebase read-only mode writes no docs" \
+  'Read-only.*session.*不建立文件' \
+  skills/acquire-codebase-knowledge/SKILL.md
+has "codebase full map owns the seven-doc contract" \
+  'Full map.*七份文件' \
+  skills/acquire-codebase-knowledge/SKILL.md
+has "codebase focus and read-only scans stay on stdout unless persistence is authorized" \
+  'Focus.*read-only.*stdout.*--output.*authorized' \
+  skills/acquire-codebase-knowledge/SKILL.md
+has "codebase Phase 3 seven-doc generation is full-map only" \
+  'Phase 3.*Full map only' \
+  skills/acquire-codebase-knowledge/SKILL.md
+focus_scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/codebase-focus-scan.XXXXXX")" ||
+  { ng 'focus scan fixture: 無法建立暫存目錄'; exit 1; }
+printf '%s\n' '{"name":"focus-fixture"}' > "$focus_scan_fixture/package.json"
+if (cd "$focus_scan_fixture" &&
+    PYTHONDONTWRITEBYTECODE=1 python3 "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" > scan.stdout) &&
+   [ -s "$focus_scan_fixture/scan.stdout" ] &&
+   [ ! -e "$focus_scan_fixture/docs" ]; then
+  ok "codebase stdout focus scan creates no docs or scan artifact"
+else
+  ng "codebase stdout focus scan creates no docs or scan artifact"
+fi
+rm -r -- "$focus_scan_fixture"
+for severity_skill in \
+  skills/dotnet-framework-best-practices/SKILL.md \
+  skills/dotnet-logging-best-practices/SKILL.md; do
+  has "impact-based review severity: $severity_skill" \
+    'severity.*caller.*可達性.*資料.*安全.*可用性' "$severity_skill"
+done
+lacks "review signals do not hard-code inflated severity" \
+  '^\| High \| Deps `new`-ed|^\| Critical \| Exceptions swallowed|^\| High \| Interpolation vs message templates' \
+  skills/dotnet-framework-best-practices/SKILL.md \
+  skills/dotnet-logging-best-practices/SKILL.md
+has "ask-matt research defers delegation and output ownership" \
+  'delegation.*INT-4.*輸出位置.*S2' \
+  skills/ask-matt/references/engineering-flows.md
+lacks "ask-matt does not force a background report" \
+  'delegate reading legwork|leaves a cited Markdown file in the repo' \
+  skills/ask-matt/references/engineering-flows.md
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/init-project-docs/scripts/merge-settings.py" <<'PY'
+import copy
+import importlib.util
+import sys
+
+spec = importlib.util.spec_from_file_location("merge_settings", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+a = {"type": "command", "command": "a"}
+b = {"type": "command", "command": "b", "timeout": 20}
+c = {"type": "command", "command": "c"}
+existing = {
+    "PostToolUse": [{"matcher": "Edit|Write", "hooks": [a], "wrapperMeta": {"owner": "user"}}],
+    "UnknownEvent": [{"opaque": [1, 2]}],
+}
+template = {
+    "PostToolUse": [
+        {"matcher": "Edit|Write", "hooks": [a, b], "wrapperMeta": {"owner": "user"}},
+        {"matcher": "Edit|Write", "hooks": [c], "wrapperMeta": {"owner": "template"}},
+    ]
+}
+before_existing = copy.deepcopy(existing)
+before_template = copy.deepcopy(template)
+merged = module.merge_hooks(existing, template)
+
+assert merged["PostToolUse"] == [
+    {"matcher": "Edit|Write", "hooks": [a, b], "wrapperMeta": {"owner": "user"}},
+    {"matcher": "Edit|Write", "hooks": [c], "wrapperMeta": {"owner": "template"}},
+]
+assert merged["UnknownEvent"] == [{"opaque": [1, 2]}]
+assert module.merge_hooks(merged, template) == merged
+assert existing == before_existing
+assert template == before_template
+PY
+then
+  ok "merge-settings preserves overlapping hooks, metadata, inputs, and idempotence"
+else
+  ng "merge-settings preserves overlapping hooks, metadata, inputs, and idempotence"
+fi
+
+hook_fixture="$(mktemp -d "${TMPDIR:-/tmp}/run-tests-hook.XXXXXX")" ||
+  { ng 'run-tests hook fixture: 無法建立暫存目錄'; exit 1; }
+mkdir -p "$hook_fixture/tmp"
+printf 'current\n' > "$hook_fixture/current.cs"
+printf 'other\n' > "$hook_fixture/failing.cs"
+printf 'plain\n' > "$hook_fixture/unconfigured.cs"
+printf 'codex\n' > "$hook_fixture/codex.cs"
+printf 'copilot-path\n' > "$hook_fixture/copilot-path.cs"
+printf 'copilot-file-path\n' > "$hook_fixture/copilot-file-path.cs"
+printf 'pipeline\n' > "$hook_fixture/pipeline.cs"
+hook_input() { printf '{"tool_input":{"file_path":"%s"}}\n' "$1"; }
+hook_pass="$(hook_input "$hook_fixture/current.cs" | \
+  TMPDIR="$hook_fixture/tmp" \
+  AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = current' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_pass_rc=$?
+hook_skip="$(hook_input "$hook_fixture/current.cs" | \
+  TMPDIR="$hook_fixture/tmp" \
+  AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = current' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_skip_rc=$?
+hook_fail="$(hook_input "$hook_fixture/failing.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND=false \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_fail_rc=$?
+hook_not_run="$(hook_input "$hook_fixture/unconfigured.cs" | \
+  TMPDIR="$hook_fixture/tmp" \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_not_run_rc=$?
+if [ "$hook_pass_rc" -eq 0 ] && [[ "$hook_pass" == *PASSED* ]] &&
+   [ "$hook_skip_rc" -eq 0 ] && [[ "$hook_skip" == *SKIPPED* ]] &&
+   [ "$hook_fail_rc" -eq 0 ] && [[ "$hook_fail" == *FAILED* ]] &&
+   [ "$hook_not_run_rc" -eq 0 ] && [[ "$hook_not_run" == *NOT_RUN* ]]; then
+  ok "run-tests hook reports current-command pass, debounce skip, failure, and no config"
+else
+  ng "run-tests hook reports current-command pass, debounce skip, failure, and no config"
+fi
+
+hook_codex="$(printf '{"tool_input":{"path":"%s"}}\n' "$hook_fixture/codex.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = codex' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_copilot_path="$(printf '{"toolArgs":{"path":"%s"}}\n' "$hook_fixture/copilot-path.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = copilot-path' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_copilot_file_path="$(printf '{"toolArgs":{"file_path":"%s"}}\n' "$hook_fixture/copilot-file-path.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = copilot-file-path' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$hook_codex" == *PASSED* ]] &&
+   [[ "$hook_copilot_path" == *PASSED* ]] &&
+   [[ "$hook_copilot_file_path" == *PASSED* ]]; then
+  ok "run-tests hook accepts Claude Codex and Copilot target shapes"
+else
+  ng "run-tests hook accepts Claude Codex and Copilot target shapes"
+fi
+
+pipeline_output="$(printf '{"tool_input":{"file_path":"%s"}}\n' "$hook_fixture/pipeline.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='false | cat' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$pipeline_output" == *FAILED* ]] && [[ "$pipeline_output" != *PASSED* ]]; then
+  ok "run-tests hook propagates an earlier pipeline failure"
+else
+  ng "run-tests hook propagates an earlier pipeline failure"
+fi
+
+missing_marker="$hook_fixture/should-not-run"
+missing_target_output="$(printf '{"toolArgs":{"path":"%s"}}\n' "$hook_fixture/missing.cs" | \
+  TMPDIR="$hook_fixture/tmp" TEST_SENTINEL="$missing_marker" \
+  AGENT_TEST_COMMAND='touch "$TEST_SENTINEL"' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+no_target_output="$(printf '%s\n' '{}' | \
+  TMPDIR="$hook_fixture/tmp" TEST_SENTINEL="$missing_marker" \
+  AGENT_TEST_COMMAND='touch "$TEST_SENTINEL"' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+invalid_json_output="$(printf '%s\n' '{' | \
+  TMPDIR="$hook_fixture/tmp" TEST_SENTINEL="$missing_marker" \
+  AGENT_TEST_COMMAND='touch "$TEST_SENTINEL"' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+mkdir -p "$hook_fixture/no-jq-bin"
+ln -s /bin/cat "$hook_fixture/no-jq-bin/cat"
+missing_jq_output="$(printf '{"tool_input":{"file_path":"%s"}}\n' "$hook_fixture/current.cs" | \
+  PATH="$hook_fixture/no-jq-bin" TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND=true \
+  /bin/bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$missing_target_output" == *NOT_RUN* ]] &&
+   [[ "$no_target_output" == *NOT_RUN* ]] &&
+   [[ "$invalid_json_output" == *NOT_RUN* ]] &&
+   [[ "$missing_jq_output" == *NOT_RUN* ]] &&
+   [ ! -e "$missing_marker" ]; then
+  ok "run-tests hook reports unusable missing invalid and unparseable targets"
+else
+  ng "run-tests hook reports unusable missing invalid and unparseable targets"
+fi
+rm -r -- "$hook_fixture"
+lacks "run-tests hook does not guess runner or stale assembly" \
+  'vitest run|dotnet test.*--no-build' \
+  skills/init-project-docs/references/hooks/run-tests.sh
+
+has "Vite documents external outDir warning and ownership gate" \
+  'outDir.*root 外.*預設不清空.*warning.*目錄完全由本次 build 擁有.*授權' \
+  skills/vite/SKILL.md
+has "Vite plugin order distinguishes enforce grouping from hook order" \
+  'enforce.*pre.*post.*hook.*order.*bundler' \
+  skills/vite/SKILL.md
+has "Vitest entrypoint separates cleanup responsibilities" \
+  'call history.*spy.*timer.*env.*references/vitest-deep\.md' \
+  skills/vitest/SKILL.md
+has "Vitest deep reference defines all cleanup APIs" \
+  'clearAllMocks.*clearMocks.*call history.*restoreAllMocks.*restoreMocks.*useRealTimers.*unstubAllEnvs' \
+  skills/vitest/references/vitest-deep.md
+has "Vitest coverage autoUpdate only raises thresholds" \
+  'autoUpdate.*coverage 改善.*提高.*不.*降' \
+  skills/vitest/references/vitest-deep.md
+lacks "Vitest restoreMocks does not claim after-test timing" \
+  'restoreMocks:[^\n]*Restore after each test' \
+  skills/vitest/references/features-mocking.md
+
+for color_doc in \
+  skills/tailwind-v4-shadcn/SKILL.md \
+  skills/tailwind-v4-shadcn/references/architecture.md \
+  skills/tailwind-v4-shadcn/references/common-gotchas.md \
+  skills/tailwind-v4-shadcn/rules/tailwind-v4-shadcn.md \
+  skills/tailwind-v4-shadcn/templates/index.css; do
+  has "Tailwind preserves valid project color formats: $color_doc" \
+    'oklch.*hsl.*var' "$color_doc"
+done
+lacks "Tailwind does not require HSL migration" \
+  'All color values must use hsl|All colors have `hsl\(\)` wrapper|hsl\(\) wrapper required|Use `hsl\(\)` wrapper on all color values|Define color variables with `hsl' \
+  skills/tailwind-v4-shadcn/SKILL.md \
+  skills/tailwind-v4-shadcn/references/architecture.md \
+  skills/tailwind-v4-shadcn/references/common-gotchas.md \
+  skills/tailwind-v4-shadcn/rules/tailwind-v4-shadcn.md \
+  skills/tailwind-v4-shadcn/templates/index.css
+
+has "security ledger defers finding verdicts to workflow Step 6" \
+  'Verdict.*Confidence.*severity.*workflow.*Step 6.*coverage' \
+  skills/shared-security-review/references/changed-file-attack-surface.md
+has "security report supports actual patch states" \
+  'proposed-only.*applied-and-verified.*blocked' \
+  skills/shared-security-review/references/report-format.md
+has "security history scan requires redacted scanner output" \
+  'secret scanner.*commit.*path.*line.*set/unset.*redacted' \
+  skills/shared-security-review/references/report-format.md
+lacks "security report does not hard-code an unapplied state or raw patch history" \
+  'Nothing has been changed yet|Apply this patch\?|git log --all -p' \
+  skills/shared-security-review/references/report-format.md
+
+scan_fixture="$(mktemp -d "${TMPDIR:-/tmp}/codebase-scan.XXXXXX")" ||
+  { ng 'codebase scan fixture: 無法建立暫存目錄'; exit 1; }
+printf '%s\n' \
+  'API_TOKEN=S11_ENV_VALUE_DO_NOT_PRINT' \
+  'EMPTY=' \
+  'export EXPORTED="S11_QUOTED_VALUE_DO_NOT_PRINT"' \
+  'MULTILINE=S11_FIRST_LINE_DO_NOT_PRINT\' \
+  'S11_CONTINUATION_DO_NOT_PRINT' \
+  'BROKEN S11_UNPARSED_DO_NOT_PRINT' \
+  'PRIVATE_KEY="first' \
+  'S11_MULTILINE_ENV_KEY_DO_NOT_PRINT=' \
+  'last"' \
+  "UNCLOSED_SECRET='first" \
+  'S11_UNCLOSED_ENV_KEY_DO_NOT_PRINT=' > "$scan_fixture/.env.defaults"
+printf '%s\n' \
+  '{"name":"fixture","token":"S11_TODO_BYPASS_VALUE_DO_NOT_PRINT","description":"TODO: update documentation",' \
+  '"repository":"https://user:S11_URL_USERINFO_DO_NOT_PRINT@example.invalid/repo"}' \
+  > "$scan_fixture/package.json"
+printf '%s\n' \
+  'signing.password=S11_GRADLE_FIRST_DO_NOT_PRINT S11_GRADLE_SECOND_DO_NOT_PRINT' \
+  > "$scan_fixture/gradle.properties"
+for fixture_line in $(seq 2 79); do
+  printf 'safe.key.%s=value\n' "$fixture_line" >> "$scan_fixture/gradle.properties"
+done
+printf '%s\n' \
+  'publish.password="""S11_BOUNDARY_START_DO_NOT_PRINT' \
+  'S11_BOUNDARY_END_DO_NOT_PRINT"""' >> "$scan_fixture/gradle.properties"
+printf '%s\n' \
+  '[project]' \
+  'name = "fixture"' \
+  'password = """S11_TOML_FIRST_DO_NOT_PRINT' \
+  'S11_TOML_SECOND_DO_NOT_PRINT' \
+  '"""' > "$scan_fixture/pyproject.toml"
+scan_stdout="$(cd "$scan_fixture" &&
+  python3 "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" 2>&1)"
+scan_stdout_rc=$?
+if [ "$scan_stdout_rc" -eq 0 ] &&
+   (cd "$scan_fixture" &&
+    python3 "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" --output scan.txt \
+      >/dev/null 2>&1) &&
+   [[ "$scan_stdout" == *'API_TOKEN: set (line 1)'* ]] &&
+   [[ "$scan_stdout" == *'[REDACTED]'* ]] &&
+   [[ "$scan_stdout" != *S11_ENV* ]] &&
+   [[ "$scan_stdout" != *S11_QUOTED* ]] &&
+   [[ "$scan_stdout" != *S11_FIRST* ]] &&
+   [[ "$scan_stdout" != *S11_CONTINUATION* ]] &&
+   [[ "$scan_stdout" != *S11_UNPARSED* ]] &&
+   [[ "$scan_stdout" != *S11_MANIFEST* ]] &&
+   [[ "$scan_stdout" != *S11_URL* ]] &&
+   [[ "$scan_stdout" != *S11_MULTILINE_ENV* ]] &&
+   [[ "$scan_stdout" != *S11_UNCLOSED_ENV* ]] &&
+   [[ "$scan_stdout" != *S11_TODO_BYPASS* ]] &&
+   [[ "$scan_stdout" != *S11_GRADLE* ]] &&
+   [[ "$scan_stdout" != *S11_BOUNDARY* ]] &&
+   [[ "$scan_stdout" != *S11_TOML* ]] &&
+   [[ "$scan_stdout" == *'PRIVATE_KEY: set (line 7)'* ]] &&
+   [[ "$scan_stdout" == *'UNCLOSED_SECRET: set (line 10)'* ]] &&
+   [[ "$scan_stdout" == *'UNTERMINATED quoted value redacted (line 10)'* ]] &&
+   [[ "$scan_stdout" == *'package.json:1: TODO'* ]] &&
+   rg -q 'API_TOKEN.*set.*line 1' "$scan_fixture/scan.txt" &&
+   rg -q 'EMPTY.*unset.*line 2' "$scan_fixture/scan.txt" &&
+   rg -q 'EXPORTED.*set.*line 3' "$scan_fixture/scan.txt" &&
+   rg -q 'UNPARSED.*redacted' "$scan_fixture/scan.txt" &&
+   rg -q '\[REDACTED\]' "$scan_fixture/scan.txt" &&
+   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML)' "$scan_fixture/scan.txt"; then
+  ok "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
+else
+  ng "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
+fi
+rm -r -- "$scan_fixture"
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="codebase-env-quotes-") as directory:
+    fixture = Path(directory)
+    lines = [
+        "BACKTICK=`first", "S11_BACKTICK_VALUE=", "last`",
+        "EMPTY= # comment", 'EMPTY_DOUBLE="" # comment',
+        "EMPTY_SINGLE='' # comment", "EMPTY_BACKTICK=`` # comment",
+        'HASH_DOUBLE="#" # comment', "HASH_SINGLE='#' # comment",
+        "HASH_BACKTICK=`#` # comment", "SPACE=' ' # comment",
+        "PLAIN=value # comment", "UNCLOSED=`first", "S11_UNCLOSED_BACKTICK_VALUE=",
+    ]
+    (fixture / ".env.defaults").write_text("\n".join(lines) + "\n")
+    # The preview boundary must never restart key parsing inside a logical value.
+    boundary = ["# filler"] * 78 + ["BOUNDARY=`first", "S11_BOUNDARY_BACKTICK_VALUE=", "last`"]
+    (fixture / ".env.sample").write_text("\n".join(boundary) + "\n")
+    report = fixture / "scan.txt"
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run([sys.executable, str(scanner), *options],
+                                cwd=fixture, text=True, capture_output=True)
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        assert "S11_" not in output, "logical value escaped summary"
+        for key, line in (("EMPTY", 4), ("EMPTY_DOUBLE", 5),
+                          ("EMPTY_SINGLE", 6), ("EMPTY_BACKTICK", 7)):
+            assert f"{key}: unset (line {line})" in output, f"wrong empty state: {key}"
+        for key, line in (("BACKTICK", 1), ("HASH_DOUBLE", 8),
+                          ("HASH_SINGLE", 9), ("HASH_BACKTICK", 10),
+                          ("SPACE", 11), ("PLAIN", 12), ("UNCLOSED", 13)):
+            assert f"{key}: set (line {line})" in output, f"wrong nonempty state: {key}"
+        for line in (13, 79):
+            assert f"UNTERMINATED quoted value redacted (line {line})" in output
+PY
+then
+  ok "codebase scanner handles backtick values and comments in both output modes"
+else
+  ng "codebase scanner handles backtick values and comments in both output modes"
+fi
+
+for vue_doc in \
+  skills/vue-best-practices/SKILL.md \
+  skills/vue-best-practices/references/rules-expanded.md; do
+  has "Vue emit guidance covers typing and listener fallthrough: $vue_doc" \
+    '型別|Typed.*listener fallthrough.*runtime no-op|runtime.*no-op.*listener' "$vue_doc"
+  lacks "Vue emit guidance does not claim silent no-op: $vue_doc" \
+    'Undeclared emit = silent no-op|undeclared emit is a silent no-op' "$vue_doc"
+done
+
+# Opus 5 prompt-compatibility audit (official guidance reviewed 2026-09-11): keep
+# task-specific security independence and repository gates, while removing generic fixed fan-out,
+# nested context-offload, and a duplicate final verifier fleet.
+has "security audit routes agent use through shared INT-4" \
+  '[Dd]elegation.*dev-workflow.*INT-4|dev-workflow.*INT-4.*[Dd]elegation' \
+  skills/security-audit/SKILL.md
+has "security audit preserves independent adversarial validation" \
+  'Phase 3.*independent.*validat|independent.*Phase 3.*validat' \
+  skills/security-audit/SKILL.md
+lacks "security audit has no unconditional or numeric agent fleet" \
+  'Launch \*\*multiple|launch \*\*multiple|3-4 agents|8-12\+|one `research` agent per confirmed finding|YOU CAN SPAWN SUB-AGENTS|fresh agents verify every factual claim' \
+  skills/security-audit
+lacks "security audit removes duplicate Phase 6 verifier fleet" \
+  'Phase 6|six-phase|six phases' \
+  skills/security-audit
+has "security audit completes candidate record before independent validation" \
+  'Before independent validation.*complete candidate record.*report-schema\.json' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit validator covers all substantive output fields" \
+  'validator.*trace.*conditions.*execution.*payloads.*remediation.*code_changes.*severity.*confidence' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit sends substantive corrections to the same validator" \
+  'substantive.*same validator.*structural' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit Phase 5 only serializes validated content" \
+  'Phase 5.*serializ.*validated Phase 3 record.*MUST NOT.*new factual.*remediation' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security hunters return complete candidate inputs" \
+  'candidate packet.*trace.*conditions.*execution.*remediation.*severity' \
+  skills/security-audit/HUNTING.md
+lacks "security README no longer names removed phases" \
+  'Phases 3–6' \
+  skills/security-audit/README.md
+has "design-it-twice uses main context plus conditional INT-4 delegation" \
+  'main context.*at least two.*INT-4.*sub-agent|at least two.*main context.*INT-4.*sub-agent' \
+  skills/codebase-design/DESIGN-IT-TWICE.md
+lacks "design-it-twice has no fixed 3-agent floor" \
+  'Spawn 3\+ sub-agents|Agent 3:|Agent 4 \(if applicable\)' \
+  skills/codebase-design/DESIGN-IT-TWICE.md
+lacks "architecture deepening pointer does not force parallel agents" \
+  'parallel sub-agent pattern' \
+  skills/improve-codebase-architecture/SKILL.md
+has "wayfinder research delegation is conditional" \
+  'research tickets.*INT-4.*substantial.*independent|INT-4.*research tickets.*substantial.*independent' \
+  skills/wayfinder/references/chart-map.md
+lacks "wayfinder does not spawn one agent per research ticket" \
+  'For each `research` ticket.*spin up' \
+  skills/wayfinder/references/chart-map.md
+
+lacks "active and archived skill prompts do not suppress thinking" \
+  'do not think|don.t think|without thinking|disable (your )?reasoning' \
+  skills attic
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
 has "skill changes require invocation canaries" 'Skill change.*frontmatter.*relative references.*positive/negative.*trigger canary' skills/dev-workflow/SKILL.md
 has "references declare load conditions" 'Load when' skills/dev-workflow/SKILL.md

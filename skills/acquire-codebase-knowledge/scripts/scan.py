@@ -183,6 +183,21 @@ PERFORMANCE_MARKERS = [
     "k6.js", "locustfile.py", "jmeter.jmx"
 ]
 
+CREDENTIAL_KEY = (
+    r"api[_-]?key|token|secret|password|passwd|pwd|client[_-]?secret|"
+    r"private[_-]?key|access[_-]?key|connection[_-]?string"
+)
+CREDENTIAL_ASSIGNMENT_RE = re.compile(
+    rf"(?i)(?P<prefix>[\"']?(?:{CREDENTIAL_KEY})[\"']?\s*[:=]\s*)"
+    r"(?P<value>\"(?:\\.|[^\"])*\"|'(?:\\.|[^'])*'|[^,\s#}}]+)"
+)
+CREDENTIAL_XML_RE = re.compile(
+    rf"(?is)(?P<open><(?P<key>{CREDENTIAL_KEY})\b[^>]*>).*?(?P<close></(?P=key)\s*>)"
+)
+URL_USERINFO_RE = re.compile(
+    r"(?i)(?P<scheme>[a-z][a-z0-9+.-]*://)(?P<userinfo>[^/@\s]+)@"
+)
+
 
 def parse_args():
     """Parse command-line arguments."""
@@ -242,8 +257,17 @@ def find_manifest_files() -> List[str]:
     return sorted(set(found))
 
 
+def manifest_preview_is_sensitive(text: str) -> bool:
+    """Return true when a bounded manifest preview cannot safely expose values."""
+    return bool(
+        CREDENTIAL_ASSIGNMENT_RE.search(text)
+        or CREDENTIAL_XML_RE.search(text)
+        or URL_USERINFO_RE.search(text)
+    )
+
+
 def read_file_preview(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -> str:
-    """Read file with line limit."""
+    """Read a bounded preview, withholding it when value boundaries may be sensitive."""
     try:
         with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
             lines = f.readlines()
@@ -251,10 +275,99 @@ def read_file_preview(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -
         if not lines:
             return "None found."
 
+        # A regex replacement cannot safely determine the end of every manifest value
+        # (for example Gradle whitespace values or TOML triple-quoted strings). Inspect
+        # the complete input so a value crossing the preview boundary withholds the
+        # preview instead of exposing a suffix. The manifest header remains available
+        # to stack detection without printing any value.
+        if manifest_preview_is_sensitive(''.join(lines)):
+            return (
+                "[Preview withheld: credential-like field or URL userinfo "
+                "detected; values are [REDACTED].]"
+            )
+
         preview = ''.join(lines[:max_lines])
         if len(lines) > max_lines:
             preview += f"\n[TRUNCATED] Showing first {max_lines} of {len(lines)} lines."
         return preview
+    except Exception as e:
+        return f"[Error reading file: {e}]"
+
+
+def quoted_value_is_closed(value: str, quote: str) -> bool:
+    """Check whether a quoted dotenv value contains an unescaped closing quote."""
+    escaped = False
+    for char in value[1:]:
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == quote:
+            return True
+    return False
+
+
+def read_env_summary(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -> str:
+    """List env keys, set/unset state, and source line without returning values."""
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+            lines = f.readlines()
+
+        if not lines:
+            return "None found."
+
+        summary = []
+        line_index = 0
+        limit = min(len(lines), max_lines)
+        while line_index < limit:
+            source_line = line_index + 1
+            line = lines[line_index].rstrip("\r\n")
+            stripped = line.strip()
+            line_index += 1
+
+            if not stripped or stripped.startswith("#"):
+                continue
+
+            match = re.match(
+                r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$",
+                stripped,
+            )
+            if not match:
+                summary.append(f"UNPARSED redacted (line {source_line})")
+                continue
+
+            key, value = match.groups()
+            normalized_value = value.strip()
+            unterminated_quote = False
+            if normalized_value.startswith(("'", '"', "`")):
+                quote = normalized_value[0]
+                logical_value = normalized_value
+                closed = quoted_value_is_closed(logical_value, quote)
+                while not closed and line_index < limit:
+                    logical_value += "\n" + lines[line_index].rstrip("\r\n")
+                    line_index += 1
+                    closed = quoted_value_is_closed(logical_value, quote)
+                unterminated_quote = not closed
+                empty_value = logical_value.startswith(quote * 2)
+            else:
+                # A hash starts a comment only outside a quoted value.
+                empty_value = not normalized_value.split("#", 1)[0].strip()
+                continued = value.rstrip().endswith("\\")
+                while continued and line_index < limit:
+                    continuation = lines[line_index].rstrip("\r\n")
+                    line_index += 1
+                    continued = continuation.rstrip().endswith("\\")
+
+            state = "unset" if empty_value else "set"
+            summary.append(f"{key}: {state} (line {source_line})")
+            if unterminated_quote:
+                summary.append(
+                    f"UNTERMINATED quoted value redacted (line {source_line})"
+                )
+
+        if len(lines) > max_lines:
+            summary.append(f"[TRUNCATED] Inspected first {max_lines} of {len(lines)} lines.")
+        return "\n".join(summary) if summary else "No variable assignments found."
     except Exception as e:
         return f"[Error reading file: {e}]"
 
@@ -291,8 +404,6 @@ def search_todos() -> List[str]:
     """Search for TODO/FIXME/HACK comments."""
     todos = []
     patterns = ["TODO", "FIXME", "HACK"]
-    exclude_dirs_str = "|".join(EXCLUDE_DIRS | {"test", "tests", "__tests__", "spec", "__mocks__", "fixtures"})
-
     try:
         for root, dirs, files in os.walk(Path.cwd()):
             # Remove excluded directories from dirs to prevent os.walk from descending
@@ -311,7 +422,10 @@ def search_todos() -> List[str]:
                             for pattern in patterns:
                                 if pattern in line:
                                     rel_path = filepath.relative_to(Path.cwd())
-                                    todos.append(f"{rel_path}:{line_num}: {line.strip()}")
+                                    # The complete line can also contain credentials or
+                                    # unrelated literals. Location plus marker is sufficient
+                                    # for discovery and cannot replay adjacent values.
+                                    todos.append(f"{rel_path}:{line_num}: {pattern}")
                 except Exception:
                     pass
     except Exception:
@@ -609,7 +723,7 @@ def main():
             env_content = []
             for filename, filepath in envs:
                 env_content.append(f"--- {filename} ---")
-                env_content.append(read_file_preview(filepath))
+                env_content.append(read_env_summary(filepath))
             print_section("ENVIRONMENT VARIABLE TEMPLATES", env_content, output_file)
         else:
             print_section("ENVIRONMENT VARIABLE TEMPLATES", ["No .env.example or .env.template found. Identify required environment variables by searching the code and config for environment variable reads."], output_file)

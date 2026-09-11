@@ -56,7 +56,7 @@ Off the main flow entirely.
 - **`/handoff`** — carry uncaptured context to a new harness, directory, or colleague; phase-boundary details stay in the canonical continuation rules above.
 - **`/grill-me`** — the same relentless interview as `/grill-with-docs`, but for when you have **no codebase**. Stateless: it saves nothing locally, builds no `<workspace>/CONTEXT.md`. Reach for it to sharpen any plan or design that doesn't live in a repo.
 - **`/prototype`** — a small, throwaway program that answers one design question: does this state model feel right, or what should this UI look like. Throwaway from day one — keep the answer, delete the code. It's the detour in step 2 of the main flow, but reach for it any time a design question is hard to settle on paper.
-- **`/research`** — delegate reading legwork to a **background agent**: it investigates a question against **primary sources**, then leaves a cited Markdown file in the repo. Keep working while it reads. The file it produces is something to take *into* the main flow at `/grill-with-docs` — research feeds the thinking, it doesn't replace it.
+- **`/research`** — produce a primary-source-cited report for questions that need substantial investigation; delegation follows shared INT-4, and 輸出位置 follows the request and shared S2. Research results can feed later design work.
 - **`/teach`** — learn a concept over multiple sessions, using the current directory as a stateful workspace.
 - **`/writing-for-agents`** — reference for skills, `<workspace>/AGENTS.md`, `<workspace>/CLAUDE.md`, and pointed-at agent documents.
 

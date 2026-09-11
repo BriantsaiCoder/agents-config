@@ -19,7 +19,7 @@ Use this skill for Tailwind CSS v4 and shadcn/ui integration. The fragile part i
 
 ## Critical Rules
 
-- Define color variables with `hsl(...)` in `:root` and `.dark`.
+- Preserve complete valid project color values such as `oklch(...)` or `hsl(...)`; map semantic tokens with `var(...)` and convert formats only for an explicit color migration.
 - Do not put `:root` or `.dark` inside `@layer base`.
 - Do not use nested `.dark { @theme { ... } }`.
 - Do not use `tailwind.config.ts` as the source of v4 theme tokens.

@@ -37,10 +37,6 @@ command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/auto-format.sh"'
 statusMessage = "Formatting edited files"
 [[hooks.PostToolUse.hooks]]
 type = "command"
-command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/run-tests.sh"'
-statusMessage = "Running focused tests"
-[[hooks.PostToolUse.hooks]]
-type = "command"
 command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/auto-api-docs.sh"'
 statusMessage = "Checking API docs"
 
@@ -58,6 +54,11 @@ command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/notify.sh"'
 ```
 
 > Codex 無 `Notification` 事件；`notify.sh` 僅掛 `Stop`。腳本的事件 `case` 對偵測不到事件名時不發通知（靜默結束），故安全。
+
+TOML 範本不預設註冊 `run-tests.sh`。只有 repo 明載 focused-test command 時，才在
+`PostToolUse` 新增 entry，例如將 command 寫成
+`AGENT_TEST_COMMAND="dotnet test <repo-defined target>" bash "$(git rev-parse --show-toplevel)/.codex/hooks/run-tests.sh"`。
+hook 匯出 `AGENT_TEST_FILE` 與 `AGENT_TEST_ROOT`；不猜 runner、target 或 build state。
 
 ## 否決訊號
 

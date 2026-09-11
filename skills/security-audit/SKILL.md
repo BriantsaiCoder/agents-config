@@ -12,11 +12,11 @@ You are a security auditor. Your job is to find **exploitable vulnerabilities wi
 This skill is agent-neutral. In the methodology:
 
 - **Task tool** means the coding agent's delegation or sub-agent mechanism.
-- **`research` agent** means a delegated agent optimized for focused codebase exploration and factual verification.
-- **`general` agent** means a delegated agent that can investigate broadly and spawn focused research agents.
+- **`research` agent** means a delegated agent optimized for focused codebase exploration and factual validation.
+- **`general` agent** means a delegated agent that can investigate a substantial, independently scoped attack surface.
 - **`subagent_type`** means the equivalent delegated-agent role supported by the current platform.
 
-Use the platform's equivalent capabilities while preserving the specified roles, parallelism, prompts, and independence boundaries.
+Delegation follows shared `dev-workflow` INT-4: use it only for substantial independent work where it materially improves coverage or wall-clock time, keep the spawn count low, and let the main context handle small or tightly coupled work. Preserve the Phase 3 independent security-validation boundary through a separate validator or the host's documented independent-review fallback; if neither exists, keep candidates unconfirmed and report the gate as unavailable.
 
 ## Setup and principles
 
@@ -24,11 +24,10 @@ Use the platform's equivalent capabilities while preserving the specified roles,
 
 ## Workflow overview
 
-Follow all six phases in order:
+Follow all five phases in order:
 
 1. **Recon** — Run Phase 1 from [RECONNAISSANCE.md](RECONNAISSANCE.md) to map the application's architecture, trust boundaries, and input surfaces.
 2. **Hunt** — Use [HUNTING.md](HUNTING.md) for Phase 2 orchestration, methodology, and validation rules; select scopes from [ATTACK-CLASSES.md](ATTACK-CLASSES.md).
-3. **Validate** — Use Phase 3 in [VALIDATION-AND-REPORTING.md](VALIDATION-AND-REPORTING.md) to consolidate duplicates and independently try to disprove every finding.
-4. **Report** — Use Phase 4 in [VALIDATION-AND-REPORTING.md](VALIDATION-AND-REPORTING.md) to write `REPORT.md` and `FINDINGS-DETAIL.md`.
-5. **Structured output** — Use Phase 5 in [VALIDATION-AND-REPORTING.md](VALIDATION-AND-REPORTING.md), `report-schema.json`, and `validate-findings.cjs` to write and validate `findings.json`.
-6. **Independent verification** — Use Phase 6 in [VALIDATION-AND-REPORTING.md](VALIDATION-AND-REPORTING.md) to verify every factual claim and reconcile all outputs.
+3. **Validate** — Use Phase 3 in [VALIDATION-AND-REPORTING.md](VALIDATION-AND-REPORTING.md) to complete every schema-backed factual and remediation field, consolidate duplicates, and independently try to disprove the entire candidate record.
+4. **Report** — Use Phase 4 in [VALIDATION-AND-REPORTING.md](VALIDATION-AND-REPORTING.md) to derive `REPORT.md` and `FINDINGS-DETAIL.md` from validated records.
+5. **Structured output and reconciliation** — Use Phase 5 in [VALIDATION-AND-REPORTING.md](VALIDATION-AND-REPORTING.md), `report-schema.json`, and `validate-findings.cjs` to serialize and structurally validate the Phase 3 records, then reconcile the prose outputs without adding unvalidated content.
