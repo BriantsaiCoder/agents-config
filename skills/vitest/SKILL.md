@@ -41,7 +41,7 @@ Mock tree / coverage / anti-patterns / type-testing / review → `references/vit
 Jest gotchas:
 
 - `vi.mock` hoisted at parse — calls inside `it`/`beforeEach` fail; use `vi.doMock` + dynamic re-import.
-- `clearMocks: true` in config > scattering `vi.restoreAllMocks()`.
+- Clean call history, spy state, timer state, and env state separately as needed; the single API mapping is in `references/vitest-deep.md`.
 - Vite alias / plugins flow through — don't re-declare.
 - Browser mode reshaped in 3.x and again in 4.0 — 4.0 takes `provider: playwright()` from `@vitest/browser-playwright` (string names gone) + `instances: [{ browser: 'chromium' }]`, and context imports moved from `@vitest/browser/context` to `vitest/browser`.
 

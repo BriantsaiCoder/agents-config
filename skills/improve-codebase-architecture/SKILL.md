@@ -59,4 +59,4 @@ Use `/domain-modeling` as decisions crystallize. Update only an already authoriz
 - **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md`. Create the file lazily if it doesn't exist.
 - **Sharpening a fuzzy term during the conversation?** Update `CONTEXT.md` right there.
 - **使用者因關鍵理由否決 candidate？** 提議記錄 ADR：_「要我把這項理由記錄成 ADR，避免未來的架構審查再次提出相同建議嗎？」_。只有未來 explorer 確實需要這項理由才能避免重提時才詢問；略過暫時性理由（「目前不值得做」）與顯而易見的理由。
-- **Want to explore alternative interfaces for the deepened module?** Run the `/codebase-design` skill and use its design-it-twice parallel sub-agent pattern.
+- **Want to explore alternative interfaces for the deepened module?** Run the `/codebase-design` skill and use its design-it-twice alternatives pattern; that workflow decides whether delegation helps.

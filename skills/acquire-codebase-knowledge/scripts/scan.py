@@ -18,7 +18,6 @@ import os
 import sys
 import argparse
 import subprocess
-import json
 from pathlib import Path
 from typing import List, Set
 import re
@@ -26,7 +25,8 @@ import re
 TREE_LIMIT = 200
 TREE_MAX_DEPTH = 3
 TODO_LIMIT = 60
-MANIFEST_PREVIEW_LINES = 80
+ENV_SUMMARY_LINES = 80
+ENV_SUMMARY_SCAN_CHARS = 1_000_000
 RECENT_COMMITS_LIMIT = 20
 CHURN_LIMIT = 20
 
@@ -183,7 +183,6 @@ PERFORMANCE_MARKERS = [
     "k6.js", "locustfile.py", "jmeter.jmx"
 ]
 
-
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
@@ -242,19 +241,93 @@ def find_manifest_files() -> List[str]:
     return sorted(set(found))
 
 
-def read_file_preview(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -> str:
-    """Read file with line limit."""
+def quoted_value_is_closed(value: str, quote: str) -> bool:
+    """Check whether a quoted dotenv value contains an unescaped closing quote."""
+    escaped = False
+    for char in value[1:]:
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == quote:
+            return True
+    return False
+
+
+def read_env_summary(filepath: Path, max_lines: int = ENV_SUMMARY_LINES) -> str:
+    """List env keys, set/unset state, and source line without returning values."""
     try:
         with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-            lines = f.readlines()
+            full_text = f.read(ENV_SUMMARY_SCAN_CHARS + 1)
+
+        if len(full_text) > ENV_SUMMARY_SCAN_CHARS:
+            return (
+                "[Summary withheld: environment template contains more than "
+                "1,000,000 decoded characters.]"
+            )
+
+        if not full_text:
+            return "None found."
+
+        lines = full_text.split('\n')
+        if lines[-1] == "":
+            lines.pop()
 
         if not lines:
             return "None found."
 
-        preview = ''.join(lines[:max_lines])
+        summary = []
+        line_index = 0
+        limit = min(len(lines), max_lines)
+        while line_index < limit:
+            source_line = line_index + 1
+            line = lines[line_index].rstrip("\r\n")
+            stripped = line.strip()
+            line_index += 1
+
+            if not stripped or stripped.startswith("#"):
+                continue
+
+            match = re.match(
+                r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$",
+                stripped,
+            )
+            if not match:
+                summary.append(f"UNPARSED redacted [REDACTED] (line {source_line})")
+                continue
+
+            key, value = match.groups()
+            normalized_value = value.strip()
+            unterminated_quote = False
+            if normalized_value.startswith(("'", '"', "`")):
+                quote = normalized_value[0]
+                logical_value = normalized_value
+                closed = quoted_value_is_closed(logical_value, quote)
+                while not closed and line_index < limit:
+                    logical_value += "\n" + lines[line_index].rstrip("\r\n")
+                    line_index += 1
+                    closed = quoted_value_is_closed(logical_value, quote)
+                unterminated_quote = not closed
+                empty_value = logical_value.startswith(quote * 2)
+            else:
+                # A hash starts a comment only outside a quoted value.
+                empty_value = not normalized_value.split("#", 1)[0].strip()
+                continued = value.rstrip().endswith("\\")
+                while continued and line_index < limit:
+                    continuation = lines[line_index].rstrip("\r\n")
+                    line_index += 1
+                    continued = continuation.rstrip().endswith("\\")
+
+            state = "unset" if empty_value else "set"
+            summary.append(f"{key}: {state} (line {source_line})")
+            if unterminated_quote:
+                summary.append(
+                    f"UNTERMINATED quoted value redacted (line {source_line})"
+                )
+
         if len(lines) > max_lines:
-            preview += f"\n[TRUNCATED] Showing first {max_lines} of {len(lines)} lines."
-        return preview
+            summary.append(f"[TRUNCATED] Inspected first {max_lines} of {len(lines)} lines.")
+        return "\n".join(summary) if summary else "No variable assignments found."
     except Exception as e:
         return f"[Error reading file: {e}]"
 
@@ -291,8 +364,6 @@ def search_todos() -> List[str]:
     """Search for TODO/FIXME/HACK comments."""
     todos = []
     patterns = ["TODO", "FIXME", "HACK"]
-    exclude_dirs_str = "|".join(EXCLUDE_DIRS | {"test", "tests", "__tests__", "spec", "__mocks__", "fixtures"})
-
     try:
         for root, dirs, files in os.walk(Path.cwd()):
             # Remove excluded directories from dirs to prevent os.walk from descending
@@ -311,7 +382,10 @@ def search_todos() -> List[str]:
                             for pattern in patterns:
                                 if pattern in line:
                                     rel_path = filepath.relative_to(Path.cwd())
-                                    todos.append(f"{rel_path}:{line_num}: {line.strip()}")
+                                    # The complete line can also contain credentials or
+                                    # unrelated literals. Location plus marker is sufficient
+                                    # for discovery and cannot replay adjacent values.
+                                    todos.append(f"{rel_path}:{line_num}: {pattern}")
                 except Exception:
                     pass
     except Exception:
@@ -575,14 +649,7 @@ def main():
         # Stack detection
         manifests = find_manifest_files()
         if manifests:
-            manifest_content = [""]
-            for manifest in manifests:
-                manifest_path = Path(manifest)
-                manifest_content.append(f"--- {manifest} ---")
-                if manifest == "bun.lockb":
-                    manifest_content.append("[Binary lockfile — see package.json for dependency details.]")
-                else:
-                    manifest_content.append(read_file_preview(manifest_path))
+            manifest_content = [f"Found: {manifest}" for manifest in manifests]
             print_section("STACK DETECTION (manifest files)", manifest_content, output_file)
         else:
             print_section("STACK DETECTION (manifest files)", ["No recognized manifest files found in project root."], output_file)
@@ -593,7 +660,7 @@ def main():
             entry_content = [f"Found: {e}" for e in entries]
             print_section("ENTRY POINTS", entry_content, output_file)
         else:
-            print_section("ENTRY POINTS", ["No common entry points found. Check 'main' or 'scripts.start' in manifest files above."], output_file)
+            print_section("ENTRY POINTS", ["No common entry points found. Inspect the listed manifest files for project-defined entry points."], output_file)
 
         # Linting config
         lint = find_lint_config()
@@ -609,7 +676,7 @@ def main():
             env_content = []
             for filename, filepath in envs:
                 env_content.append(f"--- {filename} ---")
-                env_content.append(read_file_preview(filepath))
+                env_content.append(read_env_summary(filepath))
             print_section("ENVIRONMENT VARIABLE TEMPLATES", env_content, output_file)
         else:
             print_section("ENVIRONMENT VARIABLE TEMPLATES", ["No .env.example or .env.template found. Identify required environment variables by searching the code and config for environment variable reads."], output_file)

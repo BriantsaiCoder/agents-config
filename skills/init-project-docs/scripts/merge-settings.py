@@ -9,13 +9,16 @@ Copilot `.github/hooks/*.json` 等同形狀的 JSON）。Codex 為 TOML，不適
 語意：
 - `permissions.allow` / `permissions.deny` / `permissions.ask`：list 聯集去重（保序）
 - `sandbox.network.allowedDomains`：list 聯集去重
-- `hooks.<event>`：list 擴充；對同 matcher 的 entry 以 existing 優先保留，template 新增的加到尾端
+- `hooks.<event>`：Claude-style wrapper 在 matcher 與其他 wrapper metadata 相同時聯集
+  內層 `hooks`；metadata 不同時保留為獨立 wrapper。Copilot flat entry 以完整
+  entry 聯集去重。
 - 其他欄位：existing 存在則保留，template 補未設定項
 
 若 existing 不存在，輸出即 template。
 """
 
 import argparse
+import copy
 import json
 import sys
 from pathlib import Path
@@ -29,7 +32,7 @@ def dedupe_preserve_order(items):
         if key in seen:
             continue
         seen.add(key)
-        out.append(item)
+        out.append(copy.deepcopy(item))
     return out
 
 
@@ -39,24 +42,40 @@ def merge_lists(existing, template):
 
 def merge_hooks(existing, template):
     if not existing:
-        return template or {}
+        return copy.deepcopy(template or {})
     if not template:
-        return existing
+        return copy.deepcopy(existing)
 
-    merged = dict(existing)
+    merged = copy.deepcopy(existing)
     for event, entries in template.items():
         if event not in merged:
-            merged[event] = entries
+            merged[event] = copy.deepcopy(entries)
             continue
-        existing_matchers = {
-            json.dumps(e.get("matcher"), sort_keys=True)
-            for e in merged[event]
-            if isinstance(e, dict)
-        }
+
         for entry in entries:
-            key = json.dumps(entry.get("matcher"), sort_keys=True) if isinstance(entry, dict) else None
-            if key is None or key not in existing_matchers:
-                merged[event].append(entry)
+            if isinstance(entry, dict) and isinstance(entry.get("hooks"), list):
+                wrapper_metadata = {k: v for k, v in entry.items() if k != "hooks"}
+                matching_wrapper = next(
+                    (
+                        candidate
+                        for candidate in merged[event]
+                        if isinstance(candidate, dict)
+                        and isinstance(candidate.get("hooks"), list)
+                        and {k: v for k, v in candidate.items() if k != "hooks"}
+                        == wrapper_metadata
+                    ),
+                    None,
+                )
+                if matching_wrapper is not None:
+                    matching_wrapper["hooks"] = dedupe_preserve_order(
+                        matching_wrapper["hooks"] + entry["hooks"]
+                    )
+                else:
+                    merged[event].append(copy.deepcopy(entry))
+            elif entry not in merged[event]:
+                # Copilot hooks are flat entries. Their complete object is the identity;
+                # matcher-only dedupe would discard distinct commands that omit matcher.
+                merged[event].append(copy.deepcopy(entry))
     return merged
 
 

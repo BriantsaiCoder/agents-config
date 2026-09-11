@@ -14,7 +14,7 @@ This file holds the longer-form patterns that the SKILL.md links to. Read when a
 | Network call | MSW (preferred) > `vi.mock('fetch')` — MSW survives integration tests |
 | Module path resolution / static asset | Configure `resolve.alias` in `vitest.config.ts`, not per-test |
 
-Always pair `vi.mock` with `vi.restoreAllMocks()` (or `clearMocks: true` in config) to avoid leaking between tests.
+Choose cleanup by state: `vi.clearAllMocks()` / `clearMocks` clear call history; `vi.restoreAllMocks()` / `restoreMocks` restore manual spies; `vi.useRealTimers()` restores timers; `vi.unstubAllEnvs()` restores stubbed env. Module mocks follow the mock lifecycle; restoring spies does not unmock a module.
 
 ## Anti-Patterns
 
@@ -30,7 +30,7 @@ Always pair `vi.mock` with `vi.restoreAllMocks()` (or `clearMocks: true` in conf
 - Default thresholds (`statements`, `branches`, `functions`, `lines` ≥ 80%) are a starting point, not a goal. Aim for **branch coverage** in critical paths (auth, payment, persistence).
 - Exclude generated code, type-only files (`*.d.ts`), test utilities, and barrel files via `coverage.exclude`.
 - Use `v8` provider (default in Vitest 3 and 4) for speed. Vitest 4's v8 uses AST-aware remapping (`experimentalAstAwareRemapping` removed — now the only mode), so accuracy is close to istanbul and `ignoreClassMethods` is supported; switch to `istanbul` only when an existing toolchain requires its report format.
-- `coverage.thresholds.autoUpdate: true` is dangerous — it silently lowers thresholds when coverage drops. Don't enable.
+- `coverage.thresholds.autoUpdate` 在 coverage 改善時會提高並寫回 thresholds；coverage 下降時仍會失敗，不會降低 thresholds。只在 repo policy 與本次授權允許 config write 時啟用。
 
 ## Type Testing — When To Use
 
@@ -39,7 +39,7 @@ Use `expectTypeOf` / `assertType` only when the contract is a *type* not a runti
 ## Review Checklist
 
 - Tests are deterministic — no real time, no real network, no order dependency, no shared module state.
-- `vi.mock`, `vi.spyOn`, fake timers, env mutations all restored after each test (or `clearMocks: true` in config).
+- Module mocks, spies, fake timers, and env mutations each use their matching lifecycle cleanup; `clearMocks` covers call history only.
 - DOM tests use the right environment for what they're testing.
 - Async tests `await` promises and UI updates (Testing Library's `findBy*` for re-renders).
 - Coverage measures meaningful source — not generated output, not test utilities.

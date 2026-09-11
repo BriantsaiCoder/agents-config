@@ -8,7 +8,9 @@
   1. Define CSS variables at root level (NOT in @layer base)
   2. Use .dark for dark mode overrides (NOT in @theme)
   3. Use @theme inline to map variables to Tailwind utilities
-  4. All color values must use hsl() wrapper
+  4. Preserve complete valid project colors such as oklch(...) or hsl(...); map tokens with var(...)
+
+  The HSL palette below is one valid example, not a required migration target.
 */
 
 /* Light mode colors - Define at root level */

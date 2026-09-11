@@ -18,6 +18,4 @@ follow `report-format.md` and remain grouped by vulnerability category.
 mapped + no-attack-surface + skipped-with-reason == changed-file total
 ```
 
-Use the ledger to prove coverage, not to manufacture findings. Report only
-self-verified, exploitable risks, then append the compact per-file coverage
-ledger required by `report-format.md`.
+Finding retention, Verdict, Confidence, and severity follow `workflow.md` Step 6; this ledger proves changed-file coverage and does not apply a second finding filter. Append the compact per-file coverage ledger required by `report-format.md`.

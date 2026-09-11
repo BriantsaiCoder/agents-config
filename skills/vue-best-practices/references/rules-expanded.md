@@ -41,7 +41,7 @@ const props = defineProps<Props>();
 
 Explicitly declare events with typed payloads.
 
-**Why**: Typed emits = documentation + compile-time typo catch. Undeclared emit = silent no-op.
+**Why**: Typed emits document payloads and catch typos; runtime `emits` also controls listener fallthrough. An undeclared event is not a runtime no-op, so trace the declaration and listener registration when warnings or duplicate delivery appear.
 
 ## 5. `computed` over template-side complex expressions
 

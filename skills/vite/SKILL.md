@@ -28,7 +28,7 @@ description: "Configure, review, or debug Vite builds, dev-server behavior, plug
 
 ## Plugin Order
 
-Top-down for transforms, bottom-up for `enforce: 'post'`.
+`enforce` groups plugins into `pre`, normal, and `post`; each hook's order then follows the installed bundler contract, so do not assume `post` hooks run in reverse.
 
 1. `enforce: 'pre'` first (svgr, alias rewriters).
 2. Framework plugin early (`@vitejs/plugin-vue` / `-react`).
@@ -43,7 +43,7 @@ HMR broken after plugin add → suspect order first.
 - Library CSS side-effect imports drop under tree-shake — set `sideEffects: ["**/*.css"]`.
 - `process.env.X` in client — Vite doesn't shim; use `import.meta.env.VITE_X`.
 - `server.proxy` + auth cookies missing `changeOrigin: true` + `cookieDomainRewrite` → cookies silently fail.
-- `build.outDir` outside `root` without `emptyOutDir: true` → Vite refuses (avoids wiping files).
+- `build.outDir` 在 root 外時，Vite 預設不清空並顯示 warning；只在確認該目錄完全由本次 build 擁有，且清空已授權後，才設 `emptyOutDir: true`。
 - CommonJS plugins in ESM config → wrap with `vite-plugin-commonjs` or upgrade.
 
 ## Rolldown (default in Vite 8)

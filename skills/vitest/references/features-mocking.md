@@ -235,7 +235,7 @@ defineConfig({
   test: {
     clearMocks: true,    // Clear before each test
     mockReset: true,     // Reset before each test
-    restoreMocks: true,  // Restore after each test
+    restoreMocks: true,  // Restore before each test
     unstubEnvs: true,    // Restore env vars
     unstubGlobals: true, // Restore globals
   },

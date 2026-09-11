@@ -26,6 +26,7 @@
 | hooks 註冊位置 | `.claude/settings.json` 的 `hooks` 物件（JSON） | `.codex/config.toml` 的 `[[hooks.<Event>]]` inline TOML；也可由 Codex hooks JSON 載入 | `.github/hooks/*.json`（JSON，`version: 1` + `hooks` 物件） |
 | hook 事件名 | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`Notification`、`Stop` | PascalCase：`PreToolUse`、`PostToolUse`、`SessionStart`、`UserPromptSubmit`、`Stop`、`PermissionRequest` | camelCase：`preToolUse`、`postToolUse`、`sessionStart`、`preCompact`、`notification`、`agentStop` 等（payload 內 `hook_event_name` 仍 PascalCase） |
 | hook matcher | `matcher` 欄位，正則比對工具名（如 `Edit\|Write`） | `matcher` 欄位，regex；`PreToolUse` / `PostToolUse` / `PermissionRequest` 比對工具名（`Bash`、`apply_patch`、MCP tool 等），`SessionStart` 比對 `startup\|resume\|clear\|compact`；省略則全事件觸發 | `matcher` 欄位，正則比對工具名；Copilot tool id 版本敏感，未實測時優先省略 matcher，讓腳本由 payload 判斷 |
+| hooks merge identity | wrapper metadata（matcher 與其他 wrapper 欄位）全相同才聯集內層 `hooks`；metadata 不同則保留獨立 wrapper | 同 Claude wrapper 規則；TOML 由 agent 增量合併 | flat entry 以完整 object 聯集去重；不以缺省 matcher 當成同一 entry |
 | agents | `.claude/agents/*.md`（MD + YAML frontmatter） | `.codex/agents/*.toml`（project）或 `~/.codex/agents/*.toml`（personal/global） | `.github/agents/*.agent.md`（MD + YAML frontmatter；tools 需轉為 Copilot tool ids） |
 | rules（path-scoped） | `.claude/rules/*.md` + frontmatter `paths:` glob | 無 path-scoping → 併入 `AGENTS.md` 分節 | `.github/instructions/**/*.instructions.md`（`applyTo:` glob）或併入 `copilot-instructions.md` |
 | skill 目錄 | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） | `~/.agents/skills`（共用） |
@@ -91,7 +92,7 @@ Claude 走 JSON、Codex 走 TOML。Copilot 有限定 supported keys 的 reposito
 
 ## 合併策略（Phase 2）
 
-- **Claude（JSON）**：用 `scripts/merge-settings.py`，對 `allow`/`deny`/`allowedDomains` 聯集去重、`hooks` 以 matcher 為鍵合併，不覆蓋使用者既有鍵。
+- **Claude（JSON）**：用 `scripts/merge-settings.py`，對 `allow`/`deny`/`allowedDomains` 聯集去重；`hooks` 的 wrapper metadata 全相同時才聯集內層 `hooks`，metadata 不同時保留獨立 wrapper，不覆蓋使用者既有鍵。
 - **Codex（TOML）**：不進 Python 腳本（避免引入 `tomlkit` 依賴）。由執行中的 agent 用自身 Edit 工具，依本表指定的 TOML 區塊做增量合併，且**先顯示 diff 再寫入**。
 - **Copilot**：增量更新 `.github/copilot/settings.json` 的 supported keys；個人 override 寫 `.github/copilot/settings.local.json` 並 gitignore。Claude-style deny/sandbox 轉成 `.github/hooks/*.json`，既有 hook 檔以新檔並存、不覆蓋。
 

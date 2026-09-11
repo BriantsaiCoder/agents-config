@@ -2,7 +2,7 @@
 
 #### Attack classes — choose and split based on Phase 1
 
-Select attack classes relevant to the application type. Not every class applies to every codebase. The list below is a starting point — add application-specific ones based on Phase 1. For large codebases, split classes per subsystem.
+Select attack classes relevant to the application type. Not every class applies to every codebase. The list below is a starting point — add application-specific ones based on Phase 1. Apply INT-4: only substantial, independent subsystem tracks may split into delegated work.
 
 **Injection** (subagent_type: `general`)
 Trace untrusted input from entry point to dangerous sink. What counts as a "dangerous sink" depends on the application:
@@ -21,7 +21,7 @@ Can a caller do something they shouldn't? Go beyond checking whether permission 
 - Does the same resource have multiple access paths with inconsistent checks?
 - What about bulk/batch/export/import operations — do they enforce per-item permissions?
 
-For complex access models, split into separate agents for auth bypass vs authorization logic.
+When INT-4 finds auth bypass and authorization logic substantial and independent, split them into separate delegated tracks; otherwise keep them together.
 
 **Resource and file handling** (subagent_type: `general`)
 - Path traversal (reading/writing outside intended directories) — including through symlinks, encoded sequences, and null bytes

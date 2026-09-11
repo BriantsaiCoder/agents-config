@@ -15,12 +15,12 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 
 | Skill | Upstream | Forked from | Local change | Status |
 |---|---|---|---|---|
-| `ask-matt` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — keep the router thin and point phase/context transitions to the canonical shared continuation contract instead of vendoring a second authority; tree SHA-256 `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below) | **Active** |
+| `ask-matt` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — keep the router thin and point phase/context transitions to the canonical shared continuation contract instead of vendoring a second authority; tree SHA-256 `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-11 — research route defers delegation and output ownership to shared INT-4/S2; tree SHA-256 `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` (see Opus 5 record below) | **Active** |
 | `clean-code-dotnet` | github.com/thangchung/clean-code-dotnet | Stage B2 snapshot `7080450`; upstream `a604cf99e618de359cf34c5384a16fe72a5db2f4` | 2026-08-02 — re-adjudicated thin fork: narrow Clean Code triggers, retain a 360-word judgment checklist, keep only self-consistent illustrative SOLID snippets, and remove duplicated async/editorconfig payload; tree SHA-256 `ec219244eb5c194376737b6bae6894c83c13ae3fadcc7182687d138182663153`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `design-doc-mermaid` | github.com/SpillwaveSolutions/design-doc-mermaid (v2.0.0) | `SKILL.md` 21,268B — byte-identical to upstream `main` HEAD, last pushed 2025-12-29 | `6daf12c` — −153 lines, pure de-duplication | **Retired to `attic/` 2026-07-25** |
 | `diagnosing-bugs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-01 — add Agent Skill trigger-failure routing; 2026-09-07 — allow bounded unverified read-only investigation without a repro and evidence-sized hypotheses; tree SHA-256 `291698386c7fec63e5503b449df0fb3dc9579d1c2058804353c0160c1b6ef1bb`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `implement` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-07 — defer test scope and repetition to shared S4/evidence-integrity; tree SHA-256 `031b9b743fcaedc0fa57f446712d5730a2c7d5c0f10f99c2f08c93122a2ab206`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
-| `improve-codebase-architecture` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-19 — report 與 reply prose 預設使用 zh-TW；technical terms、code identifiers、paths 與 domain terms 保持 English 或原文；tree SHA-256 `9c57cc581b532e7dbf752d09f15b06dd61e08199f151684da72accbddb96c8c7`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-09 delta — approved Fable 5.1 audit delta (see "2026-09-09 Fable 5.1 audit delta" record below); tree SHA-256 `9c57cc581b532e7dbf752d09f15b06dd61e08199f151684da72accbddb96c8c7`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
+| `improve-codebase-architecture` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-19 — report 與 reply prose 預設使用 zh-TW；technical terms、code identifiers、paths 與 domain terms 保持 English 或原文；tree SHA-256 `9c57cc581b532e7dbf752d09f15b06dd61e08199f151684da72accbddb96c8c7`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-09 delta — approved Fable 5.1 audit delta (see "2026-09-09 Fable 5.1 audit delta" record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — alternative-interface routing defers delegation to the updated design-it-twice workflow instead of promising parallel subagents; tree SHA-256 `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | **Active** |
 | `dotnet-core-expert` | github.com/Jeffallan/claude-skills | Stage B2 snapshot `7080450`; upstream assessed at `e8be415bc94d8d6ebddc2fb50e5d03c6e27d4319` | 2026-08-02 — extract the unique CQRS/MediatR behavior into `dotnet-core-best-practices`, then archive the fork; archived tree SHA-256 `ec640f9552257d643b91a8abb60f8b0ee4fbe59810a88b4def4a92d6a8a2cddb` | **Retired to `attic/` 2026-08-02** |
 | `dotnet-test` | github.com/GiantCroissant-Lunar/pigeon-pea | Stage B2 variant of `d62332d0efb2b45be1a6f1350a399149f8ce494e` | 2026-08-01 — route duplicated unit/coverage guidance to the canonical house skill, remove PigeonPea-only files, and retain a portable BenchmarkDotNet procedure; tree SHA-256 `d583ef03da7e559d0f63a599cbc9b57ab942ff1bbe6a23c96d808cc65c085697` | **Retired to `attic/` 2026-08-02** |
 | `vueuse-functions` | github.com/serkodev (MIT, Copyright (c) 2026 SerKo) | LICENSE.md only; no upstream revision was ever recorded | 2026-08-02 — **user-authorized override**: the 11-row requirement map and the 6-entry high-frequency index both merged into `vue-best-practices/references/vueuse/INDEX.md`; the use-vs-hand-roll judgment and the SSR/PII guardrails merged into the same file; MIT notice carried with the payload and retained in the archive. Archived tree SHA-256 `95db99f6a5082d25b311154bf6410cf9e7cd3be306417005caf730fc986f8913`（`vendored_tree_sha256 attic/vueuse-functions`，與其他列同公式） | **Retired to `attic/` 2026-08-02** |
@@ -34,13 +34,13 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `triage` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — delegate question cadence to the canonical `grilling` contract instead of copying one-at-a-time or rounds behavior into the caller; tree SHA-256 `a10173ea5cf4563fceb4b23a0749fdba0762449c4a2a9ef3b7dcd124afc8a623`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `writing-for-agents` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-06 — generalize the local authoring contract to Agent Skills, AGENTS.md, CLAUDE.md, and pointed-at docs while preserving RED ownership, host invocation metadata, the glossary, thin-kernel ownership, and pinned provenance precedence; tree SHA-256 `1ba596aee238d4ca655adf6a4c3e66319d2695984e9a4cded21a87fb3f310c6d`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `speak-human-tw` | github.com/Raymondhou0917/speak-human-tw | `ee860be6fb190cbc53dc1d45a2a47c9c9c680243` | 2026-08-29 — add a technical-work communication scene, protect technical tokens and evidence, and add paired SF/SNF plus secret-redaction coverage; 2026-09-05 preserve factual tool use separately from unsupported benefits; tree SHA-256 `5e3e7a4811ff46b811f4b550668564a4cd847abf3df5c5ad4a1fb77753c129d8`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
-| `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
+| `tailwind-v4-shadcn` | github.com/jezweb/claude-skills (v1.0.0, per `.claude-plugin/plugin.json`; author Jeremy Dawes, MIT) | `9fdb7f2` baseline — a snapshot of an upstream layout that no longer exists; upstream renamed and restructured it to `plugins/frontend/skills/tailwind-theme-builder` | 2026-07-25 — two factual corrections in `references/common-gotchas.md` §17 and `rules/tailwind-v4-shadcn.md`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — preserve valid project-native `oklch`, `hsl`, and `var()` color formats instead of forcing HSL conversion; tree SHA-256 `7c8ffe8eb2fb601f9e4dadb18ab0efd2091a1292c874d026a510228a01077b95` | **Active** |
 | `tdd` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-05 — canonical workflow seam/authorization and GREEN refactor; tree SHA-256 `d1dfcd70fe2940d4231d4be2cb2418713fd6776d749941638137b83945029207`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `code-review` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-08-03 — drop the `Under 400 words` cap from both sub-agent briefs, add the within-axis filter and two house over-engineering baseline rules, and accept v1.2.2 spec terminology; 2026-08-08 — widen that baseline to five rules and add the performance and correctness clauses to the Standards brief; 2026-08-25 — pin the review to an immutable SHA snapshot instead of a moving HEAD (issue #90); 2026-09-05 — align both axes with the canonical evidence-first actionable contract while retaining no output cap and axis separation; tree SHA-256 `e404954a8a0123e1933fc02d66ddaed079f425622089afca2d445b99426c6179`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `test-gap-analysis` | github.com/dotnet/skills (MIT, .NET Foundation and Contributors) | `4d25f171766a9b852b229540bf9b8a6874ef16db`, `plugins/dotnet-test/skills/test-gap-analysis` | 2026-08-05 — re-point dead sibling-skill pointers, inline the .NET reference, require authorized isolated full-suite empirical mutation with fingerprinted cleanup, and calibrate runtime-equivalent/xUnit cases; tree SHA-256 `08366541fafcc856569cf5de0946d3e60806741880b070a7e7891343fde58380`; 2026-09-09 — approved description/ownership/branch-routing optimization (see batch record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 
 | `agent-browser` | installed agent-browser CLI bundled core | local wrapper baseline `60c840b`; no CLI revision pinned | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `8916f6658118cd35fb4db907128334782c6a984c809781cadba1555d651e8a32`; tree SHA-256 `85cdaedc49a2bc0604de81017422e744fd01ee1b299c64a6e83b9f1a85920c75`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
-| `codebase-design` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `1a383c195d752de7f28a495f5fb3db54eaad06734c57ccd810390fe31eea9579`; tree SHA-256 `5d83418ecbaa7499a43a017780ff2ab5f61d5b613326fcb660a67d04b5b16b1f`; 2026-09-09 delta — approved Fable 5.1 audit delta (see "2026-09-09 Fable 5.1 audit delta" record below); tree SHA-256 `5d83418ecbaa7499a43a017780ff2ab5f61d5b613326fcb660a67d04b5b16b1f`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
+| `codebase-design` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `1a383c195d752de7f28a495f5fb3db54eaad06734c57ccd810390fe31eea9579`; tree SHA-256 `5d83418ecbaa7499a43a017780ff2ab5f61d5b613326fcb660a67d04b5b16b1f`; 2026-09-09 delta — approved Fable 5.1 audit delta (see "2026-09-09 Fable 5.1 audit delta" record below); 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — Design It Twice keeps at least two alternatives while routing optional agent use through shared INT-4 and removing the fixed three-agent floor; tree SHA-256 `628d0fbe2aeea1996204f657dabaab1e0ff034830d3585de91e067c3206ff128` | **Active** |
 | `microsoft-code-reference` | https://github.com/github/awesome-copilot/tree/1918e6f868fdce88ad5d848406fe472fa3948b7a/skills/microsoft-code-reference | `1918e6f868fdce88ad5d848406fe472fa3948b7a` | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `8ee7c32860e0b751aeedcde1c84b725235ec1d2ac63ab9be5d3799ae26417a1c`; tree SHA-256 `8d7a68b5608140152957931c96d8700b6a9898032a90e9f72c269cb995be2048`; 2026-09-09 delta — approved Fable 5.1 audit delta (see "2026-09-09 Fable 5.1 audit delta" record below); tree SHA-256 `be249a9695b5390872b4a46ec58240b2e433459ffe79e36ba706d1a6bcd330df` | **Active** |
 | `microsoft-docs` | https://github.com/github/awesome-copilot/tree/a3035a6e7cad53ef68ca321d5f5365c0043af519/skills/microsoft-docs | `a3035a6e7cad53ef68ca321d5f5365c0043af519` | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `e656618a3bc63d9d8d5bdc381f3eb1bf4327b9ef4bb22ff399c301551f421acf`; tree SHA-256 `c1cc5bf59d6113fee38facb5bd2fd0cc2cabf28303fa4975220b6f790c9e0d7e`; 2026-09-09 delta — approved Fable 5.1 audit delta (see "2026-09-09 Fable 5.1 audit delta" record below); tree SHA-256 `9becdf0c515f00430ce7027f9224dc0ec114d6ff20923bfa9edc0c4cc5014d77` | **Active** |
 | `resolving-merge-conflicts` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `52162eecbd8366e1d4b145e0964dfab7fe3cd534773d85e79c750f6e04aa65f5`; tree SHA-256 `b442690537b7375f2ea50da67aee174769b27dec9455ea62779f542340d51f60` | **Active** |
@@ -48,7 +48,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `teach` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `10707673896f85135ada4425709be25a349ec85f576b5f9a7926615971db19b1`; tree SHA-256 `2ba4420265e8e9aceeed1776e27235cc551df4fffe529ae74ae3493f8b72860b`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `to-spec` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `7fe9db6b276a87383996b138efa07e7e20fb5fbec8bd6027e084733b48efba60`; tree SHA-256 `f376e4846d39646535e6aa708ce142d8a5c01eaac95cd2fdb519c8e2aff7d08e`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 | `to-tickets` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `030ff9a692ff972061b8fa98caf5fd2cafd5c3b64d1f78480ba8c37bc6d5e454`; tree SHA-256 `3c510a1963e7a711ceb25f3c5747c0c5678f084349e59d319ae396062d05e52a` | **Active** |
-| `wayfinder` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `8c91f90c7129883d2c4cd1f7c255873e215c292801ecf4ed47af995a752b81dd`; tree SHA-256 `e9ee62e139a829fbc9cc3d43f6fb5c3a95e201bc5aea54010afe9fc0e78fb2d4`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
+| `wayfinder` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved description/ownership/branch-routing optimization; baseline tree `8c91f90c7129883d2c4cd1f7c255873e215c292801ecf4ed47af995a752b81dd`; tree SHA-256 `e9ee62e139a829fbc9cc3d43f6fb5c3a95e201bc5aea54010afe9fc0e78fb2d4`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — research tickets use shared INT-4 instead of one automatic subagent and branch per ticket; tree SHA-256 `1602431050363c55074639577eebbf4dbd5ca887aec80e40d000cbc65b581225` | **Active** |
 
 | `domain-modeling` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `1918befd92fd79e48b96698c79bdcea0b925b188d6c70004c077515153750101`; tree SHA-256 `43720a21f56e478a1596f0343a9b74f5ae6eac273811aceab671383ac460e5a2`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 
@@ -57,7 +57,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `grill-with-docs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b`; tree SHA-256 `9e44d8a8d61d7561ed646054743b170792e06ec06491d1836053d46ab971db1a` | **Active** |
 | `ai-level-check` | github.com/Raymondhou0917/ai-level-check (v0.4.6) | `6497ee9e681da0b676322b307f12c4c184b87f42` | 2026-09-09 — vendor the SKILL.md fixpoint closure (14 of 49 upstream files) and drop two sets of pointers rather than content: the four persona-quadrant diagrams under `assets/personas/` become the plain-text type catalogue their own alt text carried, and the fifth file there (`four-axes.png`) is dropped outright because only the un-vendored `README.md` referenced it — `assets/` totals 7.4MB, and the `docs/lv{1,3,4}.html` demo files are unnamed in `SKILL.md` / `references/report-design.md` while the do-not-borrow-a-type prohibition and the public demo URL stay; upstream `.gitignore` is retained because `references/privacy.md` points at it and it carries the `evidence/` and `reports/*` exclusions this public repo needs; the approved estimate was 12 files and the fixpoint closure landed 14 — the extra two are upstream `.gitignore` (load-bearing: `references/privacy.md` points at it) and the zero-byte `reports/.gitkeep`, both required by the same closure rule; tree SHA-256 `13c97ee25cbb49cd382d6240006180c5fce9c7dee8a1c377fa56208a61960c06`; 2026-09-09 — removed at user request (unused); no attic copy, restore from the commit before removal | **Removed 2026-09-09** |
 
-| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | no upstream revision pinned; baseline tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0` (pre-fork live tree) | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; six-phase workflow, platform terminology, and root-level phase attachments unchanged; tree SHA-256 `155518fb25be3a8d88566ea7fc051aef82b57bb2b4a11886f63793c40693a82c`; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
+| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | original pre-fork tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0`; upstream reassessed at `d24bc269171a9171fac58493e0ffba511d571a4a` on 2026-09-11 | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — route recon/hunting fan-out through shared INT-4, remove the duplicate verifier fleet, and retain one Phase 3 validator that sees every factual and remediation field before Phase 4/5 serialize it; PR review follow-ups narrow delegated context and attack-class splitting, require complete Phase 2 candidate packets, require a fresh validator after substantive correction, retain unavailable candidates outside `findings.json`, bound optional hardening notes, align setup/README output and prior-run loading with retained candidates, define the distinct fresh-context fallback, redact sensitive candidate literals before they leave source context, bind both validator paths to the same reviewed source identity, provide exact dirty-diff or non-Git snapshot access, and require each validator to verify the source it reads before confirmation; the latest follow-up applies the same field-preserving redaction at the hunter-to-coordinator handoff, validator return path, and every displayed or persisted report boundary before structural validation; tree SHA-256 `96cc8af8979498933bea5df3e43a5430242b8458bbb3a7fc23f1bb3e29f273a7` | **Active** |
 
 | `research` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2); baseline tree `679ea679b8e4d0381b74dd9dc3fa0d329f8b7134c1151d1c2458824c1c24c016` | 2026-09-10 shared audit — substantial-report trigger, optional delegation, authorized output path; tree SHA-256 `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8`; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 
@@ -1234,7 +1234,8 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 
 | Skill | Candidate tree SHA-256 | Candidate SKILL.md SHA-256 |
 |---|---|---|
-| acquire-codebase-knowledge | `dd54459ac345aec039d264b12d067ac43f45b9eeb72d785598c1b21869bcb3c5` | `b0396c574c3d4601772dca83fd6c5cafcc6e52d5d8752ff9a66c3dbb4bc534b9` |
+| acquire-codebase-knowledge | `e39c0fe4fe566941ce87dce0739afef3452131c585a64cc5a89b5d2283c7a72a` | `e6e86a9b9bdd5ad936dd531e34b547d59f6f464f1c9d0111831a640635e96a37` |
+| ask-matt | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` |
 | agent-browser | `85cdaedc49a2bc0604de81017422e744fd01ee1b299c64a6e83b9f1a85920c75` | `9fb4dfbebbbaab5358a3e9d969cd42db89546d645f2a4d3f4e34e67912af720a` |
 | apple-calendar | `e74cee7fff041c52cb0848b8cfe3eecc52dded7b64d1fcfd133cc215bbb656c0` | `123152bcbce8bcb07189ef738b13d86da66ebbfe6296f17db96ac1007d724b26` |
 | aspnet-api-architect | `27b0057f57f228bcc32735b2b8414882220eefb0333b6a57bb57d728e01a47df` | `c0266ccc0e22c543177b2f4d670ed2cf448257eb39d5751e10cb189ffdde892e` |
@@ -1243,16 +1244,16 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | c-cpp-best-practices | `5852ca3d02b9ce82fb1823399157f85903d275d56a8dc98fbf9ecc5097d22a81` | `8faeff110dcbc43868bfda0d845ccd3e3248233aa421503c12078ebcd147c7ad` |
 | clean-code-dotnet | `ec219244eb5c194376737b6bae6894c83c13ae3fadcc7182687d138182663153` | `3d49eca204a0ad2c8022de16389b6f421af8967b9dd8d4b83626255106c07572` |
 | code-review | `e404954a8a0123e1933fc02d66ddaed079f425622089afca2d445b99426c6179` | `b2102d077035ab62f6c352caf9e1315276c25c1c8851e3fd14f0473aa7b41631` |
-| codebase-design | `5d83418ecbaa7499a43a017780ff2ab5f61d5b613326fcb660a67d04b5b16b1f` | `a7bf1a20f9c3323e69bc7b890bf7a7405b4275103966e50eec642d17856dc6f5` |
+| codebase-design | `628d0fbe2aeea1996204f657dabaab1e0ff034830d3585de91e067c3206ff128` | `1871eff971a67944a7204f5b4f0fa4bc4cdd4934d9924e795bdb85ddba1fba04` |
 | css-ui-best-practices | `b99bfb85e1825bbe8c9a79db2d557ecd6b36647b6a36735c1416be5ef962c39e` | `769da2a89e4908c866dc163d668c9a0adf97450c4930e5a8f10d27689b11863c` |
 | dapper-best-practices | `c97379e2f65e555c3429278acdc50ccf85fcd97f526e5261edcb610183228544` | `33fe67e96cfa1954abc7b855d2b31ada1ffe5e2170b7f0666fe2a70d914177c8` |
 | dependency-security-scan | `8a84b4f24032535b90f420760d545774061b389d83bdd5abbadce01e8bffdf6e` | `d11388da203125648f12dff7ef88a27003f3a70bfd98c325642323b34e0642d9` |
-| dev-workflow | `3560e5af0c1a0075876c10f254dd28700939867ab0b92919911775cfb12d4510` | `cd27c4c36d437d8d0808cc431c6d50109e0fa8993f1e477950dbbed84b7fd6df` |
+| dev-workflow | `b2094de462439f2dbd14924d6a32228ec0a399a18c6e79f2ba8d9b55a4674a38` | `cd27c4c36d437d8d0808cc431c6d50109e0fa8993f1e477950dbbed84b7fd6df` |
 | diagnosing-bugs | `291698386c7fec63e5503b449df0fb3dc9579d1c2058804353c0160c1b6ef1bb` | `201616eedc945503c20a74ce0e8ae4add8dc4afaff8f3c97acec5ef7b47a1ef9` |
 | domain-modeling | `43720a21f56e478a1596f0343a9b74f5ae6eac273811aceab671383ac460e5a2` | `197cf181455dd2b3d7fe3623bf82d199963e175dc5c15403af1d5b115796c5c4` |
 | dotnet-core-best-practices | `4ce349aa2b90e3f29a6a232352510c977365887d972f9f2c11f90b75461b9599` | `91d878b28f34d4abc680fdc73d26fa9452b86f2fa98991c2695dc44194a1954f` |
-| dotnet-framework-best-practices | `3a0218fa3a93f7c04d3c30b6cf9cc8ce59446d61d2ed2ff0961f11a656543bc3` | `a1e62f262997f9b8f7d7a8ac3236c78c571f3ca4e4a8b4ba52674b15065f6ff7` |
-| dotnet-logging-best-practices | `b9eb3a7ded0176b89954e673224aff281cc0aa1bd325941407069b7e5011344b` | `73a08e2379a4780dccb5c427fc42a2c1f073cf4b3c0197217ff714c5544045e5` |
+| dotnet-framework-best-practices | `121a7586574028f930d1dca43aacb293708795404230b2e66b8a11c57bc8f3a7` | `b2cd2d193709307adbbe04c3f666309887e7908fb8d3b6fa18e8e464322ea202` |
+| dotnet-logging-best-practices | `07bb3ad20efc68772177ddc4dd95aebbf6f2c65f281c218f1cb0a7cb17873bef` | `b7183b1b9ca5cf7ce2bc9c1526022e9a1e08fa90310cc0cdf4974087247c50f2` |
 | dotnet-winforms-best-practices | `6a6b091a4db810bcb30f8c17b01c2260867b928e9bf4e5b5eb20be2e7cf06913` | `c25301e3b66eb0b4ba480dfa9597d7a7d5f03217268cdb609c83a7d9ab5173c2` |
 | ef-core-best-practices | `9a5ac078a04fb5cfac4bf32b31c58190c5f0936cd3f8b2017659e1c4a567c4aa` | `2c81591ee1d652cdd69f90284ed836c7e3789eae16037aead9f0d3b3daa24048` |
 | ef6-best-practices | `023c9e45d152649bd158233c814e82d3dfc4645004989e086acf1d2f8ac999b0` | `3744520e3bd0977d765214be595905686a82f66b68e48978a9d61b48e9cc8096` |
@@ -1260,8 +1261,8 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | frontend-release-verification | `d5f21add181c4720d29a4401e90dee07e70e7e298707e1e749f5244a750608ff` | `4173ca9c9bdef47bf312a07c8c2db6e5687084db3d8044c2f1315e74e6ea9a89` |
 | grilling | `f9702850e9fa9a2fb264e877eeb5899deac4c09a05c01df0cde526a1d53160c4` | `d3c4cd7caf20eeae2004190c387f09fe80ff06d4f9cea20e90d6fa0745967ca8` |
 | implement | `031b9b743fcaedc0fa57f446712d5730a2c7d5c0f10f99c2f08c93122a2ab206` | `555457452b1f76a58ab516d5ed39fc65f427aa98a052e8df76216639e86a645e` |
-| improve-codebase-architecture | `9c57cc581b532e7dbf752d09f15b06dd61e08199f151684da72accbddb96c8c7` | `e9ebee6ef7a373b148d884dc46673f49e1f953db33c10ea5dbc68ca7686d8060` |
-| init-project-docs | `975a072bfd28bca1bb20e78e74a4837905defd2d974251f711b593986170a91a` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
+| improve-codebase-architecture | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` |
+| init-project-docs | `adf3ea7c3e016a29b72a7188e32be7d54643bb08436272900e3326981fb6743f` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
 | jest-best-practices | `0e6a053968a416681ebec39b49f3cbb3735201dd68a807f37bdbed9e63431d28` | `3d10acee92e2cdfb8922d546d42da5f6a0ded573b5b9782184ecc02951b8875e` |
 | mysql-best-practices | `c99370462845e06a0b88ecc5b310d623720f5b6c06552b8787547b9fcefe9b94` | `8e660d9eaa6b6461c5e71fc880b73eb475cb551d9cb8b933c6efe9705324f95e` |
 | next-best-practices | `7a96bfb88ddbb38af2830f6df37fc28e0a56075d73af62125701c055683db4ab` | `3d7faa6eacc7266789f72a0ada344e1e014d9378f01981b60601b20c289c1d97` |
@@ -1271,11 +1272,11 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | postgresql-optimization | `45188feacc55240882eb226e9beae48b50f17fbd367628b4297baaef01fe247c` | `f806f37c63c43193d886fc49ffeaad14dd7e31b424cea5e656fdaf8391a6e178` |
 | react-best-practices | `e3931362133299e10b46ce13f0d7b2b1e5a5bc00b91143837a90141cc490ab31` | `bca124ac6a8ecc306461e9a1af18bc1fcf1697a8c19c709fe9d643f419f35eb5` |
 | research | `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8` | `52945b9041a4ffe93bb380db5e77dc46ac3f1edc7c111dbeb96051a1227c1e01` |
-| security-audit | `155518fb25be3a8d88566ea7fc051aef82b57bb2b4a11886f63793c40693a82c` | `daf864cd834c47b09448a976803179933b67df25965ac99b4805798dbe7e30d7` |
+| security-audit | `96cc8af8979498933bea5df3e43a5430242b8458bbb3a7fc23f1bb3e29f273a7` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` |
 | setup-matt-pocock-skills | `8b7884991baff72c74b6773404d13105976c6229d683cafb2a58165370585631` | `f52a7ecb62f61e0b42a75b2937666e80495480b74109802d994fcfb588dffbb5` |
-| shared-security-review | `225a67720037d357bc6ee75c7500301bbb8e1e0571ba9c86e7d52af3cd8b4ae0` | `e7c8f4d4cd61febbfde08b1e44422e1705479fe6860e6bf8f7e0dc1b5f70989a` |
+| shared-security-review | `b035fc8218ad8cea5729f304852482ce2da4b5cf686da00cc619b8c313fe6eb1` | `e7c8f4d4cd61febbfde08b1e44422e1705479fe6860e6bf8f7e0dc1b5f70989a` |
 | speak-human-tw | `5e3e7a4811ff46b811f4b550668564a4cd847abf3df5c5ad4a1fb77753c129d8` | `059d6074a27fcd48684fbbd07270e8a3d9dc4198f69b18baa792cdaf851de1ea` |
-| tailwind-v4-shadcn | `bbd4b1098c7ad46d915a8238ec870c787811328b43d9535cdc8f54ee3d78e493` | `f03a49b10a367a8d25ac9438058de35581ab50bc7871fbedbe24b2e05734b644` |
+| tailwind-v4-shadcn | `7c8ffe8eb2fb601f9e4dadb18ab0efd2091a1292c874d026a510228a01077b95` | `f8513a1704147c9cf3ecf75cc2a991adb4c04864cd3608bcd841ed5efab61c79` |
 | tdd | `d1dfcd70fe2940d4231d4be2cb2418713fd6776d749941638137b83945029207` | `7f674420104ea3db80c8192ca4e5a7b5ebe262d60f1d87e4efb39ccd88a25def` |
 | teach | `2ba4420265e8e9aceeed1776e27235cc551df4fffe529ae74ae3493f8b72860b` | `e8db656c58d3e0d29633acbdd527c6936f1e0befb089d80154fdd5d1ba524ada` |
 | test-gap-analysis | `08366541fafcc856569cf5de0946d3e60806741880b070a7e7891343fde58380` | `9c0ff68f06f857a5cce49270f1b15e945d3aa63db553d73797d501e291e00237` |
@@ -1283,7 +1284,356 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | triage | `a10173ea5cf4563fceb4b23a0749fdba0762449c4a2a9ef3b7dcd124afc8a623` | `a6a8fca8fba61617bcb6e94a405f2f49cd4908a2be9ac956425819d23283f293` |
 | typescript-best-practices | `73c21ca5f90fef502dc639b2f33d5dec22de3e9409229068a47c8fb1d7daf177` | `9beb4454c4193d57b3925fb2ab4e392e391c8192d6e60f5f02d2e3d48545f712` |
 | ui-ux-pro-max | `20a373233625a27d8118204b18686f9c7b7e30f85f12da36e817e81740fb1d36` | `cb1c626913d216962c7d3e61eff3446b37297095439474e268c8318ba771538c` |
-| vue-best-practices | `0b5dbb274bdbff1fbcef90006d98bf66e35557272c6ba2a2ea28279666f7f91c` | `e350926f90b9f402b22b0016c7fe614e8bb7164b5ed629c8cf0b2a40a1cea28c` |
-| wayfinder | `e9ee62e139a829fbc9cc3d43f6fb5c3a95e201bc5aea54010afe9fc0e78fb2d4` | `5789d703dd028d917ffeebe639f4a2526e6468582fbb3f5b595d2530a56e0cec` |
+| vite | `8bdafc20bd8c436bf5eca9f7ed8e654d738f12543556f01d4430e83a74046f7c` | `1292d24e9751916f3dd4d52b7a97333d4f0b52f842095420bdb0eabc2159e7e9` |
+| vitest | `3c51312772f9819717d03ee11b3b048866fd40970a822845c73ae138cf8e3f87` | `688b204c57d48f8775993573fbb76e2bc8e57006ad6de5c2f7dcd83e069ff445` |
+| vue-best-practices | `a17da191a4e8004a7117389f9b6461b9575c859e994c0fcf4aa02142993174ae` | `991356a89fcc53258870a6af9b019e8f957d0405ae331f6d01a91ced87525dd8` |
+| wayfinder | `1602431050363c55074639577eebbf4dbd5ca887aec80e40d000cbc65b581225` | `5789d703dd028d917ffeebe639f4a2526e6468582fbb3f5b595d2530a56e0cec` |
 | web-design-reviewer | `9cb920d7a0ff465228ce4b9ed005ec4b8ea259d2921f49be34ce9454f654c4e4` | `d3b87a8cc6068fa411f93bd2a7f887200145d42daa6b7e744af5467301ed564d` |
 | writing-for-agents | `1ba596aee238d4ca655adf6a4c3e66319d2695984e9a4cded21a87fb3f310c6d` | `ed9c3519a5abeb0b7c03e442b681c12001e97ea2551aa0253185c707f8b5f4e3` |
+
+### 2026-09-11 Opus 5 compatibility and factual-correction override
+
+**Decision:** the user authorized all recommended shared remediations. The active and retired skill
+corpus was audited against Anthropic's official Claude Opus 5 prompting guidance. Generic fixed
+agent fleets, nested context-offload, and a duplicate verifier fleet were removed where found.
+Task-specific repository checks and the independent adversarial validation for whole-codebase
+security audits remain because they establish source-bound completion or exploitability rather than
+asking the same model to recheck itself.
+
+The Matt payloads were compared with locked upstream commit
+`8b36d4fb2635b3c21998dcd8144439c9e5ba7302`. `security-audit` was reassessed against Cloudflare
+upstream `d24bc269171a9171fac58493e0ffba511d571a4a`; the existing local split references and narrowed
+trigger remain part of the recorded fork. `tailwind-v4-shadcn` retains its `9fdb7f2` local upstream
+snapshot because the upstream package was renamed and restructured. Licenses and source attribution
+remain unchanged.
+
+| Skill | Before tree SHA-256 | Current tree SHA-256 | Current SKILL.md SHA-256 | 2026-09-11 delta |
+|---|---|---|---|---|
+| ask-matt | `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5` | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` | Research no longer forces a background agent or repo artifact; shared INT-4/S2 owns those choices. |
+| codebase-design | `5d83418ecbaa7499a43a017780ff2ab5f61d5b613326fcb660a67d04b5b16b1f` | `628d0fbe2aeea1996204f657dabaab1e0ff034830d3585de91e067c3206ff128` | `1871eff971a67944a7204f5b4f0fa4bc4cdd4934d9924e795bdb85ddba1fba04` | Main context owns at least two alternatives; agent use is conditional and has no three-agent floor. |
+| improve-codebase-architecture | `9c57cc581b532e7dbf752d09f15b06dd61e08199f151684da72accbddb96c8c7` | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` | The deepening entrypoint now describes alternatives and leaves delegation to the routed design workflow. |
+| security-audit | `155518fb25be3a8d88566ea7fc051aef82b57bb2b4a11886f63793c40693a82c` | `96cc8af8979498933bea5df3e43a5430242b8458bbb3a7fc23f1bb3e29f273a7` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` | Recon/hunting use conditional delegation and scoped Phase 1 context; hunters return complete schema-backed candidate packets with field-preserving redaction at the coordinator handoff. Phase 3 binds independent validators to exact source while keeping prompts, returned verdicts, corrections, and every displayed or persisted Phase 4/5 output redacted before structural validation. |
+| tailwind-v4-shadcn | `bbd4b1098c7ad46d915a8238ec870c787811328b43d9535cdc8f54ee3d78e493` | `7c8ffe8eb2fb601f9e4dadb18ab0efd2091a1292c874d026a510228a01077b95` | `f8513a1704147c9cf3ecf75cc2a991adb4c04864cd3608bcd841ed5efab61c79` | Color guidance preserves valid project-native oklch, hsl, and var formats. |
+| wayfinder | `e9ee62e139a829fbc9cc3d43f6fb5c3a95e201bc5aea54010afe9fc0e78fb2d4` | `1602431050363c55074639577eebbf4dbd5ca887aec80e40d000cbc65b581225` | `5789d703dd028d917ffeebe639f4a2526e6468582fbb3f5b595d2530a56e0cec` | Research tickets follow INT-4 and their authorized output contract instead of spawning one agent and branch per ticket. |
+
+Re-merge these six skills by applying only the still-needed deltas above to the named upstream
+revision or successor layout, recomputing the tree fingerprints, and rerunning
+`tests/mattpocock-workflow.sh`, `tests/matt-thin-workflow.sh`, and
+`tests/vendored-detection.sh`. Rollback restores each listed Before tree from the reviewed baseline
+and reverts its fork-index annotation, current fingerprint row, and corresponding regression
+assertions as one scoped change; retain earlier fork history, licenses, and unrelated concurrent
+work.
+
+### 2026-09-11 S5 review follow-up
+
+The independent Standards/Spec review found three remaining contract gaps in the approved candidate.
+`acquire-codebase-knowledge` now keeps focus/read-only scan output in the session, withholds an entire
+manifest preview when a credential-shaped value has an uncertain boundary, consumes quoted dotenv
+logical values before looking for the next key, and reports TODOs as path/line/marker only. Its review
+baseline tree was `a6586bf08a5d799309b2b30046b77da64a6f396ab5ee3226b1a1f49f7ec69d6b`;
+the reviewed candidate tree is `b03e1967cb4b00f32b711e88afd081ee9b5dd2af645f776c89fecb0fd78aef6f`.
+
+`init-project-docs` now accepts the shared Claude/Codex/Copilot path shapes, reports malformed or
+missing targets as `NOT_RUN`, and executes the repo command with Bash `pipefail`. Its review baseline
+tree was `b306e6cfd675802df4e5a71b5e0514deef33451c91fa7ddac3de6ab11760bae1`;
+the reviewed candidate tree is `29932a08dadf116630b4decccfd9f3d07bc0a6d4ddaee56dc4693f0f656d93da`.
+
+`security-audit` now constructs all `report-schema.json` factual and remediation fields before its
+single independent Phase 3 validator, derives reports from that record, and sends any substantive
+change back to the same validator before Phase 5 serialization. Its review baseline tree was
+`f7e103352aa9a8b2f45a0937507bb146487eada1b7fac386af88ddda73885ab4`;
+the reviewed candidate tree is `e62ccc330add8d1ecab0f33ab8cef7b36e64ab894253544a8a8852093e198539`.
+
+The retained regression starts at 499 PASS / 12 FAIL on the reviewed source and reaches 511 PASS /
+0 FAIL after these fixes. Re-merge keeps the conservative summary boundaries and complete-record
+validator loop only while upstream lacks them. Rollback restores each named review-baseline tree and
+its matching assertions together; it does not recreate deleted historical evidence or modify a live
+host configuration.
+
+### 2026-09-11 PR review follow-up
+
+The PR review found credential-boundary and orchestration cases that the prior regression did not
+cover. `acquire-codebase-knowledge` now recognizes `auth`, `authorization`, and `credentials` keys
+and withholds malformed XML credential values that lack a closing tag. Its before tree was
+`b03e1967cb4b00f32b711e88afd081ee9b5dd2af645f776c89fecb0fd78aef6f`; the corrected tree is
+`2146852b0527f1748c7cb0524cd0e7f5fddc5cd4115a1860208c1de3cefd2a72`.
+
+`security-audit` now keeps each delegated prompt to the relevant Phase 1 excerpt, applies INT-4 to
+attack-class splits, and has the coordinator make evidence-backed substantive corrections before a
+fresh independent validator checks the complete record. Its before tree was
+`e62ccc330add8d1ecab0f33ab8cef7b36e64ab894253544a8a8852093e198539`; the corrected tree is
+`ff80a49843e5f518e3513121a760b543065cb8902a8503a12da9cb0a3b9a71fb`.
+
+The focused regression starts at 511 PASS / 7 FAIL with the new assertions on the prior source and
+reaches 518 PASS / 0 FAIL after these corrections. Rollback restores both before trees and removes
+their matching assertions together; the earlier reviewed candidate and its historical record stay
+intact.
+
+### 2026-09-11 independent PR review XML follow-up
+
+The independent review of the PR correction found two additional XML credential shapes at the same
+preview boundary: a credential element can use a namespace prefix, and generic XML elements can put
+the bounded credential key in a `name` or `key` attribute. `acquire-codebase-knowledge` now withholds
+complete and malformed previews for both shapes while leaving safe near-matches visible in stdout
+and authorized output mode. Its before tree was
+`2146852b0527f1748c7cb0524cd0e7f5fddc5cd4115a1860208c1de3cefd2a72`; the corrected tree is
+`a5c0078a864671e95b8a772a6343ae387ebbbff90f7231f5db6403ef67d26ca5`.
+
+The added regression starts at 518 PASS / 1 FAIL on the prior source and reaches 519 PASS / 0 FAIL
+after the scanner correction. Rollback restores the before tree and removes the XML-boundary
+assertions together; the earlier review records remain historical snapshots.
+
+### 2026-09-11 second PR review follow-up
+
+The next complete live review exposed seven further contract gaps that were absent from the frozen
+review snapshot. `acquire-codebase-knowledge` now recognizes compound `secret_key_base` / camel-case
+and `signingKey` credential fields; its tree moves from
+`a5c0078a864671e95b8a772a6343ae387ebbbff90f7231f5db6403ef67d26ca5` to
+`2e5d14be9fc227bf4080b10eb0d3b0f4936ab6af4ccdeac95faf8c26682fbffa`.
+
+`init-project-docs` now preserves the environment file target when `jq` cannot parse the payload,
+streams command output through the existing 30-line bound, recognizes C#, Python, and Go test-file
+names, and aligns the Phase 2 merge text with complete wrapper-metadata identity. Its tree moves from
+`29932a08dadf116630b4decccfd9f3d07bc0a6d4ddaee56dc4693f0f656d93da` to
+`7826f2fe1f3fb8972289e3312dbd03e2fb6314b7e8d8b16bed43c34803bf741d`.
+
+`security-audit` now persists an unavailable validator's complete candidate in
+`UNCONFIRMED-CANDIDATES.md` outside `findings.json` and gives optional hardening notes an explicit
+non-finding evidence boundary. Its tree moves from
+`ff80a49843e5f518e3513121a760b543065cb8902a8503a12da9cb0a3b9a71fb` to
+`1f5214a6852eb795dd5b45273ea2478162778157c99735ff764449e4178f834e`.
+
+The combined regression starts at 518 PASS / 7 FAIL on the prior source and reaches 525 PASS / 0
+FAIL. Rollback restores the three before trees and removes their seven matching assertions together;
+the earlier review records remain historical snapshots.
+
+### 2026-09-11 current-head PR review follow-up
+
+The current-head review found five remaining gaps across three existing contracts.
+`acquire-codebase-knowledge` now treats a bounded credential key plus its assignment separator as
+sufficient to withhold a manifest preview, covering empty, comment, and block-style YAML values
+without broadening safe near-matches. Its tree moves from
+`2e5d14be9fc227bf4080b10eb0d3b0f4936ab6af4ccdeac95faf8c26682fbffa` to
+`083efa946154b1657d37e830c234948aec76e98c89c44bf68fd75587ed8619bb`.
+
+`init-project-docs` now includes Python's `*_test.py` convention in the existing test-edit recursion
+guard. Its tree moves from
+`7826f2fe1f3fb8972289e3312dbd03e2fb6314b7e8d8b16bed43c34803bf741d` to
+`2fb78eb6ea24fa14409ec8bdd340c7ccc1db3bb1853fe2f5353979152c219276`.
+
+`security-audit` now states that independent validation is required to promote a finding, lists the
+conditional `UNCONFIRMED-CANDIDATES.md` artifact, and reloads retained records for Phase 3 on later
+runs. Its tree moves from
+`1f5214a6852eb795dd5b45273ea2478162778157c99735ff764449e4178f834e` to
+`4006c5fa0159040b65a491c430db721308e5022db002599fb0845fb6be2ae6ce`.
+
+The combined regression starts at 523 PASS / 6 FAIL on the prior source and reaches 529 PASS / 0
+FAIL. Rollback restores the three before trees and removes their matching assertions together; the
+earlier review records remain historical snapshots.
+
+### 2026-09-11 second current-head PR review follow-up
+
+The next current-head review found six corrections across the existing scanner, audit-validation,
+coverage and provenance contracts. `acquire-codebase-knowledge` now recognizes the compound
+`AWS_ACCESS_KEY_ID` credential key. A separate URL-userinfo-only fixture verifies both output modes;
+that detector already passed on the prior source, so the review's missing-fixture premise is recorded
+as false rather than as a source defect. Its tree moves from
+`083efa946154b1657d37e830c234948aec76e98c89c44bf68fd75587ed8619bb` to
+`9b5e6c39c86d320827708a2e0ba281ca703cbfbf74cc3a481689dff108344dee`.
+
+`security-audit` now defines its independent fallback as a distinct fresh-context, read-only
+reviewer with pinned-source and field-evidence receipts. Candidates are field-complete but redact
+credential values and other sensitive literals before entering a validator prompt or retained
+artifact. Its tree moves from
+`4006c5fa0159040b65a491c430db721308e5022db002599fb0845fb6be2ae6ce` to
+`1f675cc40bc37cb2d043a73bab8600ea9fffb534310b1bf079fdb9656a4fd531`.
+
+`vitest` now labels `coverage.thresholds.autoUpdate: true` as an explicit opt-in that requires repo
+policy and authorization because it writes the config. Its tree moves from
+`078b26acb6760cb38df9084260b51cfa6a8e53d034694548ae7c2dcd1e70d6e0` to
+`3c51312772f9819717d03ee11b3b048866fd40970a822845c73ae138cf8e3f87`.
+
+The combined regression starts at 529 PASS / 6 FAIL on the prior source and reaches 535 PASS / 0
+FAIL. Rollback restores the three before trees, the current provenance fields and the matching
+assertions together; earlier review and tree-transition records remain historical snapshots.
+
+### 2026-09-11 third current-head PR review follow-up
+
+The next current-head review found six valid gaps and repeated one scanner-fixture premise that the
+prior source-bound evidence had already disproved. `acquire-codebase-knowledge` now withholds
+compound XML credential elements and malformed `name` / `key` attributes with an unclosed key
+quote, while preserving the bounded safe near-matches. Its manifest scan keeps one full-text copy for
+the required whole-file credential check, counts total lines without materializing a second full
+line list, and slices only the first 80 lines for output. Its tree moves from
+`9b5e6c39c86d320827708a2e0ba281ca703cbfbf74cc3a481689dff108344dee` to
+`718ec635dd2d5398ec32649d88d6df66d809f0c5f2922c9c50b84f3f779a3e22`.
+
+`init-project-docs` now resolves the repository root and absolute edited-file path before computing
+the debounce marker, so identical relative paths in different repositories do not collide. The hook
+header also states its actual contract: the repository command runs synchronously and the hook
+reports the result with exit zero. Its tree moves from
+`2fb78eb6ea24fa14409ec8bdd340c7ccc1db3bb1853fe2f5353979152c219276` to
+`421dd8346d3d90a1ed9ede3137d3371113266fad543a12d2f0e3fffddb24c0bb`.
+
+`security-audit` now requires each Phase 2 hunter to return the complete schema-backed candidate
+packet that Phase 3 must validate, including the report fields and every execution and remediation
+input. Its tree moves from
+`1f675cc40bc37cb2d043a73bab8600ea9fffb534310b1bf079fdb9656a4fd531` to
+`c74e79ae8f02d2ce533f0f8abbda0f46f9a70588cc9a895b88f68be8e9d645ec`.
+
+Six vertical regression slices each fail once on the immediately preceding source and pass after
+the corresponding correction; the combined carrier reaches 540 PASS / 0 FAIL. The separate
+URL-userinfo-only fixture still contains a literal scheme, userinfo and `@`, and its prior-source
+control plus detector mutation prove that path is exercised, so no duplicate source change is made
+for that repeated premise. Rollback restores the three before trees, the prior current fingerprint
+and the six matching regression changes together; earlier review records remain historical
+snapshots.
+
+### 2026-09-11 fourth current-head PR review follow-up
+
+The current-head review found seven corrections across the existing scanner, hook-input, validation,
+and provenance contracts. `acquire-codebase-knowledge` now recognizes `DB_PASS` and
+`ENCRYPTION_KEY` across assignments, XML elements, and bounded `name` / `key` attributes while
+preserving `compass`, `bypass`, and suffix near-matches. Its XML element detector stops at the
+credential-shaped element name instead of searching for an unbounded closing `>`, and manifest
+preview inspection reads at most 1,000,001 decoded characters before withholding the entire preview.
+Its tree moves from `718ec635dd2d5398ec32649d88d6df66d809f0c5f2922c9c50b84f3f779a3e22`
+to `10e56d1d20e9104e13744d3fa294294704f17cf7644e8acbb9d67c6df3c43522`.
+
+`init-project-docs` now selects the first nonempty string from the supported JSON target fields,
+skips null, boolean, number, and empty-string candidates, and retains the environment target when
+the payload has no usable string. Its tree moves from
+`421dd8346d3d90a1ed9ede3137d3371113266fad543a12d2f0e3fffddb24c0bb` to
+`4479fa1c08178fa1e814c093b869052e0cde7f6094de960ed33d9ad5a2787c59`.
+
+`security-audit` now reuses the `REPORT.md` validation-provenance section for every candidate,
+recording reviewer identity, mechanism, exact reviewed source identity, verdict, and field-specific
+evidence. Retained candidates bind clean Git, dirty Git, and non-Git inputs to the applicable commit,
+diff, or snapshot hashes; source drift requires refreshed evidence and independent revalidation
+before promotion. Its tree moves from
+`c74e79ae8f02d2ce533f0f8abbda0f46f9a70588cc9a895b88f68be8e9d645ec` to
+`0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676`.
+
+The seven regression slices start at 540 PASS / 7 FAIL on the preceding source and reach 547 PASS /
+0 FAIL after these fixes. No new audit artifact, schema field, or framework was introduced. Rollback
+restores the three before trees, their prior current fingerprints, and the seven matching regression
+changes together; earlier review records remain historical snapshots.
+
+### 2026-09-11 independent r8 S5 follow-up
+
+The independent review of the seven-fix candidate found three gaps in its shared input boundaries.
+`acquire-codebase-knowledge` now recognizes the bare `pass` alias without hiding `compass`,
+`bypass`, `passPolicy`, or the bounded suffix controls; XML `name` / `key` values accept the same
+compound prefixes as assignment and element keys. The URL userinfo detector now requires a scheme
+start boundary, avoiding repeated suffix scans across long safe scheme-character runs while retaining
+standard and custom schemes with userinfo. Its tree moves from
+`10e56d1d20e9104e13744d3fa294294704f17cf7644e8acbb9d67c6df3c43522` to
+`ac7885e8bd949532a72b88682fef6b49392718998dabd8291e09478b2e0c1bd0`.
+
+`init-project-docs` now uses optional jq field access before choosing the first nonempty string, so a
+scalar or array in an earlier parent field cannot suppress a later valid path or the existing
+environment fallback. Its tree moves from
+`4479fa1c08178fa1e814c093b869052e0cde7f6094de960ed33d9ad5a2787c59` to
+`a08c0f4d278fb466175eab47f8ebe04f784427df0f70f9d6a92ce549287efb37`.
+
+The three amended controls start at 544 PASS / 3 FAIL on the frozen r8 candidate and return the
+unchanged 547-check carrier to 547 PASS / 0 FAIL after the fixes and current-fingerprint update.
+
+### 2026-09-11 amended-candidate assignment follow-up
+
+The independent review of the amended candidate found two assignment-only regressions: the shared
+compound-prefix expression made long safe hyphenated input quadratic, while its global left boundary
+missed existing camel-case aliases such as `awsAccessKeyId`. Assignment matching now keeps the prior
+suffix behavior for established credential aliases and gives only bare `pass` an alphanumeric left
+boundary. This retains `app_pass` and `app-pass` while leaving `compass` and `bypass` visible. XML
+element and attribute matching retain their bounded compound-prefix handling. The
+`acquire-codebase-knowledge` tree moves from
+`ac7885e8bd949532a72b88682fef6b49392718998dabd8291e09478b2e0c1bd0` to
+`3f85968fcb30997b20649c4af9e633b014f1dbad551331933e62cfa4bedf369d`.
+
+The existing credential-alias carrier now covers both regressions without adding a new carrier case.
+Rollback restores the amended-candidate scanner, its prior current fingerprint, and the matching
+carrier assertions together; earlier review records remain historical snapshots.
+Rollback restores the two prior trees, their prior current fingerprints, and the amended fixture
+inputs together; the frozen r8 package and earlier review records remain immutable evidence.
+
+### 2026-09-11 r9 current-head review follow-up
+
+The current-head review identified five corrections and one source-binding gap across three
+existing contracts. `acquire-codebase-knowledge` reports recognized manifest file names without
+emitting raw manifest values in either stdout or authorized output-file mode. This single boundary
+covers ordinary and credential-shaped content across JSON, XML, Gradle, Ruby, Make, and binary
+manifests instead of maintaining format-specific preview regexes. Dotenv summaries read at most
+1,000,001 decoded characters and withhold oversized input while retaining the existing
+key/state/line and quoted-continuation behavior below the limit. Its tree moves from
+`3f85968fcb30997b20649c4af9e633b014f1dbad551331933e62cfa4bedf369d` to
+`74677240e19e25edfa58f1325b1bae94cbba2c55811d503c2dc8fa1fb1fac9bc`.
+
+`init-project-docs` skips `.test` / `.spec` files with the `mts`, `cts`, `mjs`, and `cjs` suffixes.
+The hook uses portable `cksum` for its debounce identity and reports `NOT_RUN` before executing the
+configured command when a valid checksum is unavailable. Its reference index makes registration
+depend on an explicitly provided `AGENT_TEST_COMMAND`. Its tree moves from
+`a08c0f4d278fb466175eab47f8ebe04f784427df0f70f9d6a92ce549287efb37` to
+`47e7b58e33ba2948ce5a2320d91fc8bca6776823c00696a9ccb228f583ce5807`.
+
+`security-audit` binds both the research validator and the distinct fresh-context fallback to the
+same exact clean-Git, dirty-Git, or non-Git reviewed source identity before validation. The S5
+amendment also provides the exact reviewed dirty diff or non-Git snapshot and requires either
+validator to verify the identity it actually reads before confirming; a mismatch refreshes the
+complete candidate and triggers fresh independent validation. Its tree moves from
+`0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` to
+`674f3f63741ff13b2fd23334f90cb4885dd23a2748d4f2e165d2407e180fd269`.
+The report schema remains unchanged because the reviewed producer and Phase 3 validator already
+require complete execution content; the proposed schema minimum lacked a promotion-bypass
+reproduction.
+
+The new controls start at 546 PASS / 6 FAIL on the frozen r8 source. Ten preview-specific cases are
+replaced by one metadata-only carrier, and the resulting suite reaches 542 PASS / 0 FAIL.
+Rollback restores the three prior trees, their previous current fingerprints, and the matching
+regression changes together; the unchanged schema needs no rollback.
+
+### 2026-09-11 r10 debounce fail-closed follow-up
+
+The latest current-head review exposed a fail-open boundary in the `init-project-docs` test hook:
+failure to prepare the debounce directory or create its marker did not stop the configured repository
+command. The hook now reports `NOT_RUN` and exits before that command when either operation fails. Its
+tree moves from `47e7b58e33ba2948ce5a2320d91fc8bca6776823c00696a9ccb228f583ce5807`
+to `adf3ea7c3e016a29b72a7188e32be7d54643bb08436272900e3326981fb6743f`.
+
+Two focused controls start at 542 PASS / 2 FAIL on the `aeaf141` source and reach 544 PASS / 0 FAIL
+after the guards and current-fingerprint update. The existing successful execution and five-second
+debounce controls remain unchanged. Rollback restores the prior tree and current fingerprint and
+removes the two failure controls together; the earlier review records remain historical snapshots.
+
+### 2026-09-11 r11 default-mode follow-up
+
+The current-head review found that `acquire-codebase-knowledge` documented three modes without
+choosing a default. It now defaults to Full map mode unless the user requests a narrower focus or
+read-only analysis, while retaining the existing authorized-focus and read-only boundaries. Its tree
+moves from `74677240e19e25edfa58f1325b1bae94cbba2c55811d503c2dc8fa1fb1fac9bc` to
+`e39c0fe4fe566941ce87dce0739afef3452131c585a64cc5a89b5d2283c7a72a`.
+
+The targeted control starts at 544 PASS / 1 FAIL on the `b7c2f1e` source and reaches 545 PASS /
+0 FAIL after the selector and current-fingerprint update. Rollback restores the prior tree and
+fingerprint and removes the matching selector assertion together; earlier review records remain
+historical snapshots.
+
+### 2026-09-12 r12 security-output redaction follow-up
+
+The current-head review found that a complete Phase 2 candidate could cross the hunter-to-coordinator
+handoff before redaction and that a validator with exact source access could reintroduce a sensitive
+literal into its return or later report output. `security-audit` now keeps one complete,
+field-preserving redacted record across the hunter handoff, validator prompts and returns,
+`REVISION_REQUIRED` corrections, every displayed or persisted Phase 4 report, and `findings.json`
+before the structural validator reads it. Non-sensitive structure, source locations, relevant
+set/unset evidence, and field-path redaction notes remain in existing evidence or validation
+provenance surfaces. The schema and structural validator remain unchanged. The tree moves from
+`674f3f63741ff13b2fd23334f90cb4885dd23a2748d4f2e165d2407e180fd269` to
+`96cc8af8979498933bea5df3e43a5430242b8458bbb3a7fc23f1bb3e29f273a7`.
+
+The test-only carrier starts at 546 PASS / 2 FAIL while its complete redacted confirmed fixture
+already passes the unchanged structural validator. The two contract controls and current-fingerprint
+update bring the carrier to 548 PASS / 0 FAIL. A schema mutant that requires integer payloads makes
+the redacted fixture fail, confirming that the new fixture exercises the validator path. Rollback
+restores the prior tree and fingerprint and removes the three matching carrier controls together;
+earlier review records remain historical snapshots.

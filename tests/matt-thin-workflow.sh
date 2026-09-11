@@ -807,6 +807,31 @@ done < "$B2_SKILLS_LOCK"
 #   typescript-best-practices/SKILL.md
 while IFS= read -r changed; do
   case "$changed" in
+    # 2026-09-11 approved S01-S12 + Opus 5 compatibility audit. Vendored payloads
+    # continue through fork_recorded below; self-owned files stay exact-path allowlisted.
+    # The current-head Vitest review correction also covers features-coverage.md, the reference
+    # that carries the writable autoUpdate example; keep this exact instead of widening the skill.
+    skills/acquire-codebase-knowledge/SKILL.md | \
+    skills/acquire-codebase-knowledge/scripts/scan.py | \
+    skills/dev-workflow/references/delegation.md | \
+    skills/dotnet-framework-best-practices/SKILL.md | \
+    skills/dotnet-logging-best-practices/SKILL.md | \
+    skills/init-project-docs/references/README.md | \
+    skills/init-project-docs/references/host-matrix.md | \
+    skills/init-project-docs/references/hooks/run-tests.sh | \
+    skills/init-project-docs/references/hooks/claude/README.md | \
+    skills/init-project-docs/references/hooks/claude/settings-hooks.json | \
+    skills/init-project-docs/references/hooks/codex/README.md | \
+    skills/init-project-docs/references/hooks/copilot/README.md | \
+    skills/init-project-docs/references/hooks/copilot/hooks.json | \
+    skills/init-project-docs/scripts/merge-settings.py | \
+    skills/shared-security-review/references/changed-file-attack-surface.md | \
+    skills/shared-security-review/references/report-format.md | \
+    skills/vite/SKILL.md | \
+    skills/vitest/SKILL.md | \
+    skills/vitest/references/features-coverage.md | \
+    skills/vitest/references/features-mocking.md | \
+    skills/vitest/references/vitest-deep.md) ;;
     # 2026-09-10 approved shared audit: references must agree with scoped main rules.
     skills/dotnet-logging-best-practices/references/code-patterns.md | \
     skills/frontend-release-verification/references/deployment-gates.md | \
