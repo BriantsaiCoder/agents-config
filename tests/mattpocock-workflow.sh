@@ -1666,6 +1666,84 @@ has "security audit Phase 5 only serializes validated content" \
 has "security audit redacts retained candidates without dropping fields" \
   'UNCONFIRMED-CANDIDATES\.md.*every field.*\[REDACTED\].*source location.*redaction note.*UNAVAILABLE.*excluded from.*findings\.json' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit redacts the hunter-to-coordinator handoff" \
+  'candidate packet.*hunter-to-coordinator handoff.*leaves its source context.*serialize every field.*credential values.*sensitive literals.*\[REDACTED\].*non-sensitive structure.*source locations.*set/unset evidence.*redaction note.*affected field path' \
+  skills/security-audit/HUNTING.md
+has "security audit keeps validator and output boundaries redacted" \
+  'field-preserving redacted record.*validator prompts.*CONFIRMED.*REJECTED.*REVISION_REQUIRED.*raw source.*reapply and verify.*REPORT\.md.*FINDINGS-DETAIL\.md.*findings\.json.*before.*validate-findings\.cjs' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+if python3 - "$ROOT/skills/security-audit/validate-findings.cjs" <<'PY'
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+validator = Path(sys.argv[1])
+candidate = {
+    "verdict": "confirmed",
+    "title": "Redacted credential exposure",
+    "description": "A credential value is present but retained only as [REDACTED].",
+    "root_cause": "loadSecret in src/config.js does not suppress a credential value, allowing disclosure.",
+    "intended_behavior": "Report the exposure without copying the credential value.",
+    "trace": [
+        {
+            "kind": "entrypoint",
+            "file": "src/config.js",
+            "line": 1,
+            "scope": "loadSecret",
+            "description": "A configured credential enters the application.",
+        },
+        {
+            "kind": "sink",
+            "file": "src/report.js",
+            "line": 2,
+            "scope": "writeReport",
+            "description": "The report records that the credential is set while its value remains [REDACTED].",
+        },
+    ],
+    "conditions": [],
+    "execution": {
+        "attacker_perspective": "An authenticated user can request the diagnostic report.",
+        "payloads": ["TOKEN=[REDACTED]"],
+        "instructions": ["Request the diagnostic report."],
+        "expected_result": "The report records the exposure without the credential value.",
+    },
+    "remediation": {
+        "strategy": "Keep credential values out of report output.",
+        "code_changes": [
+            {
+                "file_name": "src/report.js",
+                "fixed_code": "const tokenState = '[REDACTED]';",
+            }
+        ],
+    },
+    "severity": {
+        "likelihood": {"score": "medium", "reason": "The diagnostic path requires access."},
+        "impact": {"score": "high", "reason": "A disclosure would expose a credential."},
+        "overall_severity": "high",
+    },
+    "confidence": {"score": "high", "reason": "The complete trace is source-bound."},
+}
+
+assert candidate["execution"]["payloads"] == ["TOKEN=[REDACTED]"]
+assert candidate["remediation"]["code_changes"][0]["fixed_code"] == "const tokenState = '[REDACTED]';"
+with tempfile.TemporaryDirectory(prefix="security-redacted-fixture-") as tmp:
+    fixture = Path(tmp) / "findings.json"
+    fixture.write_text(json.dumps([candidate]))
+    result = subprocess.run(
+        ["node", str(validator), str(fixture)],
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        raise AssertionError(result.stdout + result.stderr)
+PY
+then
+  ok "security audit schema accepts a complete redacted confirmed fixture"
+else
+  ng "security audit schema accepts a complete redacted confirmed fixture"
+fi
 has "security audit explicitly bounds the hardening-note exception" \
   'Hardening notes.*optional.*outside.*findings\.json.*MUST NOT.*exploitability.*impact.*severity' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
