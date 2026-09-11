@@ -32,7 +32,7 @@ Your job is to DISPROVE this complete candidate record. Read the actual source c
 - "REVISION_REQUIRED": exact field corrections and the evidence for each
 ```
 
-Any substantive correction MUST return the revised complete record to the same validator; do not create a fresh verifier fleet. Only a purely structural serialization change that preserves all validated facts and remediation content can proceed without another validation pass.
+For any substantive correction, the coordinator MUST revise from cited evidence without inventing content, then send it to a fresh independent validator as a complete record. One fresh pass is sufficient when it confirms the record; repeat only after another substantive correction. A purely structural serialization change that preserves all validated facts and remediation content can proceed without another validation pass.
 
 **Kill false positives aggressively, but don't kill real findings.** A short report with 3 real findings is worth more than a long report with 30 theoretical ones. An honest "nothing found" is valid — but push hard before reaching that conclusion.
 
@@ -69,7 +69,7 @@ The schema supports two verdict types via `oneOf`:
 **Before writing `findings.json`:**
 
 1. Reuse the `report-schema.json` version loaded before Phase 3; reload it only if it is missing from context or changed. Follow it exactly — `additionalProperties: false` is enforced.
-2. Copy the validated fields into the corresponding schema fields. Missing factual or remediation content is not a formatting gap: return the complete record to the same Phase 3 validator or reject it.
+2. Copy the validated fields into the corresponding schema fields. Missing factual or remediation content is not a formatting gap: return the complete record to coordinator correction and fresh independent validation, or reject it.
 3. Run `node <skill-dir>/validate-findings.cjs <output-dir>/findings.json`. It checks required fields, enum values, structural constraints, and `additionalProperties`; it does not validate facts.
-4. Correct purely structural failures without changing validated meaning. Send every substantive change back to the same validator before rerunning the schema check.
+4. Correct purely structural failures without changing validated meaning. Send every substantive change through fresh independent validation before rerunning the schema check.
 5. Reconcile `REPORT.md` and `FINDINGS-DETAIL.md` with the final independently validated `findings.json`. Remove or amend anything rejected or corrected in Phase 3 so the human-readable and machine-readable outputs agree.

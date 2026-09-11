@@ -9,7 +9,7 @@ Each delegated track gets the relevant architecture excerpt from Phase 1 plus th
 **How many agents?** Use the smallest useful count allowed by the runtime and any user-authored limit. Distinct attack classes do not by themselves require distinct agents; split only when the work is independently substantial.
 
 Every delegated track prompt MUST include:
-1. The architecture summary from Phase 1 (copy it in verbatim)
+1. The relevant scoped excerpt from the Phase 1 architecture summary (copy it in verbatim)
 2. The specific attack class and scope to investigate
 3. Relevant file paths from Phase 1 as starting points
 4. The hunting methodology (below)

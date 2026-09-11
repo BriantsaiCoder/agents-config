@@ -185,14 +185,20 @@ PERFORMANCE_MARKERS = [
 
 CREDENTIAL_KEY = (
     r"api[_-]?key|token|secret|password|passwd|pwd|client[_-]?secret|"
-    r"private[_-]?key|access[_-]?key|connection[_-]?string"
+    r"private[_-]?key|access[_-]?key|connection[_-]?string|"
+    r"auth(?:orization)?|credentials"
 )
 CREDENTIAL_ASSIGNMENT_RE = re.compile(
     rf"(?i)(?P<prefix>[\"']?(?:{CREDENTIAL_KEY})[\"']?\s*[:=]\s*)"
     r"(?P<value>\"(?:\\.|[^\"])*\"|'(?:\\.|[^'])*'|[^,\s#}}]+)"
 )
 CREDENTIAL_XML_RE = re.compile(
-    rf"(?is)(?P<open><(?P<key>{CREDENTIAL_KEY})\b[^>]*>).*?(?P<close></(?P=key)\s*>)"
+    rf"(?is)<(?:[A-Za-z_][\w.-]*:)?(?:{CREDENTIAL_KEY})\b[^>]*>"
+)
+CREDENTIAL_XML_ATTRIBUTE_RE = re.compile(
+    rf"(?is)<(?:[A-Za-z_][\w.-]*:)?[A-Za-z_][\w.-]*\b[^<>]*?\s"
+    rf"(?:[A-Za-z_][\w.-]*:)?(?:name|key)\s*=\s*"
+    rf"(?P<quote>[\"'])\s*(?:{CREDENTIAL_KEY})\s*(?P=quote)"
 )
 URL_USERINFO_RE = re.compile(
     r"(?i)(?P<scheme>[a-z][a-z0-9+.-]*://)(?P<userinfo>[^/@\s]+)@"
@@ -262,6 +268,7 @@ def manifest_preview_is_sensitive(text: str) -> bool:
     return bool(
         CREDENTIAL_ASSIGNMENT_RE.search(text)
         or CREDENTIAL_XML_RE.search(text)
+        or CREDENTIAL_XML_ATTRIBUTE_RE.search(text)
         or URL_USERINFO_RE.search(text)
     )
 

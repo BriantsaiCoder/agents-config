@@ -914,11 +914,27 @@ assert merged["UnknownEvent"] == [{"opaque": [1, 2]}]
 assert module.merge_hooks(merged, template) == merged
 assert existing == before_existing
 assert template == before_template
+
+flat_a = {"type": "command", "command": "a", "matcher": "same"}
+flat_b = {"type": "command", "command": "b", "matcher": "same"}
+flat_without_matcher = {"type": "command", "command": "c"}
+flat_existing = {"postToolUse": [flat_a, flat_without_matcher]}
+flat_template = {
+    "postToolUse": [flat_a, flat_b, flat_without_matcher, flat_without_matcher]
+}
+before_flat_existing = copy.deepcopy(flat_existing)
+before_flat_template = copy.deepcopy(flat_template)
+flat_merged = module.merge_hooks(flat_existing, flat_template)
+
+assert flat_merged["postToolUse"] == [flat_a, flat_without_matcher, flat_b]
+assert module.merge_hooks(flat_merged, flat_template) == flat_merged
+assert flat_existing == before_flat_existing
+assert flat_template == before_flat_template
 PY
 then
-  ok "merge-settings preserves overlapping hooks, metadata, inputs, and idempotence"
+  ok "merge-settings preserves Claude wrappers and Copilot flat-hook identity"
 else
-  ng "merge-settings preserves overlapping hooks, metadata, inputs, and idempotence"
+  ng "merge-settings preserves Claude wrappers and Copilot flat-hook identity"
 fi
 
 hook_fixture="$(mktemp -d "${TMPDIR:-/tmp}/run-tests-hook.XXXXXX")" ||
@@ -1145,6 +1161,18 @@ printf '%s\n' \
   'password = """S11_TOML_FIRST_DO_NOT_PRINT' \
   'S11_TOML_SECOND_DO_NOT_PRINT' \
   '"""' > "$scan_fixture/pyproject.toml"
+printf '%s\n' \
+  'auth: Bearer S11_AUTH_DO_NOT_PRINT' > "$scan_fixture/Cargo.toml"
+printf '%s\n' \
+  '{"credentials":"S11_CREDENTIALS_DO_NOT_PRINT"}' > "$scan_fixture/composer.json"
+printf '%s\n' \
+  '<project><password>S11_XML_COMPLETE_DO_NOT_PRINT</password></project>' \
+  > "$scan_fixture/pom.xml"
+printf '%s\n' \
+  '<project><password>S11_XML_TRUNCATED_DO_NOT_PRINT' > "$scan_fixture/build.xml"
+printf '%s\n' \
+  'source "https://example.invalid"' \
+  '# S11_SAFE_PREVIEW_VISIBLE' > "$scan_fixture/Gemfile"
 scan_stdout="$(cd "$scan_fixture" &&
   python3 "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" 2>&1)"
 scan_stdout_rc=$?
@@ -1167,6 +1195,10 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    [[ "$scan_stdout" != *S11_GRADLE* ]] &&
    [[ "$scan_stdout" != *S11_BOUNDARY* ]] &&
    [[ "$scan_stdout" != *S11_TOML* ]] &&
+   [[ "$scan_stdout" != *S11_AUTH* ]] &&
+   [[ "$scan_stdout" != *S11_CREDENTIALS* ]] &&
+   [[ "$scan_stdout" != *S11_XML* ]] &&
+   [[ "$scan_stdout" == *S11_SAFE_PREVIEW_VISIBLE* ]] &&
    [[ "$scan_stdout" == *'PRIVATE_KEY: set (line 7)'* ]] &&
    [[ "$scan_stdout" == *'UNCLOSED_SECRET: set (line 10)'* ]] &&
    [[ "$scan_stdout" == *'UNTERMINATED quoted value redacted (line 10)'* ]] &&
@@ -1176,12 +1208,83 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    rg -q 'EXPORTED.*set.*line 3' "$scan_fixture/scan.txt" &&
    rg -q 'UNPARSED.*redacted' "$scan_fixture/scan.txt" &&
    rg -q '\[REDACTED\]' "$scan_fixture/scan.txt" &&
-   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML)' "$scan_fixture/scan.txt"; then
+   rg -q 'S11_SAFE_PREVIEW_VISIBLE' "$scan_fixture/scan.txt" &&
+   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML|AUTH|CREDENTIALS|XML)' "$scan_fixture/scan.txt"; then
   ok "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
 else
   ng "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
 fi
 rm -r -- "$scan_fixture"
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="codebase-xml-boundaries-") as directory:
+    fixture = Path(directory)
+    (fixture / "element.csproj").write_text(
+        "<Project><password>S11_XML_ELEMENT_COMPLETE_DO_NOT_PRINT</password></Project>\n"
+    )
+    (fixture / "namespace.csproj").write_text(
+        '<Project xmlns:cfg="urn:fixture"><cfg:password>'
+        "S11_XML_NAMESPACE_COMPLETE_DO_NOT_PRINT</cfg:password></Project>\n"
+    )
+    (fixture / "attributes.csproj").write_text(
+        '<Project><Property name="password" value="S11_XML_NAME_COMPLETE_DO_NOT_PRINT"/>'
+        '<cfg:add xmlns:cfg="urn:fixture" key="api_key" '
+        'value="S11_XML_KEY_COMPLETE_DO_NOT_PRINT"/></Project>\n'
+    )
+    (fixture / "malformed.csproj").write_text(
+        "<Project>\n"
+        "<cfg:password>S11_XML_NAMESPACE_TRUNCATED_DO_NOT_PRINT\n"
+        '<Property name="client_secret" value="S11_XML_NAME_TRUNCATED_DO_NOT_PRINT\n'
+        '<cfg:add key="authorization" value="S11_XML_KEY_TRUNCATED_DO_NOT_PRINT\n'
+    )
+    (fixture / "safe.csproj").write_text(
+        '<Project xmlns:cfg="urn:fixture">'
+        "<cfg:passwordPolicy>S11_SAFE_XML_ELEMENT_VISIBLE</cfg:passwordPolicy>"
+        '<Property name="passwordPolicy" value="S11_SAFE_XML_NAME_VISIBLE"/>'
+        '<add key="api_key_hint" value="S11_SAFE_XML_KEY_VISIBLE"/>'
+        "</Project>\n"
+    )
+
+    report = fixture / "scan.txt"
+    sensitive_markers = (
+        "S11_XML_ELEMENT_COMPLETE_DO_NOT_PRINT",
+        "S11_XML_NAMESPACE_COMPLETE_DO_NOT_PRINT",
+        "S11_XML_NAME_COMPLETE_DO_NOT_PRINT",
+        "S11_XML_KEY_COMPLETE_DO_NOT_PRINT",
+        "S11_XML_NAMESPACE_TRUNCATED_DO_NOT_PRINT",
+        "S11_XML_NAME_TRUNCATED_DO_NOT_PRINT",
+        "S11_XML_KEY_TRUNCATED_DO_NOT_PRINT",
+    )
+    safe_markers = (
+        "S11_SAFE_XML_ELEMENT_VISIBLE",
+        "S11_SAFE_XML_NAME_VISIBLE",
+        "S11_SAFE_XML_KEY_VISIBLE",
+    )
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run(
+            [sys.executable, str(scanner), *options],
+            cwd=fixture,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        for marker in sensitive_markers:
+            assert marker not in output, f"XML credential boundary leaked: {marker}"
+        for marker in safe_markers:
+            assert marker in output, f"safe XML near-match was hidden: {marker}"
+PY
+then
+  ok "codebase scanner withholds XML credential elements and name/key attributes"
+else
+  ng "codebase scanner withholds XML credential elements and name/key attributes"
+fi
 
 if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
 from pathlib import Path
@@ -1257,9 +1360,24 @@ has "security audit completes candidate record before independent validation" \
 has "security audit validator covers all substantive output fields" \
   'validator.*trace.*conditions.*execution.*payloads.*remediation.*code_changes.*severity.*confidence' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
-has "security audit sends substantive corrections to the same validator" \
-  'substantive.*same validator.*structural' \
+has "security audit independently validates final substantive corrections" \
+  'substantive correction.*coordinator.*fresh independent validator.*complete record' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
+lacks "security audit validator does not confirm its own substantive correction" \
+  'substantive correction.*same validator|substantive change.*same validator' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit delegated prompt copies only the scoped architecture excerpt" \
+  'relevant scoped excerpt.*Phase 1.*copy it in verbatim' \
+  skills/security-audit/HUNTING.md
+lacks "security audit does not require full architecture context in every hunt" \
+  'architecture summary from Phase 1.*copy it in verbatim' \
+  skills/security-audit/HUNTING.md
+has "security attack-class splitting remains conditional on INT-4" \
+  'INT-4.*substantial.*independent.*split' \
+  skills/security-audit/ATTACK-CLASSES.md
+lacks "security attack classes do not force unconditional fan-out" \
+  'For large codebases, split classes per subsystem|For complex access models, split into separate agents' \
+  skills/security-audit/ATTACK-CLASSES.md
 has "security audit Phase 5 only serializes validated content" \
   'Phase 5.*serializ.*validated Phase 3 record.*MUST NOT.*new factual.*remediation' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
