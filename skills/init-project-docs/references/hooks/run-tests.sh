@@ -39,7 +39,7 @@ fi
 # 測試檔本身不 re-run，避免遞迴。
 if [[ "$HOOK_FILE" =~ \.(test|spec)\.(ts|tsx|js|jsx)$ ]] ||
    [[ "$HOOK_FILE" =~ (^|/)[^/]*Tests?\.cs$ ]] ||
-   [[ "$HOOK_FILE" =~ (^|/)test_[^/]+\.py$ ]] ||
+   [[ "$HOOK_FILE" =~ (^|/)(test_[^/]*|[^/]*_test)\.py$ ]] ||
    [[ "$HOOK_FILE" =~ (^|/)[^/]+_test\.go$ ]] ||
    [[ "$HOOK_FILE" =~ (^|/)(tests|__tests__|spec)/ ]]; then
   printf '[run-tests] SKIPPED: test file edit\n'

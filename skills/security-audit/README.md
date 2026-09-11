@@ -14,7 +14,7 @@ The skill runs a structured audit in five phases:
 4. **Report** -- derives `REPORT.md` and `FINDINGS-DETAIL.md` from the validated records.
 5. **Structured output and reconciliation** -- serializes those records to `findings.json`, validates structure with `validate-findings.cjs`, and reconciles the prose outputs without adding unvalidated content.
 
-Multiple runs against the same repo are additive. Each run explores different code paths; the skill reads prior `findings.json` files to skip known issues and target gaps.
+Multiple runs against the same repo are additive. Each run explores different code paths; the skill reads prior `findings.json` and `<prior-run>/UNCONFIRMED-CANDIDATES.md` files to skip known issues, target gaps, and resume retained candidates at Phase 3.
 
 ## Files
 
@@ -69,7 +69,7 @@ The skill activates automatically when the request matches its trigger (security
 
 ## Requirements
 
-- A coding agent with tool use and an independent validation path; delegation support can parallelize substantial independent tracks
+- A coding agent with tool use; an independent validation path is required to promote findings. Without one, Phase 3 retains complete candidates in `<output-dir>/UNCONFIRMED-CANDIDATES.md`; delegation support can parallelize substantial independent tracks
 - Node.js (for `validate-findings.cjs` schema validation in Phase 5)
 
 ## Design principles

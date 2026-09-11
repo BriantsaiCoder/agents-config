@@ -190,8 +190,7 @@ CREDENTIAL_KEY = (
     r"auth(?:orization)?|credentials"
 )
 CREDENTIAL_ASSIGNMENT_RE = re.compile(
-    rf"(?i)(?P<prefix>[\"']?(?:{CREDENTIAL_KEY})[\"']?\s*[:=]\s*)"
-    r"(?P<value>\"(?:\\.|[^\"])*\"|'(?:\\.|[^'])*'|[^,\s#}}]+)"
+    rf"(?i)[\"']?(?:{CREDENTIAL_KEY})[\"']?\s*[:=]"
 )
 CREDENTIAL_XML_RE = re.compile(
     rf"(?is)<(?:[A-Za-z_][\w.-]*:)?(?:{CREDENTIAL_KEY})\b[^>]*>"

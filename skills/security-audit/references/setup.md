@@ -13,6 +13,7 @@ All files written during the audit go in the output directory:
 - `REPORT.md` — human-readable report (Phase 4)
 - `FINDINGS-DETAIL.md` — detailed data flows for MEDIUM+ findings (Phase 4)
 - `findings.json` — machine-readable structured output (Phase 5)
+- `<output-dir>/UNCONFIRMED-CANDIDATES.md` — complete candidates retained only when independent validation is unavailable (Phase 3)
 
 Delegated workstreams in Phases 1–3 do NOT write files — they return results to the coordinator via the platform's delegation mechanism. You are responsible for writing all files to the output directory.
 
@@ -20,7 +21,7 @@ Delegated workstreams in Phases 1–3 do NOT write files — they return results
 
 Each audit run explores different code paths depending on which tracks find what and where they dig. No single run finds everything. Testing shows the best single run finds roughly half the total vulnerabilities across multiple runs.
 
-**If prior runs exist** for the same repo (check `~/security-audit-skill/<repo-name>/`), read their `findings.json` files before starting Phase 2. Use them to:
+**If prior runs exist** for the same repo (check `~/security-audit-skill/<repo-name>/`), read their `findings.json` files and any `<prior-run>/UNCONFIRMED-CANDIDATES.md` files before starting Phase 2; resume retained candidates at Phase 3 when independent validation is available. Use the prior records to:
 1. **Skip known findings** — do not spend the run re-discovering the same status bypass. Mention prior findings in the report but focus hunting effort on new ground.
 2. **Target gaps** — if prior runs focused heavily on injection and auth, weight this run toward business logic, creative attacks, and the wildcard track. If prior runs missed public endpoints, focus there.
 3. **Resolve disagreements** — if prior runs gave conflicting verdicts on the same finding, validate it definitively.

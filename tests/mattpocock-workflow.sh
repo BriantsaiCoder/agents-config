@@ -949,6 +949,9 @@ printf 'copilot-file-path\n' > "$hook_fixture/copilot-file-path.cs"
 printf 'pipeline\n' > "$hook_fixture/pipeline.cs"
 printf 'csharp test\n' > "$hook_fixture/FooTests.cs"
 printf 'python test\n' > "$hook_fixture/test_user.py"
+printf 'python suffix test\n' > "$hook_fixture/user_test.py"
+printf 'python empty prefix test\n' > "$hook_fixture/test_.py"
+printf 'python empty suffix test\n' > "$hook_fixture/_test.py"
 printf 'go test\n' > "$hook_fixture/foo_test.go"
 hook_input() { printf '{"tool_input":{"file_path":"%s"}}\n' "$1"; }
 hook_pass="$(hook_input "$hook_fixture/current.cs" | \
@@ -1058,6 +1061,9 @@ test_edit_guard_ok=true
 for test_edit_path in \
   "$hook_fixture/FooTests.cs" \
   "$hook_fixture/test_user.py" \
+  "$hook_fixture/user_test.py" \
+  "$hook_fixture/test_.py" \
+  "$hook_fixture/_test.py" \
   "$hook_fixture/foo_test.go"; do
   test_edit_output="$(hook_input "$test_edit_path" | \
     TMPDIR="$hook_fixture/tmp" TEST_SENTINEL="$test_edit_marker" \
@@ -1066,9 +1072,9 @@ for test_edit_path in \
   [[ "$test_edit_output" == *'SKIPPED: test file edit'* ]] || test_edit_guard_ok=false
 done
 if [[ "$test_edit_guard_ok" == true ]] && [ ! -e "$test_edit_marker" ]; then
-  ok "run-tests hook skips C# Python and Go test-file conventions"
+  ok "run-tests hook skips C# Python prefix/suffix and Go test-file conventions"
 else
-  ng "run-tests hook skips C# Python and Go test-file conventions"
+  ng "run-tests hook skips C# Python prefix/suffix and Go test-file conventions"
 fi
 
 missing_marker="$hook_fixture/should-not-run"
@@ -1206,6 +1212,14 @@ printf '%s\n' \
   'config :fixture, signingKey: "S11_SIGNING_KEY_DO_NOT_PRINT"' \
   > "$scan_fixture/mix.exs"
 printf '%s\n' \
+  'name: fixture' \
+  'password: # nested credential' \
+  '  value: S11_YAML_BLOCK_DO_NOT_PRINT' \
+  > "$scan_fixture/pubspec.yaml"
+printf '%s\n' \
+  'passwordPolicy: S11_SAFE_YAML_FIELD_VISIBLE' \
+  > "$scan_fixture/stack.yaml"
+printf '%s\n' \
   '<project><password>S11_XML_COMPLETE_DO_NOT_PRINT</password></project>' \
   > "$scan_fixture/pom.xml"
 printf '%s\n' \
@@ -1239,7 +1253,9 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    [[ "$scan_stdout" != *S11_CREDENTIALS* ]] &&
    [[ "$scan_stdout" != *S11_SECRET_KEY_BASE* ]] &&
    [[ "$scan_stdout" != *S11_SIGNING_KEY* ]] &&
+   [[ "$scan_stdout" != *S11_YAML_BLOCK* ]] &&
    [[ "$scan_stdout" != *S11_XML* ]] &&
+   [[ "$scan_stdout" == *S11_SAFE_YAML_FIELD_VISIBLE* ]] &&
    [[ "$scan_stdout" == *S11_SAFE_PREVIEW_VISIBLE* ]] &&
    [[ "$scan_stdout" == *'PRIVATE_KEY: set (line 7)'* ]] &&
    [[ "$scan_stdout" == *'UNCLOSED_SECRET: set (line 10)'* ]] &&
@@ -1250,8 +1266,9 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    rg -q 'EXPORTED.*set.*line 3' "$scan_fixture/scan.txt" &&
    rg -q 'UNPARSED.*redacted' "$scan_fixture/scan.txt" &&
    rg -q '\[REDACTED\]' "$scan_fixture/scan.txt" &&
+   rg -q 'S11_SAFE_YAML_FIELD_VISIBLE' "$scan_fixture/scan.txt" &&
    rg -q 'S11_SAFE_PREVIEW_VISIBLE' "$scan_fixture/scan.txt" &&
-   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML|AUTH|CREDENTIALS|SECRET_KEY_BASE|SIGNING_KEY|XML)' "$scan_fixture/scan.txt"; then
+   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML|AUTH|CREDENTIALS|SECRET_KEY_BASE|SIGNING_KEY|YAML_BLOCK|XML)' "$scan_fixture/scan.txt"; then
   ok "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
 else
   ng "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
@@ -1429,6 +1446,18 @@ has "security audit retains unavailable validation candidates outside findings.j
 has "security audit explicitly bounds the hardening-note exception" \
   'Hardening notes.*optional.*outside.*findings\.json.*MUST NOT.*exploitability.*impact.*severity' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security README requires independent validation only to promote findings" \
+  'independent validation path.*required.*promote findings.*UNCONFIRMED-CANDIDATES\.md' \
+  skills/security-audit/README.md
+has "security README includes retained prior-run candidates" \
+  'prior `findings\.json`.*UNCONFIRMED-CANDIDATES\.md.*resume.*Phase 3' \
+  skills/security-audit/README.md
+has "security setup lists the conditional unavailable-candidate artifact" \
+  '^\- `<output-dir>/UNCONFIRMED-CANDIDATES\.md`.*independent validation.*unavailable' \
+  skills/security-audit/references/setup.md
+has "security setup reloads retained candidates at Phase 3" \
+  'read their `findings\.json`.*UNCONFIRMED-CANDIDATES\.md.*resume.*Phase 3' \
+  skills/security-audit/references/setup.md
 has "security hunters return complete candidate inputs" \
   'candidate packet.*trace.*conditions.*execution.*remediation.*severity' \
   skills/security-audit/HUNTING.md
