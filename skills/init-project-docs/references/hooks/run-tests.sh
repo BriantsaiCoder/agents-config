@@ -60,7 +60,10 @@ export AGENT_TEST_FILE AGENT_TEST_ROOT
 
 # Debounce：5 秒內相同檔案與同一 command 略過。
 DEBOUNCE_DIR="${TMPDIR:-/tmp}/agent-test-debounce"
-mkdir -p "$DEBOUNCE_DIR"
+if ! mkdir -p "$DEBOUNCE_DIR" 2>/dev/null; then
+  printf '[run-tests] NOT_RUN: unable to prepare debounce directory\n'
+  exit 0
+fi
 HASH_OUTPUT=$(printf '%s\0%s\0%s' "$AGENT_TEST_ROOT" "$AGENT_TEST_FILE" "$AGENT_TEST_COMMAND" |
   cksum 2>/dev/null)
 HASH_RC=$?
@@ -81,7 +84,10 @@ if [[ -f "$MARKER" ]]; then
     exit 0
   fi
 fi
-touch "$MARKER"
+if ! touch "$MARKER" 2>/dev/null; then
+  printf '[run-tests] NOT_RUN: unable to create debounce marker\n'
+  exit 0
+fi
 
 TEST_OUTPUT=$(cd "$AGENT_TEST_ROOT" && bash -o pipefail -c "$AGENT_TEST_COMMAND" 2>&1 | tail -30)
 TEST_RC=$?

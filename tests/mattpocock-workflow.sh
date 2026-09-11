@@ -947,6 +947,8 @@ printf 'codex\n' > "$hook_fixture/codex.cs"
 printf 'copilot-path\n' > "$hook_fixture/copilot-path.cs"
 printf 'copilot-file-path\n' > "$hook_fixture/copilot-file-path.cs"
 printf 'pipeline\n' > "$hook_fixture/pipeline.cs"
+printf 'mkdir failure\n' > "$hook_fixture/mkdir-failure.cs"
+printf 'touch failure\n' > "$hook_fixture/touch-failure.cs"
 printf 'csharp test\n' > "$hook_fixture/FooTests.cs"
 printf 'python test\n' > "$hook_fixture/test_user.py"
 printf 'python suffix test\n' > "$hook_fixture/user_test.py"
@@ -1064,6 +1066,52 @@ if [[ "$cksum_only_pass" == *PASSED* ]] &&
   ok "run-tests hook uses portable cksum and fails closed when its debounce key is unavailable"
 else
   ng "run-tests hook uses portable cksum and fails closed when its debounce key is unavailable"
+fi
+
+mkdir -p "$hook_fixture/failing-mkdir-bin" "$hook_fixture/failing-touch-bin"
+cat > "$hook_fixture/failing-mkdir-bin/mkdir" <<'SH'
+#!/bin/sh
+exit 24
+SH
+cat > "$hook_fixture/failing-touch-bin/touch" <<'SH'
+#!/bin/sh
+exit 25
+SH
+chmod +x "$hook_fixture/failing-mkdir-bin/mkdir" "$hook_fixture/failing-touch-bin/touch"
+
+mkdir_failure_tmp="$hook_fixture/mkdir-failure-tmp"
+mkdir -p "$mkdir_failure_tmp"
+mkdir_failure_sentinel="$hook_fixture/mkdir-failure-command-ran"
+mkdir_failure_output="$(hook_input "$hook_fixture/mkdir-failure.cs" | \
+  PATH="$hook_fixture/failing-mkdir-bin:$PATH" TMPDIR="$mkdir_failure_tmp" \
+  TEST_SENTINEL="$mkdir_failure_sentinel" \
+  AGENT_TEST_COMMAND='printf "ran\n" > "$TEST_SENTINEL"' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$mkdir_failure_output" == *'NOT_RUN: unable to prepare debounce directory'* ]] &&
+   [[ "$mkdir_failure_output" != *PASSED* ]] &&
+   [ ! -e "$mkdir_failure_sentinel" ] &&
+   [ ! -e "$mkdir_failure_tmp/agent-test-debounce" ]; then
+  ok "run-tests hook fails closed when its debounce directory cannot be created"
+else
+  ng "run-tests hook fails closed when its debounce directory cannot be created"
+fi
+
+touch_failure_tmp="$hook_fixture/touch-failure-tmp"
+mkdir -p "$touch_failure_tmp"
+touch_failure_sentinel="$hook_fixture/touch-failure-command-ran"
+touch_failure_output="$(hook_input "$hook_fixture/touch-failure.cs" | \
+  PATH="$hook_fixture/failing-touch-bin:$PATH" TMPDIR="$touch_failure_tmp" \
+  TEST_SENTINEL="$touch_failure_sentinel" \
+  AGENT_TEST_COMMAND='printf "ran\n" > "$TEST_SENTINEL"' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$touch_failure_output" == *'NOT_RUN: unable to create debounce marker'* ]] &&
+   [[ "$touch_failure_output" != *PASSED* ]] &&
+   [ ! -e "$touch_failure_sentinel" ] &&
+   [ -d "$touch_failure_tmp/agent-test-debounce" ] &&
+   [ -z "$(find "$touch_failure_tmp/agent-test-debounce" -type f -print -quit)" ]; then
+  ok "run-tests hook fails closed when its debounce marker cannot be created"
+else
+  ng "run-tests hook fails closed when its debounce marker cannot be created"
 fi
 
 hook_codex="$(printf '{"tool_input":{"path":"%s"}}\n' "$hook_fixture/codex.cs" | \

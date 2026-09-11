@@ -1262,7 +1262,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | grilling | `f9702850e9fa9a2fb264e877eeb5899deac4c09a05c01df0cde526a1d53160c4` | `d3c4cd7caf20eeae2004190c387f09fe80ff06d4f9cea20e90d6fa0745967ca8` |
 | implement | `031b9b743fcaedc0fa57f446712d5730a2c7d5c0f10f99c2f08c93122a2ab206` | `555457452b1f76a58ab516d5ed39fc65f427aa98a052e8df76216639e86a645e` |
 | improve-codebase-architecture | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` |
-| init-project-docs | `47e7b58e33ba2948ce5a2320d91fc8bca6776823c00696a9ccb228f583ce5807` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
+| init-project-docs | `adf3ea7c3e016a29b72a7188e32be7d54643bb08436272900e3326981fb6743f` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
 | jest-best-practices | `0e6a053968a416681ebec39b49f3cbb3735201dd68a807f37bdbed9e63431d28` | `3d10acee92e2cdfb8922d546d42da5f6a0ded573b5b9782184ecc02951b8875e` |
 | mysql-best-practices | `c99370462845e06a0b88ecc5b310d623720f5b6c06552b8787547b9fcefe9b94` | `8e660d9eaa6b6461c5e71fc880b73eb475cb551d9cb8b933c6efe9705324f95e` |
 | next-best-practices | `7a96bfb88ddbb38af2830f6df37fc28e0a56075d73af62125701c055683db4ab` | `3d7faa6eacc7266789f72a0ada344e1e014d9378f01981b60601b20c289c1d97` |
@@ -1591,3 +1591,16 @@ The new controls start at 546 PASS / 6 FAIL on the frozen r8 source. Ten preview
 replaced by one metadata-only carrier, and the resulting suite reaches 542 PASS / 0 FAIL.
 Rollback restores the three prior trees, their previous current fingerprints, and the matching
 regression changes together; the unchanged schema needs no rollback.
+
+### 2026-09-11 r10 debounce fail-closed follow-up
+
+The latest current-head review exposed a fail-open boundary in the `init-project-docs` test hook:
+failure to prepare the debounce directory or create its marker did not stop the configured repository
+command. The hook now reports `NOT_RUN` and exits before that command when either operation fails. Its
+tree moves from `47e7b58e33ba2948ce5a2320d91fc8bca6776823c00696a9ccb228f583ce5807`
+to `adf3ea7c3e016a29b72a7188e32be7d54643bb08436272900e3326981fb6743f`.
+
+Two focused controls start at 542 PASS / 2 FAIL on the `aeaf141` source and reach 544 PASS / 0 FAIL
+after the guards and current-fingerprint update. The existing successful execution and five-second
+debounce controls remain unchanged. Rollback restores the prior tree and current fingerprint and
+removes the two failure controls together; the earlier review records remain historical snapshots.
