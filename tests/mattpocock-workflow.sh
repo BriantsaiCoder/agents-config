@@ -947,6 +947,9 @@ printf 'codex\n' > "$hook_fixture/codex.cs"
 printf 'copilot-path\n' > "$hook_fixture/copilot-path.cs"
 printf 'copilot-file-path\n' > "$hook_fixture/copilot-file-path.cs"
 printf 'pipeline\n' > "$hook_fixture/pipeline.cs"
+printf 'csharp test\n' > "$hook_fixture/FooTests.cs"
+printf 'python test\n' > "$hook_fixture/test_user.py"
+printf 'go test\n' > "$hook_fixture/foo_test.go"
 hook_input() { printf '{"tool_input":{"file_path":"%s"}}\n' "$1"; }
 hook_pass="$(hook_input "$hook_fixture/current.cs" | \
   TMPDIR="$hook_fixture/tmp" \
@@ -1046,6 +1049,27 @@ if [[ "$pipeline_output" == *FAILED* ]] && [[ "$pipeline_output" != *PASSED* ]];
 else
   ng "run-tests hook propagates an earlier pipeline failure"
 fi
+has "run-tests hook bounds captured output by streaming through tail" \
+  'bash -o pipefail -c.*2>&1[[:space:]]*\|[[:space:]]*tail -30' \
+  skills/init-project-docs/references/hooks/run-tests.sh
+
+test_edit_marker="$hook_fixture/test-edit-command-ran"
+test_edit_guard_ok=true
+for test_edit_path in \
+  "$hook_fixture/FooTests.cs" \
+  "$hook_fixture/test_user.py" \
+  "$hook_fixture/foo_test.go"; do
+  test_edit_output="$(hook_input "$test_edit_path" | \
+    TMPDIR="$hook_fixture/tmp" TEST_SENTINEL="$test_edit_marker" \
+    AGENT_TEST_COMMAND='touch "$TEST_SENTINEL"' \
+    bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+  [[ "$test_edit_output" == *'SKIPPED: test file edit'* ]] || test_edit_guard_ok=false
+done
+if [[ "$test_edit_guard_ok" == true ]] && [ ! -e "$test_edit_marker" ]; then
+  ok "run-tests hook skips C# Python and Go test-file conventions"
+else
+  ng "run-tests hook skips C# Python and Go test-file conventions"
+fi
 
 missing_marker="$hook_fixture/should-not-run"
 missing_target_output="$(printf '{"toolArgs":{"path":"%s"}}\n' "$hook_fixture/missing.cs" | \
@@ -1073,6 +1097,18 @@ if [[ "$missing_target_output" == *NOT_RUN* ]] &&
   ok "run-tests hook reports unusable missing invalid and unparseable targets"
 else
   ng "run-tests hook reports unusable missing invalid and unparseable targets"
+fi
+for no_jq_tool in mkdir shasum cut date stat touch dirname basename git bash tail; do
+  ln -s "$(command -v "$no_jq_tool")" "$hook_fixture/no-jq-bin/$no_jq_tool"
+done
+missing_jq_fallback_output="$(printf '%s\n' '{"event":"PostToolUse"}' | \
+  PATH="$hook_fixture/no-jq-bin" TMPDIR="$hook_fixture/tmp" \
+  CLAUDE_FILE_PATH="$hook_fixture/current.cs" AGENT_TEST_COMMAND=true \
+  /bin/bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$missing_jq_fallback_output" == *PASSED* ]]; then
+  ok "run-tests hook preserves environment target fallback when jq is unavailable"
+else
+  ng "run-tests hook preserves environment target fallback when jq is unavailable"
 fi
 rm -r -- "$hook_fixture"
 lacks "run-tests hook does not guess runner or stale assembly" \
@@ -1166,6 +1202,10 @@ printf '%s\n' \
 printf '%s\n' \
   '{"credentials":"S11_CREDENTIALS_DO_NOT_PRINT"}' > "$scan_fixture/composer.json"
 printf '%s\n' \
+  'config :fixture, secret_key_base: "S11_SECRET_KEY_BASE_DO_NOT_PRINT"' \
+  'config :fixture, signingKey: "S11_SIGNING_KEY_DO_NOT_PRINT"' \
+  > "$scan_fixture/mix.exs"
+printf '%s\n' \
   '<project><password>S11_XML_COMPLETE_DO_NOT_PRINT</password></project>' \
   > "$scan_fixture/pom.xml"
 printf '%s\n' \
@@ -1197,6 +1237,8 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    [[ "$scan_stdout" != *S11_TOML* ]] &&
    [[ "$scan_stdout" != *S11_AUTH* ]] &&
    [[ "$scan_stdout" != *S11_CREDENTIALS* ]] &&
+   [[ "$scan_stdout" != *S11_SECRET_KEY_BASE* ]] &&
+   [[ "$scan_stdout" != *S11_SIGNING_KEY* ]] &&
    [[ "$scan_stdout" != *S11_XML* ]] &&
    [[ "$scan_stdout" == *S11_SAFE_PREVIEW_VISIBLE* ]] &&
    [[ "$scan_stdout" == *'PRIVATE_KEY: set (line 7)'* ]] &&
@@ -1209,7 +1251,7 @@ if [ "$scan_stdout_rc" -eq 0 ] &&
    rg -q 'UNPARSED.*redacted' "$scan_fixture/scan.txt" &&
    rg -q '\[REDACTED\]' "$scan_fixture/scan.txt" &&
    rg -q 'S11_SAFE_PREVIEW_VISIBLE' "$scan_fixture/scan.txt" &&
-   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML|AUTH|CREDENTIALS|XML)' "$scan_fixture/scan.txt"; then
+   ! rg -q 'S11_(ENV|QUOTED|FIRST|CONTINUATION|UNPARSED|MANIFEST|URL|MULTILINE|UNCLOSED|TODO_BYPASS|GRADLE|BOUNDARY|TOML|AUTH|CREDENTIALS|SECRET_KEY_BASE|SIGNING_KEY|XML)' "$scan_fixture/scan.txt"; then
   ok "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
 else
   ng "codebase scanner redacts multiline env manifest boundaries and TODO summaries"
@@ -1381,6 +1423,12 @@ lacks "security attack classes do not force unconditional fan-out" \
 has "security audit Phase 5 only serializes validated content" \
   'Phase 5.*serializ.*validated Phase 3 record.*MUST NOT.*new factual.*remediation' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit retains unavailable validation candidates outside findings.json" \
+  'verbatim.*UNCONFIRMED-CANDIDATES\.md.*evidence.*UNAVAILABLE.*excluded from.*findings\.json' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit explicitly bounds the hardening-note exception" \
+  'Hardening notes.*optional.*outside.*findings\.json.*MUST NOT.*exploitability.*impact.*severity' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
 has "security hunters return complete candidate inputs" \
   'candidate packet.*trace.*conditions.*execution.*remediation.*severity' \
   skills/security-audit/HUNTING.md
@@ -1396,6 +1444,10 @@ lacks "design-it-twice has no fixed 3-agent floor" \
 lacks "architecture deepening pointer does not force parallel agents" \
   'parallel sub-agent pattern' \
   skills/improve-codebase-architecture/SKILL.md
+section_has "Phase 2 host matrix preserves complete wrapper metadata identity" \
+  '合併策略（Phase 2）' \
+  'wrapper metadata.*全相同.*聯集內層.*metadata 不同.*獨立 wrapper' \
+  skills/init-project-docs/references/host-matrix.md
 has "wayfinder research delegation is conditional" \
   'research tickets.*INT-4.*substantial.*independent|INT-4.*research tickets.*substantial.*independent' \
   skills/wayfinder/references/chart-map.md

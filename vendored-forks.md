@@ -57,7 +57,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `grill-with-docs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b`; tree SHA-256 `9e44d8a8d61d7561ed646054743b170792e06ec06491d1836053d46ab971db1a` | **Active** |
 | `ai-level-check` | github.com/Raymondhou0917/ai-level-check (v0.4.6) | `6497ee9e681da0b676322b307f12c4c184b87f42` | 2026-09-09 — vendor the SKILL.md fixpoint closure (14 of 49 upstream files) and drop two sets of pointers rather than content: the four persona-quadrant diagrams under `assets/personas/` become the plain-text type catalogue their own alt text carried, and the fifth file there (`four-axes.png`) is dropped outright because only the un-vendored `README.md` referenced it — `assets/` totals 7.4MB, and the `docs/lv{1,3,4}.html` demo files are unnamed in `SKILL.md` / `references/report-design.md` while the do-not-borrow-a-type prohibition and the public demo URL stay; upstream `.gitignore` is retained because `references/privacy.md` points at it and it carries the `evidence/` and `reports/*` exclusions this public repo needs; the approved estimate was 12 files and the fixpoint closure landed 14 — the extra two are upstream `.gitignore` (load-bearing: `references/privacy.md` points at it) and the zero-byte `reports/.gitkeep`, both required by the same closure rule; tree SHA-256 `13c97ee25cbb49cd382d6240006180c5fce9c7dee8a1c377fa56208a61960c06`; 2026-09-09 — removed at user request (unused); no attic copy, restore from the commit before removal | **Removed 2026-09-09** |
 
-| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | original pre-fork tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0`; upstream reassessed at `d24bc269171a9171fac58493e0ffba511d571a4a` on 2026-09-11 | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — route recon/hunting fan-out through shared INT-4, remove the duplicate verifier fleet, and retain one Phase 3 validator that sees every factual and remediation field before Phase 4/5 serialize it; PR review follow-up narrows each delegated prompt to the relevant Phase 1 excerpt, applies INT-4 to attack-class splits, and requires a fresh independent complete-record validation after a substantive correction; tree SHA-256 `ff80a49843e5f518e3513121a760b543065cb8902a8503a12da9cb0a3b9a71fb` | **Active** |
+| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | original pre-fork tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0`; upstream reassessed at `d24bc269171a9171fac58493e0ffba511d571a4a` on 2026-09-11 | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — route recon/hunting fan-out through shared INT-4, remove the duplicate verifier fleet, and retain one Phase 3 validator that sees every factual and remediation field before Phase 4/5 serialize it; PR review follow-ups narrow delegated context and attack-class splitting, require a fresh validator after substantive correction, retain unavailable candidates outside `findings.json`, and bound optional hardening notes; tree SHA-256 `1f5214a6852eb795dd5b45273ea2478162778157c99735ff764449e4178f834e` | **Active** |
 
 | `research` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2); baseline tree `679ea679b8e4d0381b74dd9dc3fa0d329f8b7134c1151d1c2458824c1c24c016` | 2026-09-10 shared audit — substantial-report trigger, optional delegation, authorized output path; tree SHA-256 `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8`; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 
@@ -1234,7 +1234,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 
 | Skill | Candidate tree SHA-256 | Candidate SKILL.md SHA-256 |
 |---|---|---|
-| acquire-codebase-knowledge | `a5c0078a864671e95b8a772a6343ae387ebbbff90f7231f5db6403ef67d26ca5` | `b0ddc523f61abb775f8b9c83e1a3e9d15f01305cd4360e0d845c33b8745106bb` |
+| acquire-codebase-knowledge | `2e5d14be9fc227bf4080b10eb0d3b0f4936ab6af4ccdeac95faf8c26682fbffa` | `b0ddc523f61abb775f8b9c83e1a3e9d15f01305cd4360e0d845c33b8745106bb` |
 | ask-matt | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` |
 | agent-browser | `85cdaedc49a2bc0604de81017422e744fd01ee1b299c64a6e83b9f1a85920c75` | `9fb4dfbebbbaab5358a3e9d969cd42db89546d645f2a4d3f4e34e67912af720a` |
 | apple-calendar | `e74cee7fff041c52cb0848b8cfe3eecc52dded7b64d1fcfd133cc215bbb656c0` | `123152bcbce8bcb07189ef738b13d86da66ebbfe6296f17db96ac1007d724b26` |
@@ -1262,7 +1262,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | grilling | `f9702850e9fa9a2fb264e877eeb5899deac4c09a05c01df0cde526a1d53160c4` | `d3c4cd7caf20eeae2004190c387f09fe80ff06d4f9cea20e90d6fa0745967ca8` |
 | implement | `031b9b743fcaedc0fa57f446712d5730a2c7d5c0f10f99c2f08c93122a2ab206` | `555457452b1f76a58ab516d5ed39fc65f427aa98a052e8df76216639e86a645e` |
 | improve-codebase-architecture | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` |
-| init-project-docs | `29932a08dadf116630b4decccfd9f3d07bc0a6d4ddaee56dc4693f0f656d93da` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
+| init-project-docs | `7826f2fe1f3fb8972289e3312dbd03e2fb6314b7e8d8b16bed43c34803bf741d` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
 | jest-best-practices | `0e6a053968a416681ebec39b49f3cbb3735201dd68a807f37bdbed9e63431d28` | `3d10acee92e2cdfb8922d546d42da5f6a0ded573b5b9782184ecc02951b8875e` |
 | mysql-best-practices | `c99370462845e06a0b88ecc5b310d623720f5b6c06552b8787547b9fcefe9b94` | `8e660d9eaa6b6461c5e71fc880b73eb475cb551d9cb8b933c6efe9705324f95e` |
 | next-best-practices | `7a96bfb88ddbb38af2830f6df37fc28e0a56075d73af62125701c055683db4ab` | `3d7faa6eacc7266789f72a0ada344e1e014d9378f01981b60601b20c289c1d97` |
@@ -1272,7 +1272,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | postgresql-optimization | `45188feacc55240882eb226e9beae48b50f17fbd367628b4297baaef01fe247c` | `f806f37c63c43193d886fc49ffeaad14dd7e31b424cea5e656fdaf8391a6e178` |
 | react-best-practices | `e3931362133299e10b46ce13f0d7b2b1e5a5bc00b91143837a90141cc490ab31` | `bca124ac6a8ecc306461e9a1af18bc1fcf1697a8c19c709fe9d643f419f35eb5` |
 | research | `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8` | `52945b9041a4ffe93bb380db5e77dc46ac3f1edc7c111dbeb96051a1227c1e01` |
-| security-audit | `ff80a49843e5f518e3513121a760b543065cb8902a8503a12da9cb0a3b9a71fb` | `c3929bddfd9cd39c2f8a806b8249968085899c6d02f4c651802d0a7ac9416e0e` |
+| security-audit | `1f5214a6852eb795dd5b45273ea2478162778157c99735ff764449e4178f834e` | `d9ea42581367c5645253cdc936c7f6b4a78c494dc0ab616cf54f8892ff48ebad` |
 | setup-matt-pocock-skills | `8b7884991baff72c74b6773404d13105976c6229d683cafb2a58165370585631` | `f52a7ecb62f61e0b42a75b2937666e80495480b74109802d994fcfb588dffbb5` |
 | shared-security-review | `b035fc8218ad8cea5729f304852482ce2da4b5cf686da00cc619b8c313fe6eb1` | `e7c8f4d4cd61febbfde08b1e44422e1705479fe6860e6bf8f7e0dc1b5f70989a` |
 | speak-human-tw | `5e3e7a4811ff46b811f4b550668564a4cd847abf3df5c5ad4a1fb77753c129d8` | `059d6074a27fcd48684fbbd07270e8a3d9dc4198f69b18baa792cdaf851de1ea` |
@@ -1382,3 +1382,27 @@ and authorized output mode. Its before tree was
 The added regression starts at 518 PASS / 1 FAIL on the prior source and reaches 519 PASS / 0 FAIL
 after the scanner correction. Rollback restores the before tree and removes the XML-boundary
 assertions together; the earlier review records remain historical snapshots.
+
+### 2026-09-11 second PR review follow-up
+
+The next complete live review exposed seven further contract gaps that were absent from the frozen
+review snapshot. `acquire-codebase-knowledge` now recognizes compound `secret_key_base` / camel-case
+and `signingKey` credential fields; its tree moves from
+`a5c0078a864671e95b8a772a6343ae387ebbbff90f7231f5db6403ef67d26ca5` to
+`2e5d14be9fc227bf4080b10eb0d3b0f4936ab6af4ccdeac95faf8c26682fbffa`.
+
+`init-project-docs` now preserves the environment file target when `jq` cannot parse the payload,
+streams command output through the existing 30-line bound, recognizes C#, Python, and Go test-file
+names, and aligns the Phase 2 merge text with complete wrapper-metadata identity. Its tree moves from
+`29932a08dadf116630b4decccfd9f3d07bc0a6d4ddaee56dc4693f0f656d93da` to
+`7826f2fe1f3fb8972289e3312dbd03e2fb6314b7e8d8b16bed43c34803bf741d`.
+
+`security-audit` now persists an unavailable validator's complete candidate in
+`UNCONFIRMED-CANDIDATES.md` outside `findings.json` and gives optional hardening notes an explicit
+non-finding evidence boundary. Its tree moves from
+`ff80a49843e5f518e3513121a760b543065cb8902a8503a12da9cb0a3b9a71fb` to
+`1f5214a6852eb795dd5b45273ea2478162778157c99735ff764449e4178f834e`.
+
+The combined regression starts at 518 PASS / 7 FAIL on the prior source and reaches 525 PASS / 0
+FAIL. Rollback restores the three before trees and removes their seven matching assertions together;
+the earlier review records remain historical snapshots.

@@ -6,7 +6,7 @@ Collect all findings from Phase 2 and **consolidate duplicates first**. Overlapp
 
 Before independent validation, the coordinator MUST prepare one complete candidate record with every confirmed-finding field from `report-schema.json`; do not invent missing report or remediation content in a later phase. Read the schema now. The candidate includes `title`, `description`, `root_cause`, `intended_behavior`, the complete source `trace`, every factual `condition`, the full `execution` (`attacker_perspective`, `payloads`, `instructions`, and `expected_result`), the proposed `remediation` including every intended `code_changes` entry, `severity`, and `confidence`. If evidence is insufficient for any substantive field, investigate it before validation or reject the candidate.
 
-Each complete candidate needs an independent read-only validation that tries to disprove it; this task-specific security gate is distinct from a generic self-check. Use a separate `research` validator when the host supports it, or its documented independent-review fallback. If neither is available, record the gate as `UNAVAILABLE` and do not promote the candidate to confirmed.
+Each complete candidate needs an independent read-only validation that tries to disprove it; this task-specific security gate is distinct from a generic self-check. Use a separate `research` validator when the host supports it, or its documented independent-review fallback. If neither is available, preserve the complete candidate verbatim in `<output-dir>/UNCONFIRMED-CANDIDATES.md` with its source evidence, the `UNAVAILABLE` reason, and the missing validation mechanism; keep it excluded from `findings.json`, the findings table, and remediation recommendations. Record the gate and retained-candidate count in the report limitations. When independent validation becomes available, resume at Phase 3 before promoting or rejecting the candidate.
 
 Batch findings from the same attack surface into one validator. Apply shared INT-4 to scheduling and count; parallelize only independent, substantial validation scopes.
 
@@ -38,7 +38,9 @@ For any substantive correction, the coordinator MUST revise from cited evidence 
 
 ### Phase 4: Report
 
-Write the report to the output directory established in Setup. Derive every finding and recommendation from its validated Phase 3 record; Phase 4 must not add a new condition, execution step, payload, impact claim, or remediation detail.
+Write the report to the output directory established in Setup. Derive every vulnerability finding and remediation recommendation from its validated Phase 3 record; Phase 4 must not add a new condition, execution step, payload, impact claim, or remediation detail.
+
+Hardening notes are optional and remain outside `findings.json`. If included, each note must cite the source evidence for the missing defense layer and be labeled as a non-finding; it MUST NOT claim exploitability, attacker impact, or severity, and must not appear in the findings table. Omit the section when no note meets that evidence boundary.
 
 **Output files:**
 
@@ -47,7 +49,7 @@ Write the report to the output directory established in Setup. Derive every find
    - Identified baseline and how this application compares
    - Findings table (severity, title, one-line description)
    - Each finding with: file path, concrete attack scenario, impact, recommended fix
-   - Hardening notes section (defense-in-depth suggestions, NOT findings)
+   - Optional hardening notes section under the evidence boundary above
    - Positive patterns section (what the codebase does well -- this calibrates trust in the audit)
 
 2. `FINDINGS-DETAIL.md` -- For each finding rated MEDIUM or above:

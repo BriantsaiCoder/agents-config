@@ -92,7 +92,7 @@ Claude 走 JSON、Codex 走 TOML。Copilot 有限定 supported keys 的 reposito
 
 ## 合併策略（Phase 2）
 
-- **Claude（JSON）**：用 `scripts/merge-settings.py`，對 `allow`/`deny`/`allowedDomains` 聯集去重、`hooks` 以 matcher 為鍵合併，不覆蓋使用者既有鍵。
+- **Claude（JSON）**：用 `scripts/merge-settings.py`，對 `allow`/`deny`/`allowedDomains` 聯集去重；`hooks` 的 wrapper metadata 全相同時才聯集內層 `hooks`，metadata 不同時保留獨立 wrapper，不覆蓋使用者既有鍵。
 - **Codex（TOML）**：不進 Python 腳本（避免引入 `tomlkit` 依賴）。由執行中的 agent 用自身 Edit 工具，依本表指定的 TOML 區塊做增量合併，且**先顯示 diff 再寫入**。
 - **Copilot**：增量更新 `.github/copilot/settings.json` 的 supported keys；個人 override 寫 `.github/copilot/settings.local.json` 並 gitignore。Claude-style deny/sandbox 轉成 `.github/hooks/*.json`，既有 hook 檔以新檔並存、不覆蓋。
 

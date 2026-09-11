@@ -13,14 +13,18 @@ set -uo pipefail
 HOOK_INPUT="$(cat 2>/dev/null || true)"
 _hj() { [[ -n "$HOOK_INPUT" ]] && command -v jq >/dev/null 2>&1 \
   && printf '%s' "$HOOK_INPUT" | jq -r "${1} // empty" 2>/dev/null || true; }
+HOOK_FILE="${CLAUDE_FILE_PATH:-${TOOL_FILE_PATH:-}}"
 if [[ -n "$HOOK_INPUT" ]] &&
    { ! command -v jq >/dev/null 2>&1 ||
      ! printf '%s' "$HOOK_INPUT" | jq -e . >/dev/null 2>&1; }; then
-  printf '[run-tests] NOT_RUN: hook payload is not parseable with jq\n'
-  exit 0
+  if [[ -z "$HOOK_FILE" ]]; then
+    printf '[run-tests] NOT_RUN: hook payload is not parseable with jq\n'
+    exit 0
+  fi
+else
+  PAYLOAD_FILE="$(_hj '.tool_input.file_path // .tool_input.path // .tool_input.filePath // .tool_input.target_file // .toolArgs.path // .toolArgs.file_path // .file_path // .path')"
+  [[ -n "$PAYLOAD_FILE" ]] && HOOK_FILE="$PAYLOAD_FILE"
 fi
-HOOK_FILE="$(_hj '.tool_input.file_path // .tool_input.path // .tool_input.filePath // .tool_input.target_file // .toolArgs.path // .toolArgs.file_path // .file_path // .path')"
-[[ -z "$HOOK_FILE" ]] && HOOK_FILE="${CLAUDE_FILE_PATH:-${TOOL_FILE_PATH:-}}"
 # ---- end shim ----
 
 if [[ -z "$HOOK_FILE" ]]; then
@@ -33,7 +37,11 @@ if [[ ! -f "$HOOK_FILE" ]]; then
 fi
 
 # 測試檔本身不 re-run，避免遞迴。
-if [[ "$HOOK_FILE" =~ \.(test|spec)\.(ts|tsx|js|jsx)$ ]] || [[ "$HOOK_FILE" =~ /(tests|__tests__|spec)/ ]]; then
+if [[ "$HOOK_FILE" =~ \.(test|spec)\.(ts|tsx|js|jsx)$ ]] ||
+   [[ "$HOOK_FILE" =~ (^|/)[^/]*Tests?\.cs$ ]] ||
+   [[ "$HOOK_FILE" =~ (^|/)test_[^/]+\.py$ ]] ||
+   [[ "$HOOK_FILE" =~ (^|/)[^/]+_test\.go$ ]] ||
+   [[ "$HOOK_FILE" =~ (^|/)(tests|__tests__|spec)/ ]]; then
   printf '[run-tests] SKIPPED: test file edit\n'
   exit 0
 fi
@@ -65,10 +73,10 @@ AGENT_TEST_FILE="$FILE_DIR/$(basename "$HOOK_FILE")"
 AGENT_TEST_ROOT=$(git -C "$FILE_DIR" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$FILE_DIR")
 export AGENT_TEST_FILE AGENT_TEST_ROOT
 
-TEST_OUTPUT=$(cd "$AGENT_TEST_ROOT" && bash -o pipefail -c "$AGENT_TEST_COMMAND" 2>&1)
+TEST_OUTPUT=$(cd "$AGENT_TEST_ROOT" && bash -o pipefail -c "$AGENT_TEST_COMMAND" 2>&1 | tail -30)
 TEST_RC=$?
 if [[ -n "$TEST_OUTPUT" ]]; then
-  printf '%s\n' "$TEST_OUTPUT" | tail -30
+  printf '%s\n' "$TEST_OUTPUT"
 fi
 
 if [[ "$TEST_RC" -eq 0 ]]; then
