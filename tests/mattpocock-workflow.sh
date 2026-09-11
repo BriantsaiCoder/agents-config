@@ -959,6 +959,52 @@ else
   ng "run-tests hook reports current-command pass, debounce skip, failure, and no config"
 fi
 
+mkdir -p "$hook_fixture/stat-bin"
+cat > "$hook_fixture/stat-bin/stat" <<'SH'
+#!/usr/bin/env bash
+case "${STAT_FIXTURE_STYLE:-}:$1:$2" in
+  gnu:-c:%Y|bsd:-f:%m)
+    date +%s
+    ;;
+  gnu:-f:%m)
+    printf '  File: "%s"\nBlocks: Total: 1 Free: 1\n' "$3"
+    exit 1
+    ;;
+  bsd:-c:%Y)
+    printf 'stat: illegal option -- c\n' >&2
+    exit 1
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+SH
+chmod +x "$hook_fixture/stat-bin/stat"
+printf 'gnu\n' > "$hook_fixture/gnu-stat.cs"
+printf 'bsd\n' > "$hook_fixture/bsd-stat.cs"
+hook_gnu_pass="$(hook_input "$hook_fixture/gnu-stat.cs" | \
+  PATH="$hook_fixture/stat-bin:$PATH" STAT_FIXTURE_STYLE=gnu TMPDIR="$hook_fixture/tmp" \
+  AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = gnu' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_gnu_skip="$(hook_input "$hook_fixture/gnu-stat.cs" | \
+  PATH="$hook_fixture/stat-bin:$PATH" STAT_FIXTURE_STYLE=gnu TMPDIR="$hook_fixture/tmp" \
+  AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = gnu' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_bsd_pass="$(hook_input "$hook_fixture/bsd-stat.cs" | \
+  PATH="$hook_fixture/stat-bin:$PATH" STAT_FIXTURE_STYLE=bsd TMPDIR="$hook_fixture/tmp" \
+  AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = bsd' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_bsd_skip="$(hook_input "$hook_fixture/bsd-stat.cs" | \
+  PATH="$hook_fixture/stat-bin:$PATH" STAT_FIXTURE_STYLE=bsd TMPDIR="$hook_fixture/tmp" \
+  AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = bsd' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$hook_gnu_pass" == *PASSED* ]] && [[ "$hook_gnu_skip" == *SKIPPED* ]] &&
+   [[ "$hook_bsd_pass" == *PASSED* ]] && [[ "$hook_bsd_skip" == *SKIPPED* ]]; then
+  ok "run-tests hook debounce supports GNU and BSD stat output contracts"
+else
+  ng "run-tests hook debounce supports GNU and BSD stat output contracts"
+fi
+
 hook_codex="$(printf '{"tool_input":{"path":"%s"}}\n' "$hook_fixture/codex.cs" | \
   TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = codex' \
   bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"

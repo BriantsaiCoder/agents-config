@@ -52,7 +52,7 @@ HASH=$(printf '%s\0%s' "$HOOK_FILE" "$AGENT_TEST_COMMAND" | shasum -a 1 | cut -c
 MARKER="$DEBOUNCE_DIR/$HASH"
 
 if [[ -f "$MARKER" ]]; then
-  AGE=$(( $(date +%s) - $(stat -f %m "$MARKER" 2>/dev/null || stat -c %Y "$MARKER") ))
+  AGE=$(( $(date +%s) - $(stat -c %Y "$MARKER" 2>/dev/null || stat -f %m "$MARKER") ))
   if [[ "$AGE" -lt 5 ]]; then
     printf '[run-tests] SKIPPED: debounce active\n'
     exit 0
