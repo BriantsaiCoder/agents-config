@@ -109,7 +109,7 @@ coverage: {
     perFile: true,
     
     // Auto-update thresholds (for gradual improvement)
-    autoUpdate: true,
+    autoUpdate: true, // Explicit opt-in: require repo policy and authorization for this config write.
   },
 }
 ```

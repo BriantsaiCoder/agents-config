@@ -186,7 +186,7 @@ PERFORMANCE_MARKERS = [
 CREDENTIAL_KEY = (
     r"api[_-]?key|token|secret(?:[_-]?key(?:[_-]?base)?)?|signing[_-]?key|"
     r"password|passwd|pwd|client[_-]?secret|"
-    r"private[_-]?key|access[_-]?key|connection[_-]?string|"
+    r"private[_-]?key|access[_-]?key(?:[_-]?id)?|connection[_-]?string|"
     r"auth(?:orization)?|credentials"
 )
 CREDENTIAL_ASSIGNMENT_RE = re.compile(

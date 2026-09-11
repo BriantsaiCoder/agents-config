@@ -809,6 +809,8 @@ while IFS= read -r changed; do
   case "$changed" in
     # 2026-09-11 approved S01-S12 + Opus 5 compatibility audit. Vendored payloads
     # continue through fork_recorded below; self-owned files stay exact-path allowlisted.
+    # The current-head Vitest review correction also covers features-coverage.md, the reference
+    # that carries the writable autoUpdate example; keep this exact instead of widening the skill.
     skills/acquire-codebase-knowledge/SKILL.md | \
     skills/acquire-codebase-knowledge/scripts/scan.py | \
     skills/dev-workflow/references/delegation.md | \
@@ -827,6 +829,7 @@ while IFS= read -r changed; do
     skills/shared-security-review/references/report-format.md | \
     skills/vite/SKILL.md | \
     skills/vitest/SKILL.md | \
+    skills/vitest/references/features-coverage.md | \
     skills/vitest/references/features-mocking.md | \
     skills/vitest/references/vitest-deep.md) ;;
     # 2026-09-10 approved shared audit: references must agree with scoped main rules.

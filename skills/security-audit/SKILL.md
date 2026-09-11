@@ -16,7 +16,7 @@ This skill is agent-neutral. In the methodology:
 - **`general` agent** means a delegated agent that can investigate a substantial, independently scoped attack surface.
 - **`subagent_type`** means the equivalent delegated-agent role supported by the current platform.
 
-Delegation follows shared `dev-workflow` INT-4: use it only for substantial independent work where it materially improves coverage or wall-clock time, keep the spawn count low, and let the main context handle small or tightly coupled work. Preserve the Phase 3 independent security-validation boundary through a separate validator or the host's documented independent-review fallback; if neither exists, keep candidates unconfirmed and follow the unavailable-candidate retention contract in `VALIDATION-AND-REPORTING.md`.
+Delegation follows shared `dev-workflow` INT-4: use it only for substantial independent work where it materially improves coverage or wall-clock time, keep the spawn count low, and let the main context handle small or tightly coupled work. Preserve the Phase 3 independent security-validation boundary through the separate-validator or fresh-context fallback defined in `VALIDATION-AND-REPORTING.md`; if neither is available, keep candidates unconfirmed under that file's retention contract.
 
 ## Setup and principles
 

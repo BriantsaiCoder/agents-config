@@ -1136,6 +1136,9 @@ has "Vitest deep reference defines all cleanup APIs" \
 has "Vitest coverage autoUpdate only raises thresholds" \
   'autoUpdate.*coverage 改善.*提高.*不.*降' \
   skills/vitest/references/vitest-deep.md
+has "Vitest coverage example keeps autoUpdate an authorized opt-in" \
+  'autoUpdate: true.*opt-in.*repo policy.*authorization' \
+  skills/vitest/references/features-coverage.md
 lacks "Vitest restoreMocks does not claim after-test timing" \
   'restoreMocks:[^\n]*Restore after each test' \
   skills/vitest/references/features-mocking.md
@@ -1352,6 +1355,66 @@ import sys
 import tempfile
 
 scanner = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="codebase-aws-access-key-") as directory:
+    fixture = Path(directory)
+    (fixture / "settings.gradle").write_text(
+        "AWS_ACCESS_KEY_ID=S11_AWS_ACCESS_KEY_ID_DO_NOT_PRINT\n"
+    )
+    report = fixture / "scan.txt"
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run(
+            [sys.executable, str(scanner), *options],
+            cwd=fixture,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        assert "S11_AWS_ACCESS_KEY_ID_DO_NOT_PRINT" not in output
+PY
+then
+  ok "codebase scanner withholds AWS_ACCESS_KEY_ID manifest assignments"
+else
+  ng "codebase scanner withholds AWS_ACCESS_KEY_ID manifest assignments"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="codebase-url-userinfo-") as directory:
+    fixture = Path(directory)
+    (fixture / "deno.json").write_text(
+        '{"repository":"https://user:S11_URL_ONLY_DO_NOT_PRINT@example.invalid/repo"}\n'
+    )
+    report = fixture / "scan.txt"
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run(
+            [sys.executable, str(scanner), *options],
+            cwd=fixture,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        assert "S11_URL_ONLY_DO_NOT_PRINT" not in output
+PY
+then
+  ok "codebase scanner independently exercises URL userinfo withholding"
+else
+  ng "codebase scanner independently exercises URL userinfo withholding"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
 with tempfile.TemporaryDirectory(prefix="codebase-env-quotes-") as directory:
     fixture = Path(directory)
     lines = [
@@ -1407,6 +1470,12 @@ has "security audit routes agent use through shared INT-4" \
 has "security audit preserves independent adversarial validation" \
   'Phase 3.*independent.*validat|independent.*Phase 3.*validat' \
   skills/security-audit/SKILL.md
+lacks "security audit does not defer to an undefined host fallback" \
+  "host's documented independent-review fallback" \
+  skills/security-audit/SKILL.md skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit defines a distinct fresh-context fallback" \
+  'fresh-context.*read-only.*distinct.*author.*coordinator.*source SHA.*complete candidate.*field.*evidence' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
 lacks "security audit has no unconditional or numeric agent fleet" \
   'Launch \*\*multiple|launch \*\*multiple|3-4 agents|8-12\+|one `research` agent per confirmed finding|YOU CAN SPAWN SUB-AGENTS|fresh agents verify every factual claim' \
   skills/security-audit
@@ -1440,8 +1509,8 @@ lacks "security attack classes do not force unconditional fan-out" \
 has "security audit Phase 5 only serializes validated content" \
   'Phase 5.*serializ.*validated Phase 3 record.*MUST NOT.*new factual.*remediation' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
-has "security audit retains unavailable validation candidates outside findings.json" \
-  'verbatim.*UNCONFIRMED-CANDIDATES\.md.*evidence.*UNAVAILABLE.*excluded from.*findings\.json' \
+has "security audit redacts retained candidates without dropping fields" \
+  'UNCONFIRMED-CANDIDATES\.md.*every field.*\[REDACTED\].*source location.*redaction note.*UNAVAILABLE.*excluded from.*findings\.json' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
 has "security audit explicitly bounds the hardening-note exception" \
   'Hardening notes.*optional.*outside.*findings\.json.*MUST NOT.*exploitability.*impact.*severity' \
@@ -1473,6 +1542,24 @@ lacks "design-it-twice has no fixed 3-agent floor" \
 lacks "architecture deepening pointer does not force parallel agents" \
   'parallel sub-agent pattern' \
   skills/improve-codebase-architecture/SKILL.md
+
+if python3 - "$ROOT/vendored-forks.md" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+text = Path(sys.argv[1]).read_text()
+active = re.search(r'^\| `security-audit` \|.*tree SHA-256 `([a-f0-9]{64})` \| \*\*Active\*\* \|$', text, re.M)
+opus = re.search(r'^\| security-audit \| `[a-f0-9]{64}` \| `([a-f0-9]{64})` \| `[a-f0-9]{64}` \| [^|]+ \|$', text, re.M)
+candidate = re.search(r'^\| security-audit \| `([a-f0-9]{64})` \| `[a-f0-9]{64}` \|$', text, re.M)
+assert active and opus and candidate
+assert active.group(1) == opus.group(1) == candidate.group(1)
+PY
+then
+  ok "security-audit current tree identity is consistent across ledger rows"
+else
+  ng "security-audit current tree identity is consistent across ledger rows"
+fi
 section_has "Phase 2 host matrix preserves complete wrapper metadata identity" \
   '合併策略（Phase 2）' \
   'wrapper metadata.*全相同.*聯集內層.*metadata 不同.*獨立 wrapper' \
