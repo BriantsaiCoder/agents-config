@@ -27,6 +27,8 @@ Maps the requested codebase scope from verifiable files or terminal output — n
 - [ ] Phase 4: Validate + present + resolve [ASK USER]
 ```
 
+Default to Full map mode unless the user requests a narrower focus or read-only analysis.
+
 ## Focus Area Mode
 
 Determine the focus from the request and existing docs (for example, "architecture only" or "testing and concerns"):

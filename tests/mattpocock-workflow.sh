@@ -836,6 +836,9 @@ has "security report card carries a Verdict slot" 'Verdict: exploitable / mitiga
 has "delegation preserves user-authored run limits" \
   '除使用者明示的本次 scope、數量或成本限制外' \
   skills/dev-workflow/references/delegation.md
+has "codebase full map is the default unless the request narrows the mode" \
+  '^Default to Full map mode unless the user requests a narrower focus or read-only analysis\.$' \
+  skills/acquire-codebase-knowledge/SKILL.md
 has "codebase focus mode changes only authorized focus docs" \
   '只更新授權的 focus 文件.*非 focus 文件保持既有狀態.*不補.*TODO' \
   skills/acquire-codebase-knowledge/SKILL.md

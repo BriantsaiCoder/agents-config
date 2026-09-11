@@ -1234,7 +1234,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 
 | Skill | Candidate tree SHA-256 | Candidate SKILL.md SHA-256 |
 |---|---|---|
-| acquire-codebase-knowledge | `74677240e19e25edfa58f1325b1bae94cbba2c55811d503c2dc8fa1fb1fac9bc` | `b0ddc523f61abb775f8b9c83e1a3e9d15f01305cd4360e0d845c33b8745106bb` |
+| acquire-codebase-knowledge | `e39c0fe4fe566941ce87dce0739afef3452131c585a64cc5a89b5d2283c7a72a` | `e6e86a9b9bdd5ad936dd531e34b547d59f6f464f1c9d0111831a640635e96a37` |
 | ask-matt | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` |
 | agent-browser | `85cdaedc49a2bc0604de81017422e744fd01ee1b299c64a6e83b9f1a85920c75` | `9fb4dfbebbbaab5358a3e9d969cd42db89546d645f2a4d3f4e34e67912af720a` |
 | apple-calendar | `e74cee7fff041c52cb0848b8cfe3eecc52dded7b64d1fcfd133cc215bbb656c0` | `123152bcbce8bcb07189ef738b13d86da66ebbfe6296f17db96ac1007d724b26` |
@@ -1604,3 +1604,16 @@ Two focused controls start at 542 PASS / 2 FAIL on the `aeaf141` source and reac
 after the guards and current-fingerprint update. The existing successful execution and five-second
 debounce controls remain unchanged. Rollback restores the prior tree and current fingerprint and
 removes the two failure controls together; the earlier review records remain historical snapshots.
+
+### 2026-09-11 r11 default-mode follow-up
+
+The current-head review found that `acquire-codebase-knowledge` documented three modes without
+choosing a default. It now defaults to Full map mode unless the user requests a narrower focus or
+read-only analysis, while retaining the existing authorized-focus and read-only boundaries. Its tree
+moves from `74677240e19e25edfa58f1325b1bae94cbba2c55811d503c2dc8fa1fb1fac9bc` to
+`e39c0fe4fe566941ce87dce0739afef3452131c585a64cc5a89b5d2283c7a72a`.
+
+The targeted control starts at 544 PASS / 1 FAIL on the `b7c2f1e` source and reaches 545 PASS /
+0 FAIL after the selector and current-fingerprint update. Rollback restores the prior tree and
+fingerprint and removes the matching selector assertion together; earlier review records remain
+historical snapshots.
