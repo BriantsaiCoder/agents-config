@@ -22,7 +22,7 @@ if [[ -n "$HOOK_INPUT" ]] &&
     exit 0
   fi
 else
-  PAYLOAD_FILE="$(_hj '.tool_input.file_path // .tool_input.path // .tool_input.filePath // .tool_input.target_file // .toolArgs.path // .toolArgs.file_path // .file_path // .path')"
+  PAYLOAD_FILE="$(_hj '[.tool_input.file_path?, .tool_input.path?, .tool_input.filePath?, .tool_input.target_file?, .toolArgs.path?, .toolArgs.file_path?, .file_path?, .path?] | map(select(type == "string" and length > 0)) | .[0] // empty')"
   [[ -n "$PAYLOAD_FILE" ]] && HOOK_FILE="$PAYLOAD_FILE"
 fi
 # ---- end shim ----

@@ -57,7 +57,7 @@ Listing a skill here does NOT reopen it for further editing. It records one deci
 | `grill-with-docs` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2) | 2026-09-09 — user-approved disclosure/description supplement; baseline tree `2709e7d916096a783dae120d269fa1b62e01bc58125ce6c58e4bf645adec766b`; tree SHA-256 `9e44d8a8d61d7561ed646054743b170792e06ec06491d1836053d46ab971db1a` | **Active** |
 | `ai-level-check` | github.com/Raymondhou0917/ai-level-check (v0.4.6) | `6497ee9e681da0b676322b307f12c4c184b87f42` | 2026-09-09 — vendor the SKILL.md fixpoint closure (14 of 49 upstream files) and drop two sets of pointers rather than content: the four persona-quadrant diagrams under `assets/personas/` become the plain-text type catalogue their own alt text carried, and the fifth file there (`four-axes.png`) is dropped outright because only the un-vendored `README.md` referenced it — `assets/` totals 7.4MB, and the `docs/lv{1,3,4}.html` demo files are unnamed in `SKILL.md` / `references/report-design.md` while the do-not-borrow-a-type prohibition and the public demo URL stay; upstream `.gitignore` is retained because `references/privacy.md` points at it and it carries the `evidence/` and `reports/*` exclusions this public repo needs; the approved estimate was 12 files and the fixpoint closure landed 14 — the extra two are upstream `.gitignore` (load-bearing: `references/privacy.md` points at it) and the zero-byte `reports/.gitkeep`, both required by the same closure rule; tree SHA-256 `13c97ee25cbb49cd382d6240006180c5fce9c7dee8a1c377fa56208a61960c06`; 2026-09-09 — removed at user request (unused); no attic copy, restore from the commit before removal | **Removed 2026-09-09** |
 
-| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | original pre-fork tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0`; upstream reassessed at `d24bc269171a9171fac58493e0ffba511d571a4a` on 2026-09-11 | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — route recon/hunting fan-out through shared INT-4, remove the duplicate verifier fleet, and retain one Phase 3 validator that sees every factual and remediation field before Phase 4/5 serialize it; PR review follow-ups narrow delegated context and attack-class splitting, require complete Phase 2 candidate packets, require a fresh validator after substantive correction, retain unavailable candidates outside `findings.json`, bound optional hardening notes, align setup/README output and prior-run loading with retained candidates, define the distinct fresh-context fallback, and redact sensitive candidate literals before they leave source context; tree SHA-256 `c74e79ae8f02d2ce533f0f8abbda0f46f9a70588cc9a895b88f68be8e9d645ec` | **Active** |
+| `security-audit` | github.com/cloudflare/security-audit-skill (MIT, Cloudflare, Inc.) | original pre-fork tree `32ae587e750309e92d02c4668a4411ca90adef9a36d38313783393e4e6c8f1d0`; upstream reassessed at `d24bc269171a9171fac58493e0ffba511d571a4a` on 2026-09-11 | 2026-09-09 — approved Fable 5.1 audit delta: move Setup and prior-run coverage to `references/setup.md`, move Core Principles and Anti-Patterns to `references/principles.md`, default the output directory before asking, sync `README.md` file table and output-directory sentence to the split; 2026-09-10 shared audit — scope/routing/disclosure override; full before/after fixtures in docs/skill-overrides/2026-09-10-shared; 2026-09-11 — route recon/hunting fan-out through shared INT-4, remove the duplicate verifier fleet, and retain one Phase 3 validator that sees every factual and remediation field before Phase 4/5 serialize it; PR review follow-ups narrow delegated context and attack-class splitting, require complete Phase 2 candidate packets, require a fresh validator after substantive correction, retain unavailable candidates outside `findings.json`, bound optional hardening notes, align setup/README output and prior-run loading with retained candidates, define the distinct fresh-context fallback, and redact sensitive candidate literals before they leave source context; tree SHA-256 `0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` | **Active** |
 
 | `research` | github.com/mattpocock/skills | `8b36d4fb2635b3c21998dcd8144439c9e5ba7302` (v1.2.2); baseline tree `679ea679b8e4d0381b74dd9dc3fa0d329f8b7134c1151d1c2458824c1c24c016` | 2026-09-10 shared audit — substantial-report trigger, optional delegation, authorized output path; tree SHA-256 `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8`; full before/after fixtures in docs/skill-overrides/2026-09-10-shared | **Active** |
 
@@ -1234,7 +1234,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 
 | Skill | Candidate tree SHA-256 | Candidate SKILL.md SHA-256 |
 |---|---|---|
-| acquire-codebase-knowledge | `718ec635dd2d5398ec32649d88d6df66d809f0c5f2922c9c50b84f3f779a3e22` | `b0ddc523f61abb775f8b9c83e1a3e9d15f01305cd4360e0d845c33b8745106bb` |
+| acquire-codebase-knowledge | `3f85968fcb30997b20649c4af9e633b014f1dbad551331933e62cfa4bedf369d` | `b0ddc523f61abb775f8b9c83e1a3e9d15f01305cd4360e0d845c33b8745106bb` |
 | ask-matt | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` |
 | agent-browser | `85cdaedc49a2bc0604de81017422e744fd01ee1b299c64a6e83b9f1a85920c75` | `9fb4dfbebbbaab5358a3e9d969cd42db89546d645f2a4d3f4e34e67912af720a` |
 | apple-calendar | `e74cee7fff041c52cb0848b8cfe3eecc52dded7b64d1fcfd133cc215bbb656c0` | `123152bcbce8bcb07189ef738b13d86da66ebbfe6296f17db96ac1007d724b26` |
@@ -1262,7 +1262,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | grilling | `f9702850e9fa9a2fb264e877eeb5899deac4c09a05c01df0cde526a1d53160c4` | `d3c4cd7caf20eeae2004190c387f09fe80ff06d4f9cea20e90d6fa0745967ca8` |
 | implement | `031b9b743fcaedc0fa57f446712d5730a2c7d5c0f10f99c2f08c93122a2ab206` | `555457452b1f76a58ab516d5ed39fc65f427aa98a052e8df76216639e86a645e` |
 | improve-codebase-architecture | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` |
-| init-project-docs | `421dd8346d3d90a1ed9ede3137d3371113266fad543a12d2f0e3fffddb24c0bb` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
+| init-project-docs | `a08c0f4d278fb466175eab47f8ebe04f784427df0f70f9d6a92ce549287efb37` | `6c888be764ddc34e354f7195b9ddb45c1f61e0c981d27e61423973018195f6ac` |
 | jest-best-practices | `0e6a053968a416681ebec39b49f3cbb3735201dd68a807f37bdbed9e63431d28` | `3d10acee92e2cdfb8922d546d42da5f6a0ded573b5b9782184ecc02951b8875e` |
 | mysql-best-practices | `c99370462845e06a0b88ecc5b310d623720f5b6c06552b8787547b9fcefe9b94` | `8e660d9eaa6b6461c5e71fc880b73eb475cb551d9cb8b933c6efe9705324f95e` |
 | next-best-practices | `7a96bfb88ddbb38af2830f6df37fc28e0a56075d73af62125701c055683db4ab` | `3d7faa6eacc7266789f72a0ada344e1e014d9378f01981b60601b20c289c1d97` |
@@ -1272,7 +1272,7 @@ On upstream refresh, compare the original revision and fixture, retain only stil
 | postgresql-optimization | `45188feacc55240882eb226e9beae48b50f17fbd367628b4297baaef01fe247c` | `f806f37c63c43193d886fc49ffeaad14dd7e31b424cea5e656fdaf8391a6e178` |
 | react-best-practices | `e3931362133299e10b46ce13f0d7b2b1e5a5bc00b91143837a90141cc490ab31` | `bca124ac6a8ecc306461e9a1af18bc1fcf1697a8c19c709fe9d643f419f35eb5` |
 | research | `91bac5b97b47cd81d7c333b1484b98d4f0d2b6435e9f2f37ce795360f58183d8` | `52945b9041a4ffe93bb380db5e77dc46ac3f1edc7c111dbeb96051a1227c1e01` |
-| security-audit | `c74e79ae8f02d2ce533f0f8abbda0f46f9a70588cc9a895b88f68be8e9d645ec` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` |
+| security-audit | `0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` |
 | setup-matt-pocock-skills | `8b7884991baff72c74b6773404d13105976c6229d683cafb2a58165370585631` | `f52a7ecb62f61e0b42a75b2937666e80495480b74109802d994fcfb588dffbb5` |
 | shared-security-review | `b035fc8218ad8cea5729f304852482ce2da4b5cf686da00cc619b8c313fe6eb1` | `e7c8f4d4cd61febbfde08b1e44422e1705479fe6860e6bf8f7e0dc1b5f70989a` |
 | speak-human-tw | `5e3e7a4811ff46b811f4b550668564a4cd847abf3df5c5ad4a1fb77753c129d8` | `059d6074a27fcd48684fbbd07270e8a3d9dc4198f69b18baa792cdaf851de1ea` |
@@ -1312,7 +1312,7 @@ remain unchanged.
 | ask-matt | `55c1bb438af24491d140f05ea644de7f8ff40756276915aba39458cc2b4d87f5` | `0a3e6cd9b9cd4a06edd26c27d3caed25636521f04c0ba70c14daabeaf967091b` | `9b9dad77de6c55b64cb46010e02fc4a307e0535d6b9fda5713dc2a7efc224dbe` | Research no longer forces a background agent or repo artifact; shared INT-4/S2 owns those choices. |
 | codebase-design | `5d83418ecbaa7499a43a017780ff2ab5f61d5b613326fcb660a67d04b5b16b1f` | `628d0fbe2aeea1996204f657dabaab1e0ff034830d3585de91e067c3206ff128` | `1871eff971a67944a7204f5b4f0fa4bc4cdd4934d9924e795bdb85ddba1fba04` | Main context owns at least two alternatives; agent use is conditional and has no three-agent floor. |
 | improve-codebase-architecture | `9c57cc581b532e7dbf752d09f15b06dd61e08199f151684da72accbddb96c8c7` | `a52d5278556bce310ee50d64e00ac10c381a78302c01be5fe038c65507d311c1` | `2dc64caf0299cb298bb8fe7618407f1a441a376d0c14282d802931dc49d1dab4` | The deepening entrypoint now describes alternatives and leaves delegation to the routed design workflow. |
-| security-audit | `155518fb25be3a8d88566ea7fc051aef82b57bb2b4a11886f63793c40693a82c` | `c74e79ae8f02d2ce533f0f8abbda0f46f9a70588cc9a895b88f68be8e9d645ec` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` | Recon/hunting use conditional delegation and scoped Phase 1 context; hunters return complete schema-backed candidate packets; Phase 3 uses a separate validator or the defined fresh-context fallback, redacts sensitive candidate literals before prompts or retained artifacts, and keeps Phase 5 limited to validated content. |
+| security-audit | `155518fb25be3a8d88566ea7fc051aef82b57bb2b4a11886f63793c40693a82c` | `0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676` | `a146dd2a5b06ed476885d36b2653e4b83a79cec4a0d225cf25d824c36b8489a9` | Recon/hunting use conditional delegation and scoped Phase 1 context; hunters return complete schema-backed candidate packets; Phase 3 uses a separate validator or the defined fresh-context fallback, redacts sensitive candidate literals before prompts or retained artifacts, and keeps Phase 5 limited to validated content. |
 | tailwind-v4-shadcn | `bbd4b1098c7ad46d915a8238ec870c787811328b43d9535cdc8f54ee3d78e493` | `7c8ffe8eb2fb601f9e4dadb18ab0efd2091a1292c874d026a510228a01077b95` | `f8513a1704147c9cf3ecf75cc2a991adb4c04864cd3608bcd841ed5efab61c79` | Color guidance preserves valid project-native oklch, hsl, and var formats. |
 | wayfinder | `e9ee62e139a829fbc9cc3d43f6fb5c3a95e201bc5aea54010afe9fc0e78fb2d4` | `1602431050363c55074639577eebbf4dbd5ca887aec80e40d000cbc65b581225` | `5789d703dd028d917ffeebe639f4a2526e6468582fbb3f5b595d2530a56e0cec` | Research tickets follow INT-4 and their authorized output contract instead of spawning one agent and branch per ticket. |
 
@@ -1488,3 +1488,71 @@ control plus detector mutation prove that path is exercised, so no duplicate sou
 for that repeated premise. Rollback restores the three before trees, the prior current fingerprint
 and the six matching regression changes together; earlier review records remain historical
 snapshots.
+
+### 2026-09-11 fourth current-head PR review follow-up
+
+The current-head review found seven corrections across the existing scanner, hook-input, validation,
+and provenance contracts. `acquire-codebase-knowledge` now recognizes `DB_PASS` and
+`ENCRYPTION_KEY` across assignments, XML elements, and bounded `name` / `key` attributes while
+preserving `compass`, `bypass`, and suffix near-matches. Its XML element detector stops at the
+credential-shaped element name instead of searching for an unbounded closing `>`, and manifest
+preview inspection reads at most 1,000,001 decoded characters before withholding the entire preview.
+Its tree moves from `718ec635dd2d5398ec32649d88d6df66d809f0c5f2922c9c50b84f3f779a3e22`
+to `10e56d1d20e9104e13744d3fa294294704f17cf7644e8acbb9d67c6df3c43522`.
+
+`init-project-docs` now selects the first nonempty string from the supported JSON target fields,
+skips null, boolean, number, and empty-string candidates, and retains the environment target when
+the payload has no usable string. Its tree moves from
+`421dd8346d3d90a1ed9ede3137d3371113266fad543a12d2f0e3fffddb24c0bb` to
+`4479fa1c08178fa1e814c093b869052e0cde7f6094de960ed33d9ad5a2787c59`.
+
+`security-audit` now reuses the `REPORT.md` validation-provenance section for every candidate,
+recording reviewer identity, mechanism, exact reviewed source identity, verdict, and field-specific
+evidence. Retained candidates bind clean Git, dirty Git, and non-Git inputs to the applicable commit,
+diff, or snapshot hashes; source drift requires refreshed evidence and independent revalidation
+before promotion. Its tree moves from
+`c74e79ae8f02d2ce533f0f8abbda0f46f9a70588cc9a895b88f68be8e9d645ec` to
+`0bb95ebf349ca7b9a86b2975522d707c1c4535d172f799b6ae4a628b18cd6676`.
+
+The seven regression slices start at 540 PASS / 7 FAIL on the preceding source and reach 547 PASS /
+0 FAIL after these fixes. No new audit artifact, schema field, or framework was introduced. Rollback
+restores the three before trees, their prior current fingerprints, and the seven matching regression
+changes together; earlier review records remain historical snapshots.
+
+### 2026-09-11 independent r8 S5 follow-up
+
+The independent review of the seven-fix candidate found three gaps in its shared input boundaries.
+`acquire-codebase-knowledge` now recognizes the bare `pass` alias without hiding `compass`,
+`bypass`, `passPolicy`, or the bounded suffix controls; XML `name` / `key` values accept the same
+compound prefixes as assignment and element keys. The URL userinfo detector now requires a scheme
+start boundary, avoiding repeated suffix scans across long safe scheme-character runs while retaining
+standard and custom schemes with userinfo. Its tree moves from
+`10e56d1d20e9104e13744d3fa294294704f17cf7644e8acbb9d67c6df3c43522` to
+`ac7885e8bd949532a72b88682fef6b49392718998dabd8291e09478b2e0c1bd0`.
+
+`init-project-docs` now uses optional jq field access before choosing the first nonempty string, so a
+scalar or array in an earlier parent field cannot suppress a later valid path or the existing
+environment fallback. Its tree moves from
+`4479fa1c08178fa1e814c093b869052e0cde7f6094de960ed33d9ad5a2787c59` to
+`a08c0f4d278fb466175eab47f8ebe04f784427df0f70f9d6a92ce549287efb37`.
+
+The three amended controls start at 544 PASS / 3 FAIL on the frozen r8 candidate and return the
+unchanged 547-check carrier to 547 PASS / 0 FAIL after the fixes and current-fingerprint update.
+
+### 2026-09-11 amended-candidate assignment follow-up
+
+The independent review of the amended candidate found two assignment-only regressions: the shared
+compound-prefix expression made long safe hyphenated input quadratic, while its global left boundary
+missed existing camel-case aliases such as `awsAccessKeyId`. Assignment matching now keeps the prior
+suffix behavior for established credential aliases and gives only bare `pass` an alphanumeric left
+boundary. This retains `app_pass` and `app-pass` while leaving `compass` and `bypass` visible. XML
+element and attribute matching retain their bounded compound-prefix handling. The
+`acquire-codebase-knowledge` tree moves from
+`ac7885e8bd949532a72b88682fef6b49392718998dabd8291e09478b2e0c1bd0` to
+`3f85968fcb30997b20649c4af9e633b014f1dbad551331933e62cfa4bedf369d`.
+
+The existing credential-alias carrier now covers both regressions without adding a new carrier case.
+Rollback restores the amended-candidate scanner, its prior current fingerprint, and the matching
+carrier assertions together; earlier review records remain historical snapshots.
+Rollback restores the two prior trees, their prior current fingerprints, and the amended fixture
+inputs together; the frozen r8 package and earlier review records remain immutable evidence.

@@ -1044,6 +1044,32 @@ else
   ng "run-tests hook accepts Claude Codex and Copilot target shapes"
 fi
 
+printf 'mixed\n' > "$hook_fixture/mixed.cs"
+printf 'fallback\n' > "$hook_fixture/fallback.cs"
+printf 'scalar-parent\n' > "$hook_fixture/scalar-parent.cs"
+printf 'array-parent\n' > "$hook_fixture/array-parent.cs"
+hook_mixed_candidates="$(printf '{"tool_input":{"file_path":true,"path":"","filePath":42},"toolArgs":{"path":"%s"}}\n' "$hook_fixture/mixed.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = mixed' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_invalid_candidates_fallback="$(printf '{"tool_input":{"file_path":false,"path":"","filePath":42}}\n' | \
+  TMPDIR="$hook_fixture/tmp" CLAUDE_FILE_PATH="$hook_fixture/fallback.cs" \
+  AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = fallback' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_scalar_parent="$(printf '{"tool_input":"invalid container","path":"%s"}\n' "$hook_fixture/scalar-parent.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = scalar-parent' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+hook_array_parent="$(printf '{"tool_input":[],"toolArgs":{"path":"%s"}}\n' "$hook_fixture/array-parent.cs" | \
+  TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='test "$(cat "$AGENT_TEST_FILE")" = array-parent' \
+  bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
+if [[ "$hook_mixed_candidates" == *PASSED* ]] &&
+   [[ "$hook_invalid_candidates_fallback" == *PASSED* ]] &&
+   [[ "$hook_scalar_parent" == *PASSED* ]] &&
+   [[ "$hook_array_parent" == *PASSED* ]]; then
+  ok "run-tests hook selects the first nonempty string target and preserves environment fallback"
+else
+  ng "run-tests hook selects the first nonempty string target and preserves environment fallback"
+fi
+
 pipeline_output="$(printf '{"tool_input":{"file_path":"%s"}}\n' "$hook_fixture/pipeline.cs" | \
   TMPDIR="$hook_fixture/tmp" AGENT_TEST_COMMAND='false | cat' \
   bash "$ROOT/skills/init-project-docs/references/hooks/run-tests.sh" 2>&1)"
@@ -1459,6 +1485,184 @@ fi
 if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
 from pathlib import Path
 import importlib.util
+import subprocess
+import sys
+import tempfile
+import time
+
+scanner = Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+with tempfile.TemporaryDirectory(prefix="codebase-credential-aliases-") as directory:
+    fixture = Path(directory)
+    (fixture / "settings.gradle").write_text(
+        "pass=S11_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
+    )
+    (fixture / "build.gradle").write_text(
+        "DB_PASS=S11_DB_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
+    )
+    (fixture / "settings.gradle.kts").write_text(
+        "ENCRYPTION_KEY=S11_ENCRYPTION_KEY_ASSIGNMENT_DO_NOT_PRINT\n"
+    )
+    (fixture / "gradle.properties").write_text(
+        "awsAccessKeyId=S11_CAMEL_ACCESS_KEY_DO_NOT_PRINT\n"
+    )
+    (fixture / "build.sbt").write_text(
+        "app_pass=S11_UNDERSCORE_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
+    )
+    (fixture / "Makefile").write_text(
+        "app-pass=S11_HYPHEN_PASS_ASSIGNMENT_DO_NOT_PRINT\n"
+    )
+    (fixture / "pass-element.csproj").write_text(
+        "<Project><pass>S11_PASS_ELEMENT_DO_NOT_PRINT</pass></Project>\n"
+    )
+    (fixture / "db-pass-element.csproj").write_text(
+        "<Project><DB_PASS>S11_DB_PASS_ELEMENT_DO_NOT_PRINT</DB_PASS></Project>\n"
+    )
+    (fixture / "encryption-element.csproj").write_text(
+        "<Project><ENCRYPTION_KEY>S11_ENCRYPTION_KEY_ELEMENT_DO_NOT_PRINT</ENCRYPTION_KEY></Project>\n"
+    )
+    (fixture / "pass-attribute.csproj").write_text(
+        '<Project><Property name="pass" value="S11_PASS_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
+    )
+    (fixture / "db-pass-attribute.csproj").write_text(
+        '<Project><Property name="DB_PASS" value="S11_DB_PASS_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
+    )
+    (fixture / "encryption-attribute.csproj").write_text(
+        '<Project><add key="ENCRYPTION_KEY" value="S11_ENCRYPTION_KEY_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
+    )
+    (fixture / "compound-attribute.csproj").write_text(
+        '<Project><Property key="app-encryption-key" '
+        'value="S11_COMPOUND_ENCRYPTION_ATTRIBUTE_DO_NOT_PRINT"/></Project>\n'
+    )
+    (fixture / "malformed.csproj").write_text(
+        '<Project><Property name="DB_PASS value="'
+        'S11_DB_PASS_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT"></Project>\n'
+    )
+    (fixture / "Cargo.toml").write_text(
+        "compass=ok\n"
+        "bypass=ok\n"
+        "passPolicy=ok\n"
+        "DB_PASSPHRASE=ok\n"
+        "ENCRYPTION_KEY_HINT=ok\n"
+    )
+    (fixture / "safe-attributes.csproj").write_text(
+        '<Project><Property name="encryption_key_policy" value="VISIBLE_SAFE"/></Project>\n'
+    )
+
+    report = fixture / "scan.txt"
+    sensitive_markers = (
+        "S11_PASS_ASSIGNMENT_DO_NOT_PRINT",
+        "S11_UNDERSCORE_PASS_ASSIGNMENT_DO_NOT_PRINT",
+        "S11_HYPHEN_PASS_ASSIGNMENT_DO_NOT_PRINT",
+        "S11_CAMEL_ACCESS_KEY_DO_NOT_PRINT",
+        "S11_DB_PASS_ASSIGNMENT_DO_NOT_PRINT",
+        "S11_ENCRYPTION_KEY_ASSIGNMENT_DO_NOT_PRINT",
+        "S11_PASS_ELEMENT_DO_NOT_PRINT",
+        "S11_DB_PASS_ELEMENT_DO_NOT_PRINT",
+        "S11_ENCRYPTION_KEY_ELEMENT_DO_NOT_PRINT",
+        "S11_PASS_ATTRIBUTE_DO_NOT_PRINT",
+        "S11_DB_PASS_ATTRIBUTE_DO_NOT_PRINT",
+        "S11_ENCRYPTION_KEY_ATTRIBUTE_DO_NOT_PRINT",
+        "S11_COMPOUND_ENCRYPTION_ATTRIBUTE_DO_NOT_PRINT",
+        "S11_DB_PASS_UNCLOSED_ATTRIBUTE_DO_NOT_PRINT",
+    )
+    safe_markers = (
+        "compass=ok",
+        "bypass=ok",
+        "passPolicy=ok",
+        "DB_PASSPHRASE=ok",
+        "ENCRYPTION_KEY_HINT=ok",
+        'name="encryption_key_policy" value="VISIBLE_SAFE"',
+    )
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run(
+            [sys.executable, str(scanner), *options],
+            cwd=fixture,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        for marker in sensitive_markers:
+            assert marker not in output, f"credential alias leaked: {marker}"
+        for marker in safe_markers:
+            assert marker in output, f"safe credential near-match was hidden: {marker}"
+
+    for length in (4_000, 8_000, 16_000):
+        safe_assignment = ("a-" * ((length + 1) // 2))[:length]
+        started = time.monotonic()
+        assert module.CREDENTIAL_ASSIGNMENT_RE.search(safe_assignment) is None
+        assert time.monotonic() - started < 1.0, (
+            f"safe compound assignment scan exceeded the bound at {length} characters"
+        )
+PY
+then
+  ok "codebase scanner recognizes DB_PASS and ENCRYPTION_KEY in all manifest grammars"
+else
+  ng "codebase scanner recognizes DB_PASS and ENCRYPTION_KEY in all manifest grammars"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix="codebase-partial-xml-element-") as directory:
+    fixture = Path(directory)
+    (fixture / "partial.csproj").write_text(
+        "<Project><password S11_PARTIAL_XML_ELEMENT_DO_NOT_PRINT"
+    )
+    (fixture / "safe.csproj").write_text(
+        "<Project><passwordPolicy S11_SAFE_PARTIAL_XML_VISIBLE"
+    )
+    report = fixture / "scan.txt"
+    for options in ([], ["--output", str(report)]):
+        result = subprocess.run(
+            [sys.executable, str(scanner), *options],
+            cwd=fixture,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, "scanner failed"
+        output = report.read_text() if options else result.stdout
+        assert "S11_PARTIAL_XML_ELEMENT_DO_NOT_PRINT" not in output
+        assert "S11_SAFE_PARTIAL_XML_VISIBLE" in output
+PY
+then
+  ok "codebase scanner withholds a credential element before its opening tag closes"
+else
+  ng "codebase scanner withholds a credential element before its opening tag closes"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import importlib.util
+import sys
+import time
+
+scanner = Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+text = "<password " * 4_000 + "S11_REPEATED_XML_OPENINGS_DO_NOT_PRINT"
+started = time.monotonic()
+assert module.manifest_preview_is_sensitive(text)
+assert time.monotonic() - started < 1.0, "repeated partial XML openings exceeded the scan bound"
+PY
+then
+  ok "codebase scanner handles repeated partial credential-element openings in bounded time"
+else
+  ng "codebase scanner handles repeated partial credential-element openings in bounded time"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import importlib.util
 import sys
 import tempfile
 import tracemalloc
@@ -1470,7 +1674,7 @@ spec.loader.exec_module(module)
 
 with tempfile.TemporaryDirectory(prefix="codebase-bounded-preview-memory-") as directory:
     fixture = Path(directory) / "package-lock.json"
-    fixture.write_text("# safe\n" * 200_000)
+    fixture.write_text("# safe\n" * 100_000)
     source_size = fixture.stat().st_size
 
     tracemalloc.start()
@@ -1479,7 +1683,7 @@ with tempfile.TemporaryDirectory(prefix="codebase-bounded-preview-memory-") as d
     tracemalloc.stop()
 
     assert preview.startswith("# safe\n" * module.MANIFEST_PREVIEW_LINES)
-    assert "Showing first 80 of 200000 lines" in preview
+    assert "Showing first 80 of 100000 lines" in preview
     assert peak_bytes < source_size * 4, (
         f"bounded preview retained duplicate full-file representations: "
         f"peak={peak_bytes}, source={source_size}"
@@ -1489,6 +1693,32 @@ then
   ok "codebase scanner bounds preview-memory overhead for large safe manifests"
 else
   ng "codebase scanner bounds preview-memory overhead for large safe manifests"
+fi
+
+if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
+from pathlib import Path
+import importlib.util
+import sys
+import tempfile
+
+scanner = Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("codebase_scan", scanner)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+with tempfile.TemporaryDirectory(prefix="codebase-oversized-preview-") as directory:
+    fixture = Path(directory) / "package-lock.json"
+    marker = "S11_OVERSIZED_PREVIEW_DO_NOT_PRINT"
+    fixture.write_text("x" * module.MANIFEST_PREVIEW_SCAN_CHARS + marker)
+    preview = module.read_file_preview(fixture)
+    assert marker not in preview
+    assert "Preview withheld" in preview
+    assert "1,000,000 decoded characters" in preview
+PY
+then
+  ok "codebase scanner withholds manifests beyond the decoded-character scan limit"
+else
+  ng "codebase scanner withholds manifests beyond the decoded-character scan limit"
 fi
 
 if PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/skills/acquire-codebase-knowledge/scripts/scan.py" <<'PY'
@@ -1530,8 +1760,28 @@ import tempfile
 scanner = Path(sys.argv[1])
 with tempfile.TemporaryDirectory(prefix="codebase-url-userinfo-") as directory:
     fixture = Path(directory)
+    safe_manifest = fixture / "package-lock.json"
+    safe_text = '{"description":"' + "a" * 100_000 + '"}\n'
+    safe_manifest.write_text(safe_text)
+    safe_result = subprocess.run(
+        [sys.executable, str(scanner)],
+        cwd=fixture,
+        text=True,
+        capture_output=True,
+        timeout=2,
+    )
+    assert safe_result.returncode == 0, "safe scanner probe failed"
+    assert safe_text in safe_result.stdout
+    safe_manifest.unlink()
+
     (fixture / "deno.json").write_text(
         '{"repository":"https://user:S11_URL_ONLY_DO_NOT_PRINT@example.invalid/repo"}\n'
+    )
+    (fixture / "package.json").write_text(
+        '{"repository":"git+ssh://user:S11_CUSTOM_URL_DO_NOT_PRINT@example.invalid/repo"}\n'
+    )
+    (fixture / "settings.gradle").write_text(
+        "repository=https://example.invalid/repo\n"
     )
     report = fixture / "scan.txt"
     for options in ([], ["--output", str(report)]):
@@ -1544,6 +1794,8 @@ with tempfile.TemporaryDirectory(prefix="codebase-url-userinfo-") as directory:
         assert result.returncode == 0, "scanner failed"
         output = report.read_text() if options else result.stdout
         assert "S11_URL_ONLY_DO_NOT_PRINT" not in output
+        assert "S11_CUSTOM_URL_DO_NOT_PRINT" not in output
+        assert "repository=https://example.invalid/repo" in output
 PY
 then
   ok "codebase scanner independently exercises URL userinfo withholding"
@@ -1658,6 +1910,12 @@ has "security audit redacts retained candidates without dropping fields" \
 has "security audit explicitly bounds the hardening-note exception" \
   'Hardening notes.*optional.*outside.*findings\.json.*MUST NOT.*exploitability.*impact.*severity' \
   skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit reports validation provenance for every candidate" \
+  'Validation provenance.*every candidate.*reviewer identity.*mechanism.*pinned source identity.*commit SHA.*diff or snapshot SHA.*verdict.*field-specific evidence.*Phase 5.*reconcil' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
+has "security audit prevents direct promotion after retained-source drift" \
+  'retained candidate.*exact reviewed source identity.*clean Git.*commit SHA.*dirty Git.*commit SHA.*reviewed diff SHA.*snapshot SHA.*non-Git.*snapshot SHA.*resume.*same source identity.*drift.*refresh.*revalidat.*MUST NOT.*directly promot' \
+  skills/security-audit/VALIDATION-AND-REPORTING.md
 has "security README requires independent validation only to promote findings" \
   'independent validation path.*required.*promote findings.*UNCONFIRMED-CANDIDATES\.md' \
   skills/security-audit/README.md
@@ -1686,22 +1944,49 @@ lacks "architecture deepening pointer does not force parallel agents" \
   'parallel sub-agent pattern' \
   skills/improve-codebase-architecture/SKILL.md
 
-if python3 - "$ROOT/vendored-forks.md" <<'PY'
+if . "$ROOT/skills/auditing-skill-folder/scripts/lib-vendored.sh" &&
+   acquire_tree_sha="$(vendored_tree_sha256 "$ROOT/skills/acquire-codebase-knowledge")" &&
+   acquire_skill_sha="$(shasum -a 256 "$ROOT/skills/acquire-codebase-knowledge/SKILL.md" | awk '{ print $1 }')" &&
+   init_tree_sha="$(vendored_tree_sha256 "$ROOT/skills/init-project-docs")" &&
+   init_skill_sha="$(shasum -a 256 "$ROOT/skills/init-project-docs/SKILL.md" | awk '{ print $1 }')" &&
+   security_tree_sha="$(vendored_tree_sha256 "$ROOT/skills/security-audit")" &&
+   security_skill_sha="$(shasum -a 256 "$ROOT/skills/security-audit/SKILL.md" | awk '{ print $1 }')" &&
+   python3 - "$ROOT/vendored-forks.md" \
+     "$acquire_tree_sha" "$acquire_skill_sha" \
+     "$init_tree_sha" "$init_skill_sha" \
+     "$security_tree_sha" "$security_skill_sha" <<'PY'
 from pathlib import Path
 import re
 import sys
 
 text = Path(sys.argv[1]).read_text()
+actual = {
+    "acquire-codebase-knowledge": tuple(sys.argv[2:4]),
+    "init-project-docs": tuple(sys.argv[4:6]),
+    "security-audit": tuple(sys.argv[6:8]),
+}
+for skill, expected in actual.items():
+    candidate = re.search(
+        rf'^\| {re.escape(skill)} \| `([a-f0-9]{{64}})` \| `([a-f0-9]{{64}})` \|$',
+        text,
+        re.M,
+    )
+    assert candidate and candidate.groups() == expected
+
 active = re.search(r'^\| `security-audit` \|.*tree SHA-256 `([a-f0-9]{64})` \| \*\*Active\*\* \|$', text, re.M)
 opus = re.search(r'^\| security-audit \| `[a-f0-9]{64}` \| `([a-f0-9]{64})` \| `[a-f0-9]{64}` \| [^|]+ \|$', text, re.M)
-candidate = re.search(r'^\| security-audit \| `([a-f0-9]{64})` \| `[a-f0-9]{64}` \|$', text, re.M)
-assert active and opus and candidate
-assert active.group(1) == opus.group(1) == candidate.group(1)
+assert active and opus
+assert active.group(1) == opus.group(1) == actual["security-audit"][0]
+
+current = text.split("### 2026-09-11 fourth current-head PR review follow-up", 1)
+assert len(current) == 2
+for tree_sha, _ in actual.values():
+    assert tree_sha in current[1]
 PY
 then
-  ok "security-audit current tree identity is consistent across ledger rows"
+  ok "changed skill tree identities match every current ledger row"
 else
-  ng "security-audit current tree identity is consistent across ledger rows"
+  ng "changed skill tree identities match every current ledger row"
 fi
 section_has "Phase 2 host matrix preserves complete wrapper metadata identity" \
   '合併策略（Phase 2）' \

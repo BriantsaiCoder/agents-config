@@ -27,6 +27,7 @@ TREE_LIMIT = 200
 TREE_MAX_DEPTH = 3
 TODO_LIMIT = 60
 MANIFEST_PREVIEW_LINES = 80
+MANIFEST_PREVIEW_SCAN_CHARS = 1_000_000
 RECENT_COMMITS_LIMIT = 20
 CHURN_LIMIT = 20
 
@@ -185,25 +186,26 @@ PERFORMANCE_MARKERS = [
 
 CREDENTIAL_KEY = (
     r"api[_-]?key|token|secret(?:[_-]?key(?:[_-]?base)?)?|signing[_-]?key|"
-    r"password|passwd|pwd|client[_-]?secret|"
+    r"db[_-]?pass|encryption[_-]?key|password|passwd|pwd|client[_-]?secret|"
     r"private[_-]?key|access[_-]?key(?:[_-]?id)?|connection[_-]?string|"
     r"auth(?:orization)?|credentials"
 )
+CREDENTIAL_COMPOUND_PREFIX = r"(?:[A-Za-z_][\w.-]*[_-])?"
 CREDENTIAL_ASSIGNMENT_RE = re.compile(
-    rf"(?i)[\"']?(?:{CREDENTIAL_KEY})[\"']?\s*[:=]"
+    rf"(?i)[\"']?(?:{CREDENTIAL_KEY}|(?<![A-Za-z0-9])pass)[\"']?\s*[:=]"
 )
 CREDENTIAL_XML_RE = re.compile(
     rf"(?is)<(?:[A-Za-z_][\w.-]*:)?"
-    rf"(?:[A-Za-z_][\w.-]*[_-])?(?:{CREDENTIAL_KEY})\b[^>]*>"
+    rf"{CREDENTIAL_COMPOUND_PREFIX}(?:{CREDENTIAL_KEY}|pass)\b"
 )
 CREDENTIAL_XML_ATTRIBUTE_RE = re.compile(
     rf"(?is)<(?:[A-Za-z_][\w.-]*:)?[A-Za-z_][\w.-]*\b[^<>]*?\s"
     rf"(?:[A-Za-z_][\w.-]*:)?(?:name|key)\s*=\s*"
-    rf"(?P<quote>[\"'])\s*(?:{CREDENTIAL_KEY})"
+    rf"(?P<quote>[\"'])\s*{CREDENTIAL_COMPOUND_PREFIX}(?:{CREDENTIAL_KEY}|pass)"
     rf"(?:\s*(?P=quote)|(?=\s|/?>))"
 )
 URL_USERINFO_RE = re.compile(
-    r"(?i)(?P<scheme>[a-z][a-z0-9+.-]*://)(?P<userinfo>[^/@\s]+)@"
+    r"(?i)(?<![a-z0-9+.-])(?P<scheme>[a-z][a-z0-9+.-]*://)(?P<userinfo>[^/@\s]+)@"
 )
 
 
@@ -279,7 +281,15 @@ def read_file_preview(filepath: Path, max_lines: int = MANIFEST_PREVIEW_LINES) -
     """Read a bounded preview, withholding it when value boundaries may be sensitive."""
     try:
         with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-            full_text = f.read()
+            # ponytail: this fixed cap bounds memory; use a streaming matcher only if
+            # larger manifests must be inspected instead of withholding their preview.
+            full_text = f.read(MANIFEST_PREVIEW_SCAN_CHARS + 1)
+
+        if len(full_text) > MANIFEST_PREVIEW_SCAN_CHARS:
+            return (
+                "[Preview withheld: manifest contains more than 1,000,000 decoded "
+                "characters; preview was not emitted.]"
+            )
 
         if not full_text:
             return "None found."

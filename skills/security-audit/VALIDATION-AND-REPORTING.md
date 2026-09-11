@@ -10,6 +10,8 @@ Each complete candidate needs an independent read-only validation that tries to 
 
 Before a candidate leaves its source context for either a validator prompt or `<output-dir>/UNCONFIRMED-CANDIDATES.md`, serialize every field but replace credential values and other sensitive literals with `[REDACTED]`; preserve non-sensitive structure and the source location, and add a redaction note to the evidence for every affected field path without copying the raw literal. A retained candidate must include the complete redacted record, its source evidence, the `UNAVAILABLE` reason, and the missing validation mechanism, while remaining excluded from `findings.json`, the findings table, and remediation recommendations. Record the gate and retained-candidate count in the report limitations. When independent validation becomes available, resume at Phase 3 before promoting or rejecting the candidate.
 
+A retained candidate MUST store its exact reviewed source identity: for a clean Git checkout, store the pinned commit SHA; for a dirty Git checkout, store the commit SHA plus a reviewed diff SHA (or snapshot SHA); for non-Git source, store a reviewed snapshot SHA. On resume, confirm the same source identity; when source drift is present, refresh the source evidence and revalidate the complete record. A drifted candidate MUST NOT directly promote to a finding.
+
 Batch findings from the same attack surface into one validator. Apply shared INT-4 to scheduling and count; parallelize only independent, substantial validation scopes.
 
 Each validation agent prompt should:
@@ -51,6 +53,7 @@ Hardening notes are optional and remain outside `findings.json`. If included, ea
    - Identified baseline and how this application compares
    - Findings table (severity, title, one-line description)
    - Each finding with: file path, concrete attack scenario, impact, recommended fix
+   - Validation provenance for every candidate: reviewer identity, validation mechanism, pinned source identity (commit SHA plus any applicable reviewed diff or snapshot SHA), verdict, and field-specific evidence; Phase 5 reconciliation MUST keep this section consistent with the final candidate records
    - Optional hardening notes section under the evidence boundary above
    - Positive patterns section (what the codebase does well -- this calibrates trust in the audit)
 
@@ -76,4 +79,4 @@ The schema supports two verdict types via `oneOf`:
 2. Copy the validated fields into the corresponding schema fields. Missing factual or remediation content is not a formatting gap: return the complete record to coordinator correction and fresh independent validation, or reject it.
 3. Run `node <skill-dir>/validate-findings.cjs <output-dir>/findings.json`. It checks required fields, enum values, structural constraints, and `additionalProperties`; it does not validate facts.
 4. Correct purely structural failures without changing validated meaning. Send every substantive change through fresh independent validation before rerunning the schema check.
-5. Reconcile `REPORT.md` and `FINDINGS-DETAIL.md` with the final independently validated `findings.json`. Remove or amend anything rejected or corrected in Phase 3 so the human-readable and machine-readable outputs agree.
+5. Reconcile `REPORT.md`, including its validation provenance, and `FINDINGS-DETAIL.md` with the final Phase 3 candidate records, the independently validated `findings.json`, and any retained candidates. Remove or amend anything rejected or corrected in Phase 3, and verify that reviewer identity, mechanism, pinned source identity, verdict, and evidence agree across their applicable outputs.
