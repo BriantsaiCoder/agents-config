@@ -1,6 +1,6 @@
 # Routing continuations
 
-依命中的 intake／tracker、跨 session／ticket、research、skill audit 或 handoff section 載入；同版已在 context 時沿用。
+依命中的 intake／tracker、跨 session／ticket、research 或 handoff section 載入；同版已在 context 時沿用。
 
 命中 user-only skill 時依 [INT-7] 推薦該 host 的 explicit invocation command 並等待。需要 delegation 時套 [INT-4]。
 

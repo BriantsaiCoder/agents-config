@@ -1,6 +1,6 @@
 ---
 name: tailwind-v4-shadcn
-description: "Fix Tailwind v4 + shadcn/ui token integration and dark mode."
+description: "Set up, migrate, or fix Tailwind v4 + shadcn/ui token integration and dark mode."
 ---
 
 # Tailwind v4 + shadcn/ui
