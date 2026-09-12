@@ -18,7 +18,7 @@ When the user asks to "explore this site for testing", "map out the user flows",
    - The user-facing action (e.g., "Submit search query")
    - The exact locator strategy (`getByRole('button', { name: 'Search' })`, `getByLabel('Email')`, `getByTestId('submit-btn')`)
    - The expected outcome (URL change, visible toast, network call, DOM update)
-4. Close task-owned pages with `browser_tabs` (`action: "close"` and the observed tab index); preserve pre-existing pages. `browser_close` can dispose the MCP backend and close its context/browser, so use it only when all affected resources are task-owned or their closure is explicitly authorized.
+4. Before each page close, re-list `browser_tabs` and confirm the task-owned page's current index; then close that index with `action: "close"`. Closing a page shifts later indices, so preserve pre-existing pages and re-observe before the next close. `browser_close` can dispose the MCP backend and close its context/browser, so use it only when all affected resources are task-owned or their closure is explicitly authorized.
 5. Return a concise summary of findings.
 6. Propose candidate test cases derived from the exploration; do not write code yet — generation is a separate step.
 
