@@ -73,12 +73,14 @@ During triage (Step 1: Gather context), read all files in `.out-of-scope/`. When
 
 - Check if the request matches an existing out-of-scope concept
 - Matching is by concept similarity, not keyword — "night theme" matches `dark-mode.md`
-- If there's a match, surface it to the maintainer: "This is similar to `.out-of-scope/dark-mode.md` — we rejected this before because [reason]. Do you still feel the same way?"
+- Surface any match and its prior reason. Reuse an explicit decision for the current request; ask only if its disposition is unresolved. Similarity to a historical rejection alone does not decide the new request.
+
+Reuse the current disposition below. Apply each knowledge-base write, comment, closure, label change, or deletion only when that effect is authorized; prepare drafts for uncovered actions and continue independent items.
 
 The maintainer may:
 
-- **Confirm** — the new issue gets added to the existing file's "Prior requests" list, then closed
-- **Reconsider** — the out-of-scope file gets deleted or updated, and the issue proceeds through normal triage
+- **Confirm** — retain the current rejection and prepare the "Prior requests" update and closure within that action scope
+- **Reconsider** — prepare the out-of-scope update or deletion and continue normal triage; apply only covered actions
 - **Disagree** — the issues are related but distinct, proceed with normal triage
 
 ## When to write to `.out-of-scope/`
@@ -87,7 +89,7 @@ Only when an **enhancement** (not a bug) is *rejected* as `wontfix`. This applie
 
 Do **not** write here when something is closed as `wontfix` because it's **already implemented**. That's a built feature, not a rejected one; recording it would poison the dedup checks with false rejections. Instead, the closing comment points to where the feature already lives.
 
-The flow:
+The flow below applies only to already-authorized effects; otherwise deliver its concrete drafts:
 
 1. Maintainer decides a feature request is out of scope
 2. Check if a matching `.out-of-scope/` file already exists
@@ -100,6 +102,6 @@ The flow:
 
 If the maintainer changes their mind about a previously rejected concept:
 
-- Delete the `.out-of-scope/` file
+- Update or delete the `.out-of-scope/` file only when that effect is authorized; otherwise prepare the proposed change
 - The skill does not need to reopen old issues — they're historical records
 - The new issue that triggered the reconsideration proceeds through normal triage

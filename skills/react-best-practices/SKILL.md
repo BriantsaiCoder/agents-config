@@ -5,7 +5,7 @@ description: "Write, review, or diagnose React components, hooks, state, and ren
 
 # React Best Practices
 
-For Vue, this skill does **not** apply — say so and stop.
+For Vue files, continue with `vue-best-practices`. In mixed repositories, apply each framework skill to its relevant files and continue the authorized task.
 
 ## Mode
 

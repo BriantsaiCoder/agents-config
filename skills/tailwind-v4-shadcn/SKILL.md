@@ -1,6 +1,6 @@
 ---
 name: tailwind-v4-shadcn
-description: "Use when setting up, migrating, or fixing Tailwind CSS v4 and shadcn/ui token integration or dark mode."
+description: "Set up, migrate, or fix Tailwind v4 + shadcn/ui token integration and dark mode."
 ---
 
 # Tailwind v4 + shadcn/ui

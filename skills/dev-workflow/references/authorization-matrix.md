@@ -8,6 +8,7 @@
 |---|---|---|
 | Read-only answer／review／diagnosis | Low | 可直接 probe；不得擴成 implementation。 |
 | In-scope local reversible edit／build／test | Low／Medium | 明確 change／build／fix 原句授權 in-scope local implementation 與 non-destructive verification；Medium-risk 留 session plan，不需第二次確認。 |
+| 純排版／typo，未改規則語意、routing、authorization 或 capability | Low | parse／links／diff；仍完成 repo required checks。改變規則效果即依對應 policy track。 |
 | Personal preference：model／effort／verbosity／UI，且不新增 capability | Low／Medium | 走 local reversible track；temp copy／parse／diff／rollback／canary，不強迫 hosted PR。 |
 | Policy／capability：plugin／MCP install／enable、新 credential／permission／network／external tool capability；另含 tier rules、authorization、hooks、sandbox、CI、secret transport、cross-host routing | High | 依 [INT-10] 走 policy track；同一設定檔可同時含兩種 track，逐 effect 分類。 |
 | External write／publish | High | 未在原核准 scope 時停在 [T0-8]；push／PR／merge 另依 [INT-1]。 |

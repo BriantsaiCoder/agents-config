@@ -133,6 +133,8 @@ BUGFIX settlement：根因（批次 INSERT 未依 byte 分塊致大 payload 逾 
 
 ## Closeout operations
 
+- [INT-10] 的 Git guard 是疊加防線：`pre-push` 未安裝時沒有機械 enforcement；`--no-verify` 可略過且不保證 `--mirror` 隱式刪除。不得把 hook 存在視為已完成 PR／review gate。
+
 - 使用者明示「解決 conflict」即執行 `resolving-merge-conflicts`；「分析 conflict」只讀，不得 resolve、stage 或 commit。
 - 執行 `resolving-merge-conflicts` 時只 stage 授權 scope 內已解決檔案，MUST NOT `git add -A`；若必要意圖無法安全保留或沒有解法符合 merge goal，停止並回報 trade-off，取得使用者確認後可 abort，不受上游「always resolve／stage everything」指示約束。
 - 合併後依 repo policy 清理已合併 branch；不得 force-push main／master。

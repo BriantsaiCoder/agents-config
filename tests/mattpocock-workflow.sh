@@ -215,7 +215,7 @@ for pattern in 'Status:' 'bug' 'enhancement' 'needs-triage' 'needs-info' \
 done
 
 has "setup requires explicit user invocation" 'setup-matt-pocock-skills.*使用者.*明示|使用者.*明示.*setup-matt-pocock-skills' skills/dev-workflow/SKILL.md
-has "global issue-tracker fallback" '~/\.agents/docs/agents/issue-tracker.md' skills/dev-workflow/SKILL.md
+has "global issue-tracker fallback" '~/\.agents/docs/agents/issue-tracker.md' "$routing_continuations_ref"
 section_has "Codex handles unavailable tools" Codex '工具未提供時以文字列 session plan／進度' "$host_adapters_ref"
 section_has "Codex fallback preserves approval" Codex '不得模擬工具呼叫或略過 protected gate 核准' "$host_adapters_ref"
 section_has "Codex Plan Mode is host-controlled" Codex 'Plan Mode（僅 host／user 可切換）' "$host_adapters_ref"
@@ -232,7 +232,7 @@ done
 # Copilot 的 config 對 .agents/ 只引用 skills/），而本檔第 83 行的 for-active 迴圈卻把它
 # 當 active——test 說 active、CONVENTIONS 規則 1 說歷史 evidence、runtime 不讀，三種互斥。
 # 驗真正被讀的那份檔才是斷言的本意。core/ 已退役至 attic/core/。
-has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' skills/dev-workflow/SKILL.md
+has "model route: grilling + domain-modeling" 'grilling.*domain-modeling' "$routing_continuations_ref"
 has "model route: codebase-design" 'codebase-design' skills/dev-workflow/SKILL.md
 has "model route: diagnosing-bugs" 'diagnosing-bugs' skills/dev-workflow/SKILL.md
 has "model route: tdd" '(^|[^[:alnum:]-])tdd([^[:alnum:]-]|$)' skills/dev-workflow/SKILL.md
@@ -275,7 +275,7 @@ has "existing agent documents route to writing-for-agents" 'AGENTS\.md.*CLAUDE\.
 has "project-doc initialization stays with init-project-docs" '初始化或整體 refresh.*`init-project-docs`' skills/dev-workflow/SKILL.md
 has "skill scaffolding stays with the host creator" '新 skill.*host creator' skills/dev-workflow/SKILL.md
 has "skill-folder lifecycle audit routes to auditing-skill-folder" 'skill folder.*keep.*trim.*delete.*migrate.*`auditing-skill-folder`' skills/dev-workflow/SKILL.md
-has "skill audit loads VND continuation" 'skill audit／VND.*continuations' skills/dev-workflow/SKILL.md
+has "skill audit uses its provenance owner" 'Skill audit／VND.*auditing-skill-folder.*Step 0' skills/dev-workflow/SKILL.md
 has "single-skill trigger failure requires caller-compatible RED" '單一 skill.*trigger failure.*MUST.*preserved RED.*caller.*`diagnosing-bugs`.*Step 2c RED.*`writing-for-agents`' skills/dev-workflow/SKILL.md
 lacks "audit no longer requests explicit writing-skill invocation" 'explicitly invoke `writing-for-agents`|明示.*`writing-for-agents`' skills/auditing-skill-folder/SKILL.md
 has "writing-for-agents covers host and pointed-at instructions" 'AGENTS\.md.*CLAUDE\.md.*agent-facing document' skills/writing-for-agents/SKILL.md
@@ -334,8 +334,8 @@ lacks "unselected Matt additions remain excluded" '^skill=(wizard|wait-what|to-q
 has "explicit route: improve-codebase-architecture" 'improve-codebase-architecture.*explicit-only' skills/dev-workflow/SKILL.md
 lacks "active routing no longer names mp replacements" 'mp-(grill-with-docs|improve-codebase-architecture|diagnose|tdd)' skills/dev-workflow/SKILL.md
 
-has "external issue or PR routes to triage" '外部.*issue.*PR.*`triage`' skills/dev-workflow/SKILL.md
-has "grill-with-docs stays explicit" '明示.*`grill-with-docs`' skills/dev-workflow/SKILL.md
+has "external issue or PR routes to triage" '外部.*issue.*PR.*`triage`' "$routing_continuations_ref"
+has "grill-with-docs stays explicit" '明示.*`grill-with-docs`' "$routing_continuations_ref"
 has "S2 routes mutations through the authorization matrix" 'Matrix.*mutation.*side effect.*mechanical trigger.*risk floor' skills/dev-workflow/SKILL.md
 section_has "S2 requires an explicit authorized delivery scope" "S2 AUTHORIZE" "$delivery_s2_pattern" skills/dev-workflow/SKILL.md
 has "read-only requests stay outside implementation" 'Read-only.*不得擴成 implementation' "$authorization_matrix_ref"
@@ -377,7 +377,7 @@ has "ownership gate maps the Copilot candidate" 'COPILOT_INSTRUCTIONS=.*COPILOT_
 has "missing canonical spec routes through to-spec" '無 canonical spec.*`to-spec`.*`to-tickets`' "$routing_continuations_ref"
 has "existing spec skips duplicate to-spec" '已有完整 spec.*略過 `to-spec`.*`to-tickets`' "$routing_continuations_ref"
 has "ticket implementation starts fresh" '每張 ticket.*fresh session.*isolated.*worktree' "$routing_continuations_ref"
-has "session interruption routes to handoff" 'session 中斷.*`handoff`' skills/dev-workflow/SKILL.md
+has "session interruption routes to handoff" 'session 中斷.*`handoff`' "$routing_continuations_ref"
 has "handoff only bridges uncaptured context" '`handoff`.*未進入 spec.*ticket.*wayfinder map' "$routing_continuations_ref"
 has "explicit session switch recommends handoff" '使用者明示.*換 session.*交接.*另一個 agent.*`handoff`' "$routing_continuations_ref"
 has "unfinished stop makes handoff the sole next action" 'blocker.*session 邊界.*工作未完成.*`handoff`.*唯一 next action' "$routing_continuations_ref"
@@ -471,7 +471,9 @@ rule_has "stable valuable seam requires RED" INT-2 'stable.*valuable.*seam.*fail
 rule_has "unstable seam keeps same repro before after" INT-2 '否則.*同一.*repro.*before／after.*理由'
 rule_has "INT-2 keeps the five-element rule contract" INT-2 '觸發：.*例外：.*驗證：'
 lacks "bugfix no longer has unconditional RED" 'MUST 在 fix 前先有 failing regression test.*例外：無' skills/dev-workflow/SKILL.md
-rule_has "kernel overrides upstream tdd seam and refactor rules" INT-9 'stable.*valuable.*\[tdd\]\(\.\./tdd/SKILL\.md\).*既有 public behavior seam.*新 seam.*micro-refactor.*重跑.*覆寫'
+rule_has "kernel requires the canonical tdd implementation contract" INT-9 'stable.*valuable.*\[tdd\].*MUST 套.*references/implementation.md.*覆寫'
+has "implementation preserves seam decisions and immediate micro-refactor retest" '既有 public behavior seam.*新 seam.*micro-refactor.*MUST 立即重跑' skills/dev-workflow/references/implementation.md
+has "implementation forbids refactoring during RED" 'wide／structural refactor.*RED 時不得 refactor' skills/dev-workflow/references/implementation.md
 # Static instruction contracts only; Sol/Astra behavior is measured separately.
 lacks "small tasks no longer route to retired sdd" '^\|.*`sdd`' skills/dev-workflow/SKILL.md
 has "small tasks keep session acceptance criteria" '單檔.*≤3.*session.*情境式驗收條件' skills/dev-workflow/SKILL.md
@@ -526,8 +528,10 @@ has "ledgers keeps INT-10 parents on the rebase path" '父 PR 在 \[INT-10\] 範
 # apply pass 要釘兩處。只釘句首時，把「重新納入 S5」那整段後綴刪掉測試仍全綠——而那半句
 # 才是 [S5-1] 不被繞過的保證；被靜默刪掉的症狀只是「S5 之後沒人動手改」或更糟的「一批
 # code 沒進過 review」，兩者都不會有人發現。實測過。
-section_has "Claude adapter binds simplify as the S5 apply pass" Claude 'MUST 跑 .simplify.*當 apply pass' "$host_adapters_ref"
+section_has "Claude runs simplify only for an applicable finding or user request" Claude '符合共用 S5 simplification 觸發條件時.*MUST 跑 .simplify.*當 apply pass' "$host_adapters_ref"
 has "simplify output re-enters S5" '重新納入 S5.*繞過 \[S5-1\]' "$host_adapters_ref"
+has "simplification requires a concrete finding or user request" '只有具體可行的.*finding.*使用者明示要求.*才.*apply pass' "$host_adapters_ref"
+has "simplification without a trigger reuses valid evidence" '無觸發.*no-op.*沿用.*S4.*S5.*不另做.*掃描.*重驗' "$host_adapters_ref"
 has "shared simplification outcome has a canonical section" '^## S5 simplification apply outcome$' "$host_adapters_ref"
 has "shared simplification outcome records changed or no-op" '結果 MUST 記為 `changed` 或 `no-op`' "$host_adapters_ref"
 has "every changed simplification pass re-enters S4 and affected S5" '`changed` 回 S4 並把 affected diff 重新納入 S5' "$host_adapters_ref"
@@ -547,9 +551,9 @@ section_has "Codex constrains unavailable-implementer takeover" Codex 'implement
 section_has "Codex requires Astra to reverify implementer evidence" Codex 'implementer report is not completion evidence.*Astra MUST reverify' "$host_adapters_ref"
 section_has "Codex keeps routine failures with the implementation owner" Codex "$routine_failures_with_owner" "$host_adapters_ref"
 section_has "Codex returns delegated invalid design premises to Astra" Codex 'delegated implementer.*invalid design premise.*stop dependent writes.*return evidence to Astra.*decision.*authorization' "$host_adapters_ref"
-section_has "Codex defaults new subagents to no inherited turns" Codex '建立新子代理時.*MUST 預設.*`fork_turns="none"`' "$host_adapters_ref"
+section_has "Codex defaults new subagents to no inherited conversation" Codex '建立新子代理時.*MUST 預設不繼承父對話' "$host_adapters_ref"
 section_has "Codex delegation messages defer to the shared contract" Codex '委派訊息內容與背景摘要依.*delegation\.md' "$host_adapters_ref"
-section_has "Codex escalates inherited context only when summaries are insufficient" Codex '摘要不足時才繼承必要的近期 turns.*完整父對話不可省略.*`fork_turns="all"`' "$host_adapters_ref"
+section_has "Codex inherits context only when necessary using the callable schema" Codex '摘要不足.*必要時才繼承.*參數名稱.*範圍依當前 callable schema' "$host_adapters_ref"
 section_has "Codex reuses the original agent for same-task follow-up" Codex '同一任務的修正與重測 MUST 優先.*follow-up.*原代理.*只有原代理不可用.*新的獨立任務.*建立新代理' "$host_adapters_ref"
 section_has "Codex maps simplification edits to the active implementation owner" Codex '^\- S5 simplification mechanism = Astra decides disposition; active implementation owner applies authorized edits, then S4/S5 reverify。$' "$host_adapters_ref"
 section_has "Claude maps uiux-reviewer as the visual review agent" Claude '前端視覺 review agent = `uiux-reviewer`（Claude-only）' "$host_adapters_ref"
@@ -836,8 +840,8 @@ has "security report card carries a Verdict slot" 'Verdict: exploitable / mitiga
 has "delegation preserves user-authored run limits" \
   '除使用者明示的本次 scope、數量或成本限制外' \
   skills/dev-workflow/references/delegation.md
-has "codebase full map is the default unless the request narrows the mode" \
-  '^Default to Full map mode unless the user requests a narrower focus or read-only analysis\.$' \
+has "codebase full map reuses authorization for all seven documents" \
+  '^Default to repository-wide analysis.*Full map mode.*approval covers the seven codebase documents.*without asking again.*read-only request creates no files\.$' \
   skills/acquire-codebase-knowledge/SKILL.md
 has "codebase focus mode changes only authorized focus docs" \
   '只更新授權的 focus 文件.*非 focus 文件保持既有狀態.*不補.*TODO' \
@@ -1840,7 +1844,10 @@ lacks "active and archived skill prompts do not suppress thinking" \
   'do not think|don.t think|without thinking|disable (your )?reasoning' \
   skills attic
 has "global workflow and security config are never trivial" 'global workflow.*security.*config.*不得.*trivial' skills/dev-workflow/SKILL.md
-has "skill changes require invocation canaries" 'Skill change.*frontmatter.*relative references.*positive/negative.*trigger canary' skills/dev-workflow/SKILL.md
+has "skill verification selects checks by changed surface" 'Skill change.*frontmatter.*relative references.*變更面' skills/dev-workflow/SKILL.md
+has "routing edits retain positive negative and explicit-only canaries" 'description.*invocation policy.*positive/negative trigger canary.*user-only.*explicit-only' skills/dev-workflow/SKILL.md
+has "workflow and script edits retain their affected checks" '流程語意.*受影響流程.*script.*該 script' skills/dev-workflow/SKILL.md
+has "formatting-only edits do not force unrelated execution" '純排版.*typo.*parse.*links.*diff.*repo.*required checks' skills/dev-workflow/SKILL.md
 has "references declare load conditions" 'Load when' skills/dev-workflow/SKILL.md
 lacks "kernel does not inline reviewer baselines" 'Reinvented Stdlib|Redundant Dependency|Unused Local Reuse|Needless Indirection|Wrong Altitude' skills/dev-workflow/SKILL.md
 has "Copilot effort is adaptive" '模型預設 effort.*high.*xhigh.*量測' "$host_adapters_ref"

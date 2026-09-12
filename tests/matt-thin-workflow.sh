@@ -79,8 +79,8 @@ rg -q '^# Authorization matrix' "$AUTHORIZATION_MATRIX_REF" ||
   fail 'authorization matrix reference lacks its canonical heading'
 rg -q '^# Host adapters' "$HOST_ADAPTERS_REF" ||
   fail 'host adapters reference lacks its canonical heading'
-rg -q 'skill audit／VND.*continuations' "$KERNEL" ||
-  fail 'skill audit must load the VND routing continuation'
+rg -q 'Skill audit／VND.*auditing-skill-folder.*Step 0' "$KERNEL" ||
+  fail 'skill audit must retain its canonical Step 0 provenance owner'
 ! rg -q '^### UI/Web design continuation' "$KERNEL" ||
   fail 'kernel still duplicates ui-ux-pro-max continuation'
 
@@ -457,7 +457,8 @@ rg -q 'implement.*(isolated worktree|branch)' "$KERNEL" ||
   fail 'implement route lacks isolated branch entry'
 rg -q 'implement.*(current|main).*(MUST NOT|不得)|MUST NOT.*implement.*(current|main)' "$KERNEL" ||
   fail 'implement route does not reject current/main commits'
-rg -q 'GREEN.*micro-refactor|micro-refactor.*GREEN' "$KERNEL" ||
+rg -q 'references/implementation.md' "$KERNEL" &&
+  rg -q 'GREEN.*micro-refactor.*MUST 立即重跑' "${KERNEL%/*}/references/implementation.md" ||
   fail 'post-GREEN micro-refactor rule missing'
 
 # Host adapter 與 kernel 的加嚴契約。
@@ -807,6 +808,9 @@ done < "$B2_SKILLS_LOCK"
 #   typescript-best-practices/SKILL.md
 while IFS= read -r changed; do
   case "$changed" in
+    # 2026-09-12 approved EXPLAIN owner consolidation; exact reference paths only.
+    skills/postgresql-best-practices/references/performance-tuning.md | \
+    skills/postgresql-optimization/references/performance.md) ;;
     # 2026-09-11 approved S01-S12 + Opus 5 compatibility audit. Vendored payloads
     # continue through fork_recorded below; self-owned files stay exact-path allowlisted.
     # The current-head Vitest review correction also covers features-coverage.md, the reference

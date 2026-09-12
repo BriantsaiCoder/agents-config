@@ -5,7 +5,7 @@ description: "Write, review, or diagnose Vue 3 components, reactivity, composabl
 
 # Vue 3 Best Practices
 
-For React, this skill does **not** apply — say so and stop.
+For React files, continue with `react-best-practices`. In mixed repositories, apply each framework skill to its relevant files and continue the authorized task.
 
 > **Check the minor first.** Vue 3.5 flipped semantics three rules depend on — reactive `defineProps` destructure, `useTemplateRef`, `onWatcherCleanup`. Same code means different things on 3.4 vs 3.5: read `package.json`. Pinia has its own floor — see `references/pinia/core-stores.md`.
 

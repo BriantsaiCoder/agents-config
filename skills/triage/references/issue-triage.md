@@ -12,7 +12,7 @@ Bundled-reference links resolve from this file. Repository/output paths refer to
 
 4. **Grill (if needed).** If the request needs fleshing out, run `/grilling` and `/domain-modeling` together. Let the canonical `/grilling` contract own question cadence; sharpen domain terms and update `<workspace>/CONTEXT.md`/ADRs as decisions land.
 
-5. **Apply the outcome:**
+5. **Prepare the outcome and apply authorized actions:** Reuse existing scope for each comment, closure, label change, or domain-document write below; prepare drafts for uncovered effects. A category/state decision alone does not authorize all follow-on actions.
    - `ready-for-agent` — post an agent brief comment ([AGENT-BRIEF.md](../AGENT-BRIEF.md)).
    - `ready-for-human` — same structure as an agent brief, but note why it can't be delegated (judgment calls, external access, design decisions, manual testing).
    - `needs-info` — post triage notes (template below).

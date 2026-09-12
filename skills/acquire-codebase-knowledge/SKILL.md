@@ -1,6 +1,6 @@
 ---
 name: acquire-codebase-knowledge
-description: "Map repository architecture, conventions, and risks when repository-wide discovery or onboarding is requested; documentation refresh uses init-project-docs."
+description: "Repo 全貌探索／onboarding 時使用：依 evidence 建立地圖；七份文件只在文件產出已授權時寫入，局部導覽用 mp-zoom-out。"
 metadata:
   argument-hint: 'Optional: specific area to focus on, e.g. "architecture only", "testing and concerns"'
 ---
@@ -11,7 +11,7 @@ Maps the requested codebase scope from verifiable files or terminal output — n
 
 ## Output Contract
 
-1. Full map mode 建立並驗證完整七份文件：`docs/codebase/STACK.md`, `STRUCTURE.md`, `ARCHITECTURE.md`, `CONVENTIONS.md`, `INTEGRATIONS.md`, `TESTING.md`, `CONCERNS.md`.
+1. 文件產出已授權的 Full map mode 建立並驗證完整七份文件：`docs/codebase/STACK.md`, `STRUCTURE.md`, `ARCHITECTURE.md`, `CONVENTIONS.md`, `INTEGRATIONS.md`, `TESTING.md`, `CONCERNS.md`.
 2. Focus Area Mode 只更新授權的 focus 文件。
 3. Every claim is traceable to source / config / terminal output.
 4. Unknowns are marked `[TODO]`; intent-dependent gaps are marked `[ASK USER]`.
@@ -27,7 +27,7 @@ Maps the requested codebase scope from verifiable files or terminal output — n
 - [ ] Phase 4: Validate + present + resolve [ASK USER]
 ```
 
-Default to Full map mode unless the user requests a narrower focus or read-only analysis.
+Default to repository-wide analysis unless the user requests a narrower focus. Enter Full map mode when the existing request or approval covers the seven codebase documents; complete that authorized output without asking again. Otherwise return the map in the session and skip Phase 3. An explicit read-only request creates no files.
 
 ## Focus Area Mode
 
@@ -41,11 +41,11 @@ Read-only mode 只在 session 回傳分析，不建立文件。Full map mode 才
 
 ### Phase 1: Scan + Intent
 
-1. From project root, use stdout for Focus Area and read-only work so the scan creates no documentation artifact:
+1. From project root, use stdout unless a persistent scan artifact is already authorized:
    ```bash
    python3 "$SKILL_ROOT/scripts/scan.py"
    ```
-   For Full map mode, or when the request explicitly authorizes a persistent scan artifact, write it under the authorized output path:
+   When the existing request or approval covers a persistent scan artifact, write it under the authorized output path:
    ```bash
    python3 "$SKILL_ROOT/scripts/scan.py" --output docs/codebase/.codebase-scan.txt
    ```
@@ -62,7 +62,7 @@ Monorepo / TS aliases / generated output / churn-fragile traps → [`references/
 
 ### Phase 3: Populate (Full map only)
 
-Copy `assets/templates/` into `docs/codebase/`. Fill order:
+In authorized Full map mode, copy `assets/templates/` into `docs/codebase/`. Fill order:
 
 1. `STACK.md` — language, runtime, frameworks, deps
 2. `STRUCTURE.md` — layout, entry points, key files

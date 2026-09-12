@@ -17,7 +17,7 @@ Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templ
 
 **Section B — Triage label vocabulary.** Skip this section entirely if the `triage` skill isn't installed (exploration told you) — an uninstalled skill needs no labels.
 
-If it is installed, ask exactly one question:
+Reuse an agreed label mapping from the request or repository. If `triage` is installed and the mapping remains materially unresolved, ask one question:
 
 > Do you want to keep the default triage labels? (recommended: **yes**)
 
@@ -25,4 +25,4 @@ The defaults are the five canonical roles, each label string equal to its name: 
 
 **Section C — Domain docs.** Default to **single-context** — one `<workspace>/CONTEXT.md` + `docs/adr/` at the repo root. This fits almost every repo; write it without asking.
 
-Offer **multi-context** — a root `<workspace>/CONTEXT-MAP.md` pointing to per-context `<workspace>/CONTEXT.md` files — only when exploration found monorepo signals. Then confirm which layout they want.
+Reuse an agreed domain layout. Offer **multi-context** — a root `<workspace>/CONTEXT-MAP.md` pointing to per-context `<workspace>/CONTEXT.md` files — only when monorepo signals exist and the unresolved layout changes consumer scope; ask only for that decision.
