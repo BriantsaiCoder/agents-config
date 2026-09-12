@@ -25,7 +25,7 @@ Why + patterns → `references/rules-expanded.md`.
 5. **Index suitability** — record workload evidence for B-tree/GIN/GiST/BRIN choices; route tuning to `postgresql-optimization`.
 6. **Partial/expression indexes** — evaluate query match and write overhead with that tuning owner.
 7. **Autovacuum** — inspect existing bloat/stats evidence; configuration changes need matching authorization.
-8. **Plan evidence** — prefer existing plans. `ANALYZE` executes the query; check actual effects and environment before running it.
+8. **Plan evidence** — prefer existing plans. `EXPLAIN ANALYZE` executes the query; check actual effects and environment before running it.
 9. **Pool connections** — Npgsql built-in / multiplexing; PgBouncer transaction mode for Node / multi-service. ~10 MB per conn.
 10. **Retry SQLSTATE 40001** on SERIALIZABLE / RR. SSI aborts conflicts; no retry = random fails.
 11. **`RETURNING`** vs separate SELECT after INSERT/UPDATE. Atomic, race-free.
@@ -37,7 +37,7 @@ Why + patterns → `references/rules-expanded.md`.
 - `references/schema-design.md` — types, UUID, generated columns, partitioning, constraints, domains
 - `references/query-writing.md` — params, CTE, window, RETURNING, FTS, JSONB/array ops, ON CONFLICT, LATERAL, keyset pagination
 - `references/connections-transactions.md` — Npgsql conn string, multiplexing, Dapper, PgBouncer, pg Pool, isolation, 40001 retry, advisory locks, Npgsql 6+ DateTime breaking
-- `references/performance-tuning.md` — EXPLAIN reading, index deep dive, partial/expression/covering, autovacuum, COPY, stats, pg_stat_statements
+- `references/performance-tuning.md` — index deep dive, partial/expression/covering, autovacuum, COPY, stats, pg_stat_statements; plan reading → [EXPLAIN workflow](../postgresql-optimization/references/performance.md#explain-workflow)
 - `references/advanced-features.md` — RLS multi-tenant, MVs, extensions (pg_trgm, PostGIS, pgcrypto), partitioning vs inheritance, postgresql.conf
 - `references/backup-restore.md` — pg_dump / pg_basebackup, parallel dumps, WAL, PITR, retention, restore validation
 

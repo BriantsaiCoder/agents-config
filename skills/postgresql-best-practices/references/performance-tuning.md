@@ -1,55 +1,10 @@
 # PostgreSQL Performance Tuning
 
+Apply the [tuning authorization conditions](../../postgresql-optimization/SKILL.md#default-workflow) before executing the query or maintenance examples below. Reuse covered scope; prepare uncovered actions and applicable rollback while continuing static analysis.
+
 ## EXPLAIN ANALYZE BUFFERS Reading Guide
 
-Always run `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)` on complex queries before shipping them. This executes the query and shows actual vs estimated costs.
-
-```sql
-EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
-SELECT o.id, o.total, c.name
-FROM orders o
-JOIN customers c ON c.id = o.customer_id
-WHERE o.created_at > '2025-01-01'
-  AND o.status = 'completed';
-```
-
-### Node Types
-
-| Node | What It Does | When You See It |
-|------|-------------|-----------------|
-| **Seq Scan** | Reads every row in the table | No useful index, or query returns a large fraction of rows |
-| **Index Scan** | Traverses B-tree, fetches heap rows | Selective query with a matching index |
-| **Index Only Scan** | Reads from index alone, no heap access | All selected columns are in the index (covering index) |
-| **Bitmap Index Scan** | Scans index, builds a bitmap of matching pages | Multiple index conditions OR'd, or moderate selectivity |
-| **Bitmap Heap Scan** | Fetches heap pages from bitmap | Always paired with Bitmap Index Scan |
-| **Hash Join** | Builds hash table from smaller side, probes with larger | Equality joins, larger datasets |
-| **Merge Join** | Merges two sorted inputs | Both sides already sorted (by index or explicit Sort) |
-| **Nested Loop** | For each outer row, scans inner | Small outer set, indexed inner; or no better strategy |
-| **Sort** | In-memory or disk sort | ORDER BY, merge join input, DISTINCT |
-| **Aggregate** | GROUP BY, COUNT, SUM, etc. | Aggregation queries |
-
-### Key Metrics to Read
-
-**actual time (startup..total):** Time in milliseconds. Startup is time before first row is produced. Total is time for all rows. Multiply by `loops` for true cost.
-
-**actual rows vs planned rows (rows):** If `actual rows` is dramatically different from the estimate (e.g., estimated 1 row, actual 50,000), statistics are stale. Run `ANALYZE` on the table.
-
-**Buffers:** 
-- `shared hit` = pages found in PostgreSQL's buffer cache (fast).
-- `shared read` = pages read from OS cache or disk (slower).
-- High `shared read` relative to `shared hit` = cold cache or table too large for `shared_buffers`.
-
-**loops:** The node was executed this many times (common in Nested Loop). Multiply `actual time` and `actual rows` by `loops` for true totals.
-
-### Common Problems
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Seq Scan on large table with selective WHERE | Missing index | Create appropriate index |
-| Bitmap Heap Scan with many "Recheck Cond" rows | Index has low selectivity | More specific index, partial index, or accept Seq Scan |
-| Nested Loop with high loop count | Large outer set | Check if Hash Join would be better; add index on inner table |
-| Sort with "Sort Method: external merge Disk" | `work_mem` too low for the sort | Increase `work_mem` (carefully) or add an index for the ORDER BY |
-| Estimated rows = 1, actual = 100,000 | Stale statistics | `ANALYZE tablename;` or tune `default_statistics_target` |
+For plan nodes, metrics, and common problems, read the [EXPLAIN workflow](../../postgresql-optimization/references/performance.md#explain-workflow). Its execution conditions apply before collecting a new plan.
 
 ## Index Types Deep Dive
 
@@ -400,8 +355,10 @@ LIMIT 20;
 
 ### Reset Statistics
 
+Preserve existing statistics unless a necessary reset is already authorized. Archive snapshots before the reset below; a snapshot retains evidence but does not undo the reset.
+
 ```sql
 SELECT pg_stat_statements_reset();  -- reset all
 ```
 
-**Workflow:** Enable `pg_stat_statements`, let it collect for a representative period, then sort by `total_exec_time` to find the queries consuming the most database time. Optimize those first for the biggest impact.
+**Workflow:** Use existing `pg_stat_statements` evidence. Enable it or change configuration only within matching authorization and applicable rollback, then collect a representative period and sort by `total_exec_time` to prioritize tuning.

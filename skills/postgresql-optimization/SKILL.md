@@ -11,7 +11,7 @@ This skill is the deep tuning companion to `postgresql-best-practices`. Use `pos
 
 ## Default Workflow
 
-1. Prefer existing plans/workload evidence and authorized statistics reads. Before `EXPLAIN (ANALYZE, BUFFERS)`, check whether the query writes or invokes side effects and whether the environment/effects are authorized; otherwise continue static analysis and pause only that probe.
+1. Prefer existing plans/workload evidence and authorized statistics reads. Before query execution (including `EXPLAIN (ANALYZE, BUFFERS)`) or maintenance, check the exact database, target, and effects against existing authorization. Reuse covered scope; prepare concrete commands and applicable rollback for index removal, statistics resets, extension/config changes, and data loads. Pause only uncovered operations and continue static analysis.
 2. Identify the feature category (data shape, query pattern, scale).
 3. Pick using the table below; read the matching reference for indexing/anti-pattern detail.
 4. Compare representative latency, throughput, resource use, and correctness against the task goal; use plans to explain results, without requiring a changed plan shape.
@@ -40,6 +40,6 @@ This skill is the deep tuning companion to `postgresql-best-practices`. Use `pos
 ## Validation Checklist
 
 - Representative workload meets the agreed performance goal without correctness regression. A sequential scan can be appropriate; investigate actual bottlenecks and spills.
-- Row estimate vs actual within ~10×; if not, `ANALYZE` and consider raising stats target.
+- Investigate row estimates differing from actual by more than ~10×; run `ANALYZE` or change stats targets only within the authorized maintenance scope.
 - New indexes show non-zero `idx_scan` after a representative workload.
 - For migration / index changes on hot tables: `CREATE INDEX CONCURRENTLY`, `DETACH PARTITION ... CONCURRENTLY` (PG 14+). `ATTACH PARTITION` has no `CONCURRENTLY` form — it already takes only SHARE UPDATE EXCLUSIVE on the parent.

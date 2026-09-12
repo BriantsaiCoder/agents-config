@@ -19,13 +19,13 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 - [INT-2] BUGFIX／既有 behavior 變更若有 stable、valuable 的 behavior seam，MUST 先有 failing regression test（RED→GREEN）；否則 MUST 以同一 minimal repro 留下 before／after evidence，並記錄不採 RED 的理由，MUST NOT 為流程新增低價值 seam。觸發：BUGFIX 或既有 behavior 變更。例外：無。驗證：RED evidence 早於 fix，或同一 repro 的 before／after evidence。
 - [INT-3] S2 依 [T0-8] 與 authorization matrix 判定授權；auto／autopilot 不豁免 protected gate，Medium-risk 本身 MUST NOT 成為第二次確認 gate。觸發：進入 S2。例外：無。驗證：matrix 分類 + 適用時的核准原句。
 - [INT-4] Delegation MUST 遵守 [contract](references/delegation.md)；已讀同版可重用；MUST NOT 用 delegation 迴避 S2 授權或 [T0-8] plan gate。觸發：任何 delegation。例外：host/runtime 容量與 higher-priority instructions。驗證：reference contract 全數成立。
-- [INT-5] `setup-matt-pocock-skills` MUST 只在使用者明示時執行；tracker contract 優先 repo `docs/agents/issue-tracker.md`，否則讀 `~/.agents/docs/agents/issue-tracker.md`。觸發：需 tracker contract。例外：無。驗證：contract 或 setup 原句。
+- [INT-5] `setup-matt-pocock-skills` MUST 只在使用者明示時執行；需 tracker contract 時 MUST 讀 [intake](references/routing-continuations.md#intake-and-tracker)。觸發：需 tracker contract。例外：無。驗證：contract 或 setup 原句。
 - [INT-6] 任何已核准、預計納入 VCS 的檔案新增／修改，首次寫入前 MUST 位於 task branch／worktree（非 main／master）；否則先建，current-branch 不得覆寫。觸發：新增／修改。例外：無。驗證：pre-write branch／baseline + S4–S6。
 - [INT-7] `disable-model-invocation: true` 的 user-only skill MUST NOT 自動 invoke；S0 只推薦 host-specific explicit invocation command 並等待使用者啟動。觸發：命中 user-only skill。例外：無。驗證：frontmatter + invocation 原句。
 - [INT-8] 核准清單與已核准 scope 內 local、reversible 工作 MUST 一次執行至完成，不得逐項重問或中途停下等指令；回報進度不是停止條件。blanket authorization 只涵蓋原句前已明列 scope。只有 [T0-5]、[T0-8]／[INT-3]、user-owned 取捨或工具／環境阻塞可中斷；因 skill 而確認／暫停／未完成時 MUST 附已讀 SKILL.md 連結、原句、適用理由，區分明文／推論；新發現屬已核准 scope 內必要修正且未新增未授權副作用時直接完成；超出原 scope 才列 follow-up，未核准不得做。觸發：≥2 個已核准項目，或已核准 scope 內實作。例外：無。驗證：核准原句早於新增 scope + 單次彙總 status／evidence。
-- [INT-9] Kernel 只在 [INT-2] 選定 stable／valuable seam 時 route 到 [tdd](../tdd/SKILL.md)；既有 public behavior seam 視為已確認；只有改變 public contract／架構／scope 的新 seam 依 S2 確認；每輪 GREEN 後可做一次不改 behavior 的 micro-refactor，且 MUST 立即重跑當輪 test。覆寫下游 seam／refactor 程序。觸發：kernel 管理的 tdd cycle。例外：無。驗證：RED／GREEN／retest evidence。
+- [INT-9] Kernel 只在 [INT-2] 選定 stable／valuable seam 時 route 到 [tdd](../tdd/SKILL.md)；MUST 套 [implementation](references/implementation.md) 的 seam／refactor 程序，覆寫下游同類條款。觸發：kernel 管理的 tdd cycle。例外：無。驗證：RED／GREEN／retest evidence。
 
-- [INT-10] 全域／security config MUST 走 isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push main／master。範圍：`CLAUDE.md`／`AGENTS.md`／`copilot-instructions.md`、tier0／tier1／tier2、kernel／references、hooks、permission／sandbox、CI workflow，以及 plugin install／enable、MCP 啟用、新 credential 或 external tool capability。`pre-push` 未安裝時沒有機械 enforcement；`--no-verify` 可略過且不保證 `--mirror` 隱式刪除。觸發：diff 命中範圍。例外：使用者當下明示直接推 main。驗證：PR + review-triage gate PASS；例外引用原句。
+- [INT-10] 全域／security config MUST 走 isolated branch → Ready PR → bot-review gate → squash merge → 刪 branch；MUST NOT 直接 push main／master。範圍：`CLAUDE.md`／`AGENTS.md`／`copilot-instructions.md`、tier0／tier1／tier2、kernel／references、hooks、permission／sandbox、CI workflow，以及 plugin install／enable、MCP 啟用、新 credential 或 external tool capability。Git guard 的限制依 [closeout operations](references/ledgers.md#closeout-operations)。觸發：diff 命中範圍。例外：使用者當下明示直接推 main。驗證：PR + review-triage gate PASS；例外引用原句。
 
 ## S0 ROUTE
 
@@ -33,13 +33,7 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 
 | Need | Route |
 |---|---|
-| 外部 issue／PR 的初始評估 | `triage` |
-| 使用者明示訪談／壓測 under-specified plan／decision／idea | `grilling`；領域詞彙／ADR 加 `domain-modeling` |
-| 使用者明示邊討論邊產生 glossary／ADR | `grill-with-docs`（內含 `grilling` + `domain-modeling`） |
-| 把已決內容整理成 spec | `to-spec` |
-| 拆 tracer-bullet tickets | `to-tickets` |
-| 超過單一 session 的決策地圖 | `wayfinder` |
-| session 中斷且重要 context 尚未進 canonical artifact | `handoff` |
+| Issue／PR intake、明示訪談、spec／tickets／決策地圖或跨 session handoff | MUST 依 [continuations](references/routing-continuations.md) 對應 section 選路；user-only 仍套 [INT-7] |
 | 清楚且單一 session 可完成的需求／已核准 spec／ticket | 進 S2；VCS 變更套 [INT-6] |
 | hard bug／flaky／performance diagnosis | `diagnosing-bugs` |
 | code review | `code-review` |
@@ -59,7 +53,7 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 | 單一 skill trigger failure | MUST 有 preserved RED；caller 無則 `diagnosing-bugs` 建；Step 2c RED／diagnosis 後接 `writing-for-agents` |
 | 使用者明示要掃整庫 deepening 機會 | `improve-codebase-architecture`（explicit-only） |
 
-先驗 path/frontmatter；route≠invoke。Intake、skill audit／VND、跨 session／ticket、research、handoff 首次進入且同版不在 context 時 MUST 讀 [continuations](references/routing-continuations.md)；來源或狀態改變只更新相依 evidence。
+先驗 path/frontmatter；route≠invoke。[Continuations](references/routing-continuations.md) 管 intake、跨 session／ticket、research 與 handoff 的轉換；只在命中該 transition 且 context 缺同版內容時 MUST 讀對應 section。Skill audit／VND 依 `auditing-skill-folder` Step 0；來源或狀態改變只更新相依 evidence。
 
 ## S2 AUTHORIZE
 
@@ -77,20 +71,20 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 
 依 [INT-6]；`implement` 須在 branch／worktree，main／master 不得寫；完成回 S4→S5→S6；Delegation 依 [INT-4]。
 
-`tdd` cycle 套 [INT-9]；wide／structural refactor 留到獨立核准 change 或 S5 finding，RED 時不得 refactor。
+`tdd` cycle 套 [INT-9] 與 [implementation](references/implementation.md)。
 
 ## S4 VERIFY
 
-- Risk=blast radius/reversibility/contract/data/security;global workflow/security config=High,疑則上調。
+- Risk floor 與授權分類只由 [matrix](references/authorization-matrix.md) 管；依 blast radius／reversibility／contract／data／security 判定，疑則上調。Policy、capability 與跨 host routing 維持 High；純排版與 personal preference 按 matrix 的實際 effect 分類。
 - Low=targeted;Medium=affected suite/build/lint;High=full CI-equivalent+適用 integration/E2E/security。只跑非等價增益 checks。Behavior-affecting edit、正式 spec artifact／明列 acceptance criteria、Medium／High／PR 或新增／修改 custom gate 讀 [evidence integrity](references/evidence-integrity.md)。
-- Skill change 驗 frontmatter、relative references、skill scripts；model-invoked 跑 positive/negative trigger canary，user-only 跑 explicit-only canary。UI 變更留 browser evidence。
+- Skill change 驗 frontmatter、relative references，依變更面選 checks：description／invocation policy 變更跑相關 positive/negative trigger canary，user-only 跑 explicit-only canary；流程語意變更驗受影響流程，script 變更驗該 script。純排版／typo 用 parse、links、diff；完成 repo 明列 required checks，未變部分沿用有效 evidence。UI 變更留 browser evidence。
 - 會部署時另跑 `frontend-release-verification` 或 `backend-release-verification`，再跑 `dependency-security-scan`；不部署標 SKIPPED。
 - 記錄 command、exit code 與必要輸出，不以「應該」代替。
 - 任一 gate FAIL 回 implementation；本機測試依 S2 的已授權範圍；delegated work 依 [INT-4] 由 main context 重驗。
 
 ## S5 REVIEW
 
-- [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
+- [S5-1] S5 MUST 依風險與 PR 狀態決定兩軸深度：中高風險或進 PR 執行 Standards 與 Spec，global workflow／security config 的 policy／capability 變更不得視為 trivial。觸發：進入 S5。例外：低風險且不進 PR 的 docs／local config／trivial change 可附理由標 `SKIPPED`。驗證：risk ledger + Standards／Spec status。
 - [S5-2] Working tree dirty review MUST 在讀任何 raw diff 前完成 `references/dirty-review-package.md`；任一 finding 即 FAIL。觸發：working tree dirty review。例外：clean／fixed-point review 改用 `code-review`。驗證：三類 gitleaks exit code + package manifest。
 - [S5-3] Standards prompt MUST 套用 [reviewer contract](references/reviewer-template.md#s5-dispatch-and-output-gates) 的完整 canonical over-engineering contract。
 - [S5-4] Reviewer output MUST 套同一 reference 的 evidence-first actionable／單軸 aggregate contract，不得以字數／條數截斷 findings。
@@ -116,4 +110,5 @@ description: "管理開發路由、授權、驗證、review 與交付；開發�
 | `references/dirty-review-package.md` | working tree dirty review |
 | [delegation](references/delegation.md) | 考慮 delegation／agents |
 | [host adapters](references/host-adapters.md) | active host 或 S5 outcome |
-| [routing continuations](references/routing-continuations.md) | intake/skill audit/VND/跨 session/research/handoff |
+| [routing continuations](references/routing-continuations.md) | 命中的 intake／tracker／跨 session／research／handoff section |
+| [implementation](references/implementation.md) | kernel 管理的 tdd cycle／micro-refactor |

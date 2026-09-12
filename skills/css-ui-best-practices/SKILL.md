@@ -44,9 +44,9 @@ Target WCAG 2.2 AA by default; verify the applicable legal standard for the prod
 
 1. **A11y** — missing alt, non-semantic interactive, contrast < AA, focus invisible, no keyboard support, modal without trap/Escape.
 2. **Event** — overlay propagation bugs, inline `onclick` (CSP).
-3. **Performance** — layout-triggering anim, missing `loading="lazy"`, unused CSS, unoptimized images.
+3. **Performance** — layout animation with demonstrated responsiveness or reduced-motion issues, missing below-fold `loading="lazy"`, unused CSS, unoptimized images.
 4. **Responsive** — hardcoded px, no viewport meta, overflow on mobile, text too small.
-5. **Maintainability** — `!important`, deep nesting, inline styles, inconsistent tokens.
+5. **Maintainability** — `!important` outside a justified narrow override in the existing layer/specificity model, deep nesting, inline styles, inconsistent tokens.
 
 ## Reference Navigation
 

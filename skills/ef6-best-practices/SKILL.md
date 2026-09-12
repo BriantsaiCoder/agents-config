@@ -39,10 +39,10 @@ Do not use when code references `Microsoft.EntityFrameworkCore`; use `ef-core-be
 
 ## Review Checklist
 
-- Critical: raw SQL concatenates user input, hardcoded credentials, shared/static context, or cross-thread context usage.
+- Inspect user-input SQL concatenation, credential exposure, and shared/static or cross-thread context use. Assign severity from reachable exploitation, concurrency, data loss, and available evidence.
 - Inspect lazy-loading N+1, unbounded reads, sync-over-async, and stale EDMX. For read-only queries, evaluate `AsNoTracking` against tracking/identity needs; assign severity from measured cost or correctness impact, not its absence alone.
-- Medium: long-lived context, oversized change tracker, migration deployment risk, swallowed update exceptions.
-- Low: unclear projections, inconsistent naming, or conventions that differ from the existing EF6 model.
+- Inspect context/tracker lifetime, migration compatibility and rollback, and swallowed update failures; assign severity from data or availability impact. Review severity does not lower the shared workflow's S2 migration risk floor.
+- Report naming or convention differences only as justified suggestions; treat projections as findings when they damage a contract or have a measured cost.
 
 ## References
 

@@ -56,7 +56,12 @@ check_kernel() {
   printf '%s' "$line" | grep -Eq "$SCOPE"       || miss="${miss} 適用範圍"
   printf '%s' "$line" | grep -Eq "$CAPABILITY_SCOPE" || miss="${miss} plugin/MCP-capability"
   printf '%s' "$line" | grep -Eq "$ESCAPE"      || miss="${miss} 例外條款"
-  printf '%s' "$line" | grep -Eq "$HONESTY"     || miss="${miss} client-side-ceiling"
+  local ceiling="$line"
+  if printf '%s' "$line" | grep -Fq '(references/ledgers.md#closeout-operations)'; then
+    ceiling=$(sed -n '/^## Closeout operations$/,/^## /p' "${file%/*}/references/ledgers.md" 2>/dev/null) ||
+      { ng "${label}: ledger 讀取失敗"; return; }
+  fi
+  printf '%s' "$ceiling" | grep -Eq "$HONESTY" || miss="${miss} client-side-ceiling"
 
   if [ -n "$miss" ]; then
     ng "${label} [INT-10] 規範片段缺失:${miss}"
@@ -122,6 +127,34 @@ FIX
   probe "${scratch}/no-mcp-action.md"    fail "MCP 缺 install/enable action"
   probe "${scratch}/no-rule.md"        fail "[INT-10] 整條消失"
   probe "${scratch}/no-s6-pointer.md"  fail "S6 失去指標"
+
+  mkdir -p "$scratch/routed/references"
+  sed 's/Git-native pre-push 是 client-side safety rail；未安裝時沒有機械 enforcement，--no-verify 可略過，且不保證 --mirror 的隱式刪除。/Git guard 的限制依 [closeout operations](references\/ledgers.md#closeout-operations)。/' \
+    "$scratch/good.md" > "$scratch/routed/good.md"
+  printf '%s\n' '# Ledgers' '## Closeout operations' '- pre-push 未安裝時沒有機械 enforcement；--no-verify 可略過，且不保證 --mirror 隱式刪除。' > "$scratch/routed/references/ledgers.md"
+  probe "$scratch/routed/good.md" pass "client-side ceiling 可由明確指標載入"
+  # Nonzero reader status must fail even when its output matches the expected section.
+  (
+    sed() {
+      command sed "$@"
+      case "$*" in *references/ledgers.md*) return 2 ;; esac
+    }
+    export -f sed
+    KERNEL_OVERRIDE="$scratch/routed/good.md" bash "${BASH_SOURCE[0]:-$0}" --one
+  ) > "$scratch/reader-failure.log" 2>&1
+  local reader_rc=$?
+  if [ "$reader_rc" -eq 1 ] && grep -q 'ledger 讀取失敗' "$scratch/reader-failure.log"; then
+    printf '  PASS  selftest 反向確實觸發: ledger 有輸出但 reader 失敗\n'
+  else
+    printf '  FAIL  selftest: ledger reader 錯誤未 fail closed (exit=%s)\n' "$reader_rc" >&2
+    rc=1
+  fi
+  sed 's/\[closeout operations\](references\/ledgers.md#closeout-operations)/其他文件/' "$scratch/routed/good.md" > "$scratch/routed/no-pointer.md"
+  probe "$scratch/routed/no-pointer.md" fail "ceiling 附件沒有入口指標"
+  printf '%s\n' '# Ledgers' '## Closeout operations' '- pre-push 已完整強制。' > "$scratch/routed/references/ledgers.md"
+  probe "$scratch/routed/good.md" fail "附件不得把 safety rail 說成完整強制"
+  rm "$scratch/routed/references/ledgers.md"
+  probe "$scratch/routed/good.md" fail "缺 ceiling 附件不得通過"
 
   rm -rf "${scratch}"
   return ${rc}

@@ -5,7 +5,7 @@ description: "Write, review, or tune Dapper data access, including queries, mapp
 
 # Dapper Best Practices
 
-For EF Core / LINQ-to-SQL / other ORMs this skill does **not** apply — say so and stop.
+Apply this skill only to Dapper paths. For EF Core / LINQ-to-SQL / other ORMs, use the data-access owner matching the confirmed package/namespace and continue the original request's authorized analysis or implementation.
 
 ## Mode
 

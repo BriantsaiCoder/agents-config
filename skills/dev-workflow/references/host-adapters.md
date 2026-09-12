@@ -46,7 +46,7 @@ PONYTAIL-SHA256	Copilot	42167fda5759eb53e2f2f04983785f9a8269ebe438f1a055c296b366
 
 ## S5 simplification apply outcome
 
-Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 active host 的 implementation owner 做一次 apply pass，只處理已核准 scope 與 `reviewer-template.md` 五條 over-engineering baseline。結果 MUST 記為 `changed` 或 `no-op`；`changed` 回 S4 並把 affected diff 重新納入 S5，避免 simplify output 繞過 [S5-1]；`no-op` 留明確 evidence。
+Standards／Spec reviewer 保持 read-only。只有具體可行的 simplification finding 或使用者明示要求時，才由 active host 的 implementation owner 做 apply pass；只處理已核准 scope 與 `reviewer-template.md` 五條 over-engineering baseline。無觸發時記 `no-op` 與理由，沿用有效 S4／S5 evidence，不另做 simplify 掃描或重驗。執行後結果 MUST 記為 `changed` 或 `no-op`；`changed` 回 S4 並把 affected diff 重新納入 S5，避免 simplify output 繞過 [S5-1]；`no-op` 記錄已檢查的 finding 與未修改理由，沿用未變部分的有效 evidence。
 
 ## Claude
 
@@ -61,7 +61,7 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 - 同一 ready frontier 上彼此獨立的 1–4 個 blocker MUST 合併在同一次 `AskUserQuestion`；dependent 題等前一批回答。Skip／dismiss MUST NOT 視為答案、核准或採用預設值。
 - user-only skill command = `/<skill-name>`。
 - 用專屬 review agent 不豁免 `references/reviewer-template.md`：豁免的是 prompt 區塊本身與「怎麼用」中以該區塊為前提的步驟，其餘各節對 Claude 一樣有約束力，MUST 在維護 `code-review` 的 baseline 或判 S5 EXIT 時讀。不在此列舉是哪幾節——列舉會漏，新增的節就掉在外面。這條與 `simplify` 綁定都不因專屬 agent 而豁免。
-- 兩軸 findings 處理完後 MUST 跑 `simplify`（Claude-only）當 apply pass；`changed`／`no-op` 與重驗依共用 S5 simplification outcome。
+- 符合共用 S5 simplification 觸發條件時 MUST 跑 `simplify`（Claude-only）當 apply pass；`changed`／`no-op` 與重驗依共用 S5 simplification outcome。
 - S5 simplification mechanism = Claude main decides disposition; active implementation owner applies authorized edits, then S4/S5 reverify。
 - `ledgers.md` Preflight 要求的兩軸狀態行與 row 6 三欄／baseline 標題，在 Claude 側由 `~/.claude/hooks/guard-s5-ledger.sh`（PreToolUse，攔 `gh pr create`）機械檢查——缺項在開 PR 當下就被擋，不是事後才發現。兩軸皆 `SKIPPED` 走豁免路徑（沒跑審查就沒有記錄可填）。已知不修的破口：inline `--body` 時 `--title`／`--label` 的值也算進 body、`gh pr edit` 不在射程內；細節與理由寫在該檔註解。
 
@@ -73,7 +73,7 @@ Standards／Spec reviewer 保持 read-only；findings disposition 完成後由 a
 - 實作分工通報：Astra MUST 在開始該任務的已授權實作前，用一句簡短進度訊息告知實作者（Astra 直接實作或 Sol implementer）、負責範圍與選擇原因；實作者或委派範圍變更時 MUST 更新通報。通報不新增使用者確認 gate；僅啟動 read-only reviewer 不視為更換實作者。
 - routine implementation／test failures 由 current implementation owner diagnose、fix、retest within owned scope；delegated implementer 遇到 invalid design premise 時，stop dependent writes，return evidence to Astra for decision 與 needed authorization。
 - Astra may run checks and inspect evidence；implementer report is not completion evidence，Astra MUST reverify source state 與結果。implementer unavailable 時，Astra MAY 接手，但只限既有授權、runtime permission 與 tool capability；MUST NOT bypass denied tools、sandbox、[T0-8] 或 independent read-only S5 review 要求。
-- 建立新子代理時，MUST 預設使用 `fork_turns="none"`；委派訊息內容與背景摘要依 [delegation contract](delegation.md)；摘要不足時才繼承必要的近期 turns，只有完整父對話不可省略時才使用 `fork_turns="all"`。
+- 建立新子代理時，MUST 預設不繼承父對話；委派訊息內容與背景摘要依 [delegation contract](delegation.md)；摘要不足且必要時才繼承對話，參數名稱與可繼承範圍依當前 callable schema，不套用其他 host 的參數。
 - 同一任務的修正與重測 MUST 優先用 follow-up 續用原代理；只有原代理不可用或工作是新的獨立任務時才建立新代理。
 - user-only skill command = `$<skill-name>`。
 - Codex native Local/Worktree Handoff 只移動同一 chat 與 code，MUST NOT 觸發 Matt `$handoff`；跨 session／agent 文件仍走 `$handoff`。

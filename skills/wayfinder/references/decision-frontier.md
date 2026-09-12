@@ -4,7 +4,7 @@ Bundled-reference links resolve from this file. Repository/output paths refer to
 
 ## Ticket Types
 
-Every ticket is either **HITL** — human in the loop, worked _with_ a human who speaks for themselves — or **AFK**, driven by the agent alone. A HITL ticket only resolves through that live exchange; the agent never stands in for the human's side of it (a grilling agent that answers its own questions has broken this).
+Every ticket is either **HITL** — human in the loop — or **AFK**, driven by the agent alone. HITL requires a live human exchange unless the user explicitly delegates that specific decision under the calling contract. Record such delegation and the agent's decision honestly; never fabricate human answers. Otherwise pause only that decision and continue eligible authorized AFK work.
 
 - **Research** (AFK): Reading documentation, third-party APIs, or local resources like knowledge bases to surface a fact a decision waits on. Resolve through the `/research` workflow; delegation is optional under shared `dev-workflow` INT-4. Use when knowledge outside the current working directory is required.
 - **Prototype** (HITL): Raise the fidelity of the discussion by making a cheap, rough, concrete artifact to react to — an outline, a rough take, a stub, or UI/logic code via the /prototype skill. Links the prototype as an asset. Use when "how should it look" or "how should it behave" is the key question.

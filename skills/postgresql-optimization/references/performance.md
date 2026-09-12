@@ -2,9 +2,11 @@
 
 ## EXPLAIN Workflow
 
-1. Run `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query>` on a representative dataset.
+Apply the [Default Workflow](../SKILL.md#default-workflow) authorization and rollback conditions to all query, index, statistics, extension/config, and data-load operations below. Examples are candidates, not permission to execute them.
+
+1. Reuse an existing representative plan; run `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query>` only when the query, environment, and effects are authorized.
 2. Look for: `Seq Scan` on large tables, `Sort` spilling to disk (`external merge`), high `Buffers: shared read=` (cold cache hits), row estimate vs actual mismatch (planner has bad stats), and — PG 18+ — `Index Searches` far above 1 on a B-tree scan (skip scan fired, but the leading column's cardinality is too high for it to pay off; fix the column order or add an index).
-3. If estimate is off by >10× → run `ANALYZE <table>`; if persistently off → bump per-column stats target.
+3. Investigate estimates off by >10×; consider `ANALYZE <table>` or per-column stats changes only within authorized maintenance scope.
 
 ```sql
 EXPLAIN (ANALYZE, BUFFERS, SETTINGS, FORMAT TEXT)
@@ -17,6 +19,44 @@ GROUP BY u.id, u.name;
 ALTER TABLE orders ALTER COLUMN user_id SET STATISTICS 1000;  -- default 100
 ANALYZE orders;
 ```
+
+### Node Types
+
+| Node | What It Does | When You See It |
+|------|-------------|-----------------|
+| **Seq Scan** | Reads every row in the table | No useful index, or query returns a large fraction of rows |
+| **Index Scan** | Traverses B-tree, fetches heap rows | Selective query with a matching index |
+| **Index Only Scan** | Reads from index alone, no heap access | All selected columns are in the index (covering index) |
+| **Bitmap Index Scan** | Scans index, builds a bitmap of matching pages | Multiple index conditions OR'd, or moderate selectivity |
+| **Bitmap Heap Scan** | Fetches heap pages from bitmap | Always paired with Bitmap Index Scan |
+| **Hash Join** | Builds hash table from smaller side, probes with larger | Equality joins, larger datasets |
+| **Merge Join** | Merges two sorted inputs | Both sides already sorted (by index or explicit Sort) |
+| **Nested Loop** | For each outer row, scans inner | Small outer set, indexed inner; or no better strategy |
+| **Sort** | In-memory or disk sort | ORDER BY, merge join input, DISTINCT |
+| **Aggregate** | GROUP BY, COUNT, SUM, etc. | Aggregation queries |
+
+### Key Metrics to Read
+
+**actual time (startup..total):** Time in milliseconds. Startup is time before first row is produced. Total is time for all rows. Multiply by `loops` for true cost.
+
+**actual rows vs planned rows (rows):** If `actual rows` is dramatically different from the estimate (e.g., estimated 1 row, actual 50,000), investigate statistics; run `ANALYZE` only within the authorized maintenance scope.
+
+**Buffers:**
+- `shared hit` = pages found in PostgreSQL's buffer cache (fast).
+- `shared read` = pages read from OS cache or disk (slower).
+- High `shared read` relative to `shared hit` = cold cache or table too large for `shared_buffers`.
+
+**loops:** The node was executed this many times (common in Nested Loop). Multiply `actual time` and `actual rows` by `loops` for true totals.
+
+### Common Problems
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Seq Scan on large table with selective WHERE | Missing index | Create appropriate index |
+| Bitmap Heap Scan with many "Recheck Cond" rows | Index has low selectivity | More specific index, partial index, or accept Seq Scan |
+| Nested Loop with high loop count | Large outer set | Check if Hash Join would be better; add index on inner table |
+| Sort with "Sort Method: external merge Disk" | `work_mem` too low for the sort | Increase `work_mem` (carefully) or add an index for the ORDER BY |
+| Estimated rows = 1, actual = 100,000 | Stale statistics | `ANALYZE tablename;` or tune `default_statistics_target` |
 
 ## Index Types — Decision
 
@@ -74,7 +114,7 @@ INSERT INTO events (occurred_at, payload) VALUES
     ($1, $2), ($3, $4), ($5, $6), ...;
 ```
 
-Wrap in a transaction; drop non-essential indexes before big loads, recreate after.
+Wrap authorized bulk loads in a transaction. Retain indexes unless a measured need and existing authorization cover their removal/recreation, with an applicable rollback plan.
 
 ### UPSERT
 
@@ -110,7 +150,7 @@ ORDER BY n_dead_tup DESC LIMIT 20;
 SELECT state, count(*) FROM pg_stat_activity GROUP BY state;
 ```
 
-Track over time: `pg_stat_statements_reset()` periodically to get rolling windows; archive snapshots before reset.
+Compare retained snapshots over time. Use `pg_stat_statements_reset()` only for a necessary, authorized reset; archive snapshots first to preserve evidence, without claiming that this undoes the reset.
 
 ## Useful Extensions
 

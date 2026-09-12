@@ -6,7 +6,7 @@ Use this index to choose the likely composable, then verify exact options and re
 
 Reach for VueUse when the requirement maps to an entry below and the cost of doing it yourself is cleanup, SSR guards, observer lifecycle, debounce correctness, or reactive storage sync — the four places hand-rolled composables usually leak. Hand-roll only for a trivial project-owned wrapper, or when repo policy forbids the dependency.
 
-Before using one: confirm Vue 3 / Nuxt 3+ and check `package.json` for `@vueuse/core` (and `integrations` / `router` / `rxjs` / `nuxt` if the entry needs them). In Nuxt, guard browser-only functions with `import.meta.client`, `onMounted`, or `<ClientOnly>`, and never confuse Nuxt's `useFetch` with VueUse's. **Never persist tokens or PII** via `useStorage` / `useLocalStorage` / `useSessionStorage`. Do not add an extra integration package without approval.
+Before using one: confirm Vue 3 / Nuxt 3+ and check `package.json` for `@vueuse/core` (and `integrations` / `router` / `rxjs` / `nuxt` if the entry needs them). In Nuxt, guard browser-only functions with `import.meta.client`, `onMounted`, or `<ClientOnly>`, and never confuse Nuxt's `useFetch` with VueUse's. **Never persist tokens or PII** via `useStorage` / `useLocalStorage` / `useSessionStorage`. Add an integration package only for a demonstrated requirement covered by existing dependency/effect authorization; reuse that authorization and ask only for uncovered scope or capability.
 
 Review check: the composable actually reduces complexity, return values keep reactivity when destructured, and cleanup is automatic or explicit.
 
@@ -41,4 +41,4 @@ Verify the exact signature and return shape against the installed types — the 
 
 - Check SSR behavior before using browser APIs in Nuxt.
 - Do not store secrets or PII in browser storage.
-- Prefer project-installed packages; ask before adding VueUse solely for a tiny wrapper.
+- For a tiny wrapper, use an installed composable or native code.

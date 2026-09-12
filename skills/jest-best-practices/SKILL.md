@@ -47,7 +47,7 @@ Boundaries only — full → `references/jest-deep.md`. Jest-specific:
 - `testEnvironment` narrow: `node` for logic, `jsdom` only when DOM needed.
 - Custom matchers (`@testing-library/jest-dom`) in `setupFilesAfterEnv`.
 - Aliases consistent with `tsconfig.paths` / bundler.
-- Exclude generated, build, `*.d.ts`, utilities from coverage.
+- Preserve the repo's coverage contract. Generated/build outputs and declarations without runtime behavior may be excluded; include handwritten utilities according to their observable behavior, not their directory name.
 - Snapshot only stable, small outputs.
 
 ## Common Mistakes

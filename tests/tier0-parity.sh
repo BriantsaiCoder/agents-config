@@ -38,7 +38,7 @@ na()   { printf '  SKIP  %s\n' "$1"; skip=$((skip + 1)); }
 # T0-1 的 session 內重用子句「同 session 目標／狀態未變可重用，…或可能外部變更時仍須 live probe」原為 Codex 獨有，
 # 2026-09-08 mirror 到 Claude／Copilot；表以 同 session 目標／狀態未變可重用 與 可能外部變更 兩個 clause 一起守，排除條件不能單獨掉。
 REQUIRED=$(cat <<'TABLE'
-T0-1|Action／current-state claim|path／API／config key|live evidence|同 session 目標／狀態未變可重用|實際修改／執行 target|可能外部變更|live probe|non-action citation／hypothetical
+T0-1|Action／current-state claim|path／API／config key|live evidence|首次使用|同 session 目標／狀態未變可重用|實際修改／執行 target|亦可作證|可能外部變更|live probe|non-action citation／hypothetical
 T0-2|evidence|done
 T0-3|force-push|force-with-lease
 T0-4|secret|set
@@ -112,7 +112,7 @@ selftest() {
   # 正向 fixture：含 autonomy exception、risk trigger、review outcome 與五要素，應全數 PASS。
   cat > "$scratch/good.md" <<'FIX'
 <!-- FP:AGENTS-T0-2026Q3 -->
-[T0-1] Action／current-state claim 涉及 path／API／config key 時 MUST 有 live evidence；同 session 目標／狀態未變可重用，實際修改／執行 target 或可能外部變更時仍須 live probe。觸發：前述 action／claim。例外：non-action citation／hypothetical。驗證：read／list／schema probe 或例外標記。
+[T0-1] Action／current-state claim 涉及 path／API／config key 時 MUST 有 live evidence；首次使用或可能外部變更須 live probe；同 session 目標／狀態未變可重用，實際修改／執行 target 的工具回傳亦可作證。觸發：前述 action／claim。例外：non-action citation／hypothetical。驗證：read／list／schema probe 或例外標記。
 [T0-2] MUST NOT 無 evidence 宣稱 done。觸發：完成宣稱。例外：無。驗證：命令與 exit code。
 [T0-3] MUST NOT force-push main／master；非保護分支只用 --force-with-lease。觸發：force push。例外：無。驗證：hook。
 [T0-4] MUST NOT 把 token／secret 印明文；遮罩為 set／unset。觸發：credential 輸出。例外：非敏感值。驗證：gitleaks。
@@ -130,8 +130,10 @@ FIX
     "$scratch/good.md" > "$scratch/no-t01-exception.md"
   sed 's/；同 session 目標／狀態未變可重用，/；/' \
     "$scratch/good.md" > "$scratch/no-t01-reuse.md"
-  sed 's/ 或可能外部變更時仍須/ 仍須/' \
+  sed 's/首次使用或可能外部變更須/首次使用須/' \
     "$scratch/good.md" > "$scratch/no-t01-external-change.md"
+  sed 's/亦可作證/仍須另查/' \
+    "$scratch/good.md" > "$scratch/no-t01-target-evidence.md"
   sed 's/，僅停相依步驟//' \
     "$scratch/good.md" > "$scratch/blanket-t05.md"
   sed 's/發問前先查證並做完/發問前做完/' \
@@ -172,6 +174,7 @@ FIX
   }
 
   probe "$scratch/good.md"             pass "完整 tier0"
+  probe "$scratch/no-t01-target-evidence.md" fail "[T0-1] target 工具回傳可直接作證"
   probe "$scratch/blanket-t01.md"      fail "[T0-1] 退回 blanket path probe"
   probe "$scratch/no-t01-exception.md" fail "[T0-1] 掉 non-action/hypothetical 例外"
   probe "$scratch/no-t01-reuse.md"     fail "[T0-1] 掉 session 內重用子句"

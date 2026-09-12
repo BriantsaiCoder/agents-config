@@ -49,7 +49,7 @@ Read reference before implementing — flow details, claim names, timing windows
 ## Boundary
 
 - **This skill** = vendor-neutral patterns (model, lifecycle, RBAC/ABAC, threat, "done").
-- Better Auth / NextAuth / IdentityServer / Keycloak: this skill gives the model; library syntax via Context7 MCP.
+- Better Auth / NextAuth / IdentityServer / Keycloak: this skill gives the model; verify current library syntax with the active host's provider-native official docs, using [context7-mcp](../context7-mcp/SKILL.md) only when that capability is absent or `UNAVAILABLE`.
 
 ## Notes
 
