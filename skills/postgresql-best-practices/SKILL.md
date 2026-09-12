@@ -25,7 +25,7 @@ Why + patterns → `references/rules-expanded.md`.
 5. **Index suitability** — record workload evidence for B-tree/GIN/GiST/BRIN choices; route tuning to `postgresql-optimization`.
 6. **Partial/expression indexes** — evaluate query match and write overhead with that tuning owner.
 7. **Autovacuum** — inspect existing bloat/stats evidence; configuration changes need matching authorization.
-8. **Plan evidence** — prefer existing plans. `EXPLAIN ANALYZE` executes the query; check actual effects and environment before running it.
+8. **Plan evidence** — prefer existing plans. `EXPLAIN ANALYZE` executes the statement; check its database, targets, and actual effects against existing S2 authorization before running it. Obtain authorization only for uncovered effects.
 9. **Pool connections** — Npgsql built-in / multiplexing; PgBouncer transaction mode for Node / multi-service. ~10 MB per conn.
 10. **Retry SQLSTATE 40001** on SERIALIZABLE / RR. SSI aborts conflicts; no retry = random fails.
 11. **`RETURNING`** vs separate SELECT after INSERT/UPDATE. Atomic, race-free.
