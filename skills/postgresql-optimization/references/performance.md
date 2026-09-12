@@ -5,7 +5,7 @@
 Apply the [Default Workflow](../SKILL.md#default-workflow) authorization and rollback conditions to all query, index, statistics, extension/config, and data-load operations below. Examples are candidates, not permission to execute them.
 
 1. Reuse an existing representative plan; run `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) <query>` only when the query, environment, and effects are authorized.
-2. Look for: `Seq Scan` on large tables, `Sort` spilling to disk (`external merge`), high `Buffers: shared read=` (cold cache hits), row estimate vs actual mismatch (planner has bad stats), and — PG 18+ — `Index Searches` far above 1 on a B-tree scan (skip scan fired, but the leading column's cardinality is too high for it to pay off; fix the column order or add an index).
+2. Look for: `Seq Scan` on large tables, `Sort` spilling to disk (`external merge`), high `Buffers: shared read=` (shared-buffer reads; may be served by the OS cache), row estimate vs actual mismatch (planner has bad stats), and — PG 18+ — `Index Searches` far above 1 on a B-tree scan (skip scan fired, but the leading column's cardinality is too high for it to pay off; fix the column order or add an index).
 3. Investigate estimates off by >10×; consider `ANALYZE <table>` or per-column stats changes only within authorized maintenance scope.
 
 ```sql

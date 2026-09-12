@@ -27,7 +27,7 @@ Most flakiness comes from fighting Playwright's auto-waiting model: CSS locators
 ## MCP / Browser Workflow
 
 - Read `references/mcp-workflow.md` when driving Playwright MCP to explore, generate, or fill forms.
-- Keep ownership of pages/contexts clear; close only pages opened by the agent.
+- Keep ownership of pages/contexts clear; close only pages opened by the agent unless the user has explicitly authorized closing the affected pre-existing resources.
 - For frontend validation, cover mobile and desktop viewports; add tablet for critical flows.
 
 ## Common Patterns
