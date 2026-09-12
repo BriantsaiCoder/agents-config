@@ -51,7 +51,7 @@ When the user asks to "fill in this form for me", "automate this signup flow", o
 
 ## Safety Notes
 
-- Preserve session isolation with the active host's authorized MCP/browser configuration; changing host settings requires matching authorization.
+- Default to a task-isolated session supported by the active host. Reuse an existing/shared browser only when the request or session already authorizes that browser/context; do not ask again for the same scope. Changes to host settings still require matching authorization.
 - Track task-owned pages/contexts for cleanup and preserve pre-existing resources; shared-browser closure needs explicit authorization.
 - Exploration and test generation also require matching authorization for submissions, payments, account creation, messages, or deletion. Continue safe observations while an uncovered effect waits.
 - Never persist credentials the user provided as one-off values into stored files.

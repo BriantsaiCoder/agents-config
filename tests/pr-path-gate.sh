@@ -58,7 +58,7 @@ check_kernel() {
   printf '%s' "$line" | grep -Eq "$ESCAPE"      || miss="${miss} 例外條款"
   local ceiling="$line"
   if printf '%s' "$line" | grep -Fq '(references/ledgers.md#closeout-operations)'; then
-    ceiling=$(sed -n '/^## Closeout operations$/,/^## /p' "${file%/*}/references/ledgers.md" 2>/dev/null) ||
+    ceiling=$(sed -n '/^## Closeout operations$/,/^## /{/^## /!p;}' "${file%/*}/references/ledgers.md" 2>/dev/null) ||
       { ng "${label}: ledger 讀取失敗"; return; }
   fi
   printf '%s' "$ceiling" | grep -Eq "$HONESTY" || miss="${miss} client-side-ceiling"
@@ -153,6 +153,8 @@ FIX
   probe "$scratch/routed/no-pointer.md" fail "ceiling 附件沒有入口指標"
   printf '%s\n' '# Ledgers' '## Closeout operations' '- pre-push 已完整強制。' > "$scratch/routed/references/ledgers.md"
   probe "$scratch/routed/good.md" fail "附件不得把 safety rail 說成完整強制"
+  printf '%s\n' '# Ledgers' '## Closeout operations' '- No ceiling here.' '## pre-push 未安裝時沒有機械 enforcement；--no-verify 可略過，且不保證 --mirror 隱式刪除。' > "$scratch/routed/references/ledgers.md"
+  probe "$scratch/routed/good.md" fail "不得借用下一個章節標題的 ceiling"
   rm "$scratch/routed/references/ledgers.md"
   probe "$scratch/routed/good.md" fail "缺 ceiling 附件不得通過"
 
